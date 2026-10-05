@@ -23,6 +23,7 @@ jobs:
       should_release: ${{ steps.decide.outputs.should_release }}
       tag: ${{ steps.decide.outputs.tag }}
       npm_version: ${{ steps.decide.outputs.npm_version }}
+      resume_release_notes: ${{ steps.decide.outputs.resume_release_notes }}
       base_sha: ${{ steps.decide.outputs.base_sha }}
       commit: ${{ steps.pack.outputs.commit }}
       tree: ${{ steps.pack.outputs.tree }}
@@ -51,14 +52,35 @@ jobs:
       - name: Decide release
         id: decide
         shell: bash
+        env:
+          # Read-only lookup of GitHub releases for the resume decision below;
+          # this job's permissions stay contents: read, so the token can only
+          # observe here.
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git fetch --force --tags
+          echo "resume_release_notes=false" >> "$GITHUB_OUTPUT"
           latest_tag="$(git tag --sort=-creatordate | head -n 1 || true)"
           if [[ -n "$latest_tag" ]] && git diff --quiet "$latest_tag"..HEAD -- .; then
+            # Nothing changed since the release tag, so a full release would
+            # publish the same version twice. But the previous run may have died
+            # between pushing the tag and creating its GitHub release: with this
+            # check reading only the tag, every rerun would skip the whole
+            # publishing job and the release notes would never appear.
+            # Best-effort read: a 404 means no release exists; any other gh
+            # failure is 'unknown' and still resumes, because the resume job
+            # re-checks before creating anything - resuming twice is harmless,
+            # never resuming is the bug this exists to fix.
+            if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${latest_tag}" >/dev/null 2>&1; then
+              echo "should_release=false" >> "$GITHUB_OUTPUT"
+              echo "No changes since $latest_tag; skipping release." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
             echo "should_release=false" >> "$GITHUB_OUTPUT"
-            echo "latest_tag=$latest_tag" >> "$GITHUB_OUTPUT"
-            echo "No changes since $latest_tag; skipping release." >> "$GITHUB_STEP_SUMMARY"
+            echo "resume_release_notes=true" >> "$GITHUB_OUTPUT"
+            echo "tag=${latest_tag}" >> "$GITHUB_OUTPUT"
+            echo "No changes since ${latest_tag} and it has no GitHub release; resuming release-notes creation only (no bump, publish or tag)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
@@ -98,6 +120,27 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "npm_version=$npm_version" >> "$GITHUB_OUTPUT"
           echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate resume release notes
+        # The resume path runs ONLY release-notes creation: no version bump, no
+        # changelog commit, no publish, no tag. The tree is unchanged since the
+        # tag, so release:notes' --since-previous-tag/--until-release-tag pair
+        # renders exactly this release's notes from the merged release commit.
+        if: steps.decide.outputs.resume_release_notes == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run release:notes > RELEASE_NOTES.md
+          [[ -s RELEASE_NOTES.md ]]
+
+      - name: Upload resume release notes
+        if: steps.decide.outputs.resume_release_notes == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: resume-release-notes
+          path: RELEASE_NOTES.md
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Update release version
         if: steps.decide.outputs.should_release == 'true'
@@ -189,8 +232,13 @@ jobs:
       # Only protected metadata PRs, tag pushes and GitHub releases need writes.
       contents: write
       pull-requests: write
-      # Diagnose release PR runs awaiting owner approval; never approve them.
-      actions: read
+      # Lets the merge wait approve the CI run GitHub parks on `action_required`
+      # when a PR is created with github.token. Best-effort: when the token may
+      # not approve, the run is still reported with its URL so a maintainer can
+      # approve it once. Safe to widen from read to write because this job runs
+      # no dependency code - only pinned publishing tools and inline workflow
+      # code - so the grant cannot be exercised by untrusted build inputs.
+      actions: write
       # This runner executes only pinned publishing tools and inline workflow code.
       id-token: write
     steps:
@@ -511,16 +559,26 @@ jobs:
               # `action_required` at 04:54:24Z, policy `first_time_contributors`,
               # and `github-actions[bot]` had no merged PR in that repo yet). A
               # human re-ran it at 05:36Z, 12 minutes after the release had already
-              # given up. Try to approve it - the token often may not, which is
-              # harmless - and always surface the run so the wait is diagnosable.
+              # given up. Approve it when this token may - fleet standard, ported
+              # from pm-brief - but only THIS release PR's CI run: the query is
+              # already scoped to the release PR head SHA, and the workflow filter
+              # keeps a run from any other workflow on the same SHA from being
+              # approved. The token often may not approve, which is harmless -
+              # the run is always surfaced with its URL so the wait stays
+              # diagnosable either way.
               pending_runs="$(gh api \
                 "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${release_commit}&per_page=100" \
-                --jq '.workflow_runs[]? | select(.conclusion=="action_required" or .status=="waiting") | .id' \
+                --jq '.workflow_runs[]? | select(.conclusion=="action_required" or .status=="waiting") | select(.name == "CI") | .id' \
                 2>/dev/null || true)"
               if [[ -n "$pending_runs" ]]; then
                 while IFS= read -r run_id; do
                   [[ -z "$run_id" ]] && continue
                   echo "::warning::CI run ${run_id} for this release PR is awaiting workflow approval: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
+                  gh api --method POST \
+                    "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/approve" \
+                    >/dev/null 2>&1 \
+                    && echo "Approved workflow run ${run_id}; its checks can now report." \
+                    || echo "Could not approve run ${run_id} with this token; a maintainer must approve it once: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
                 done <<< "$pending_runs"
                 awaiting_approval=1
               fi
@@ -800,6 +858,46 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           GH_TOKEN: ${{ github.token }}
         run: gh release create "${RELEASE_TAG}" --title "${REPO_NAME} ${RELEASE_TAG}" --notes-file RELEASE_NOTES.md --verify-tag
+
+  resume_release:
+    needs: prepare
+    # Runs ONLY when the previous release died between the tag push and its
+    # GitHub release: the tree is unchanged, the version is published and the
+    # tag exists, so the sole missing step is the GitHub release. Everything
+    # else - version bump, changelog commit, npm publish, tag push - is a
+    # should_release path and is never taken from here.
+    if: github.ref == 'refs/heads/main' && vars.PM_JEV_RELEASE_ENABLED == 'true' && needs.prepare.outputs.resume_release_notes == 'true'
+    runs-on: ubuntu-latest
+    # Creating the GitHub release for the already-pushed tag is the only write
+    # this job performs; the version, tag and npm artifact are already
+    # published and immutable. This job runs no dependency code - only the
+    # pinned download-artifact action and the gh CLI - so the grant cannot be
+    # exercised by untrusted build inputs.
+    permissions:
+      contents: write
+    steps:
+      - name: Download resume release notes
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: resume-release-notes
+
+      - name: Create missing GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          set -euo pipefail
+          # Prepare saw no release, but one may have appeared since (a human, or
+          # an earlier resume attempt); creating over an existing release fails,
+          # so re-check and treat it as done rather than as an error.
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "::notice::GitHub release for ${RELEASE_TAG} already exists; nothing to resume."
+            exit 0
+          fi
+          gh release create "${RELEASE_TAG}" --title "${REPO_NAME} ${RELEASE_TAG}" --notes-file RELEASE_NOTES.md --verify-tag
+          echo "Created the missing GitHub release for ${RELEASE_TAG}." >> "$GITHUB_STEP_SUMMARY"
 
   verify_bun:
     needs: [prepare, release]

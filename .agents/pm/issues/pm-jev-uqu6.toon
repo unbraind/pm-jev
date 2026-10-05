@@ -1,0 +1,20 @@
+id: pm-jev-uqu6
+title: Port best-effort CI approval and release-notes resume into the release workflow (Greptile PR 1)
+description: "Greptile findings on PR 1: (1) release PR runs park on action_required because they are created with github.token; release job only diagnoses and would fail after 30 min - port pm-brief best-effort approval with actions: write scoped to the release job, SHA+CI-workflow matched; (2) a failed gh release create after tag push can never resume because the unchanged-tag check skips everything - add a read-only prepare resume mode that runs only release-notes creation."
+type: Issue
+status: in_progress
+priority: 2
+tags[1]: "pkg:pm-jev"
+created_at: "2026-10-05T11:03:20.757Z"
+updated_at: "2026-10-05T11:30:29.497Z"
+assignee: pi-glm
+claim_principal: pi-glm
+author: pi-glm
+parent: pm-jev-0w3q
+comments[2]{created_at,author,text}:
+  "2026-10-05T11:03:25.561Z",pi-glm,"Starting: read both Greptile comments (4182583802, 4182583829) and the pm-brief reference implementation. Plan: (a) release job gets actions: write with a scoped comment, approve only runs whose head SHA is the release PR head and whose workflow is this repo's CI (name: CI), keep the URL warning when approval is not permitted; (b) prepare decides a resume mode when the latest tag is unchanged but has no GitHub release, regenerates release notes read-only, and a minimal contents:write job creates only the GitHub release (no bump, publish or tag)."
+  "2026-10-05T11:30:29.497Z",pi-glm,"Both findings implemented and verified. (1) 4182583802: release job now holds actions: write (only job in the workflow with it; comment explains it runs no dependency code, so untrusted build inputs cannot exercise the grant); the merge wait approves a parked run only when its head SHA is the release PR head AND its workflow name is CI, and reports the run URL both before the attempt and on approval failure (best-effort, ported from the fleet release standard). (2) 4182583829: the unchanged-tag skip in prepare now probes the GitHub release for the latest tag (read-only gh api); when it is missing or unknown, prepare outputs resume_release_notes=true and regenerates release notes read-only, and a new minimal resume_release job (contents: write only, needs prepare, same main/opt-in gates) creates only the GitHub release for the existing tag - no version bump, publish or tag - re-checking idempotently before creating. Test file extended: behavioral fake-gh coverage of the resume decision (exists vs missing), pinning of actions:write scope, SHA+CI-workflow matching, approve fallback URL, resume-mode gates, and that the full-release steps never fire on resume. actionlint clean."
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "npm run release:check",project,pi-glm,"2026-10-05T11:29:33.495Z",local_mutation,feat/typed-local-decisions
+  node --test test/release-workflow.test.ts,project,pi-glm,"2026-10-05T11:29:34.332Z",local_mutation,feat/typed-local-decisions
+body: ""

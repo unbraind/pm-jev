@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -488,8 +488,25 @@ test("dependencies and repository scripts run only in read-only jobs", () => {
   assert.match(prepare, /npm pack --ignore-scripts/);
   const release = executable(jobSource("release"));
   assert.doesNotMatch(release, /npm ci|npm run|bun (?:install|add)|node scripts\//);
-  assert.doesNotMatch(release, /actions: write/);
-  assert.match(release, /^ {6}actions: read$/m);
+  // The release PR's parked CI run must be approvable, so the release job -
+  // and ONLY the release job - holds actions: write. Widening the grant on a
+  // job that runs dependency code would let untrusted build inputs approve
+  // workflow runs; widening it beyond one job would grant it where nothing
+  // needs it.
+  assert.match(release, /^ {6}actions: write$/m);
+  assert.equal(
+    (executable(workflow).match(/^ {6}actions: write$/gm) ?? []).length,
+    1,
+    "actions: write may be granted on exactly one job"
+  );
+  const resume = executable(jobSource("resume_release"));
+  assert.doesNotMatch(resume, /actions: write/);
+  assert.match(resume, /uses: actions\/download-artifact@[0-9a-f]{40}/);
+  // The resume job performs the single missing write (the GitHub release) and
+  // no other: no publish credential, no PR writes, no run approvals.
+  assert.match(resume, /permissions:\n {6}contents: write/);
+  assert.doesNotMatch(resume, /(?:actions|pull-requests|id-token): write/);
+  assert.doesNotMatch(resume, /npm ci|npm run|bun (?:install|add)|node scripts\//);
   assert.match(release, /npm install -g npm@11\.19\.0 --ignore-scripts/);
   assert.match(release, /uses: actions\/download-artifact@[0-9a-f]{40}/);
   assert.match(release, /sha256sum --check --strict/);
@@ -527,20 +544,49 @@ test("release selection refuses changed same-day coordinates and skips unchanged
     writeFileSync(join(cwd, "source.txt"), "initial");
     git("add", "source.txt");
     git("commit", "-m", "Synthetic base");
+    // A fake gh answers the resume probe: status 0 means the GitHub release
+    // exists, anything else means missing or unknown. The decide step treats
+    // every non-zero outcome as "resume", because the resume job re-checks
+    // before creating anything.
+    const bin = join(cwd, "bin");
+    mkdirSync(bin);
+    const gh = join(bin, "gh");
+    const fakeGh = (exitStatus: number) => {
+      writeFileSync(gh, `#!/usr/bin/env bash\nif [[ "$1" != "api" ]]; then exit 2; fi\nexit ${exitStatus}\n`, { mode: 0o755 });
+    };
     const script = stepScript("Decide release");
     const date = execFileSync("date", ["+%Y.%m.%d"], { encoding: "utf8", env: { ...process.env, TZ: "Europe/Vienna" } }).trim();
     const output = join(cwd, "output");
     const summary = join(cwd, "summary");
     const run = () => {
       writeFileSync(output, "");
-      return spawnSync("bash", ["-c", script], { cwd, encoding: "utf8", env: { ...process.env, RELEASE_TIMEZONE: "Europe/Vienna", GITHUB_OUTPUT: output, GITHUB_STEP_SUMMARY: summary } });
+      return spawnSync("bash", ["-c", script], { cwd, encoding: "utf8", env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, RELEASE_TIMEZONE: "Europe/Vienna", GITHUB_OUTPUT: output, GITHUB_STEP_SUMMARY: summary, GITHUB_REPOSITORY: "unbraind/pm-jev" } });
+    };
+    // Duplicate keys in GITHUB_OUTPUT: the LAST value wins, so assertions must
+    // read the last occurrence rather than merely match anywhere.
+    const lastValue = (key: string) => {
+      const values = [...readFileSync(output, "utf8").matchAll(new RegExp(`^${key}=(.*)$`, "gm"))].map((m) => m[1]);
+      return values.at(-1);
     };
     const first = run();
     assert.equal(first.status, 0, first.stderr);
     assert.match(readFileSync(output, "utf8"), new RegExp(`tag=v${date.replaceAll(".", "\\.")}\n`));
+    assert.equal(lastValue("resume_release_notes"), "false");
     git("tag", `v${date}`);
+    // The GitHub release exists: a plain skip, never a resume.
+    fakeGh(0);
     assert.equal(run().status, 0);
-    assert.match(readFileSync(output, "utf8"), /should_release=false/);
+    assert.equal(lastValue("should_release"), "false");
+    assert.equal(lastValue("resume_release_notes"), "false");
+    // The GitHub release is missing (gh fails: 404 or unknown): the tag is
+    // unchanged, so the only resumable step is release-notes creation.
+    fakeGh(1);
+    const resume = run();
+    assert.equal(resume.status, 0, resume.stderr);
+    assert.equal(lastValue("should_release"), "false");
+    assert.equal(lastValue("resume_release_notes"), "true");
+    assert.equal(lastValue("tag"), `v${date}`);
+    assert.doesNotMatch(readFileSync(output, "utf8"), /npm_version=|base_sha=/);
     writeFileSync(join(cwd, "source.txt"), "new content");
     git("add", "source.txt");
     git("commit", "-m", "Synthetic change");
@@ -552,6 +598,74 @@ test("release selection refuses changed same-day coordinates and skips unchanged
       assert.doesNotMatch(readFileSync(output, "utf8"), /should_release=true|npm_version=/);
     }
   } finally { rmSync(cwd, { recursive: true, force: true }); }
+});
+
+test("the release job best-effort approves its release PR's parked CI run", () => {
+  // The permission itself: a comment reading "actions: write" grants nothing,
+  // and the grant is meaningless on a job that cannot reach the approve API.
+  assert.match(effectiveReleasePermissions(), /(?:^|[{,\s])actions:\s*write\s*(?:#[^\n]*)?$/m);
+  const step = executable(stepSource("Merge release metadata through protected PR"));
+
+  // Approval must be scoped to THIS release PR's CI run: the query is already
+  // pinned to the release PR head SHA, and the workflow filter keeps a run of
+  // any other workflow on the same SHA from being approved.
+  assert.match(step, /head_sha=\$\{release_commit\}/);
+  assert.match(step, /select\(\.name == "CI"\)/);
+
+  // Best-effort approval, ported from the fleet standard: the approve POST may
+  // fail (the token often may not approve), and that failure must neither
+  // abort the merge wait nor hide the run URL a maintainer needs.
+  assert.match(step, /actions\/runs\/\$\{run_id\}\/approve/);
+  assert.match(step, /&& echo "Approved workflow run \$\{run_id\}; its checks can now report\." \\/);
+  assert.match(step, /\|\| echo "Could not approve run \$\{run_id\} with this token; a maintainer must approve it once: \$\{GITHUB_SERVER_URL\}\/\$\{GITHUB_REPOSITORY\}\/actions\/runs\/\$\{run_id\}"/);
+  // The URL is reported BEFORE the approval attempt too, so an approve-capable
+  // token still leaves the parked run diagnosable in the log.
+  assert.match(step, /::warning::CI run \$\{run_id\} for this release PR is awaiting workflow approval: \$\{GITHUB_SERVER_URL\}\/\$\{GITHUB_REPOSITORY\}\/actions\/runs\/\$\{run_id\}/);
+  // Only parked runs are ever selected, never runs that are already running.
+  assert.match(step, /select\(\.conclusion=="action_required" or \.status=="waiting"\)/);
+});
+
+test("a tag without its GitHub release resumes notes creation only", () => {
+  const prepare = executable(jobSource("prepare"));
+  // The resume decision is a prepare output, so the publishing jobs can branch
+  // on it; the prepare job itself stays read-only.
+  assert.match(prepare, /^ {6}resume_release_notes: \$\{\{ steps\.decide\.outputs\.resume_release_notes \}\}$/m);
+
+  // The full-release path must never fire on a resume: no version bump, no
+  // changelog commit, no publish, no tag. Each step's gate pins that.
+  for (const name of ["Update release version", "Generate changelog and release notes", "Run release checks", "Commit release files", "Pack verified release artifact"]) {
+    const step = executable(stepSource(name));
+    assert.match(step, /^ {8}if: steps\.decide\.outputs\.should_release == 'true'$/m, `${name} must be gated on should_release alone`);
+  }
+
+  // The resume notes are generated in the read-only prepare job (it already
+  // installed dependencies; the privileged jobs run none), and shipped via a
+  // short-lived artifact like the verified release.
+  const notes = executable(stepSource("Generate resume release notes"));
+  assert.match(notes, /^ {8}if: steps\.decide\.outputs\.resume_release_notes == 'true'$/m);
+  assert.match(notes, /npm run release:notes > RELEASE_NOTES\.md/);
+  assert.match(notes, /\[\[ -s RELEASE_NOTES\.md \]\]/);
+  assert.doesNotMatch(notes, /npm version|npm publish|git tag|git commit/);
+  const upload = executable(stepSource("Upload resume release notes"));
+  assert.match(upload, /^ {8}if: steps\.decide\.outputs\.resume_release_notes == 'true'$/m);
+  assert.match(upload, /name: resume-release-notes/);
+  assert.match(upload, /if-no-files-found: error/);
+
+  const resume = executable(jobSource("resume_release"));
+  // Same main-only, opt-in gate as the other publishing jobs, plus the resume
+  // flag: without the flag this job must never run.
+  assert.match(resume, /^ {4}if: github\.ref == 'refs\/heads\/main' && vars\.PM_JEV_RELEASE_ENABLED == 'true' && needs\.prepare\.outputs\.resume_release_notes == 'true'$/m);
+  assert.match(resume, /^ {4}needs: prepare$/m);
+  assert.match(resume, /gh release create "\$\{RELEASE_TAG\}" --title "\$\{REPO_NAME\} \$\{RELEASE_TAG\}" --notes-file RELEASE_NOTES\.md --verify-tag/);
+  // Idempotent: a release that appeared between prepare and here is done, not
+  // an error; gh release create would fail over an existing release.
+  assert.match(resume, /releases\/tags\/\$\{RELEASE_TAG\}/);
+  assert.match(resume, /already exists; nothing to resume/);
+  // Resume never publishes, tags or bumps: those steps do not even exist here.
+  assert.doesNotMatch(resume, /npm publish|git tag|npm version|npm ci|git push/);
+  // And the publishing job stays gated on should_release alone, so a resume
+  // can never republish an immutable version.
+  assert.match(executable(jobSource("release")), /^ {4}if: github\.ref == 'refs\/heads\/main' && vars\.PM_JEV_RELEASE_ENABLED == 'true' && needs\.prepare\.outputs\.should_release == 'true'$/m);
 });
 
 test("artifact handoff rejects changed bytes, commit, tree and base before loading metadata", () => {
