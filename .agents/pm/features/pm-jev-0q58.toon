@@ -2,15 +2,18 @@ id: pm-jev-0q58
 title: "pm-jev packaging, gates and CI"
 description: "manifest.json + compiled entry, npm/bun installability, extension install from a local dir, eslint/jscpd/docstring/coverage gates, pm health, CI/codeql/release workflows mirroring the fleet, identity/privacy audit test."
 type: Feature
-status: open
+status: in_progress
 priority: 2
 tags[1]: "pkg:pm-jev"
 created_at: "2026-10-05T04:38:46.001Z"
-updated_at: "2026-10-05T04:39:12.568Z"
+updated_at: "2026-10-05T05:01:41.929Z"
+assignee: codex-sol
+claim_principal: codex-sol
 author: pi-glm
 parent: pm-jev-0w3q
-tests[3]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[4]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   npm run coverage,project,pi-glm,"2026-10-05T04:39:07.127Z",local_mutation,feat/typed-local-decisions
   npm run lint && npm run duplication && npm run docstring && node_modules/.bin/pm health --strict-exit,project,pi-glm,"2026-10-05T04:39:11.557Z",local_mutation,feat/typed-local-decisions
   "npm run test:install",project,pi-glm,"2026-10-05T04:39:12.544Z",local_mutation,feat/typed-local-decisions
+  npm test,project,codex-sol,"2026-10-05T05:01:41.906Z",local_mutation,feat/typed-local-decisions
 body: ""
