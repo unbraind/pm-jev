@@ -2,13 +2,16 @@ id: pm-jev-nn3x
 title: "pm-jev gate command: calibrated noul exit gate for agents and CI"
 description: One noul proposition over --text or a projected --item; exit code 0/1 from the calibrated probability against --threshold.
 type: Feature
-status: open
+status: in_progress
 priority: 2
 tags[1]: "pkg:pm-jev"
 created_at: "2026-10-05T04:38:44.189Z"
-updated_at: "2026-10-05T04:39:05.552Z"
+updated_at: "2026-10-05T05:02:38.169Z"
+assignee: codex-sol
+claim_principal: codex-sol
 author: pi-glm
 parent: pm-jev-0w3q
-tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-reporter=tap test/gate.test.ts,project,pi-glm,"2026-10-05T04:39:05.533Z",local_mutation,feat/typed-local-decisions
+  node --test test/decisions.test.ts,project,codex-sol,"2026-10-05T05:02:38.148Z",local_mutation,feat/typed-local-decisions
 body: ""

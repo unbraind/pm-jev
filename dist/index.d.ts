@@ -67,6 +67,20 @@ export interface ResolvedJevEndpoint {
  */
 export declare function resolveJevEndpoint(pmRoot: string, env: Record<string, string | undefined>): Promise<ResolvedJevEndpoint>;
 /**
+ * Build a TypeSafeClient for the resolved endpoint.
+ *
+ * The client carries `logLevel: "off"` so request/response bodies are never
+ * emitted even if a caller enables debug logging elsewhere: PM state is
+ * private. Retries stay at the SDK's bounded defaults (two retries with
+ * exponential backoff on 429/5xx), while the total deadline is enforced per
+ * call through an abort signal in {@link runDecision}.
+ *
+ * @param resolved - Endpoint resolution from {@link resolveJevEndpoint}.
+ * @param env - Environment to read `TYPESAFE_API_KEY` from for hosted calls.
+ * @returns A configured client bound to the selected provider.
+ */
+export declare function createJevClient(resolved: ResolvedJevEndpoint, env: Record<string, string | undefined>): TypeSafeClient;
+/**
  * Enforce the hosted privacy gate: refuse external transfer unless the caller
  * explicitly opted in via `jev.allow_external=true` AND provided an API key.
  *
@@ -105,8 +119,6 @@ export interface ProjectedItemState {
     readonly type: string;
     /** Item lifecycle status. */
     readonly status: string;
-    /** Current pm priority integer, projected for context only. */
-    readonly priority: number;
     /** Item tags. */
     readonly tags: readonly string[];
     /** Truncated description. */
@@ -126,19 +138,8 @@ export interface ProjectedItemState {
  * @returns The state object sent to the decision model.
  */
 export declare function projectItemState(item: ProjectableItem): ProjectedItemState;
-/**
- * Validate the shape of every answer in a System One response.
- *
- * Jev is schema-constrained, but schema drift between the local server and the
- * catalog still produces malformed payloads; every answer is checked against
- * its question definition before any proposal is formed. Unknown answer keys
- * and unknown choice labels are rejected rather than silently dropped.
- *
- * @param questions - The question map the request was built from.
- * @param result - The parsed response payload from the SDK.
- * @throws {Error} The first violated invariant, with the answer path named.
- */
-export declare function validateAnswers(questions: Questions, result: SystemOneResult<Questions>): void;
+/** Validate every answer, probability, rubric, model and usage before any mutation. */
+export declare function validateAnswers(questions: Questions, raw: unknown): asserts raw is SystemOneResult<Questions>;
 /**
  * Run one batched decision under the configured total deadline and validate
  * every answer shape.
@@ -314,6 +315,8 @@ export interface AskDecision {
 }
 /** Gate command receipt: the calibrated verdict agents and CI branch on. */
 export interface GateDecision {
+    /** Host-owned process status for a negative verdict; omitted for a positive verdict. */
+    readonly exit_code?: 1;
     /** The proposition that was evaluated. */
     readonly proposition: string;
     /** Probability the model assigns to the proposition being true. */
@@ -387,6 +390,7 @@ declare const _default: {
     name: string;
     version: string;
     description: string;
+    /** Register the versioned decision commands with the pm host. */
     activate(api: ExtensionApi): void;
 };
 export default _default;

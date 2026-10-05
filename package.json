@@ -41,20 +41,21 @@
     "release:notes": "pm-changelog --pm-root .agents/pm --stdout --since-previous-tag --until-release-tag --release-version-from-package --date-from-version --item-url-base https://github.com/unbraind/pm-jev/blob/main/.agents/pm --respect-item-release --pm-bin ./node_modules/.bin/pm --github-step-summary --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded",
     "prepare": "node scripts/prepare-merge-driver.ts",
     "merge:install": "pm merge install",
-    "coverage": "npm run build && npm run build:test && node scripts/coverage-gate.ts",
+    "coverage": "npm run build && npm run build:test && c8 --all --include=index.ts --include=scripts/**/*.ts --exclude=test/** --100 --reporter=text --reporter=json-summary node scripts/coverage-gate.ts",
     "verify:release-publish-attestation": "node scripts/verify-release-publish-attestation.ts"
   },
   "dependencies": {
     "@typesafe-ai/sdk": "^0.6.0"
   },
   "peerDependencies": {
-    "@unbrained/pm-cli": ">=2026.8.7"
+    "@unbrained/pm-cli": ">=2026.10.5"
   },
   "devDependencies": {
     "@babel/eslint-parser": "8.0.6",
     "@babel/plugin-syntax-typescript": "8.0.3",
     "@types/node": "26.6.4",
     "@unbrained/pm-cli": "2026.10.5",
+    "c8": "^12.0.0",
     "eslint": "10.12.0",
     "fast-glob": "3.3.3",
     "jscpd": "5.4.0",
@@ -119,10 +120,7 @@
   "coverageGate": {
     "sources": [
       ".",
-      "scripts/coverage-gate.ts",
-      "scripts/prepare-merge-driver.ts",
-      "scripts/docstring-gate.ts",
-      "scripts/main-invocation.ts"
+      "scripts"
     ],
     "tests": [
       "test/*.test.ts"

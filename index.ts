@@ -26,12 +26,11 @@ import {
   APIUserAbortError,
   TypeSafeClient,
 } from "@typesafe-ai/sdk";
-import type { EntryType, Questions, ScoreCriteria, SystemOneResult } from "@typesafe-ai/sdk";
+import type { EntryType, Questions, ScoreCriteria, SystemOneResult, ChoiceResponse, ScoreResponse, NoulResponse } from "@typesafe-ai/sdk";
 import {
   createPmCliExpectedError,
   getSettingsPath,
   isPmCliExpectedError,
-  listAllItemMetadataLight,
   PmClient,
   readBooleanOption,
   readFileIfExists,
@@ -210,8 +209,7 @@ function numberSetting(value: unknown, fallback: number, low: number, high: numb
  * @returns The clamped probability, or `fallback` for unusable input.
  */
 function probabilitySetting(value: unknown, fallback: number): number {
-  const parsed = numberSetting(value, fallback, 0, 1);
-  return parsed <= 0 ? fallback : parsed;
+  return numberSetting(value, fallback, 0, 1);
 }
 
 /**
@@ -261,20 +259,8 @@ export async function resolveJevEndpoint(
   pmRoot: string,
   env: Record<string, string | undefined>,
 ): Promise<ResolvedJevEndpoint> {
-  const settings: PmSettings = await readSettings(pmRoot);
   const section = await readJevSettingsSection(pmRoot);
   const provider = resolveProvider(section);
-  const ollamaBaseUrl = settings.providers.ollama.base_url.trim();
-  const ollamaModel = settings.providers.ollama.model.trim();
-
-  const hostedBlocked: HostedBlock | null =
-    provider === "ollama"
-      ? null
-      : section.allow_external === true
-        ? stringSetting(env.TYPESAFE_API_KEY) === undefined
-          ? "missing_api_key"
-          : null
-        : "missing_opt_in";
 
   const envBaseUrl = stringSetting(env.PM_JEV_BASE_URL);
   const envModel = stringSetting(env.PM_JEV_MODEL);
@@ -283,11 +269,19 @@ export async function resolveJevEndpoint(
   const baseUrl =
     envBaseUrl ??
     sectionBaseUrl ??
-    (provider === "typesafe" ? DEFAULT_TYPESAFE_BASE_URL : ollamaBaseUrl || DEFAULT_OLLAMA_BASE_URL);
+    (provider === "typesafe" ? DEFAULT_TYPESAFE_BASE_URL : DEFAULT_OLLAMA_BASE_URL);
   const model =
     envModel ??
     sectionModel ??
-    (provider === "typesafe" ? DEFAULT_TYPESAFE_MODEL : ollamaModel || DEFAULT_OLLAMA_MODEL);
+    (provider === "typesafe" ? DEFAULT_TYPESAFE_MODEL : DEFAULT_OLLAMA_MODEL);
+  const url = new URL(baseUrl);
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
+    throw createPmCliExpectedError("jev base URL must be HTTP(S) without credentials, query or fragment.", { context: { code: "jev_invalid_url" } });
+  }
+  const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+  const hostedBlocked: HostedBlock | null = (provider === "typesafe" || !local) && section.allow_external !== true
+    ? "missing_opt_in"
+    : provider === "typesafe" && stringSetting(env.TYPESAFE_API_KEY) === undefined ? "missing_api_key" : null;
   const timeoutMs = numberSetting(section.timeout_ms, DEFAULT_TIMEOUT_MS, TIMEOUT_MS_MIN, TIMEOUT_MS_MAX);
   const totalDeadlineMs = numberSetting(
     section.total_deadline_ms,
@@ -323,8 +317,8 @@ export async function resolveJevEndpoint(
  * @param env - Environment to read `TYPESAFE_API_KEY` from for hosted calls.
  * @returns A configured client bound to the selected provider.
  */
-function createJevClient(resolved: ResolvedJevEndpoint, env: Record<string, string | undefined>): TypeSafeClient {
-  const { config } = resolved;
+export function createJevClient(resolved: ResolvedJevEndpoint, env: Record<string, string | undefined>): TypeSafeClient {
+  const config = requireCallableEndpoint(resolved);
   const apiKey = config.provider === "ollama" ? OLLAMA_API_KEY : stringSetting(env.TYPESAFE_API_KEY) ?? "";
   return new TypeSafeClient({
     apiKey,
@@ -333,6 +327,8 @@ function createJevClient(resolved: ResolvedJevEndpoint, env: Record<string, stri
     timeout: config.timeoutMs,
     retry: { maxRetries: 2 },
     logLevel: "off",
+    /** Refuse redirects so a local endpoint cannot forward private state externally. */
+    fetch: (input, init) => fetch(input, { ...init, redirect: "error" }),
   });
 }
 
@@ -393,8 +389,6 @@ export interface ProjectedItemState {
   readonly type: string;
   /** Item lifecycle status. */
   readonly status: string;
-  /** Current pm priority integer, projected for context only. */
-  readonly priority: number;
   /** Item tags. */
   readonly tags: readonly string[];
   /** Truncated description. */
@@ -430,8 +424,7 @@ export function projectItemState(item: ProjectableItem): ProjectedItemState {
     title: truncateStateText(item.title),
     type: truncateStateText(item.type),
     status: truncateStateText(item.status),
-    priority: typeof item.priority === "number" ? item.priority : 0,
-    tags: item.tags,
+    tags: item.tags.slice(0, 32).map(tag => truncateStateText(tag)),
     description: truncateStateText(item.description),
     body: truncateStateText(item.body),
   };
@@ -446,141 +439,56 @@ export function projectItemState(item: ProjectableItem): ProjectedItemState {
  */
 function requireProbability(value: unknown, label: string): void {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1) {
-    throw new Error(`malformed answer: ${label} is not a probability in [0,1] (got ${String(value)})`);
+    throw new Error(`malformed answer: ${label} is not a probability in [0,1]`);
   }
 }
 
-/**
- * Narrow one validated answer entry to a string-keyed record.
- *
- * @param result - The validated decision result.
- * @param name - Question name the answer is expected under.
- * @returns The answer entry as a record.
- * @throws {Error} The answer entry is absent or not a plain object.
- */
-function requireAnswerRecord(result: SystemOneResult<Questions>, name: string): Record<string, unknown> {
-  const entry: unknown = (result.answers as unknown as Record<string, unknown>)[name];
-  if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
-    throw new Error(`malformed answer: "${name}" is not an object`);
-  }
-  return entry as Record<string, unknown>;
+/** Require a non-array record before inspecting an untrusted response field. */
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(`malformed response: ${label} must be an object`);
+  return value as Record<string, unknown>;
 }
 
-/**
- * Narrow one validated answer to its choice shape.
- *
- * Runtime checks keep the narrowing honest even though
- * {@link validateAnswers} has already validated the batch.
- *
- * @param result - The validated decision result.
- * @param name - Choice question name.
- * @returns The selected label, distribution, and confidence.
- * @throws {Error} The answer is not a choice answer.
- */
-function requireChoiceAnswer(
-  result: SystemOneResult<Questions>,
-  name: string,
-): { choice: string; probabilities: Record<string, number>; confidence: number } {
-  const entry = requireAnswerRecord(result, name);
-  if (entry.type !== "choice" || typeof entry.choice !== "string") {
-    throw new Error(`malformed answer: "${name}" is not a choice answer`);
+/** Check exact probability keys and a normalized distribution within rounding tolerance. */
+function requireDistribution(value: unknown, labels: readonly string[], label: string): void {
+  const distribution = requireRecord(value, label);
+  if (Object.keys(distribution).length !== labels.length || Object.keys(distribution).some(key => !labels.includes(key))) {
+    throw new Error(`malformed response: ${label} has unknown or missing options`);
   }
-  const probabilities = entry.probabilities as Record<string, number>;
-  return { choice: entry.choice, probabilities, confidence: entry.confidence as number };
+  let sum = 0;
+  for (const key of labels) {
+    requireProbability(distribution[key], `${label}.${key}`);
+    sum += distribution[key] as number;
+  }
+  if (Math.abs(sum - 1) > 0.02) throw new Error(`malformed response: ${label} is not normalized`);
 }
 
-/**
- * Narrow one validated answer to its noul shape.
- *
- * @param result - The validated decision result.
- * @param name - Noul question name.
- * @returns The probability of the yes outcome.
- * @throws {Error} The answer is not a noul answer.
- */
-function requireNoulAnswer(result: SystemOneResult<Questions>, name: string): number {
-  const entry = requireAnswerRecord(result, name);
-  if (entry.type !== "noul" || typeof entry.noul !== "number") {
-    throw new Error(`malformed answer: "${name}" is not a noul answer`);
+/** Validate every answer, probability, rubric, model and usage before any mutation. */
+export function validateAnswers(questions: Questions, raw: unknown): asserts raw is SystemOneResult<Questions> {
+  const result = requireRecord(raw, "result");
+  if (typeof result.model !== "string" || result.model.trim().length === 0) throw new Error("malformed response: model is missing");
+  const usage = requireRecord(result.usage, "usage");
+  for (const key of ["input_tokens", "output_tokens"]) {
+    if (!Number.isSafeInteger(usage[key]) || (usage[key] as number) < 0) throw new Error("malformed response: invalid usage");
   }
-  return entry.noul;
-}
-
-/**
- * Narrow one validated answer to its score shape.
- *
- * @param result - The validated decision result.
- * @param name - Score question name.
- * @returns The expected score, level distribution, and confidence.
- * @throws {Error} The answer is not a score answer.
- */
-function requireScoreAnswer(
-  result: SystemOneResult<Questions>,
-  name: string,
-): { score: number; probabilities: Record<string, number>; confidence: number } {
-  const entry = requireAnswerRecord(result, name);
-  if (entry.type !== "score" || typeof entry.score !== "number") {
-    throw new Error(`malformed answer: "${name}" is not a score answer`);
-  }
-  const probabilities = entry.probabilities as Record<string, number>;
-  return { score: entry.score, probabilities, confidence: entry.confidence as number };
-}
-
-/**
- * Validate the shape of every answer in a System One response.
- *
- * Jev is schema-constrained, but schema drift between the local server and the
- * catalog still produces malformed payloads; every answer is checked against
- * its question definition before any proposal is formed. Unknown answer keys
- * and unknown choice labels are rejected rather than silently dropped.
- *
- * @param questions - The question map the request was built from.
- * @param result - The parsed response payload from the SDK.
- * @throws {Error} The first violated invariant, with the answer path named.
- */
-export function validateAnswers(questions: Questions, result: SystemOneResult<Questions>): void {
-  const answerEntries = Object.entries(result.answers as unknown as Record<string, unknown>);
-  const questionNames = new Set(Object.keys(questions));
-  const answerMap = new Map(answerEntries);
-  for (const [name] of answerEntries) {
-    if (!questionNames.has(name)) {
-      throw new Error(`malformed response: unexpected answer "${name}" for an unasked question`);
-    }
-  }
+  const answers = requireRecord(result.answers, "answers");
+  if (Object.keys(answers).some(name => !Object.hasOwn(questions, name))) throw new Error("malformed response: unexpected answer");
   for (const [name, question] of Object.entries(questions)) {
-    const entry = requireAnswerRecord(result, name);
+    const entry = requireRecord(answers[name], name);
+    if (entry.type !== question.type) throw new Error(`malformed answer: ${name}.type`);
     if (question.type === "noul") {
-      if (entry.type !== "noul") throw new Error(`malformed answer: "${name}.type" is not "noul"`);
       requireProbability(entry.noul, `${name}.noul`);
       continue;
     }
     requireProbability(entry.confidence, `${name}.confidence`);
+    const labels = question.type === "choice" ? Object.keys(question.criteria) : question.criteria.map((_, index) => String(index));
+    requireDistribution(entry.probabilities, labels, `${name}.probabilities`);
     if (question.type === "choice") {
-      if (entry.type !== "choice") throw new Error(`malformed answer: "${name}.type" is not "choice"`);
-      const choice = entry.choice;
-      if (typeof choice !== "string" || !(choice in question.criteria)) {
-        throw new Error(`malformed answer: "${name}.choice" is not one of the offered options`);
-      }
-      const probabilities = requireAnswerRecord(result, name).probabilities as unknown;
-      if (typeof probabilities !== "object" || probabilities === null) {
-        throw new Error(`malformed answer: "${name}.probabilities" is not an object`);
-      }
-      for (const label of Object.keys(question.criteria)) {
-        requireProbability((probabilities as Record<string, unknown>)[label], `${name}.probabilities.${label}`);
-      }
-      continue;
-    }
-    if (entry.type !== "score") throw new Error(`malformed answer: "${name}.type" is not "score"`);
-    const rubricSize = question.criteria.length;
-    const scoreValue = entry.score;
-    if (typeof scoreValue !== "number" || !Number.isFinite(scoreValue) || scoreValue < -0.001 || scoreValue > rubricSize - 0.999) {
-      throw new Error(`malformed answer: "${name}.score" is outside the rubric range 0..${rubricSize - 1}`);
-    }
-    const probabilities = entry.probabilities as unknown;
-    if (typeof probabilities !== "object" || probabilities === null) {
-      throw new Error(`malformed answer: "${name}.probabilities" is not an object`);
-    }
-    for (let level = 0; level < rubricSize; level += 1) {
-      requireProbability((probabilities as Record<string, unknown>)[String(level)], `${name}.probabilities.${level}`);
+      if (typeof entry.choice !== "string" || !Object.hasOwn(question.criteria, entry.choice)) throw new Error(`malformed answer: ${name}.choice`);
+    } else {
+      if (typeof entry.score !== "number" || !Number.isFinite(entry.score) || entry.score < 0 || entry.score > labels.length - 1) throw new Error(`malformed answer: ${name}.score`);
+      const legend = requireRecord(entry.legend, `${name}.legend`);
+      if (JSON.stringify(labels.map(key => legend[key])) !== JSON.stringify(question.criteria) || Object.keys(legend).length !== labels.length) throw new Error(`malformed answer: ${name}.legend`);
     }
   }
 }
@@ -631,22 +539,22 @@ export function translateDecisionError(
   config: JevConfig,
 ): ReturnType<typeof createPmCliExpectedError> {
   if (isPmCliExpectedError(error)) return error;
-  if (error instanceof APIUserAbortError) {
+  if (error instanceof APIUserAbortError || (error instanceof Error && error.name === "TimeoutError")) {
     return createPmCliExpectedError(
       `Decision call exceeded its total deadline of ${config.totalDeadlineMs}ms (model "${config.model}" at ${config.baseUrl}). Raise jev.total_deadline_ms in settings.json or reduce the batch.`,
-      { context: { code: "jev_deadline_exceeded" }, cause: error },
+      { context: { code: "jev_deadline_exceeded" }, },
     );
   }
   if (error instanceof APITimeoutError) {
     return createPmCliExpectedError(
       `Decision endpoint timed out after ${error.timeoutMs}ms per attempt (model "${config.model}" at ${config.baseUrl}). Raise jev.timeout_ms in settings.json.`,
-      { context: { code: "jev_timeout" }, cause: error },
+      { context: { code: "jev_timeout" }, },
     );
   }
   if (error instanceof APIConnectionError) {
     return createPmCliExpectedError(
       `Decision endpoint is unreachable at ${config.baseUrl}. Start the ${config.provider === "ollama" ? "local Ollama server (ollama serve)" : "network path to the hosted TypeSafe API"} and retry.`,
-      { context: { code: "jev_endpoint_unreachable" }, cause: error },
+      { context: { code: "jev_endpoint_unreachable" }, },
     );
   }
   if (error instanceof APIError) {
@@ -668,13 +576,13 @@ export function translateDecisionError(
               : "jev_server_error";
     return createPmCliExpectedError(
       `Decision endpoint returned HTTP ${error.status} for model "${config.model}" at ${config.baseUrl}.${hint}`,
-      { context: { code }, cause: error },
+      { context: { code }, },
     );
   }
-  const message = error instanceof Error ? error.message : String(error);
+  const message = error instanceof Error && /^malformed (answer|response):/.test(error.message) ? error.message : "unrecognized response or transport failure";
   return createPmCliExpectedError(`Decision call failed validation: ${message}`, {
     context: { code: "jev_malformed_answer" },
-    cause: error instanceof Error ? error : undefined,
+    
   });
 }
 
@@ -706,13 +614,13 @@ export function parseQuestionsDocument(raw: unknown): Questions {
       context: { code: "jev_questions_empty" },
     });
   }
-  const questions: Questions = {};
+  const questions: Questions = Object.create(null) as Questions;
   for (const [name, value] of entries) {
     const question = requireQuestionRecord(name, value);
     const instructions = requireEntryType(name, question.instructions, "instructions");
     if (question.type === "choice") {
       const rawCriteria = requireCriteriaRecord(name, question.criteria);
-      const criteria: Record<string, EntryType> = {};
+      const criteria: Record<string, EntryType> = Object.create(null) as Record<string, EntryType>;
       for (const [label, description] of Object.entries(rawCriteria)) {
         criteria[label] = requireEntryType(name, description, `criteria.${label}`);
       }
@@ -763,7 +671,7 @@ function requireQuestionRecord(
   name: string,
   value: unknown,
 ): { type: "choice" | "score" | "noul"; criteria: unknown; instructions: unknown } {
-  if (typeof value !== "object" || value === null) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw createPmCliExpectedError(`Question "${name}" must be an object.`, { context: { code: "jev_question_shape" } });
   }
   const record = value as Record<string, unknown>;
@@ -805,11 +713,11 @@ function requireCriteriaRecord(name: string, criteria: unknown): Record<string, 
  * @param name - Question name used in diagnostics.
  * @param criteria - Raw criteria value of unknown shape.
  * @returns The rubric as an array of level descriptions.
- * @throws {PmCliExpectedError} The rubric is not an array of 2–10 entries.
+ * @throws {PmCliExpectedError} The rubric is not an array of at least two entries.
  */
 function requireRubric(name: string, criteria: unknown): readonly unknown[] {
-  if (!Array.isArray(criteria) || criteria.length < 2 || criteria.length > 10) {
-    throw createPmCliExpectedError(`Score question "${name}" needs an ordered criteria rubric of 2 to 10 levels.`, {
+  if (!Array.isArray(criteria) || criteria.length < 2) {
+    throw createPmCliExpectedError(`Score question "${name}" needs an ordered criteria rubric of at least 2 levels.`, {
       context: { code: "jev_score_criteria" },
     });
   }
@@ -869,7 +777,7 @@ async function openDecisionBoundary(ctx: CommandHandlerContext): Promise<Decisio
   const resolved = await resolveJevEndpoint(ctx.pm_root, process.env);
   const config = requireCallableEndpoint(resolved);
   const decision = createJevClient(resolved, process.env);
-  const pm = new PmClient({ pmRoot: ctx.pm_root, author: ctx.global.author });
+  const pm = new PmClient({ pmRoot: ctx.pm_root, cwd: ctx.source_workspace_root, author: ctx.global.author });
   return { pm, pmRoot: ctx.pm_root, decision, config };
 }
 
@@ -912,7 +820,7 @@ function probabilityOption(options: Record<string, unknown>, key: string, aliase
   const raw = readStringOption(options, key, aliases);
   if (raw === undefined) return fallback;
   const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1) return fallback;
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) throw createPmCliExpectedError(`--${key} must be a probability in [0,1].`);
   return parsed;
 }
 
@@ -925,7 +833,7 @@ function probabilityOption(options: Record<string, unknown>, key: string, aliase
  * @throws {PmCliExpectedError} The item does not exist in this tracker.
  */
 async function loadItem(workspace: DecisionWorkspace, id: string): Promise<ProjectableItem> {
-  const result = (await workspace.pm.get(id)) as { item: ProjectableItem };
+  const result = (await workspace.pm.get(id, { fields: "id,title,type,status,priority,tags,description,body" })) as { item: ProjectableItem };
   return result.item;
 }
 
@@ -987,13 +895,7 @@ export function buildTriageQuestions(settings: PmSettings): Questions {
   const registry = resolveItemTypeRegistry(settings);
   const criteria: Record<string, string> = {};
   for (const name of registry.types) {
-    const description = registry.by_type[name]?.description?.trim();
-    criteria[name] = description && description.length > 0 ? description : `Item type "${name}" in this project's schema`;
-  }
-  if (Object.keys(criteria).length === 0) {
-    throw createPmCliExpectedError("This tracker has no configured item types to choose from.", {
-      context: { code: "jev_no_item_types" },
-    });
+    criteria[name] = registry.by_type[name].description || `Item type "${name}" in this project's schema`;
   }
   return {
     type: {
@@ -1048,17 +950,16 @@ function roundProbability(value: number): number {
  * @param rubricSize - Number of rubric levels.
  * @returns The winning rubric level index.
  */
-function winningLevel(probabilities: Record<string, number>, score: number, rubricSize: number): number {
+function winningLevel(probabilities: Record<string, number>, rubricSize: number): number {
   let best = -1;
   let bestProbability = 0;
   for (let level = 0; level < rubricSize; level += 1) {
-    const probability = probabilities[String(level)] ?? 0;
+    const probability = probabilities[String(level)];
     if (probability > bestProbability + 1e-9) {
       bestProbability = probability;
       best = level;
     }
   }
-  if (best < 0) return Math.min(rubricSize - 1, Math.max(0, Math.round(score)));
   return best;
 }
 
@@ -1082,8 +983,8 @@ async function runTriageCommand(ctx: CommandHandlerContext): Promise<TriageDecis
   const questions = buildTriageQuestions(settings);
   const item = await loadItem(boundary, id.trim());
   const result = await runDecision(boundary.decision, boundary.config, projectItemState(item), questions);
-  const typeAnswer = requireChoiceAnswer(result, "type");
-  const scoreAnswer = requireScoreAnswer(result, "priority");
+  const typeAnswer = result.answers.type as ChoiceResponse;
+  const scoreAnswer = result.answers.priority as ScoreResponse;
   const proposals: TriageProposals = {
     type: {
       kind: "choice",
@@ -1093,22 +994,22 @@ async function runTriageCommand(ctx: CommandHandlerContext): Promise<TriageDecis
     },
     priority: {
       kind: "score",
-      level: winningLevel(scoreAnswer.probabilities, scoreAnswer.score, PRIORITY_RUBRIC.length),
+      level: winningLevel(scoreAnswer.probabilities, PRIORITY_RUBRIC.length),
       score: roundProbability(scoreAnswer.score),
       probabilities: scoreAnswer.probabilities,
       confidence: scoreAnswer.confidence,
     },
-    needs_human: { kind: "noul", probability: requireNoulAnswer(result, "needs_human") },
-    sensitive: { kind: "noul", probability: requireNoulAnswer(result, "sensitive") },
+    needs_human: { kind: "noul", probability: (result.answers.needs_human as NoulResponse).noul },
+    sensitive: { kind: "noul", probability: (result.answers.sensitive as NoulResponse).noul },
   };
   const threshold = probabilityOption(ctx.options, "minConfidence", ["min_confidence"], boundary.config.minConfidence);
   const written: string[] = [];
   if (readBooleanOption(ctx.options, "apply") === true) {
-    if ((proposals.type.probabilities[proposals.type.value] ?? 0) >= threshold && proposals.type.value !== item.type) {
+    if ((proposals.type.probabilities[proposals.type.value]) >= threshold && proposals.type.value !== item.type) {
       await boundary.pm.update(item.id, { type: proposals.type.value, message: "pm-jev triage proposal accepted" });
       written.push(`type=${proposals.type.value}`);
     }
-    const levelProbability = proposals.priority.probabilities[String(proposals.priority.level)] ?? 0;
+    const levelProbability = proposals.priority.probabilities[String(proposals.priority.level)];
     if (levelProbability >= threshold && proposals.priority.level !== item.priority) {
       await boundary.pm.update(item.id, { priority: proposals.priority.level, message: "pm-jev triage proposal accepted" });
       written.push(`priority=${proposals.priority.level}`);
@@ -1142,8 +1043,8 @@ function formatTriageReceipt(model: string, proposals: TriageProposals, threshol
   const parts = [
     `pm-jev triage receipt: model=${model}`,
     `catalog=${TRIAGE_CATALOG_VERSION}`,
-    `type=${proposals.type.value} p=${roundProbability(proposals.type.probabilities[proposals.type.value] ?? 0)}`,
-    `priority=${proposals.priority.level} p=${roundProbability(proposals.priority.probabilities[String(proposals.priority.level)] ?? 0)}`,
+    `type=${proposals.type.value} p=${roundProbability(proposals.type.probabilities[proposals.type.value])}`,
+    `priority=${proposals.priority.level} p=${roundProbability(proposals.priority.probabilities[String(proposals.priority.level)])}`,
     `needs_human=${roundProbability(proposals.needs_human.probability)}`,
     `sensitive=${roundProbability(proposals.sensitive.probability)}`,
     `threshold=${roundProbability(threshold)}`,
@@ -1235,7 +1136,7 @@ async function runDedupeCommand(ctx: CommandHandlerContext): Promise<DedupeDecis
   const body = readStringOption(ctx.options, "body") ?? "";
   const limit = integerOption(ctx.options, "limit", [], DEFAULT_DEDUPE_LIMIT, 1, 32);
   const boundary = await openDecisionBoundary(ctx);
-  const candidates = rankDedupeCandidates(await listAllItemMetadataLight(boundary.pmRoot), title, limit);
+  const candidates = rankDedupeCandidates((await boundary.pm.listAllComplete()).items, title, limit);
   if (candidates.length === 0) {
     return {
       duplicate_of: null,
@@ -1256,7 +1157,7 @@ async function runDedupeCommand(ctx: CommandHandlerContext): Promise<DedupeDecis
   const result = await runDecision(
     boundary.decision,
     boundary.config,
-    { proposed: { title, body }, candidates },
+    { proposed: { title: truncateStateText(title), body: truncateStateText(body) }, candidates: candidates.map(candidate => ({ ...candidate, title: truncateStateText(candidate.title) })) },
     {
       duplicate_of: {
         type: "choice",
@@ -1266,7 +1167,7 @@ async function runDedupeCommand(ctx: CommandHandlerContext): Promise<DedupeDecis
       },
     },
   );
-  const answer = requireChoiceAnswer(result, "duplicate_of");
+  const answer = result.answers.duplicate_of as ChoiceResponse;
   return {
     duplicate_of: answer.choice === "none" ? null : answer.choice,
     probability: answer.probabilities[answer.choice],
@@ -1334,12 +1235,12 @@ async function runAskCommand(ctx: CommandHandlerContext): Promise<AskDecision> {
   const answers: Record<string, AskAnswer> = {};
   for (const [name, question] of Object.entries(questions)) {
     if (question.type === "noul") {
-      answers[name] = { kind: "noul", probability: requireNoulAnswer(result, name) };
+      answers[name] = { kind: "noul", probability: (result.answers[name] as NoulResponse).noul };
     } else if (question.type === "choice") {
-      const answer = requireChoiceAnswer(result, name);
+      const answer = result.answers[name] as ChoiceResponse;
       answers[name] = { kind: "choice", value: answer.choice, probabilities: answer.probabilities, confidence: answer.confidence };
     } else {
-      const answer = requireScoreAnswer(result, name);
+      const answer = result.answers[name] as ScoreResponse;
       answers[name] = { kind: "score", score: answer.score, probabilities: answer.probabilities, confidence: answer.confidence };
     }
   }
@@ -1365,7 +1266,7 @@ async function readQuestionsFile(path: string): Promise<unknown> {
   } catch (error) {
     throw createPmCliExpectedError(`Questions file "${path}" is not valid JSON.`, {
       context: { code: "jev_questions_unreadable" },
-      cause: error instanceof Error ? error : undefined,
+      
     });
   }
 }
@@ -1376,6 +1277,8 @@ async function readQuestionsFile(path: string): Promise<unknown> {
 
 /** Gate command receipt: the calibrated verdict agents and CI branch on. */
 export interface GateDecision {
+  /** Host-owned process status for a negative verdict; omitted for a positive verdict. */
+  readonly exit_code?: 1;
   /** The proposition that was evaluated. */
   readonly proposition: string;
   /** Probability the model assigns to the proposition being true. */
@@ -1425,7 +1328,7 @@ async function runGateCommand(ctx: CommandHandlerContext): Promise<GateDecision>
     proposition: { type: "noul", instructions: proposition },
   });
   const threshold = probabilityOption(ctx.options, "threshold", [], boundary.config.gateThreshold);
-  const probability = requireNoulAnswer(result, "proposition");
+  const probability = (result.answers.proposition as NoulResponse).noul;
   const decision: GateDecision = {
     proposition,
     probability: roundProbability(probability),
@@ -1435,13 +1338,7 @@ async function runGateCommand(ctx: CommandHandlerContext): Promise<GateDecision>
     model: result.model,
     usage: result.usage,
   };
-  if (!decision.passed) {
-    throw createPmCliExpectedError(
-      `jev gate: proposition did not pass (probability ${decision.probability} < threshold ${threshold}).`,
-      { exitCode: 1, context: { code: "jev_gate_not_passed", value: `probability=${decision.probability}, threshold=${threshold}` } },
-    );
-  }
-  return decision;
+  return decision.passed ? decision : { ...decision, exit_code: 1 };
 }
 
 // ---------------------------------------------------------------------------
@@ -1485,7 +1382,7 @@ function parseOllamaTags(payload: unknown): DecisionModel[] {
     const entry = raw as { name?: unknown; capabilities?: unknown };
     if (typeof entry.name !== "string") continue;
     const capabilities = Array.isArray(entry.capabilities) ? entry.capabilities : [];
-    models.push({ name: entry.name, decision: capabilities.includes("decision") });
+    if (capabilities.includes("decision")) models.push({ name: entry.name, decision: true });
   }
   return models;
 }
@@ -1498,8 +1395,8 @@ function parseOllamaTags(payload: unknown): DecisionModel[] {
  * @throws {PmCliExpectedError} The endpoint is unreachable or serves an
  *         unrecognized payload.
  */
-async function readOllamaTagsInventory(config: JevConfig): Promise<DecisionModelInventory> {
-  const response = await fetch(`${config.baseUrl}/api/tags`);
+async function readOllamaTagsInventory(config: JevConfig, signal: AbortSignal): Promise<DecisionModelInventory> {
+  const response = await fetch(`${config.baseUrl}/api/tags`, { signal, redirect: "error" });
   if (!response.ok) {
     throw createPmCliExpectedError(
       `Could not list models at ${config.baseUrl}: /api/tags answered HTTP ${response.status}.`,
@@ -1531,12 +1428,14 @@ export async function listDecisionModels(
 ): Promise<DecisionModelInventory> {
   const config = requireCallableEndpoint(resolved);
   const client = createJevClient(resolved, env);
+  const signal = AbortSignal.timeout(config.totalDeadlineMs);
   try {
-    const cards = await client.models.list();
+    const cards = await client.models.list({ signal });
     return { source: "sdk", base_url: config.baseUrl, models: cards.map((card) => ({ name: card.name, decision: true })) };
   } catch (sdkError) {
     if (config.provider !== "ollama") throw translateDecisionError(sdkError, config);
-    return readOllamaTagsInventory(config);
+    try { return await readOllamaTagsInventory(config, signal); }
+    catch (error) { throw translateDecisionError(error, config); }
   }
 }
 
@@ -1619,7 +1518,7 @@ async function runDoctorCommand(ctx: CommandHandlerContext): Promise<DoctorRepor
       checks.push({
         name: "endpoint",
         ok: false,
-        detail: `model listing failed: ${error instanceof Error ? error.message : String(error)}`,
+        detail: `model listing failed: ${translateDecisionError(error, config).message}`,
       });
     }
   }
@@ -1774,6 +1673,7 @@ export default defineExtension({
   name: "pm-jev",
   version: "2026.10.5",
   description: "Typed, local-first System One decisions for pm items (Jev-style models via @typesafe-ai/sdk)",
+  /** Register the versioned decision commands with the pm host. */
   activate(api: ExtensionApi): void {
     registerCommands(api);
   },
