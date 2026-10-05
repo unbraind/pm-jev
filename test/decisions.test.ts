@@ -176,3 +176,14 @@ test("apply receipts cover abstention, unchanged proposals, ties and configured 
     assert.ok(q.type.type === "choice" && q.type.criteria.Bug === "A software defect");
   });
 });
+
+test("scratch projects ignore inherited PM_PATH scope overrides", async () => {
+  const previous = process.env.PM_PATH;
+  process.env.PM_PATH = "synthetic-parent-scope";
+  const fixture = await project();
+  try {
+    const created = await fixture.pm.create({ type: "Issue", title: "Synthetic scope check" });
+    assert.match(created.item.id, /^synthetic-/);
+    assert.equal((await fixture.pm.listAllComplete()).items.length, 1);
+  } finally { fixture.dispose(); if (previous === undefined) delete process.env.PM_PATH; else process.env.PM_PATH = previous; }
+});

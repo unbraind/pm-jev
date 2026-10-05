@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { PmClient, resolvePmRoot } from "@unbrained/pm-cli/sdk";
+import { PmClient, resolveImplicitPmRoot } from "@unbrained/pm-cli/sdk";
 import { createExtensionTestHarness } from "@unbrained/pm-cli/sdk/testing";
 import extension from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
@@ -13,7 +13,7 @@ import type { Questions } from "@typesafe-ai/sdk";
 export async function project() {
   const cwd = mkdtempSync(join(tmpdir(), "jev-test-"));
   execFileSync(resolve("node_modules/.bin/pm"), ["--no-extensions", "init", "--defaults", "--prefix", "synthetic", "--agent-guidance", "skip"], { cwd, env: { ...process.env, PM_PATH: "", PM_AUTHOR: "fixture" }, stdio: "pipe" });
-  const pmRoot = resolvePmRoot(cwd);
+  const pmRoot = resolveImplicitPmRoot(cwd);
   const pm = new PmClient({ cwd, pmRoot, noExtensions: true, author: "fixture" });
   const harness = await createExtensionTestHarness(extension, { capabilities: ["commands", "schema"] });
   return { cwd, pmRoot, pm, harness, dispose: () => rmSync(cwd, { recursive: true, force: true }) };

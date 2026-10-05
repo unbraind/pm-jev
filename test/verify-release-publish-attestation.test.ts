@@ -90,7 +90,7 @@ test("the resolved gate still refuses an unattested publish", () => {
  */
 const FAIL_OPEN_CONSTRUCTIONS: ReadonlyArray<{ id: string; script: string }> = [
   { id: "nonliteral-overwrite", script: "FLAG=--provenance\nFLAG=$OTHER\nnpm publish $FLAG --access public\n" },
-  { id: "nonliteral-overwrite-cmdsub", script: "FLAG=--provenance\nFLAG=$(cat /tmp/x)\nnpm publish $FLAG --access public\n" },
+  { id: "nonliteral-overwrite-cmdsub", script: "FLAG=--provenance\nFLAG=$(cat payload.txt)\nnpm publish $FLAG --access public\n" },
   { id: "quoted-metachar-value", script: "FLAG=\"--provenance;\"\nnpm publish $FLAG --access public\n" },
   { id: "single-quoted-metachar-value", script: "FLAG='--provenance;'\nnpm publish $FLAG --access public\n" },
   { id: "multiword-unreadable-tail", script: "FLAG=--provenance\nNOOP=x FLAG=$(true)\nnpm publish $FLAG --access public\n" },

@@ -7,10 +7,11 @@ Companion specification: `pm-cli-website-flnt` (read only).
 
 ## Mandatory gates
 
-- `npm run coverage`: 85 tests, 85 passed, 0 failed/skipped/canceled; 100% statements,
+- `npm run coverage`: 86 tests, 86 passed, 0 failed/skipped/canceled; 100% statements,
   branches, functions and lines across all 9 source files, including every script.
   Both the Node source-presence/coverage gate and the four-dimension c8 gate pass.
-  No source exemptions or coverage-ignore directives are used.
+  No source exemptions or coverage-ignore directives are used. c8 reports 2,531/2,531
+  statements and lines, 481/481 branches, and 61/61 functions.
 - `npm run typecheck` and `npm run build:test`: strict, erasable TypeScript passes.
 - `npm run lint`: fleet ESLint policy passes.
 - `npm run duplication`: 0% duplication, 0 clone pairs.
@@ -26,6 +27,10 @@ Companion specification: `pm-cli-website-flnt` (read only).
 
 The HTTP tests use a real in-process server and the official SDK, with the host's
 `createExtensionTestHarness` and real disposable projects initialized by `pm init`.
+Fixtures use the SDK workspace-only resolver so inherited PM_PATH cannot redirect them
+into the caller's tracker. Linked `pm test --run --progress` executions of coverage, live
+acceptance, and installation all pass in the supported schema context.
+
 They cover proposal-only behavior, probability-gated apply with one SDK update and
 receipt, configured/custom types, deterministic candidate ranking, all question
 primitives, malformed schemas/answers, prototype-like option names, hosted refusal,
@@ -47,12 +52,12 @@ A measured run with the semantic built-in type catalog returned:
 | --- | --- |
 | Triage type | Bug, probability 0.730584; Issue received 0.268022 |
 | Triage priority | Level 0, probability 0.980728 |
-| Dedupe | Existing synthetic item, probability 0.804467 |
+| Dedupe | Existing synthetic item, probability 0.766467 |
 | Ask defect | bug, probability 0.991604 |
 | Ask impact | score 1.978899 on a three-level rubric |
 | Ask broken | noul 0.983936 |
-| Positive gate | passed, probability approximately 0.94 |
-| Negative gate | failed, probability approximately 0.02, exit 1 |
+| Positive gate | passed, probability 0.940974 |
+| Negative gate | failed, probability 0.015977, exit 1 |
 
 The Bug/Issue overlap illustrates why field probabilities and configured thresholds
 matter. These observations establish bounded schema/plausibility acceptance, not
