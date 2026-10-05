@@ -633,6 +633,55 @@ async function loadItem(workspace, id) {
     return result.item;
 }
 /**
+ * Project a validated decision for compact text output without mutating it.
+ * Numbers are rounded to three decimals. Choices keep their top three options
+ * in stable probability order plus the chosen option; scores keep every level.
+ * Dedupe candidate details follow the same retained choice options.
+ *
+ * @param value - Full JSON-safe decision or nested receipt value.
+ * @returns A compact copy with explicit omitted_options on each choice.
+ */
+function compactDecisionValue(value) {
+    if (typeof value === "number")
+        return Math.round(value * 1000) / 1000;
+    if (Array.isArray(value))
+        return value.map(/** Compact each array entry independently. */ /** Compact each array entry independently. */ entry => compactDecisionValue(entry));
+    if (typeof value !== "object" || value === null)
+        return value;
+    const record = { ...value };
+    const selected = record.kind === "choice" ? record.value : "duplicate_of" in record ? record.duplicate_of ?? "none" : undefined;
+    if (typeof selected === "string") {
+        const entries = Object.entries(record.probabilities);
+        entries.sort(/** Keep equal-probability options in their original stable order. */ ([, left], [, right]) => right - left);
+        const retained = entries.slice(0, 3);
+        if (!retained.some(/** Keep the actual choice even when outside the top three. */ ([label]) => label === selected)) {
+            retained.push([selected, record.probabilities[selected]]);
+        }
+        record.probabilities = Object.fromEntries(retained);
+        record.omitted_options = entries.length - retained.length;
+        if (Array.isArray(record.candidates)) {
+            record.candidates = record.candidates.filter(/** Retain details only for visible candidate options. */ /** Retain details only for visible candidate options. */ candidate => retained.some(/** Match a candidate to its option id. */ ([label]) => label === candidate.id));
+        }
+    }
+    return Object.fromEntries(Object.entries(record).map(/** Compact fields while preserving strings, booleans and metadata. */ ([key, entry]) => [key, compactDecisionValue(entry)]));
+}
+/**
+ * Run a decision with full precision, then select its host-facing presentation.
+ * Host-owned JSON flags bypass compaction; --full preserves the text receipt.
+ *
+ * @param ctx - Parsed flags and host renderer preferences.
+ * @param run - Decision handler whose authorization arithmetic stays untouched.
+ * @returns Full or compact receipt for the host to render.
+ */
+async function decisionOutput(ctx, run) {
+    const result = await run(ctx);
+    if (ctx.global.json === true || ctx.global.outputFormat === "json" ||
+        (ctx.global.json === undefined && ctx.global.outputFormat === undefined && ctx.global.defaultOutputFormat === "json") ||
+        readBooleanOption(ctx.options, "full") === true)
+        return result;
+    return compactDecisionValue(result);
+}
+/**
  * Build the batched triage question catalog for one tracker.
  *
  * The choice criteria are the tracker's *actual* configured item types (read
@@ -678,7 +727,7 @@ export function buildTriageQuestions(settings) {
     };
 }
 /**
- * Round a probability to two decimals for receipts and output.
+ * Round a probability to two decimals for receipt comments.
  *
  * @param value - Probability in `[0, 1]`.
  * @returns The probability rounded to two decimals.
@@ -740,7 +789,7 @@ async function runTriageCommand(ctx) {
         priority: {
             kind: "score",
             level: winningLevel(scoreAnswer.probabilities, PRIORITY_RUBRIC.length),
-            score: roundProbability(scoreAnswer.score),
+            score: scoreAnswer.score,
             probabilities: scoreAnswer.probabilities,
             confidence: scoreAnswer.confidence,
         },
@@ -814,7 +863,7 @@ export function rankDedupeCandidates(items, title, limit) {
         const { score } = scoreItemSimilarity(title, item.title);
         if (score <= 0)
             continue;
-        scored.push({ id: item.id, title: item.title, type: item.type, status: item.status, score: roundProbability(score) });
+        scored.push({ id: item.id, title: item.title, type: item.type, status: item.status, score });
     }
     scored.sort(/** Break equal rank ties by stable item id. */ (left, right) => right.score - left.score || left.id.localeCompare(right.id));
     return scored.slice(0, limit);
@@ -951,15 +1000,13 @@ async function readQuestionsFile(path) {
 /**
  * Evaluate one yes/no proposition and return a gate verdict for CI/agents.
  *
- * The exit code is derived in code from the calibrated probability: 0 when the
- * proposition holds (`probability >= threshold`), 1 otherwise. Noul answers
- * carry no separate confidence, so the threshold is the only calibration knob
- * and is deliberately explicit.
+ * The proposition holds when its full-precision probability meets the inclusive
+ * threshold. Exit 0 means that outcome matches --expect (true by default); exit
+ * 1 means it differs. Display rounding never changes this comparison.
  *
  * @param ctx - Host command context (pm_root, options, global).
- * @returns The gate receipt; the command throws exit code 1 when not passed.
- * @throws {PmCliExpectedError} Configuration/transport failure, or exit code 1
- *         with the verdict in the message when the gate does not pass.
+ * @returns The gate receipt with a host-owned exit code 1 when ok is false.
+ * @throws {PmCliExpectedError} Invalid options or configuration/transport failure.
  */
 async function runGateCommand(ctx) {
     const proposition = readStringOption(ctx.options, "noul", ["proposition"]);
@@ -975,6 +1022,11 @@ async function runGateCommand(ctx) {
             context: { code: "jev_gate_state_required" },
         });
     }
+    const rawExpected = ctx.options.expect;
+    if (rawExpected !== undefined && rawExpected !== "true" && rawExpected !== "false") {
+        throw createPmCliExpectedError("--expect must be true or false.");
+    }
+    const expected = rawExpected !== "false";
     const boundary = await openDecisionBoundary(ctx);
     const state = text !== undefined ? truncateStateText(text) : projectItemState(await loadItem(boundary, itemId.trim()));
     const result = await runDecision(boundary.decision, boundary.config, state, {
@@ -986,12 +1038,14 @@ async function runGateCommand(ctx) {
         proposition,
         probability,
         threshold,
-        passed: probability >= threshold,
+        holds: probability >= threshold,
+        expected,
+        ok: (probability >= threshold) === expected,
         source: text !== undefined ? "text" : "item",
         model: result.model,
         usage: result.usage,
     };
-    return decision.passed ? decision : { ...decision, exit_code: 1 };
+    return decision.ok ? decision : { ...decision, exit_code: 1 };
 }
 /**
  * Parse an Ollama `/api/tags` payload into a decision-model inventory.
@@ -1144,8 +1198,15 @@ async function runModelsCommand(ctx) {
 // ---------------------------------------------------------------------------
 // Flag and command definitions
 // ---------------------------------------------------------------------------
+/** Shared text-output escape hatch; --full is not reserved by the pinned host. */
+const FULL_FLAG = {
+    long: "--full",
+    value_type: "boolean",
+    description: "Show full precision and all choice options (JSON is always full)",
+};
 /** Flags for the triage command. */
 const TRIAGE_FLAGS = [
+    FULL_FLAG,
     {
         long: "--apply",
         value_type: "boolean",
@@ -1160,12 +1221,14 @@ const TRIAGE_FLAGS = [
 ];
 /** Flags for the dedupe command. */
 const DEDUPE_FLAGS = [
+    FULL_FLAG,
     { long: "--title", value_name: "text", value_type: "string", description: "Title of the item about to be created (required)" },
     { long: "--body", value_name: "text", value_type: "string", description: "Optional proposed body text for context" },
     { long: "--limit", value_name: "n", value_type: "string", description: "Maximum candidates ranked into the choice (default 8, max 32)" },
 ];
 /** Flags for the ask command. */
 const ASK_FLAGS = [
+    FULL_FLAG,
     {
         long: "--questions",
         value_name: "file",
@@ -1175,14 +1238,16 @@ const ASK_FLAGS = [
 ];
 /** Flags for the gate command. */
 const GATE_FLAGS = [
+    FULL_FLAG,
     { long: "--noul", value_name: "proposition", value_type: "string", description: "Yes/no proposition to gate on (required)" },
     { long: "--text", value_name: "text", value_type: "string", description: "Free text to evaluate the proposition over" },
     { long: "--item", value_name: "id", value_type: "string", description: "Item id whose projected state the proposition is evaluated over" },
+    { long: "--expect", value_name: "true|false", value_type: "string", description: "Expected proposition outcome; exit 0 when holds matches (default true; use false for secrets/private data)" },
     {
         long: "--threshold",
         value_name: "p",
         value_type: "string",
-        description: "Probability threshold for passing (default: jev.gate_threshold setting, else 0.5)",
+        description: "Inclusive threshold for holds (default: jev.gate_threshold setting, else 0.5)",
     },
 ];
 /**
@@ -1207,7 +1272,7 @@ function registerCommands(api) {
         ],
         examples: ["pm jev triage my-item-1a2b", "pm jev triage my-item-1a2b --apply --min-confidence 0.9"],
         /** Dispatch the registered command with the host-resolved tracker and flags. */
-        run: (ctx) => runTriageCommand(ctx),
+        run: (ctx) => decisionOutput(ctx, runTriageCommand),
     }));
     api.registerCommand(defineCommand({
         name: "jev dedupe",
@@ -1217,7 +1282,7 @@ function registerCommands(api) {
         failure_hints: ["Ranking is deterministic in code; only the confirmation needs the decision endpoint (pm jev doctor)"],
         examples: ['pm jev dedupe --title "Fix login crash"', 'pm jev dedupe --title "Fix login crash" --body "Steps: ..." --limit 12'],
         /** Dispatch the registered command with the host-resolved tracker and flags. */
-        run: (ctx) => runDedupeCommand(ctx),
+        run: (ctx) => decisionOutput(ctx, runDedupeCommand),
     }));
     api.registerCommand(defineCommand({
         name: "jev ask",
@@ -1228,20 +1293,20 @@ function registerCommands(api) {
         failure_hints: ["The questions file must be a JSON object of named choice/score/noul questions"],
         examples: ["pm jev ask my-item-1a2b --questions questions.json"],
         /** Dispatch the registered command with the host-resolved tracker and flags. */
-        run: (ctx) => runAskCommand(ctx),
+        run: (ctx) => decisionOutput(ctx, runAskCommand),
     }));
     api.registerCommand(defineCommand({
         name: "jev gate",
         description: "Exit 0/1 from a calibrated noul proposition over text or an item, for agents and CI",
         intent: "Deterministic CI/agent gating on a probabilistic yes/no decision",
         flags: GATE_FLAGS,
-        failure_hints: ["Exit code 1 means the proposition did not pass the threshold, not that the command failed"],
+        failure_hints: ["Exit code 1 means holds differs from --expect; inspect holds, expected and ok"],
         examples: [
-            'pm jev gate --noul "contains private data" --text "..."',
+            'pm jev gate --noul "contains private data" --text "..." --expect false',
             'pm jev gate --noul "needs human review" --item my-item-1a2b --threshold 0.7',
         ],
         /** Dispatch the registered command with the host-resolved tracker and flags. */
-        run: (ctx) => runGateCommand(ctx),
+        run: (ctx) => decisionOutput(ctx, runGateCommand),
     }));
     api.registerCommand(defineCommand({
         name: "jev models",

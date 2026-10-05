@@ -137,6 +137,6 @@ test("near-threshold gate output preserves the probability used for its exit cod
     const gate = await fixture.harness.runCommand({ command: "jev gate", options: { noul: "synthetic proposition", text: "synthetic text", threshold: "0.5" }, pmRoot: fixture.pmRoot });
     assert.equal(gate.exitCode, 1);
     assert.equal((gate.result as { probability: number }).probability, 0.4999);
-    assert.equal((gate.result as { passed: boolean }).passed, false);
+    assert.equal((gate.result as { holds: boolean }).holds, false);
   });
 });

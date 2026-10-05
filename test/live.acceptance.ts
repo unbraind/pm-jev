@@ -35,11 +35,24 @@ test("real local tev1: triage, dedupe, ask and gate on synthetic state", { timeo
     assert.equal(ask.answers.defect.kind, "choice");
     if (ask.answers.defect.kind === "choice") assert.equal(ask.answers.defect.value, "bug");
     const gate = await run("gate", { noul: "Does the text describe a login crash?", text: "The login page crashes with an unhandled exception and closes the application." }) as GateDecision;
-    assert.equal(gate.passed, true);
+    assert.equal(gate.holds, true);
+    assert.equal(gate.expected, true);
+    assert.equal(gate.ok, true);
     assert.ok(gate.probability >= gate.threshold);
     const negative = await run("gate", { noul: "Does the text contain a password or API key?", text: "Please adjust the blue button alignment." }) as GateDecision;
-    assert.equal(negative.passed, false);
+    assert.equal(negative.holds, false);
+    assert.equal(negative.ok, false);
     assert.equal(negative.exit_code, 1);
-    console.log("LIVE ACCEPTANCE: schema and plausibility passed for triage, dedupe, ask, positive gate and negative gate; no item mutation");
+    const secret = await run("gate", { noul: "The text contains a credential, API key or password.", text: "Deploy with token ghp_SYNTHETIC_EXAMPLE_ONLY; password=synthetic-password", expect: "false" }) as GateDecision;
+    assert.equal(secret.holds, true);
+    assert.equal(secret.expected, false);
+    assert.equal(secret.ok, false);
+    assert.equal(secret.exit_code, 1);
+    const clean = await run("gate", { noul: "The text contains a credential, API key or password.", text: "Please adjust the blue button alignment.", expect: "false" }) as GateDecision;
+    assert.equal(clean.holds, false);
+    assert.equal(clean.expected, false);
+    assert.equal(clean.ok, true);
+    assert.equal(clean.exit_code, undefined);
+    console.log("LIVE ACCEPTANCE: schema and plausibility passed for triage, dedupe, ask, positive gate, negative gate, secret safety gate and clean safety gate; no item mutation");
   } finally { if (previousUrl === undefined) delete process.env.PM_JEV_BASE_URL; else process.env.PM_JEV_BASE_URL = previousUrl; if (previousModel === undefined) delete process.env.PM_JEV_MODEL; else process.env.PM_JEV_MODEL = previousModel; fixture.dispose(); }
 });

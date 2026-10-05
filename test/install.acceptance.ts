@@ -46,9 +46,25 @@ test("packed npm and Bun consumers import the library; pm installs the local ext
       assert.equal(decision.model, "tev1:4b");
       console.log(`${executable}: installed pm extension live triage passed`);
     }
+    const pmBin = join(root, "node_modules/.bin/pm");
+    const compact = await execute(pmBin, ["jev", "triage", created.item.id], { cwd: fixture.cwd, env, timeout: 120000 });
+    assert.match(compact.stdout, /omitted_options: 8/);
+    const full = await execute(pmBin, ["jev", "triage", created.item.id, "--full"], { cwd: fixture.cwd, env, timeout: 120000 });
+    assert.doesNotMatch(full.stdout, /omitted_options/);
+    assert.match(full.stdout, /Reminder: /);
+    console.log("installed CLI: compact TOON and full flag passed");
+    const safetyArgs = ["--json", "jev", "gate", "--noul", "The text contains a credential, API key or password.", "--expect", "false", "--text"];
+    const secret = await execute(pmBin, [...safetyArgs, "Deploy with token ghp_SYNTHETIC_EXAMPLE_ONLY; password=synthetic-password"], { cwd: fixture.cwd, env }).then(() => { throw new Error("secret safety gate unexpectedly exited 0"); }, error => error as { code: number; stdout: string });
+    assert.equal(secret.code, 1);
+    const unsafe = JSON.parse(secret.stdout) as { holds: boolean; expected: boolean; ok: boolean };
+    assert.deepEqual([unsafe.holds, unsafe.expected, unsafe.ok], [true, false, false]);
+    const clean = await execute(pmBin, [...safetyArgs, "Please adjust the blue button alignment."], { cwd: fixture.cwd, env });
+    const safe = JSON.parse(clean.stdout) as { holds: boolean; expected: boolean; ok: boolean };
+    assert.deepEqual([safe.holds, safe.expected, safe.ok], [false, false, true]);
+    console.log("installed CLI: secret safety gate exited 1; clean safety gate exited 0");
     const negative = await execute(join(root, "node_modules/.bin/pm"), ["--json", "jev", "gate", "--noul", "Does this text contain a password?", "--text", "A blue button needs alignment."], { cwd: fixture.cwd, env }).then(() => { throw new Error("negative gate unexpectedly passed"); }, error => error as { code: number; stdout: string });
     assert.equal(negative.code, 1);
-    assert.equal((JSON.parse(negative.stdout) as { passed: boolean }).passed, false);
+    assert.equal((JSON.parse(negative.stdout) as { holds: boolean }).holds, false);
     console.log("installed CLI: negative gate emitted JSON and exited 1");
   } finally { fixture.dispose(); rmSync(scratch, { recursive: true, force: true }); }
 });

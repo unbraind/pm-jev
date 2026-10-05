@@ -1,0 +1,30 @@
+id: pm-jev-43xa
+title: Gate outcomes need explicit proposition and expected-result semantics
+description: "Replace ambiguous passed with holds, expected and ok; add expect false safety gates and inclusive threshold tests. Follow-up to pm-jev-nn3x from orchestrator testing."
+type: Issue
+status: in_progress
+priority: 2
+tags[1]: "pkg:pm-jev"
+created_at: "2026-10-05T06:12:32.962Z"
+updated_at: "2026-10-05T06:23:48.258Z"
+author: codex-sol
+parent: pm-jev-0w3q
+release: 2026.10.5
+comments[4]{created_at,author,text}:
+  "2026-10-05T06:12:54.232Z",codex-sol,"TDD plan: add adversarial synthetic secret and clean text tests for expect false, default and explicit true, invalid expect rejection before inference, and inclusive p == threshold behavior. Gate predicates and exit codes must use full precision before output rounding. Record commands before implementation."
+  "2026-10-05T06:16:10.375Z",codex-sol,"Red phase: linked node --test test/agent-ux.test.ts failed as expected because holds/expected/ok were absent. Host-linked test result tracking is disabled, so explicit PM comments carry the red/green receipts."
+  "2026-10-05T06:18:50.331Z",codex-sol,"Green phase: linked agent UX tests pass. Local npm run test:live passed all 7 decisions: triage, dedupe, mixed ask, positive default gate, negative default gate, secret expect false gate (p=0.9586815127864688, exit 1) and clean expect false gate (p=0.11993540918170091, exit 0). No item mutation."
+  "2026-10-05T06:23:47.039Z",codex-sol,"Verification complete: 88/88 tests pass with all-source coverage 100/100/100/100. Local tev1 live acceptance and actual packed-host safety CLI acceptance pass; secret expect false exits 1, clean exits 0. Inclusive boundaries and full-precision verdicts are tested. README and docs/agent-ux-validation.md carry the semantics and receipts; rebuilt dist is included. Item remains in progress for orchestrator review."
+files[5]{path,scope}:
+  index.ts,project
+  test/agent-ux.test.ts,project
+  test/install.acceptance.ts,project
+  test/live.acceptance.ts,project
+  test/transport.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/agent-ux.test.ts,project,codex-sol,"2026-10-05T06:12:54.817Z",local_mutation,feat/typed-local-decisions
+  "npm run test:live",project,codex-sol,"2026-10-05T06:17:19.663Z",local_mutation,feat/typed-local-decisions
+docs[2]{path,scope}:
+  docs/agent-ux-validation.md,project
+  README.md,project
+body: ""

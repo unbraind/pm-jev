@@ -1,5 +1,8 @@
 # pm-jev v0 validation receipt
 
+This is the initial v0 snapshot. See [the agent UX validation receipt](agent-ux-validation.md)
+for the gate outcome and compact-output updates, current checks and measurements.
+
 Date: 2026-10-05. Package version: 2026.10.5, an unpublished v0 slice.
 Branch: `feat/typed-local-decisions`. This is synthetic local evidence; no hosted
 TypeSafe request, GitHub repository creation, push, or npm publication occurred.

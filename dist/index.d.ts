@@ -322,8 +322,12 @@ export interface GateDecision {
     readonly probability: number;
     /** Threshold the probability was compared against. */
     readonly threshold: number;
-    /** Whether the gate passed (`probability >= threshold`). */
-    readonly passed: boolean;
+    /** Whether the proposition holds (`probability >= threshold`, inclusive). */
+    readonly holds: boolean;
+    /** Expected proposition outcome; defaults to true, false for safety gates. */
+    readonly expected: boolean;
+    /** Whether the proposition outcome matches the expectation. */
+    readonly ok: boolean;
     /** Which state source the proposition was evaluated over. */
     readonly source: "text" | "item";
     /** Resolved model revision reported by the endpoint. */

@@ -44,6 +44,12 @@ A full development checkout with many dependency files can exceed the host's 10,
 local-source scan cap. The extracted local package directory avoids that cap while
 using the same shipped entry and dependencies. The host copies the extension; npm/Bun
 installs its dependencies in the destination project. Use the host-owned `--json` global flag; pm-jev declares no competing JSON flag.
+Default text/TOON decisions round probabilities, confidence and scores to three decimals.
+Choices show the top three options plus the chosen option when needed, with
+`omitted_options` counting hidden options; dedupe candidate details follow that selection.
+Use `--full` on triage, dedupe, ask or gate for full precision and every option.
+`--json` and `--output-format json` always retain full precision and every option.
+Receipt comments continue to round probabilities to two decimals.
 Runtime tracker paths come from the host and SDK, including custom pm storage roots.
 
 ## Commands
@@ -54,10 +60,22 @@ Runtime tracker paths come from the host and SDK, including custom pm storage ro
 | `pm jev triage <id> --apply --min-confidence 0.8` | Apply qualifying type/priority changes and append a receipt comment. |
 | `pm jev dedupe --title "Fix login crash" --body "Details" --limit 8` | Rank all tracker items in code, then choose a candidate id or `none`. |
 | `pm jev ask <id> --questions questions.json` | Validate and answer caller-defined choice, score and noul questions. |
-| `pm jev gate --noul "Does this text contain credentials?" --text "Synthetic text" --threshold 0.5` | Exit 0 when the proposition probability meets the threshold; otherwise JSON verdict and exit 1. |
+| `pm jev gate --noul "The text contains credentials or private data." --text "Synthetic text" --threshold 0.5 --expect false` | Exit 0 when the proposition does not hold; exit 1 when credentials/private data are detected. |
 | `pm jev gate --noul "Does this item need human input?" --item <id>` | Evaluate the minimal item projection instead of text. |
 | `pm jev models` | List decision models and the discovery source. |
 | `pm jev doctor` | Diagnose configuration, privacy opt-in, reachability and model availability without sending item state. |
+
+Gate output uses `holds` for `probability >= threshold` (equality counts as true),
+`expected` for `--expect true|false` (default `true`), and `ok` for `holds === expected`.
+The comparison uses full precision before display rounding; exit status is `ok ? 0 : 1`.
+The former `passed` field has been removed. Operational errors remain errors.
+
+| `holds` | `expected` | `ok` | Exit |
+| --- | --- | --- | --- |
+| true | true (default) | true | 0 |
+| false | true (default) | false | 1 |
+| true | false (secret/private-data gate) | false | 1 |
+| false | false (secret/private-data gate) | true | 0 |
 
 Triage and ask project only title, type, description, body, tags and status. Text
 fields and free gate text are bounded to 4,000 characters; tags to 32 entries of
@@ -215,13 +233,15 @@ coverage, pm health, package contents, production dependencies, changelog and pu
 attestation, plus Bun dependency installation. CodeQL and Dependabot workflows are included.
 
 `test:live` calls the real local tev1 model for triage, dedupe, mixed ask, positive gate
-and negative gate using synthetic data. `test:install` installs packed artifacts with
+and secret/clean safety gates using synthetic data. `test:install` installs packed artifacts with
 npm and Bun, installs a local directory extracted from the packed artifact with `pm install` into a scratch project,
 then runs real triage through npx/bunx and checks a negative CLI gate's JSON/exit status.
 Both need local Ollama and run separately from CI, whose runners have no Ollama model.
 See [the v0 validation receipt](docs/v0-validation.md) for measured evidence.
 
 The daily release workflow generates CHANGELOG.md and release notes with pm-changelog.
+Generation and drift checks include closed and in-progress implementations;
+tracker closure remains the orchestrator's verification step.
 It must be disabled by the orchestrator when the repository is created until the owner
 approves releasing this new package. No GitHub repository, remote, push or npm publication
 has been performed by this work.
