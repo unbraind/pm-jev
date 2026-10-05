@@ -1,0 +1,12 @@
+id: pm-jev-6psc
+title: Hosted-TypeSafe live acceptance pending an API key
+description: "No approved TypeSafe account credential exists yet; live acceptance against https://api.typesafe.ai (each primitive, mixed batch, error matrix) is deferred until an API key and consented test account are established. Local Ollama tev1:4b covers the v0 live acceptance."
+type: Issue
+status: open
+priority: 2
+tags[3]: deferred,"pkg:pm-jev",typesafe-ai
+created_at: "2026-10-05T04:38:50.560Z"
+updated_at: "2026-10-05T04:38:50.560Z"
+author: pi-glm
+parent: pm-jev-0w3q
+body: ""
