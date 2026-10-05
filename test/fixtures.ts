@@ -43,7 +43,7 @@ export async function endpoint() {
 
 /** Produce a normalized response for the actual supplied question schema. */
 export function answers(questions: Questions) {
-  const entries: Record<string, unknown> = {};
+  const entries: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   for (const [name, question] of Object.entries(questions)) {
     if (question.type === "noul") { entries[name] = { type: "noul", noul: 0.9 }; continue; }
     const labels = question.type === "choice" ? Object.keys(question.criteria) : question.criteria.map((_, index) => String(index));

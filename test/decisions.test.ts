@@ -79,6 +79,10 @@ test("malformed answers and metadata never become decisions", () => {
     }
   }
   for (const result of bad) assert.throws(() => validateAnswers(questions, result), /malformed/);
+  // A question named "__proto__" whose answer is absent must be reported missing, not read from Object.prototype.
+  const protoQuestions = JSON.parse(`{"__proto__":{"type":"noul"}}`) as Questions;
+  assert.throws(() => validateAnswers(protoQuestions, { model: "tev1:4b", answers: {}, usage: { input_tokens: 1, output_tokens: 1 } }), /missing answer __proto__/);
+  validateAnswers(protoQuestions, answers(protoQuestions));
 });
 
 test("ask, dedupe, gate and discovery dispatch on a real temporary tracker", async () => {
@@ -88,10 +92,12 @@ test("ask, dedupe, gate and discovery dispatch on a real temporary tracker", asy
     const created = await fixture.pm.create({ type: "Issue", title: "Fix login crash", body: "Synthetic body", tags: "regression", comment: ["HIDDEN_COMMENT"] });
     const id = created.item.id;
     const qpath = `${fixture.cwd}/questions.json`;
-    writeFileSync(qpath, JSON.stringify({ c: { type: "choice", criteria: { bug: "defect", feature: "new" } }, s: { type: "score", criteria: ["low", "high"] }, n: { type: "noul" } }));
+    // "__proto__" is a legal caller-defined name and must survive as an answer key.
+    writeFileSync(qpath, `{"c":{"type":"choice","criteria":{"bug":"defect","feature":"new"}},"s":{"type":"score","criteria":["low","high"]},"n":{"type":"noul"},"__proto__":{"type":"noul"}}`);
     const run = (command: string, options: Record<string, unknown> = {}, args: string[] = []) => fixture.harness.runCommand({ command: `jev ${command}`, options, args, pmRoot: fixture.pmRoot });
     const ask = await run("ask", { questions: qpath }, [id]);
     assert.equal((ask.result as { answers: Record<string, unknown> }).answers.n !== undefined, true);
+    assert.equal(Object.hasOwn((ask.result as { answers: Record<string, unknown> }).answers, "__proto__"), true);
     const state = (server.requests[0].body as { state: Record<string, unknown> }).state;
     assert.equal(state.body, "Synthetic body");
     assert.equal(JSON.stringify(state).includes("HIDDEN_COMMENT"), false);

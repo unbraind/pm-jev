@@ -362,6 +362,9 @@ export function validateAnswers(questions, raw) {
     if (Object.keys(answers).some(/** Reject answers for questions that were never asked. */ /** Reject answers for questions that were never asked. */ name => !Object.hasOwn(questions, name)))
         throw new Error("malformed response: unexpected answer");
     for (const [name, question] of Object.entries(questions)) {
+        // Own-key check: a missing "__proto__" answer must not resolve to Object.prototype.
+        if (!Object.hasOwn(answers, name))
+            throw new Error(`malformed response: missing answer ${name}`);
         const entry = requireRecord(answers[name], name);
         if (entry.type !== question.type)
             throw new Error(`malformed answer: ${name}.type`);
@@ -975,7 +978,8 @@ async function runAskCommand(ctx) {
     const boundary = await openDecisionBoundary(ctx);
     const item = await loadItem(boundary, id.trim());
     const result = await runDecision(boundary.decision, boundary.config, projectItemState(item), questions);
-    const answers = {};
+    // Null prototype: question names are caller-defined, so "__proto__" must stay an ordinary key.
+    const answers = Object.create(null);
     for (const [name, question] of Object.entries(questions)) {
         if (question.type === "noul") {
             answers[name] = { kind: "noul", probability: result.answers[name].noul };
