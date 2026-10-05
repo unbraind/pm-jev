@@ -11,6 +11,14 @@ function settings(pmRoot: string, jev: unknown): void {
   writeFileSync(getSettingsPath(pmRoot), JSON.stringify({ jev }));
 }
 
+test("trailing slashes on the endpoint base URL are trimmed before the API path is appended", async () => {
+  const fixture = await project();
+  try {
+    const resolved = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: "http://localhost:11434///" });
+    assert.equal(resolved.config.baseUrl, "http://localhost:11434");
+  } finally { fixture.dispose(); }
+});
+
 test("external URL overrides cannot bypass opt-in even under the local provider", async () => {
   const fixture = await project();
   try {

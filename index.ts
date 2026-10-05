@@ -305,11 +305,15 @@ export async function resolveJevEndpoint(
     3_600_000,
   );
 
+  // Trim trailing slashes without a regex: `/\/+$/` backtracks polynomially on
+  // long runs of "/" in caller-supplied configuration (CodeQL js/polynomial-redos).
+  let trimmedBaseUrl = baseUrl;
+  while (trimmedBaseUrl.endsWith("/")) trimmedBaseUrl = trimmedBaseUrl.slice(0, -1);
   return {
     hostedBlocked,
     config: {
       provider,
-      baseUrl: baseUrl.replace(/\/+$/, ""),
+      baseUrl: trimmedBaseUrl,
       model,
       timeoutMs,
       totalDeadlineMs,

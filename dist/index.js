@@ -205,11 +205,16 @@ export async function resolveJevEndpoint(pmRoot, env) {
         : provider === "typesafe" && stringSetting(env.TYPESAFE_API_KEY) === undefined ? "missing_api_key" : null;
     const timeoutMs = numberSetting(section.timeout_ms, DEFAULT_TIMEOUT_MS, TIMEOUT_MS_MIN, TIMEOUT_MS_MAX);
     const totalDeadlineMs = numberSetting(section.total_deadline_ms, Math.max(DEFAULT_TOTAL_DEADLINE_MS, timeoutMs * 3), TIMEOUT_MS_MIN, 3_600_000);
+    // Trim trailing slashes without a regex: `/\/+$/` backtracks polynomially on
+    // long runs of "/" in caller-supplied configuration (CodeQL js/polynomial-redos).
+    let trimmedBaseUrl = baseUrl;
+    while (trimmedBaseUrl.endsWith("/"))
+        trimmedBaseUrl = trimmedBaseUrl.slice(0, -1);
     return {
         hostedBlocked,
         config: {
             provider,
-            baseUrl: baseUrl.replace(/\/+$/, ""),
+            baseUrl: trimmedBaseUrl,
             model,
             timeoutMs,
             totalDeadlineMs,
