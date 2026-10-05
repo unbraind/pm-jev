@@ -129,7 +129,7 @@ export interface ProjectedItemState {
 /**
  * Project one pm item into least-privilege decision state.
  *
- * Only title, type, status, priority, tags, description and body are exposed —
+ * Only title, type, status, tags, description and body are exposed —
  * never comments, notes, history, authors, or filesystem paths. Text fields are
  * truncated to {@link STATE_TEXT_LIMIT} to bound tokens and keep the model off
  * "large irrelevant state", a documented Jev weakness.
@@ -233,7 +233,6 @@ export interface TriageDecision {
  *
  * @param settings - Tracker settings from `readSettings`.
  * @returns The typed question map for the triage batch.
- * @throws {PmCliExpectedError} The tracker has no configured item types.
  */
 export declare function buildTriageQuestions(settings: PmSettings): Questions;
 /** One code-ranked duplicate candidate for the model to confirm. */
@@ -386,6 +385,7 @@ export interface DoctorReport {
     /** The resolved endpoint configuration (secrets never included). */
     readonly config: JevConfig;
 }
+/** Public pm extension activation entry and release-managed identity. */
 declare const _default: {
     name: string;
     version: string;

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { endpoint, project, answers, scenario } from "./fixtures.ts";
-import { resolveJevEndpoint, requireCallableEndpoint, parseQuestionsDocument, validateAnswers, projectItemState, buildTriageQuestions } from "../index.ts";
+import { resolveJevEndpoint, requireCallableEndpoint, parseQuestionsDocument, validateAnswers, projectItemState, buildTriageQuestions, rankDedupeCandidates } from "../index.ts";
 import { writeFileSync, rmSync } from "node:fs";
 import { getSettingsPath, readSettings } from "@unbrained/pm-cli/sdk";
 import type { Questions, SystemOneResult } from "@typesafe-ai/sdk";
@@ -143,10 +143,36 @@ test("local defaults, settings edge cases and bounded state stay deterministic",
     rmSync(getSettingsPath(fixture.pmRoot));
     assert.equal((await resolveJevEndpoint(fixture.pmRoot, {})).config.model, "tev1:4b");
     const state = projectItemState({ id: "synthetic-id", title: "x".repeat(5000), type: "Issue", status: "open", tags: Array.from({ length: 40 }, () => "x".repeat(5000)) });
-    assert.ok(state.title.length < 4100); assert.equal(state.tags.length, 32); assert.equal(state.body, "");
+    assert.ok(state.title.length < 4100); assert.equal(state.tags.length, 32); assert.equal(state.tags[0].length, 128); assert.equal(state.body, "");
     const defaults = await readSettings(fixture.pmRoot);
     const q = buildTriageQuestions(defaults);
     assert.equal(q.type.type, "choice");
     assert.throws(() => parseQuestionsDocument({ x: {} }), /unsupported/);
   } finally { fixture.dispose(); }
+});
+
+test("apply receipts cover abstention, unchanged proposals, ties and configured custom types", async () => {
+  await scenario(async (fixture, server) => {
+    await fixture.pm.schemaAddType("Bug", { description: "A software defect" });
+    await fixture.pm.schemaAddType("Maintenance");
+    const item = await fixture.pm.create({ type: "Issue", title: "Synthetic login crash", priority: 0 });
+    const ranked = rankDedupeCandidates([{ ...item.item, id: "z" }, { ...item.item, id: "a" }, { ...item.item, id: "unrelated", title: "Nebula taxonomy" }], item.item.title, 2);
+    assert.deepEqual(ranked.map(candidate => candidate.id), ["a", "z"]);
+    const run = (options = {}) => fixture.harness.runCommand({ command: "jev triage", args: [item.item.id], options: { apply: true, ...options }, pmRoot: fixture.pmRoot });
+    const result = await run({ minConfidence: "1" });
+    assert.deepEqual((result.result as { applied: string[] }).applied, []);
+    assert.match((await fixture.pm.comments(item.item.id)).comments[0].text, /applied=none/);
+    server.setReply((_, response, body) => {
+      const result = answers((body as { questions: Questions }).questions);
+      result.answers.priority = { ...(result.answers.priority as object), score: 0.5, probabilities: { 0: 0.5, 1: 0.5, 2: 0, 3: 0, 4: 0 } };
+      response.end(JSON.stringify(result));
+    });
+    assert.deepEqual((await run({ minConfidence: "0.8" })).result && ((await run({ minConfidence: "0.8" })).result as { applied: string[] }).applied, []);
+    await assert.rejects(run({ minConfidence: "garbage" }), /probability/);
+    server.setReply((_, response, body) => response.end(JSON.stringify(answers((body as { questions: Questions }).questions))));
+    const dedupe = await fixture.harness.runCommand({ command: "jev dedupe", options: { title: "Synthetic login crash", limit: "garbage" }, pmRoot: fixture.pmRoot });
+    assert.equal(dedupe.handled, true);
+    const q = buildTriageQuestions(await readSettings(fixture.pmRoot));
+    assert.ok(q.type.type === "choice" && q.type.criteria.Bug === "A software defect");
+  });
 });

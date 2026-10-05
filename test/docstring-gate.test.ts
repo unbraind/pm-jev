@@ -205,3 +205,17 @@ test("docstring gate isMainInvocation throws rather than skipping the gate when 
     "an unresolvable entry must propagate, not silently decline to run the gate",
   );
 });
+
+test("docstrings are required on short internal helpers, callbacks and default exports", () => {
+  const root = mkdtempSync(join(tmpdir(), "jev-function-docs-"));
+  try {
+    writeFileSync(join(root, "index.ts"), 'function tiny() { return 1; }\nconst callback = () => 1;\nexport default tiny;\n// ordinary comment\n/**a*/\nconst weak = () => 1;\nconst holes = [,];\n');
+    const result = runGate(root);
+    assert.equal(result.exitCode, 1);
+    assert.match(result.stderr, /tiny/);
+    assert.match(result.stderr, /ArrowFunctionExpression/);
+    assert.match(result.stderr, /ExportDefaultDeclaration/);
+    writeFileSync(join(root, "index.ts"), '/** Compute a tiny synthetic result. */\nfunction tiny() { return 1; }\n/** Expose the synthetic function. */\nexport default tiny;\nconst object = { /** Return the synthetic value from a method. */ method() { return tiny(); } };\n');
+    assert.equal(runGate(root).exitCode, 0);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

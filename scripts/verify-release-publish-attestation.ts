@@ -33,6 +33,7 @@ import { auditPublishAttestation, report, verify } from "pm-ops/attestation";
 
 import { isMainInvocation } from "./main-invocation.ts";
 
+/** Expose the fleet auditor for behavioral package tests. */
 export { auditPublishAttestation, verify };
 
 /**
@@ -49,7 +50,7 @@ export { auditPublishAttestation, verify };
  */
 export function runIfMain(argv: string[], moduleUrl: string, root: string): boolean {
   if (!isMainInvocation(argv, moduleUrl)) return false;
-  report(verify(root), (line) => process.stdout.write(`${line}\n`), (code) => { process.exitCode = code; });
+  report(verify(root), /** Forward safe auditor output to the command stream. */ (line) => process.stdout.write(`${line}\n`), /** Preserve the auditor exit status without terminating imports. */ (code) => { process.exitCode = code; });
   return true;
 }
 

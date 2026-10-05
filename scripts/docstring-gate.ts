@@ -24,8 +24,10 @@
 
 import { resolve } from "node:path";
 import { isMainInvocation } from "./main-invocation.ts";
+/** Re-export the canonical entry guard for gate behavior tests. */
 export { isMainInvocation } from "./main-invocation.ts";
 
+import { auditFunctionDocs } from "./function-docs.ts";
 import { analyzeDocstringCoverage } from "pm-ops/docstrings";
 
 /** Outcome of one gate run, held as plain strings so a test can inspect it. */
@@ -61,10 +63,17 @@ const defaultRoot = resolve(import.meta.dirname, "..");
  *          appends the trailing newline when it writes them.
  */
 export function runGate(root: string): GateResult {
-  const report = analyzeDocstringCoverage({ root });
+  const base = analyzeDocstringCoverage({ root });
+  const functions = auditFunctionDocs(root);
+  const unique = new Map([...base.violations, ...functions.violations].map(
+    /** Keep one diagnostic when both analyzers reject the same source line. */
+    violation => [`${violation.file}:${violation.line}`, violation],
+  ));
+  const report = { ...base, declarations_checked: functions.checked, violations: [...unique.values()] };
 
   if (report.violations.length > 0) {
     const lines = report.violations.map(
+      /** Render each undocumented declaration without including its source body. */
       (violation) => `  ${violation.file}:${violation.line}  ${violation.symbol} - ${violation.reason}`,
     );
     return {
@@ -73,8 +82,8 @@ export function runGate(root: string): GateResult {
       stderr:
         `docstring-gate: ${report.violations.length} violation(s) across ${report.files_scanned} file(s):\n\n` +
         `${lines.join("\n")}\n\n` +
-        "Every exported declaration, every public member of an exported class, and every\n" +
-        "non-exported function with a body over the threshold needs a JSDoc block that adds\n" +
+        "Every exported declaration and every function, including short helpers and callbacks,\n" +
+        "needs a JSDoc block that adds\n" +
         "information the identifier does not.",
     };
   }
@@ -118,6 +127,6 @@ export function main(args: readonly string[]): void {
 // uncoverable branch. The placeholder takes the same argument as `main` so
 // element 0 - the one a test-run import invokes - is a covered function call
 // rather than an unused expression.
-[(_args: readonly string[]): void => {}, main][Number(isMainInvocation(process.argv, import.meta.url))](
+[/** Leave imports inert; callers invoke main explicitly. */ (_args: readonly string[]): void => {}, main][Number(isMainInvocation(process.argv, import.meta.url))](
   process.argv.slice(2),
 );

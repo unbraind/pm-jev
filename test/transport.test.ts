@@ -1,3 +1,5 @@
+import { writeFileSync } from "node:fs";
+import { getSettingsPath } from "@unbrained/pm-cli/sdk";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { TypeSafeClient, APIConnectionError, APITimeoutError, APIUserAbortError, APIError } from "@typesafe-ai/sdk";
@@ -95,5 +97,46 @@ test("safe error mapping preserves expected errors and hides arbitrary provider 
       const mapped = translateDecisionError(error, { ...config, provider: "typesafe" });
       assert.equal(mapped.message.includes("SENSITIVE"), false);
     }
+  });
+});
+
+test("none is a real model option and hosted discovery failures have no native fallback", async () => {
+  await scenario(async (fixture, server) => {
+    await fixture.pm.create({ type: "Issue", title: "Synthetic title" });
+    server.setReply((_, response, body) => {
+      const result = answers((body as { questions: Questions }).questions);
+      result.answers.duplicate_of = { type: "choice", choice: "none", confidence: 0.8, probabilities: Object.fromEntries(Object.keys(((body as { questions: Questions }).questions.duplicate_of as { criteria: object }).criteria).map(label => [label, label === "none" ? 1 : 0])) };
+      response.end(JSON.stringify(result));
+    });
+    const dedupe = await fixture.harness.runCommand({ command: "jev dedupe", options: { title: "Synthetic title" }, pmRoot: fixture.pmRoot });
+    assert.equal((dedupe.result as { duplicate_of: null }).duplicate_of, null);
+    const resolved = await resolveJevEndpoint(fixture.pmRoot, process.env);
+    server.setReply((_, response) => { response.statusCode = 422; response.end(); });
+    const start = server.requests.length;
+    await assert.rejects(listDecisionModels({ ...resolved, config: { ...resolved.config, provider: "typesafe" } }, { TYPESAFE_API_KEY: "synthetic" }), /HTTP 422/);
+    assert.equal(server.requests.length - start, 1);
+  });
+});
+
+test("doctor distinguishes a missing hosted model on the synthetic endpoint", async () => {
+  await scenario(async (fixture, server) => {
+    const previous = process.env.TYPESAFE_API_KEY;
+    process.env.TYPESAFE_API_KEY = "synthetic";
+    try {
+      writeFileSync(getSettingsPath(fixture.pmRoot), JSON.stringify({ jev: { provider: "typesafe", allow_external: true } }));
+      server.setReply((_, response) => response.end(JSON.stringify({ models: [{ name: "other" }] })));
+      const result = await fixture.harness.runCommand({ command: "jev doctor", pmRoot: fixture.pmRoot });
+      assert.equal((result.result as { status: string }).status, "degraded");
+    } finally { if (previous === undefined) delete process.env.TYPESAFE_API_KEY; else process.env.TYPESAFE_API_KEY = previous; }
+  });
+});
+
+test("near-threshold gate output preserves the probability used for its exit code", async () => {
+  await scenario(async (fixture, server) => {
+    server.setReply((_, response) => response.end(JSON.stringify({ model: "tev1:4b", answers: { proposition: { type: "noul", noul: 0.4999 } }, usage: { input_tokens: 1, output_tokens: 1 } })));
+    const gate = await fixture.harness.runCommand({ command: "jev gate", options: { noul: "synthetic proposition", text: "synthetic text", threshold: "0.5" }, pmRoot: fixture.pmRoot });
+    assert.equal(gate.exitCode, 1);
+    assert.equal((gate.result as { probability: number }).probability, 0.4999);
+    assert.equal((gate.result as { passed: boolean }).passed, false);
   });
 });

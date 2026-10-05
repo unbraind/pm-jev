@@ -76,6 +76,21 @@ export const PRIORITY_RUBRIC: readonly [string, string, string, string, string] 
   "minimal: backlog item with no urgency",
 ];
 
+/** Semantic fallback descriptions for host built-ins whose schema omits descriptions. */
+const BUILTIN_TYPE_CRITERIA: Readonly<Record<string, string>> = {
+  Issue: "A defect, bug, crash, or broken existing behavior",
+  Feature: "A request for a new capability or new user-facing behavior",
+  Task: "A concrete implementation action that is not itself a defect or a new capability",
+  Chore: "Routine maintenance, dependency updates, or housekeeping",
+  Epic: "A large objective grouping multiple related features or tasks",
+  Decision: "A choice requiring human judgment, approval, or direction",
+  Event: "An occurrence scheduled at a particular time",
+  Meeting: "A scheduled discussion between people",
+  Milestone: "A significant project checkpoint or delivery outcome",
+  Plan: "An ordered sequence of proposed work steps",
+  Reminder: "A prompt to revisit something at a particular time",
+};
+
 /** Default local Ollama base URL when neither settings nor env configure one. */
 const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434";
 /** Default decision model served by a stock local Ollama install. */
@@ -319,7 +334,7 @@ export async function resolveJevEndpoint(
  */
 export function createJevClient(resolved: ResolvedJevEndpoint, env: Record<string, string | undefined>): TypeSafeClient {
   const config = requireCallableEndpoint(resolved);
-  const apiKey = config.provider === "ollama" ? OLLAMA_API_KEY : stringSetting(env.TYPESAFE_API_KEY) ?? "";
+  const apiKey = config.provider === "ollama" ? OLLAMA_API_KEY : stringSetting(env.TYPESAFE_API_KEY);
   return new TypeSafeClient({
     apiKey,
     baseURL: config.baseUrl,
@@ -411,7 +426,7 @@ function truncateStateText(value: string | undefined): string {
 /**
  * Project one pm item into least-privilege decision state.
  *
- * Only title, type, status, priority, tags, description and body are exposed —
+ * Only title, type, status, tags, description and body are exposed —
  * never comments, notes, history, authors, or filesystem paths. Text fields are
  * truncated to {@link STATE_TEXT_LIMIT} to bound tokens and keep the model off
  * "large irrelevant state", a documented Jev weakness.
@@ -424,7 +439,7 @@ export function projectItemState(item: ProjectableItem): ProjectedItemState {
     title: truncateStateText(item.title),
     type: truncateStateText(item.type),
     status: truncateStateText(item.status),
-    tags: item.tags.slice(0, 32).map(tag => truncateStateText(tag)),
+    tags: item.tags.slice(0, 32).map(/** Bound each retained tag before inference. */ tag => tag.slice(0, 128)),
     description: truncateStateText(item.description),
     body: truncateStateText(item.body),
   };
@@ -452,7 +467,7 @@ function requireRecord(value: unknown, label: string): Record<string, unknown> {
 /** Check exact probability keys and a normalized distribution within rounding tolerance. */
 function requireDistribution(value: unknown, labels: readonly string[], label: string): void {
   const distribution = requireRecord(value, label);
-  if (Object.keys(distribution).length !== labels.length || Object.keys(distribution).some(key => !labels.includes(key))) {
+  if (Object.keys(distribution).length !== labels.length || Object.keys(distribution).some(/** Reject options not offered by the catalog. */ key => !labels.includes(key))) {
     throw new Error(`malformed response: ${label} has unknown or missing options`);
   }
   let sum = 0;
@@ -472,7 +487,7 @@ export function validateAnswers(questions: Questions, raw: unknown): asserts raw
     if (!Number.isSafeInteger(usage[key]) || (usage[key] as number) < 0) throw new Error("malformed response: invalid usage");
   }
   const answers = requireRecord(result.answers, "answers");
-  if (Object.keys(answers).some(name => !Object.hasOwn(questions, name))) throw new Error("malformed response: unexpected answer");
+  if (Object.keys(answers).some(/** Reject answers for questions that were never asked. */ name => !Object.hasOwn(questions, name))) throw new Error("malformed response: unexpected answer");
   for (const [name, question] of Object.entries(questions)) {
     const entry = requireRecord(answers[name], name);
     if (entry.type !== question.type) throw new Error(`malformed answer: ${name}.type`);
@@ -481,14 +496,14 @@ export function validateAnswers(questions: Questions, raw: unknown): asserts raw
       continue;
     }
     requireProbability(entry.confidence, `${name}.confidence`);
-    const labels = question.type === "choice" ? Object.keys(question.criteria) : question.criteria.map((_, index) => String(index));
+    const labels = question.type === "choice" ? Object.keys(question.criteria) : question.criteria.map(/** Derive score level labels in code. */ (_, index) => String(index));
     requireDistribution(entry.probabilities, labels, `${name}.probabilities`);
     if (question.type === "choice") {
       if (typeof entry.choice !== "string" || !Object.hasOwn(question.criteria, entry.choice)) throw new Error(`malformed answer: ${name}.choice`);
     } else {
       if (typeof entry.score !== "number" || !Number.isFinite(entry.score) || entry.score < 0 || entry.score > labels.length - 1) throw new Error(`malformed answer: ${name}.score`);
       const legend = requireRecord(entry.legend, `${name}.legend`);
-      if (JSON.stringify(labels.map(key => legend[key])) !== JSON.stringify(question.criteria) || Object.keys(legend).length !== labels.length) throw new Error(`malformed answer: ${name}.legend`);
+      if (JSON.stringify(labels.map(/** Compare the returned rubric in its original order. */ key => legend[key])) !== JSON.stringify(question.criteria) || Object.keys(legend).length !== labels.length) throw new Error(`malformed answer: ${name}.legend`);
     }
   }
 }
@@ -626,12 +641,13 @@ export function parseQuestionsDocument(raw: unknown): Questions {
       }
       questions[name] = { type: "choice", instructions, criteria };
     } else if (question.type === "score") {
-      const rubric = requireRubric(name, question.criteria).map((level, index) =>
+      const rubric = requireRubric(name, question.criteria).map(/** Validate each supplied rubric description. */ (level, index) =>
         requireEntryType(name, level, `criteria[${index}]`),
       );
       questions[name] = { type: "score", instructions, criteria: rubric as unknown as ScoreCriteria };
     } else {
-      questions[name] = { type: "noul", instructions, criteria: requireNoulCriteria(name, question.criteria) };
+      const criteria = requireNoulCriteria(name, question.criteria);
+      questions[name] = criteria === null ? { type: "noul", instructions } : { type: "noul", instructions, criteria };
     }
   }
   return questions;
@@ -782,32 +798,6 @@ async function openDecisionBoundary(ctx: CommandHandlerContext): Promise<Decisio
 }
 
 /**
- * Read a bounded integer option with a default.
- *
- * @param options - Parsed command options (camel-cased flag keys).
- * @param key - Primary option key.
- * @param aliases - Alternative option keys accepted for the same flag.
- * @param fallback - Value returned when the option is absent or invalid.
- * @param low - Smallest accepted value.
- * @param high - Largest accepted value.
- * @returns The clamped integer option value.
- */
-function integerOption(
-  options: Record<string, unknown>,
-  key: string,
-  aliases: string[],
-  fallback: number,
-  low: number,
-  high: number,
-): number {
-  const raw = readStringOption(options, key, aliases);
-  if (raw === undefined) return fallback;
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(high, Math.max(low, Math.trunc(parsed)));
-}
-
-/**
  * Read a bounded probability option with a default.
  *
  * @param options - Parsed command options (camel-cased flag keys).
@@ -889,13 +879,12 @@ export interface TriageDecision {
  *
  * @param settings - Tracker settings from `readSettings`.
  * @returns The typed question map for the triage batch.
- * @throws {PmCliExpectedError} The tracker has no configured item types.
  */
 export function buildTriageQuestions(settings: PmSettings): Questions {
   const registry = resolveItemTypeRegistry(settings);
   const criteria: Record<string, string> = {};
   for (const name of registry.types) {
-    criteria[name] = registry.by_type[name].description || `Item type "${name}" in this project's schema`;
+    criteria[name] = registry.by_type[name].description || BUILTIN_TYPE_CRITERIA[name] || `Item type "${name}" in this project's schema`;
   }
   return {
     type: {
@@ -941,12 +930,10 @@ function roundProbability(value: number): number {
 /**
  * Compute the rubric level with the highest reported probability.
  *
- * Ties resolve deterministically toward the lowest such level; when no level
- * reports a positive probability the expected score is rounded instead. The
- * model never performs this arithmetic.
+ * Ties resolve deterministically toward the lowest such level. The validated
+ * distribution is normalized and has a positive maximum; arithmetic stays in code.
  *
  * @param probabilities - Level probabilities keyed by rubric index.
- * @param score - Expected score reported by the model.
  * @param rubricSize - Number of rubric levels.
  * @returns The winning rubric level index.
  */
@@ -1004,17 +991,18 @@ async function runTriageCommand(ctx: CommandHandlerContext): Promise<TriageDecis
   };
   const threshold = probabilityOption(ctx.options, "minConfidence", ["min_confidence"], boundary.config.minConfidence);
   const written: string[] = [];
+  const changes: { type?: string; priority?: number } = {};
   if (readBooleanOption(ctx.options, "apply") === true) {
     if ((proposals.type.probabilities[proposals.type.value]) >= threshold && proposals.type.value !== item.type) {
-      await boundary.pm.update(item.id, { type: proposals.type.value, message: "pm-jev triage proposal accepted" });
+      changes.type = proposals.type.value;
       written.push(`type=${proposals.type.value}`);
     }
     const levelProbability = proposals.priority.probabilities[String(proposals.priority.level)];
     if (levelProbability >= threshold && proposals.priority.level !== item.priority) {
-      await boundary.pm.update(item.id, { priority: proposals.priority.level, message: "pm-jev triage proposal accepted" });
+      changes.priority = proposals.priority.level;
       written.push(`priority=${proposals.priority.level}`);
     }
-    await boundary.pm.comments(item.id, { add: formatTriageReceipt(result.model, proposals, threshold, written) });
+    await boundary.pm.update(item.id, { ...changes, comment: [formatTriageReceipt(result.model, proposals, threshold, written)], message: "pm-jev triage proposals and receipt" });
   }
   return {
     item: item.id,
@@ -1109,7 +1097,7 @@ export function rankDedupeCandidates(items: readonly ItemMetadata[], title: stri
     if (score <= 0) continue;
     scored.push({ id: item.id, title: item.title, type: item.type, status: item.status, score: roundProbability(score) });
   }
-  scored.sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));
+  scored.sort(/** Break equal rank ties by stable item id. */ (left, right) => right.score - left.score || left.id.localeCompare(right.id));
   return scored.slice(0, limit);
 }
 
@@ -1134,7 +1122,7 @@ async function runDedupeCommand(ctx: CommandHandlerContext): Promise<DedupeDecis
     });
   }
   const body = readStringOption(ctx.options, "body") ?? "";
-  const limit = integerOption(ctx.options, "limit", [], DEFAULT_DEDUPE_LIMIT, 1, 32);
+  const limit = Math.trunc(numberSetting(readStringOption(ctx.options, "limit"), DEFAULT_DEDUPE_LIMIT, 1, 32));
   const boundary = await openDecisionBoundary(ctx);
   const candidates = rankDedupeCandidates((await boundary.pm.listAllComplete()).items, title, limit);
   if (candidates.length === 0) {
@@ -1151,13 +1139,13 @@ async function runDedupeCommand(ctx: CommandHandlerContext): Promise<DedupeDecis
   }
   const criteria: Record<string, string> = {};
   for (const candidate of candidates) {
-    criteria[candidate.id] = `${candidate.title} (type ${candidate.type}, status ${candidate.status}, title similarity ${candidate.score})`;
+    criteria[candidate.id] = `${truncateStateText(candidate.title)} (type ${candidate.type}, status ${candidate.status}, title similarity ${candidate.score})`;
   }
   criteria.none = "The proposed item is not a duplicate of any candidate";
   const result = await runDecision(
     boundary.decision,
     boundary.config,
-    { proposed: { title: truncateStateText(title), body: truncateStateText(body) }, candidates: candidates.map(candidate => ({ ...candidate, title: truncateStateText(candidate.title) })) },
+    { proposed: { title: truncateStateText(title), body: truncateStateText(body) }, candidates: candidates.map(/** Bound candidate text without changing deterministic ranks. */ candidate => ({ ...candidate, title: truncateStateText(candidate.title) })) },
     {
       duplicate_of: {
         type: "choice",
@@ -1323,7 +1311,7 @@ async function runGateCommand(ctx: CommandHandlerContext): Promise<GateDecision>
     });
   }
   const boundary = await openDecisionBoundary(ctx);
-  const state: unknown = text !== undefined ? text : projectItemState(await loadItem(boundary, (itemId as string).trim()));
+  const state: unknown = text !== undefined ? truncateStateText(text) : projectItemState(await loadItem(boundary, (itemId as string).trim()));
   const result = await runDecision(boundary.decision, boundary.config, state, {
     proposition: { type: "noul", instructions: proposition },
   });
@@ -1331,7 +1319,7 @@ async function runGateCommand(ctx: CommandHandlerContext): Promise<GateDecision>
   const probability = (result.answers.proposition as NoulResponse).noul;
   const decision: GateDecision = {
     proposition,
-    probability: roundProbability(probability),
+    probability,
     threshold,
     passed: probability >= threshold,
     source: text !== undefined ? "text" : "item",
@@ -1431,7 +1419,7 @@ export async function listDecisionModels(
   const signal = AbortSignal.timeout(config.totalDeadlineMs);
   try {
     const cards = await client.models.list({ signal });
-    return { source: "sdk", base_url: config.baseUrl, models: cards.map((card) => ({ name: card.name, decision: true })) };
+    return { source: "sdk", base_url: config.baseUrl, models: cards.map(/** Convert the decision provider card to the public inventory. */ (card) => ({ name: card.name, decision: true })) };
   } catch (sdkError) {
     if (config.provider !== "ollama") throw translateDecisionError(sdkError, config);
     try { return await readOllamaTagsInventory(config, signal); }
@@ -1498,8 +1486,8 @@ async function runDoctorCommand(ctx: CommandHandlerContext): Promise<DoctorRepor
   if (resolved.hostedBlocked === null) {
     try {
       const inventory = await listDecisionModels(resolved, process.env);
-      const decisionCapable = inventory.models.filter((model) => model.decision).length;
-      const served = inventory.models.some((model) => model.name === config.model);
+      const decisionCapable = inventory.models.filter(/** Count only models advertising decision support. */ (model) => model.decision).length;
+      const served = inventory.models.some(/** Verify the configured model appears in the inventory. */ (model) => model.name === config.model);
       checks.push(
         {
           name: "endpoint",
@@ -1522,7 +1510,7 @@ async function runDoctorCommand(ctx: CommandHandlerContext): Promise<DoctorRepor
       });
     }
   }
-  return { status: checks.every((check) => check.ok) ? "ok" : "degraded", checks, config };
+  return { status: checks.every(/** Aggregate the diagnostic checks without sending state. */ (check) => check.ok) ? "ok" : "degraded", checks, config };
 }
 
 /**
@@ -1607,6 +1595,7 @@ function registerCommands(api: ExtensionApi): void {
         "Check the endpoint with: pm jev doctor",
       ],
       examples: ["pm jev triage my-item-1a2b", "pm jev triage my-item-1a2b --apply --min-confidence 0.9"],
+      /** Dispatch the registered command with the host-resolved tracker and flags. */
       run: (ctx: CommandHandlerContext) => runTriageCommand(ctx),
     }),
   );
@@ -1618,6 +1607,7 @@ function registerCommands(api: ExtensionApi): void {
       flags: DEDUPE_FLAGS,
       failure_hints: ["Ranking is deterministic in code; only the confirmation needs the decision endpoint (pm jev doctor)"],
       examples: ['pm jev dedupe --title "Fix login crash"', 'pm jev dedupe --title "Fix login crash" --body "Steps: ..." --limit 12'],
+      /** Dispatch the registered command with the host-resolved tracker and flags. */
       run: (ctx: CommandHandlerContext) => runDedupeCommand(ctx),
     }),
   );
@@ -1630,6 +1620,7 @@ function registerCommands(api: ExtensionApi): void {
       flags: ASK_FLAGS,
       failure_hints: ["The questions file must be a JSON object of named choice/score/noul questions"],
       examples: ["pm jev ask my-item-1a2b --questions questions.json"],
+      /** Dispatch the registered command with the host-resolved tracker and flags. */
       run: (ctx: CommandHandlerContext) => runAskCommand(ctx),
     }),
   );
@@ -1644,6 +1635,7 @@ function registerCommands(api: ExtensionApi): void {
         'pm jev gate --noul "contains private data" --text "..."',
         'pm jev gate --noul "needs human review" --item my-item-1a2b --threshold 0.7',
       ],
+      /** Dispatch the registered command with the host-resolved tracker and flags. */
       run: (ctx: CommandHandlerContext) => runGateCommand(ctx),
     }),
   );
@@ -1653,6 +1645,7 @@ function registerCommands(api: ExtensionApi): void {
       description: "List the decision models served by the configured endpoint",
       intent: "Discover which local or hosted decision models are available",
       examples: ["pm jev models"],
+      /** Dispatch the registered command with the host-resolved tracker and flags. */
       run: (ctx: CommandHandlerContext) => runModelsCommand(ctx),
     }),
   );
@@ -1662,6 +1655,7 @@ function registerCommands(api: ExtensionApi): void {
       description: "Check pm-jev configuration, privacy opt-in, endpoint reachability, and model availability",
       intent: "Diagnose why decisions fail without sending any item state",
       examples: ["pm jev doctor"],
+      /** Dispatch the registered command with the host-resolved tracker and flags. */
       run: (ctx: CommandHandlerContext) => runDoctorCommand(ctx),
     }),
   );
@@ -1669,6 +1663,7 @@ function registerCommands(api: ExtensionApi): void {
 
 // The extension identity. The version string is release-managed: the daily
 // release workflow rewrites the first `version: "..."` literal in this file.
+/** Public pm extension activation entry and release-managed identity. */
 export default defineExtension({
   name: "pm-jev",
   version: "2026.10.5",

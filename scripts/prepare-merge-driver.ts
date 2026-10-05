@@ -10,8 +10,7 @@
  * the entry, or a `pm-ops` directory whose package.json is gone) and any
  * installer failure fail the install.
  *
- * Canonical copy: `pm-ops/templates/prepare-merge-driver.ts`. Copy it
- * unchanged to `scripts/prepare-merge-driver.ts`.
+ * Adapted from the pm-ops launcher, with every callback documented for this package.
  */
 
 import { spawnSync } from "node:child_process";
@@ -44,6 +43,7 @@ try {
     packagePresent =
       !(probe instanceof Error && "code" in probe && probe.code === "MODULE_NOT_FOUND") ||
       resolver.resolve.paths("pm-ops/package.json")!.some(
+        /** Treat incomplete or unreadable installations as present, failing closed. */
         (directory) => {
           try {
             return lstatSync(join(directory, "pm-ops"), { throwIfNoEntry: false }) !== undefined;

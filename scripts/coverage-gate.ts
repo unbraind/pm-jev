@@ -115,6 +115,7 @@ interface TsConfig {
  * be called from tests without terminating the test process.
  */
 class CoverageGateFailure extends Error {
+  /** Initialize a gate failure without exiting the test process. */
   constructor(message: string) {
     super(message);
     this.name = "CoverageGateFailure";
@@ -262,7 +263,7 @@ export function runCoverageGate(
   let expected: string[];
   try {
     const sourceCollector = runtime.sourceCollector ?? collectSources;
-    expected = config.sources.flatMap((source) => sourceCollector(rootDir, join(rootDir, source), skipDirs));
+    expected = config.sources.flatMap(/** Enumerate every configured source root. */ (source) => sourceCollector(rootDir, join(rootDir, source), skipDirs));
   } catch (err) {
     if (err instanceof CoverageGateFailure) {
       console.error(err.message);
@@ -271,7 +272,7 @@ export function runCoverageGate(
     throw err;
   }
   const exempt = new Set(config.ignore ?? []);
-  const required = expected.filter((file) => !exempt.has(file));
+  const required = expected.filter(/** Keep every source that has no type-only exemption. */ (file) => !exempt.has(file));
 
   // Validate every `ignore` entry is under `sources` before resolving emit
   // paths. A stale `ignore` entry pointing at a file that was removed or never
@@ -364,7 +365,7 @@ export function runCoverageGate(
       // Passing the enumerated paths rather than a directory glob keeps the two
       // in step by construction, and keeps test files and tooling out of the
       // percentages even when the source root is the repository root.
-      ...required.map((file) => `--test-coverage-include=${file}`),
+      ...required.map(/** Scope reporting to each inventoried source file. */ (file) => `--test-coverage-include=${file}`),
       `--test-coverage-lines=${config.thresholds.lines}`,
       `--test-coverage-branches=${config.thresholds.branches}`,
       `--test-coverage-functions=${config.thresholds.functions}`,
@@ -426,7 +427,7 @@ export function runCoverageGate(
     return 1;
   }
 
-  const missing = required.filter((file) => !reported.has(file));
+  const missing = required.filter(/** Detect source files omitted by the runtime reporter. */ (file) => !reported.has(file));
 
   if (missing.length > 0) {
     console.error(
@@ -434,7 +435,7 @@ export function runCoverageGate(
         "",
         `coverage-gate: ${missing.length} source file(s) never loaded during the run and were`,
         "omitted from the coverage report, so the reported percentages exclude them entirely:",
-        ...missing.map((file) => `  - ${file}`),
+        ...missing.map(/** Render a repository-relative missing-source diagnostic. */ (file) => `  - ${file}`),
         "",
         "Import each file from a test (or exercise it through the CLI entrypoint under test).",
         "A file that is genuinely type-only belongs in `coverageGate.ignore` in package.json.",
