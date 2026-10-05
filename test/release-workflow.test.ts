@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import test from "node:test";
 
 /** The release workflow source, read once and asserted against as text. */
@@ -101,12 +103,8 @@ function stepSource(name: string): string {
  * @returns The effective permissions source for the release job.
  */
 function effectiveReleasePermissions(): string {
-  const jobsAt = workflow.indexOf("jobs:\n  release:");
-  assert.ok(jobsAt >= 0, "release workflow should declare a jobs.release entry");
-  const afterKey = jobsAt + "jobs:\n  release:".length;
-  const rest = workflow.slice(afterKey);
-  const nextJob = rest.search(/^ {2}[A-Za-z][\w-]*:/m);
-  const job = executable(nextJob === -1 ? rest : rest.slice(0, nextJob));
+  const job = executable(jobSource("release"));
+  const jobsAt = workflow.indexOf("jobs:");
 
   // `permissions: { id-token: write }` - a flow mapping is still an override.
   const inline = /^ {4}permissions:[ \t]*(\{[^}]*\})[ \t]*$/m.exec(job);
@@ -116,7 +114,7 @@ function effectiveReleasePermissions(): string {
   const scalar = /^ {4}permissions:[ \t]*([A-Za-z][\w-]*)[ \t]*$/m.exec(job);
   if (scalar) return scalar[1];
 
-  const jobBlock = /^ {4}permissions:\n((?: {6}\S[^\n]*\n)+)/m.exec(job);
+  const jobBlock = /^ {4}permissions:\n((?:[ \t]*\n| {6}\S[^\n]*\n)+)/m.exec(job);
   if (jobBlock) return jobBlock[1];
 
   const topBlock = /^permissions:\n((?: {2}\S[^\n]*\n)+)/m.exec(
@@ -185,23 +183,24 @@ test("nothing between the upgrade and the publish step can put an older npm back
   assert.doesNotMatch(between, /GITHUB_PATH/);
 });
 
-test("no run script in the release job interpolates workflow context", () => {
-  // Every step here executes with `id-token: write`. Expanding `${{ … }}` into a
-  // shell script splices attacker-influenceable text - `github.event.repository.name`
-  // is repository metadata - into a privileged command line. Values reach the
-  // shell through `env:` instead, where the runner quotes them.
-  // Only `run:` script bodies. An `env:` entry is exactly where interpolation
-  // belongs - the runner passes the value as an environment variable rather
-  // than splicing it into a command line - so flagging those would be noise.
-  const jobs = workflow.indexOf("jobs:\n  release:");
+/** Locate one job without widening assertions to another job's privileges. */
+function jobSource(name: string): string {
+  const match = new RegExp(`^ {2}${name}:`, "m").exec(workflow);
+  assert.ok(match, `workflow should contain job ${name}`);
+  const rest = workflow.slice(match.index + match[0].length);
+  const next = rest.search(/^ {2}[A-Za-z][\w-]*:/m);
+  return next === -1 ? rest : rest.slice(0, next);
+}
+
+/** Find workflow expressions in inline, literal and folded shell scripts. */
+function runInterpolations(source: string): string[] {
   const offenders: string[] = [];
   let inRunBlock = false;
-  for (const line of executable(workflow.slice(jobs)).split("\n")) {
-    if (/^ {8}run: \|/.test(line)) {
+  for (const line of executable(source).split("\n")) {
+    if (/^ {8}run: [|>]/.test(line)) {
       inRunBlock = true;
       continue;
     }
-    // A `run:` on one line is a script too, just not a block scalar.
     if (/^ {8}run: /.test(line)) {
       inRunBlock = false;
       if (line.includes("${{")) offenders.push(line.trim());
@@ -210,7 +209,19 @@ test("no run script in the release job interpolates workflow context", () => {
     if (/^ {0,8}\S/.test(line)) inRunBlock = false;
     if (inRunBlock && line.includes("${{")) offenders.push(line.trim());
   }
-  assert.deepEqual(offenders, [], `run scripts must not interpolate workflow context:\n  ${offenders.join("\n  ")}`);
+  return offenders;
+}
+
+test("no run script in any release job interpolates workflow context", () => {
+  assert.deepEqual(runInterpolations(workflow), []);
+});
+
+test("interpolation guard scans literal and folded scalars with modifiers", () => {
+  for (const scalar of ["|", "|-", "|+", ">", ">-", ">+"]) {
+    assert.deepEqual(runInterpolations(`        run: ${scalar}\n          echo \${{ github.event.title }}\n        env:\n          SAFE: \${{ github.event.title }}`), ["echo ${{ github.event.title }}"]);
+  }
+  assert.deepEqual(runInterpolations('        run: echo ${{ github.event.title }}'), ['run: echo ${{ github.event.title }}']);
+  assert.deepEqual(runInterpolations('        run: >-\n          echo "$SAFE"\n        env:\n          SAFE: ${{ github.event.title }}'), []);
 });
 
 test("no registry credential is configured, under any name or mechanism", () => {
@@ -325,7 +336,7 @@ test("the empty credential that setup-node generates is removed before publishin
   );
 });
 
-test("publication is proven possible before anything is mutated", () => {
+test("OIDC identity is checked before any remote metadata is mutated", () => {
   // The failure this guards against is not "publish broke" - it is "publish
   // broke and nothing said so". Because the bump and the release commit land
   // before the publish step, ten days of rejected credentials still advanced
@@ -334,7 +345,7 @@ test("publication is proven possible before anything is mutated", () => {
   // fails immediately, having changed nothing.
   const refCheck = stepIndex("Check release ref");
   const preflight = stepIndex("Verify npm will accept this workflow's OIDC identity");
-  const bump = stepIndex("Update release version");
+  const load = stepIndex("Load verified release metadata");
 
   // The ref check must precede the preflight, not merely precede publication. A
   // workflow_dispatch from a feature branch would otherwise mint an id-token and
@@ -346,22 +357,15 @@ test("publication is proven possible before anything is mutated", () => {
     "the release ref must be checked before any credential is requested"
   );
 
-  // The step check is not sufficient on its own. `npm ci` runs the checked-out
-  // package's `prepare` hook, and it runs before any step-level refusal - with
-  // this job's `id-token: write` held. A workflow_dispatch from a feature ref
-  // would execute repository-controlled code with release privileges. The job
-  // itself has to be gated.
-  const jobHeader = workflow.slice(workflow.indexOf("jobs:\n  release:"), stepIndex("Checkout"));
-  assert.match(
-    executable(jobHeader),
-    /^ {4}if: github\.ref == 'refs\/heads\/main'$/m,
-    "jobs.release must be gated by ref, not only by a step"
-  );
+  // A step check alone allows earlier tooling to request an OIDC credential.
+  // Ref and owner opt-in checks must gate the entire publishing job.
+  assert.match(executable(jobSource("release")),
+    /^ {4}if: github\.ref == 'refs\/heads\/main' && vars\.PM_JEV_RELEASE_ENABLED == 'true' && needs\.prepare\.outputs\.should_release == 'true'$/m);
   assert.match(executable(stepSource("Check release ref")), /refs\/heads\/main/);
-  const commit = stepIndex("Commit release files");
+  const commit = stepIndex("Merge release metadata through protected PR");
   const publish = stepIndex("Publish npm package");
 
-  assert.ok(preflight < bump, "the OIDC check must run before the version is bumped");
+  assert.ok(preflight < load, "the OIDC check must run before prepared metadata is loaded");
   assert.ok(preflight < commit, "the OIDC check must run before the release commit");
   assert.ok(preflight < publish, "the OIDC check must run before publication");
 
@@ -429,19 +433,11 @@ test("publication is proven possible before anything is mutated", () => {
   // while leaving every assertion above satisfied.
   assert.doesNotMatch(step, /continue-on-error/);
 
-  // The step legitimately carries an `if:`, so "has no condition" is the wrong
-  // assertion - but that is exactly the hole `if: ${{ false }}` walks through,
-  // leaving the step present, ordered correctly, and never executed while the
-  // bump, commit and publish steps still run. Pin the EXACT condition, and pin
-  // it to the same one the mutating steps use.
-  const preflightCondition = /^ *if: steps\.decide\.outputs\.should_release == 'true'$/m;
-  assert.match(step, preflightCondition);
-  assert.equal(
-    (step.match(/^ *if:/gm) ?? []).length,
-    1,
-    "the preflight must carry exactly one condition, so none can shadow the release condition"
-  );
-  assert.match(executable(stepSource("Update release version")), preflightCondition);
+  // The entire publish job depends on a successful read-only preparation job.
+  // Local preparation has no write credentials; the preflight is unconditional
+  // in the publishing job and precedes every remote mutation.
+  assert.doesNotMatch(step, /^ *if:/m);
+  assert.match(executable(jobSource("release")), /^ {4}needs: prepare$/m);
 
   // A second `trap ... EXIT` REPLACES the first, so appending one is enough to
   // keep the credential file on disk while every assertion above still passes.
@@ -463,4 +459,139 @@ test("publication is proven possible before anything is mutated", () => {
   assert.match(step, /trap\s+'rm -f "\$\{response\}"'\s+EXIT/);
   assert.doesNotMatch(step, /-o\s+\/tmp\/[^\s"]+/);
   assert.match(step, /-o "\$\{response\}"/);
+});
+
+test("release opt-in defaults off on both preparation and publishing", () => {
+  for (const name of ["prepare", "release"]) {
+    assert.match(executable(jobSource(name)), /^ {4}if: .*github\.ref == 'refs\/heads\/main'.*vars\.PM_JEV_RELEASE_ENABLED == 'true'/m);
+  }
+  const readme = readFileSync(resolve(import.meta.dirname, "../README.md"), "utf8");
+  assert.match(readme, /owner enables releases/);
+  assert.match(readme, /`PM_JEV_RELEASE_ENABLED` to `true`/);
+});
+
+test("all actions are pinned and checkouts never persist credentials", () => {
+  for (const filename of ["release.yml", "ci.yml", "codeql.yml"]) {
+    const source = readFileSync(resolve(import.meta.dirname, "../.github/workflows", filename), "utf8");
+    for (const [, reference] of source.matchAll(/uses: (\S+)/g)) assert.match(reference, /@[0-9a-f]{40}$/);
+    const checkouts = source.split(/uses: actions\/checkout@[0-9a-f]{40}/).slice(1);
+    for (const checkout of checkouts) assert.match(checkout.split(/\n {6}- name:/)[0], /persist-credentials: false/);
+  }
+});
+
+test("dependencies and repository scripts run only in read-only jobs", () => {
+  const prepare = executable(jobSource("prepare"));
+  assert.match(prepare, /permissions:\n {6}contents: read/);
+  assert.doesNotMatch(prepare, /(?:contents|actions|pull-requests|id-token): write/);
+  assert.match(prepare, /npm ci/);
+  assert.match(prepare, /npm run release:check/);
+  assert.match(prepare, /npm pack --ignore-scripts/);
+  const release = executable(jobSource("release"));
+  assert.doesNotMatch(release, /npm ci|npm run|bun (?:install|add)|node scripts\//);
+  assert.doesNotMatch(release, /actions: write/);
+  assert.match(release, /^ {6}actions: read$/m);
+  assert.match(release, /npm install -g npm@11\.19\.0 --ignore-scripts/);
+  assert.match(release, /uses: actions\/download-artifact@[0-9a-f]{40}/);
+  assert.match(release, /sha256sum --check --strict/);
+  assert.match(release, /HEAD\^\{tree\}/);
+  assert.match(release, /npm publish release-artifact\/package\.tgz --access public --provenance --ignore-scripts/);
+  assert.match(executable(jobSource("verify_bun")), /permissions:\n {6}contents: read/);
+  // Scope the directive so diagnostic prose cannot satisfy the count.
+  assert.equal((executable(workflow).match(/^ {6}id-token: write$/gm) ?? []).length, 1);
+});
+
+test("git credentials exist only in push steps and never in checkout configuration", () => {
+  for (const name of ["Merge release metadata through protected PR", "Push release tag"]) {
+    const source = executable(stepSource(name));
+    assert.match(source, /GH_TOKEN: \$\{\{ github.token \}\}/);
+    assert.match(source, /git -c "http\.https:\/\/github\.com\/\.extraheader=AUTHORIZATION: basic \$basic" push/);
+    assert.doesNotMatch(source, /git config.*(?:credential|extraheader)/);
+  }
+});
+
+/** Extract an inline workflow shell body for disposable behavioral fixtures. */
+function stepScript(name: string): string {
+  const body = stepSource(name).split("        run: |\n")[1];
+  assert.ok(body, `${name} must contain a literal run block`);
+  return body.split("\n").map(line => line.startsWith("          ") ? line.slice(10) : line).join("\n");
+}
+
+test("release selection refuses changed same-day coordinates and skips unchanged releases", () => {
+  const cwd = mkdtempSync(join(tmpdir(), "jev-release-selection-"));
+  try {
+    const git = (...args: string[]) => execFileSync("git", args, { cwd, encoding: "utf8" });
+    git("init", "--initial-branch=main");
+    git("config", "user.name", "Synthetic Fixture");
+    git("config", "user.email", "fixture@example.invalid");
+    git("remote", "add", "origin", cwd);
+    writeFileSync(join(cwd, "source.txt"), "initial");
+    git("add", "source.txt");
+    git("commit", "-m", "Synthetic base");
+    const script = stepScript("Decide release");
+    const date = execFileSync("date", ["+%Y.%m.%d"], { encoding: "utf8", env: { ...process.env, TZ: "Europe/Vienna" } }).trim();
+    const output = join(cwd, "output");
+    const summary = join(cwd, "summary");
+    const run = () => {
+      writeFileSync(output, "");
+      return spawnSync("bash", ["-c", script], { cwd, encoding: "utf8", env: { ...process.env, RELEASE_TIMEZONE: "Europe/Vienna", GITHUB_OUTPUT: output, GITHUB_STEP_SUMMARY: summary } });
+    };
+    const first = run();
+    assert.equal(first.status, 0, first.stderr);
+    assert.match(readFileSync(output, "utf8"), new RegExp(`tag=v${date.replaceAll(".", "\\.")}\n`));
+    git("tag", `v${date}`);
+    assert.equal(run().status, 0);
+    assert.match(readFileSync(output, "utf8"), /should_release=false/);
+    writeFileSync(join(cwd, "source.txt"), "new content");
+    git("add", "source.txt");
+    git("commit", "-m", "Synthetic change");
+    for (const suffix of ["", "-1"]) {
+      if (suffix) { git("tag", "-d", `v${date}`); git("tag", `v${date}${suffix}`, "HEAD~1"); }
+      const refused = run();
+      assert.equal(refused.status, 1, refused.stderr);
+      assert.match(refused.stdout, /refusing a second same-day release/);
+      assert.doesNotMatch(readFileSync(output, "utf8"), /should_release=true|npm_version=/);
+    }
+  } finally { rmSync(cwd, { recursive: true, force: true }); }
+});
+
+test("artifact handoff rejects changed bytes, commit, tree and base before loading metadata", () => {
+  const root = mkdtempSync(join(tmpdir(), "jev-release-handoff-"));
+  try {
+    const donor = join(root, "donor");
+    const receiver = join(root, "receiver");
+    execFileSync("git", ["init", "--initial-branch=main", donor]);
+    const git = (...args: string[]) => execFileSync("git", args, { cwd: donor, encoding: "utf8" }).trim();
+    git("config", "user.name", "Synthetic Fixture");
+    git("config", "user.email", "fixture@example.invalid");
+    writeFileSync(join(donor, "package.json"), '{"name":"synthetic","version":"1.0.0"}');
+    git("add", "package.json");
+    git("commit", "-m", "Synthetic base");
+    const base = git("rev-parse", "HEAD");
+    execFileSync("git", ["clone", donor, receiver]);
+    writeFileSync(join(donor, "package.json"), '{"name":"synthetic","version":"1.0.1"}');
+    git("add", "package.json");
+    git("commit", "-m", "Synthetic release");
+    git("branch", "verified-release");
+    execFileSync("mkdir", [join(receiver, "release-artifact")]);
+    git("bundle", "create", join(receiver, "release-artifact/metadata.bundle"), "verified-release");
+    const tarball = join(receiver, "release-artifact/package.tgz");
+    writeFileSync(tarball, "synthetic packed bytes");
+    writeFileSync(join(receiver, "release-artifact/RELEASE_NOTES.md"), "Synthetic notes");
+    const hash = execFileSync("sha256sum", [tarball], { encoding: "utf8" }).split(" ")[0];
+    const script = stepScript("Verify artifact handoff");
+    const env = { ...process.env, VERIFIED_COMMIT: git("rev-parse", "HEAD"), VERIFIED_TREE: git("rev-parse", "HEAD^{tree}"), ARTIFACT_SHA256: hash, RELEASE_BASE_SHA: base };
+    const run = (overrides = {}) => spawnSync("bash", ["-c", script], { cwd: receiver, encoding: "utf8", env: { ...env, ...overrides } });
+    const valid = run();
+    assert.equal(valid.status, 0, valid.stderr);
+    assert.equal(readFileSync(join(receiver, "RELEASE_NOTES.md"), "utf8"), "Synthetic notes");
+    for (const key of ["VERIFIED_COMMIT", "VERIFIED_TREE", "RELEASE_BASE_SHA"]) {
+      assert.notEqual(run({ [key]: "0".repeat(40) }).status, 0);
+    }
+    assert.notEqual(run({ ARTIFACT_SHA256: "0".repeat(64) }).status, 0);
+    writeFileSync(tarball, "tampered bytes");
+    const tampered = run();
+    assert.notEqual(tampered.status, 0);
+    assert.match(tampered.stdout, /FAILED/);
+    assert.equal(execFileSync("git", ["rev-parse", "HEAD"], { cwd: receiver, encoding: "utf8" }).trim(), base);
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });

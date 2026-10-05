@@ -5,69 +5,45 @@ on:
     - cron: "23 3 * * *"
   workflow_dispatch:
 
+# Dependencies and repository scripts inherit only observational access.
 permissions:
-  contents: write
-  id-token: write
-  pull-requests: write
-  # Lets the merge wait approve a CI run that GitHub parked on `action_required`
-  # for the release PR. Best-effort: when the token may not approve, the run is
-  # still reported with its URL so a maintainer can approve it once.
-  actions: write
+  contents: read
 
 concurrency:
   group: daily-release
   cancel-in-progress: false
 
 jobs:
-  release:
-    # Gated at the JOB level, not only by the `Check release ref` step below.
-    # `npm ci` runs the checked-out package's `prepare` hook, and every step -
-    # including that one - runs with this job's `id-token: write`. A
-    # workflow_dispatch from a feature ref would therefore execute
-    # repository-controlled code with release privileges before any step-level
-    # refusal could fire. The step check stays as defence in depth.
-    if: github.ref == 'refs/heads/main'
+  prepare:
+    if: github.ref == 'refs/heads/main' && vars.PM_JEV_RELEASE_ENABLED == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should_release: ${{ steps.decide.outputs.should_release }}
+      tag: ${{ steps.decide.outputs.tag }}
+      npm_version: ${{ steps.decide.outputs.npm_version }}
+      base_sha: ${{ steps.decide.outputs.base_sha }}
+      commit: ${{ steps.pack.outputs.commit }}
+      tree: ${{ steps.pack.outputs.tree }}
+      artifact_sha256: ${{ steps.pack.outputs.artifact_sha256 }}
     env:
       RELEASE_TIMEZONE: Europe/Vienna
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
-          cache: npm
-          registry-url: "https://registry.npmjs.org"
-
-      # node 22 ships npm 10.x, which has no trusted-publishing support at all and
-      # would fall back to token auth. 11.5.1 is the first npm that can exchange
-      # the workflow's OIDC id-token for a registry credential.
-      - name: Use an npm that supports trusted publishing
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm install -g npm@11.19.0
-          # Fail closed on the EFFECTIVE version, not on having run the install.
-          # Installing is not the same as running: a swallowed install error, a
-          # cached shim, or a later step selecting another npm all leave 10.x
-          # active. npm 10 has no OIDC support and would fall back to token
-          # auth, reproducing the exact E404 this migration exists to remove -
-          # and it would look like trusted publishing itself had failed.
-          active="$(npm --version)"
-          required="11.5.1"
-          if [ "$(printf '%s\n%s\n' "$active" "$required" | sort -V | head -n 1)" != "$required" ]; then
-            echo "::error::npm $active cannot exchange an OIDC token; $required or newer is required."
-            exit 1
-          fi
-          echo "npm $active can exchange an OIDC token for a registry credential."
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.2.0
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Install dependencies
         run: npm ci
@@ -103,10 +79,10 @@ jobs:
           done < <(git tag -l "${base_tag}*")
 
           if (( max_suffix >= 0 )); then
-            tag="${base_tag}-$((max_suffix + 1))"
-          else
-            tag="$base_tag"
+            echo "::error::A release tag already exists for ${release_date}; refusing a second same-day release."
+            exit 1
           fi
+          tag="$base_tag"
 
           version_core="${tag#v}"
           year="${version_core%%.*}"
@@ -123,20 +99,158 @@ jobs:
           echo "npm_version=$npm_version" >> "$GITHUB_OUTPUT"
           echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      # Refuse non-main release runs BEFORE publishing. `github.ref` is the
-      # authoritative workflow trigger ref: schedule -> refs/heads/main;
-      # workflow_dispatch from main -> refs/heads/main; workflow_dispatch from a
-      # feature branch -> refs/heads/<feature> (refused here). Checking the
-      # trigger ref (rather than git topology) reliably distinguishes a feature
-      # branch from main, which commit-topology checks cannot do (a feature
-      # branch off main is also a descendant of origin/main).
-      # This runs FIRST, before the OIDC preflight, and that ordering is the
-      # point: a workflow_dispatch from a feature branch would otherwise mint an
-      # id-token and exchange it for a short-lived npm PUBLISH CREDENTIAL, and
-      # only then be refused - requesting a credential the run is not allowed to
-      # use. Refusing on the ref costs nothing and must come first.
-      - name: Check release ref
+      - name: Update release version
         if: steps.decide.outputs.should_release == 'true'
+        env:
+          NPM_VERSION: ${{ steps.decide.outputs.npm_version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm version "${NPM_VERSION}" --no-git-tag-version --allow-same-version
+          node -e "const fs=require('node:fs');const version=JSON.parse(fs.readFileSync('package.json','utf8')).version;for(const file of ['manifest.json']){if(!fs.existsSync(file))continue;const json=JSON.parse(fs.readFileSync(file,'utf8'));json.version=version;fs.writeFileSync(file,JSON.stringify(json,null,2)+'\n');}if(fs.existsSync('index.ts')){const source=fs.readFileSync('index.ts','utf8');const next=source.replace(/version:\s*[\"'][^\"']+[\"']/,'version: \"'+version+'\"');if(next!==source)fs.writeFileSync('index.ts',next);}"
+          # Clean before building, for the same reason CI does: tsc never removes
+          # output for a source that was deleted or renamed, so an orphaned artifact
+          # survives a plain rebuild. Without this the release stages the orphan,
+          # publishes it, and commits it to main - where CI's clean-rebuild
+          # comparison then fails, so a release would break the branch it just
+          # landed on. Caught in review on pm-graph#48.
+          rm -rf dist
+          npm run build
+
+      - name: Generate changelog and release notes
+        if: steps.decide.outputs.should_release == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Generate and verify in the same mode. Rendering in prepend mode here
+          # would write a file changelog:check (replace mode) rejects on the very
+          # next line, because only replace mode emits the '## Unreleased'
+          # section for closed but unreleased work.
+          npm run changelog:full -- --github-step-summary
+          npm run changelog:check
+          npm run release:notes > RELEASE_NOTES.md
+
+      - name: Run release checks
+        if: steps.decide.outputs.should_release == 'true'
+        run: npm run release:check
+
+      - name: Commit release files
+        if: steps.decide.outputs.should_release == 'true'
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
+          RELEASE_TAG: ${{ steps.decide.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          paths=(package.json package-lock.json manifest.json CHANGELOG.md)
+          [[ -f index.ts ]] && paths+=(index.ts)
+          [[ -d src ]] && paths+=(src)
+          git ls-files --error-unmatch 'dist/' > /dev/null 2>&1 && paths+=(dist)
+          git add "${paths[@]}"
+          if git diff --cached --quiet; then
+            echo "Release files are already current; tagging existing commit."
+          else
+            git commit -m "Release ${REPO_NAME} ${RELEASE_TAG}"
+          fi
+
+      - name: Pack verified release artifact
+        id: pack
+        if: steps.decide.outputs.should_release == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir release-artifact
+          npm pack --ignore-scripts --json > pack.json
+          filename="$(node -p "JSON.parse(require('node:fs').readFileSync('pack.json','utf8'))[0].filename")"
+          mv "$filename" release-artifact/package.tgz
+          cp RELEASE_NOTES.md release-artifact/RELEASE_NOTES.md
+          git branch verified-release HEAD
+          git bundle create release-artifact/metadata.bundle verified-release
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
+          echo "artifact_sha256=$(sha256sum release-artifact/package.tgz | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload verified release artifact
+        if: steps.decide.outputs.should_release == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verified-release
+          path: release-artifact/
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    needs: prepare
+    if: github.ref == 'refs/heads/main' && vars.PM_JEV_RELEASE_ENABLED == 'true' && needs.prepare.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      # Only protected metadata PRs, tag pushes and GitHub releases need writes.
+      contents: write
+      pull-requests: write
+      # Diagnose release PR runs awaiting owner approval; never approve them.
+      actions: read
+      # This runner executes only pinned publishing tools and inline workflow code.
+      id-token: write
+    steps:
+      - name: Checkout publishing base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Use an npm that supports trusted publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install -g npm@11.19.0 --ignore-scripts
+          # Fail closed on the EFFECTIVE version, not on having run the install.
+          # Installing is not the same as running: a swallowed install error, a
+          # cached shim, or a later step selecting another npm all leave 10.x
+          # active. npm 10 has no OIDC support and would fall back to token
+          # auth, reproducing the exact E404 this migration exists to remove -
+          # and it would look like trusted publishing itself had failed.
+          active="$(npm --version)"
+          required="11.5.1"
+          if [ "$(printf '%s\n%s\n' "$active" "$required" | sort -V | head -n 1)" != "$required" ]; then
+            echo "::error::npm $active cannot exchange an OIDC token; $required or newer is required."
+            exit 1
+          fi
+          echo "npm $active can exchange an OIDC token for a registry credential."
+
+      - name: Download verified release artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: verified-release
+          path: release-artifact
+
+      - name: Verify artifact handoff
+        shell: bash
+        env:
+          VERIFIED_COMMIT: ${{ needs.prepare.outputs.commit }}
+          VERIFIED_TREE: ${{ needs.prepare.outputs.tree }}
+          ARTIFACT_SHA256: ${{ needs.prepare.outputs.artifact_sha256 }}
+          RELEASE_BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$VERIFIED_COMMIT" =~ ^[0-9a-f]{40}$ && "$VERIFIED_TREE" =~ ^[0-9a-f]{40}$ && "$ARTIFACT_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$(git rev-parse HEAD)" == "$RELEASE_BASE_SHA" ]]
+          printf '%s  %s\n' "$ARTIFACT_SHA256" release-artifact/package.tgz | sha256sum --check --strict
+          git bundle verify release-artifact/metadata.bundle
+          git fetch release-artifact/metadata.bundle verified-release
+          [[ "$(git rev-parse FETCH_HEAD)" == "$VERIFIED_COMMIT" ]]
+          [[ "$(git rev-parse 'FETCH_HEAD^{tree}')" == "$VERIFIED_TREE" ]]
+          cp release-artifact/RELEASE_NOTES.md RELEASE_NOTES.md
+
+      - name: Check release ref
         shell: bash
         env:
           GITHUB_REF: ${{ github.ref }}
@@ -147,31 +261,7 @@ jobs:
             exit 1
           fi
 
-      # Persist validated release metadata through the repository's protected
-      # branch policy before publishing an immutable npm artifact. A stable
-      # branch name lets a failed run update/reuse its open release PR, while
-      # the exact remote SHA lease prevents overwriting another actor's work.
-      # Ported from pm-beads' release.yml (PR #65): main must already contain the
-      # release commit before npm publish runs - the invariant the old
-      # publish-then-push ordering violated. npm published 2026.8.10, then
-      # `git push origin HEAD:main` was rejected with GH006 by the protected
-      # branch, and `set -e` killed the job before the tag push, so npm ended
-      # up ahead of git (main still at 2026.8.7, no matching tag).
-      #
-      # The merge wait resolves review threads (required_conversation_resolution
-      # is on) then attempts `gh api --method PUT .../pulls/<n>/merge` and lets
-      # GitHub be the authority, failing fast only on DIRTY/BEHIND, with a
-      # 30-minute deadline. It does NOT poll mergeStateStatus to decide merging
-      # (that deadlocked pm-changelog's release PR #133 for 30 minutes).
-      # Publication is the only step that can fail for a reason outside this
-      # repository, and it runs LAST - after the version bump and the release
-      # commit have already landed on main. That ordering is what let a dead
-      # credential hide for ten days: every run advanced main to a new version,
-      # published nothing, and still reported the bump as progress. Asking the
-      # registry for a credential BEFORE anything is mutated turns that silent
-      # drift into an immediate, actionable failure.
       - name: Verify npm will accept this workflow's OIDC identity
-        if: steps.decide.outputs.should_release == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -262,73 +352,29 @@ jobs:
           echo "::error::organization 'unbraind', repository '${GITHUB_REPOSITORY#*/}', workflow 'release.yml', no environment."
           exit 1
 
-      - name: Update release version
-        if: steps.decide.outputs.should_release == 'true'
+      - name: Load verified release metadata
+        shell: bash
         env:
-          NPM_VERSION: ${{ steps.decide.outputs.npm_version }}
-        shell: bash
+          VERIFIED_COMMIT: ${{ needs.prepare.outputs.commit }}
         run: |
           set -euo pipefail
-          npm version "${NPM_VERSION}" --no-git-tag-version --allow-same-version
-          node -e "const fs=require('node:fs');const version=JSON.parse(fs.readFileSync('package.json','utf8')).version;for(const file of ['manifest.json']){if(!fs.existsSync(file))continue;const json=JSON.parse(fs.readFileSync(file,'utf8'));json.version=version;fs.writeFileSync(file,JSON.stringify(json,null,2)+'\n');}if(fs.existsSync('index.ts')){const source=fs.readFileSync('index.ts','utf8');const next=source.replace(/version:\s*[\"'][^\"']+[\"']/,'version: \"'+version+'\"');if(next!==source)fs.writeFileSync('index.ts',next);}"
-          # Clean before building, for the same reason CI does: tsc never removes
-          # output for a source that was deleted or renamed, so an orphaned artifact
-          # survives a plain rebuild. Without this the release stages the orphan,
-          # publishes it, and commits it to main - where CI's clean-rebuild
-          # comparison then fails, so a release would break the branch it just
-          # landed on. Caught in review on pm-graph#48.
-          rm -rf dist
-          npm run build
-
-      - name: Generate changelog and release notes
-        if: steps.decide.outputs.should_release == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Generate and verify in the same mode. Rendering in prepend mode here
-          # would write a file changelog:check (replace mode) rejects on the very
-          # next line, because only replace mode emits the '## Unreleased'
-          # section for closed but unreleased work.
-          npm run changelog:full -- --github-step-summary
-          npm run changelog:check
-          npm run release:notes > RELEASE_NOTES.md
-
-      - name: Run release checks
-        if: steps.decide.outputs.should_release == 'true'
-        run: npm run release:check
-
-      - name: Commit release files
-        if: steps.decide.outputs.should_release == 'true'
-        env:
-          REPO_NAME: ${{ github.event.repository.name }}
-          RELEASE_TAG: ${{ steps.decide.outputs.tag }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          paths=(package.json package-lock.json manifest.json CHANGELOG.md)
-          [[ -f index.ts ]] && paths+=(index.ts)
-          [[ -d src ]] && paths+=(src)
-          git ls-files --error-unmatch 'dist/' > /dev/null 2>&1 && paths+=(dist)
-          git add "${paths[@]}"
-          if git diff --cached --quiet; then
-            echo "Release files are already current; tagging existing commit."
-          else
-            git commit -m "Release ${REPO_NAME} ${RELEASE_TAG}"
-          fi
+          git checkout --detach "$VERIFIED_COMMIT"
 
       - name: Merge release metadata through protected PR
-        if: steps.decide.outputs.should_release == 'true'
         id: release_pr
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_BASE_SHA: ${{ steps.decide.outputs.base_sha }}
-          RELEASE_TAG: ${{ steps.decide.outputs.tag }}
-          NPM_VERSION: ${{ steps.decide.outputs.npm_version }}
+          RELEASE_BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          NPM_VERSION: ${{ needs.prepare.outputs.npm_version }}
         run: |
           set -euo pipefail
+          git_push() {
+            local basic
+            basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $basic" push "$@"
+          }
           git fetch origin main --force
           current_main_sha="$(git rev-parse origin/main)"
           if [[ "$current_main_sha" != "$RELEASE_BASE_SHA" ]]; then
@@ -341,7 +387,7 @@ jobs:
           if [[ "$release_commit" == "$current_main_sha" ]]; then
             echo "Release metadata is already present on main; resuming the publish/tag transaction."
             if git ls-remote --exit-code --heads origin "refs/heads/${release_branch}" > /dev/null 2>&1; then
-              git push origin --delete "$release_branch"
+              git_push origin --delete "$release_branch"
             fi
             {
               echo "merged_sha=$current_main_sha"
@@ -352,11 +398,11 @@ jobs:
 
           remote_branch_sha="$(git ls-remote --heads origin "refs/heads/${release_branch}" | cut -f1)"
           if [[ -n "$remote_branch_sha" ]]; then
-            git push \
+            git_push \
               --force-with-lease="refs/heads/${release_branch}:${remote_branch_sha}" \
               origin "HEAD:refs/heads/${release_branch}"
           else
-            git push origin "HEAD:refs/heads/${release_branch}"
+            git_push origin "HEAD:refs/heads/${release_branch}"
           fi
 
           pr_number="$(gh pr list \
@@ -475,11 +521,6 @@ jobs:
                 while IFS= read -r run_id; do
                   [[ -z "$run_id" ]] && continue
                   echo "::warning::CI run ${run_id} for this release PR is awaiting workflow approval: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
-                  gh api --method POST \
-                    "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/approve" \
-                    >/dev/null 2>&1 \
-                    && echo "Approved workflow run ${run_id}; its checks can now report." \
-                    || echo "Could not approve run ${run_id} with this token; a maintainer must approve it once."
                 done <<< "$pending_runs"
                 awaiting_approval=1
               fi
@@ -503,7 +544,7 @@ jobs:
           fi
 
           if git ls-remote --exit-code --heads origin "refs/heads/${release_branch}" > /dev/null 2>&1; then
-            git push origin --delete "$release_branch"
+            git_push origin --delete "$release_branch"
           fi
           {
             echo "merged_sha=$merged_sha"
@@ -511,16 +552,12 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "Merged release metadata PR #${pr_number} at ${merged_sha}." >> "$GITHUB_STEP_SUMMARY"
 
-      # The release PR can only contain the prepared release commit because the
-      # base SHA is checked immediately before creation. Re-check the exact
-      # merged main commit anyway so npm always receives byte-for-byte validated
-      # repository state, and fail safely before publication if main moved.
       - name: Verify merged release
-        if: steps.decide.outputs.should_release == 'true'
         shell: bash
         env:
           MERGED_SHA: ${{ steps.release_pr.outputs.merged_sha }}
-          NPM_VERSION: ${{ steps.decide.outputs.npm_version }}
+          VERIFIED_TREE: ${{ needs.prepare.outputs.tree }}
+          NPM_VERSION: ${{ needs.prepare.outputs.npm_version }}
         run: |
           set -euo pipefail
           git fetch origin main --force
@@ -537,40 +574,17 @@ jobs:
             exit 1
           fi
 
-          npm ci
-          npm run release:check
-          diff_paths=(package.json package-lock.json manifest.json CHANGELOG.md)
-          [[ -f index.ts ]] && diff_paths+=(index.ts)
-          [[ -d src ]] && diff_paths+=(src)
-          git diff --exit-code -- "${diff_paths[@]}"
-          # `git diff` here compared dist against itself - nothing rebuilds
-          # before this point, so the old check passed unconditionally, and
-          # it could not see untracked or orphaned artifacts at all. Rebuild
-          # and use `git status` so a stale committed dist cannot ship.
-          if git ls-files --error-unmatch 'dist/' > /dev/null 2>&1; then
-            rm -rf dist
-            npm run build
-            dist_status="$(git status --porcelain=v1 --untracked-files=all --ignored=matching -- 'dist/')"
-            if [[ -n "$dist_status" ]]; then
-              echo "::error::Merged dist/ does not match a clean rebuild:"
-              echo "$dist_status"
-              exit 1
-            fi
+          # A protected rebase may change the commit SHA, but never the checked tree.
+          if [[ "$(git rev-parse 'HEAD^{tree}')" != "$VERIFIED_TREE" ]]; then
+            echo "::error::Merged release tree differs from the read-only job's checked tree."
+            exit 1
           fi
 
-      # Authentication is npm trusted publishing (OIDC), not a long-lived token.
-      # The registry mints a short-lived credential from this workflow's id-token,
-      # so no NODE_AUTH_TOKEN is set here on purpose: a stored token is the thing
-      # that expired and silently stopped every fleet package publishing between
-      # 2026-08-17 and 2026-08-26 while main kept bumping the version. Trusted
-      # publishing must be configured for this package on npmjs.com against
-      # unbraind/pm-jev and this workflow filename, or publish fails closed.
       - name: Publish npm package
         id: publish
-        if: steps.decide.outputs.should_release == 'true'
         shell: bash
         env:
-          NPM_VERSION: ${{ steps.decide.outputs.npm_version }}
+          NPM_VERSION: ${{ needs.prepare.outputs.npm_version }}
         run: |
           set -euo pipefail
           # actions/setup-node's registry-url writes
@@ -679,7 +693,7 @@ jobs:
             exit 0
           fi
           publish_with_provenance() {
-            npm publish --access public --provenance --ignore-scripts
+            npm publish release-artifact/package.tgz --access public --provenance --ignore-scripts
           }
           attempt=0
           while (( attempt < max_attempts )); do
@@ -734,19 +748,12 @@ jobs:
           fi
           refuse_unattested_or_fail
 
-      # Tag the exact merged/verified main commit AFTER a successful publish.
-      # main is already advanced by the protected-PR merge above, so this step
-      # only creates and pushes the tag - it never pushes HEAD:main again (that
-      # push was what branch protection rejected with GH006, killing the job
-      # before the tag push in the old ordering). If publication fails, main
-      # retains the prepared metadata and the next run resumes the same version
-      # instead of inventing another release.
       - name: Push release tag
         id: push_tag
-        if: steps.decide.outputs.should_release == 'true'
         shell: bash
         env:
-          RELEASE_TAG: ${{ steps.decide.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           set -euo pipefail
           release_tag="$RELEASE_TAG"
@@ -778,20 +785,42 @@ jobs:
           else
             git tag "$release_tag"
           fi
-          git push origin "refs/tags/${release_tag}"
+          basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $basic" push origin "refs/tags/${release_tag}"
+
+      - name: Create GitHub release
+        # Bun acceptance runs in a subsequent read-only job. A mirror failure
+        # remains visible without preventing creation of this published release.
+        if: >-
+          !cancelled() &&
+          steps.publish.outcome == 'success' &&
+          steps.push_tag.outcome == 'success'
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${RELEASE_TAG}" --title "${REPO_NAME} ${RELEASE_TAG}" --notes-file RELEASE_NOTES.md --verify-tag
+
+  verify_bun:
+    needs: [prepare, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Setup Bun acceptance
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Verify bun install of published package
         id: verify_bun
-        if: steps.decide.outputs.should_release == 'true'
         env:
-          NPM_VERSION: ${{ steps.decide.outputs.npm_version }}
+          NPM_VERSION: ${{ needs.prepare.outputs.npm_version }}
         shell: bash
         run: |
           set -euo pipefail
-          pkg_name="$(node -p "require('./package.json').name")"
+          pkg_name="pm-jev"
           pkg_version="${NPM_VERSION}"
-          mkdir -p /tmp/bun-verify
-          cd /tmp/bun-verify
+          mkdir -p "$RUNNER_TEMP/bun-verify"
+          cd "$RUNNER_TEMP/bun-verify"
           rm -rf node_modules bun.lockb package.json
           bun init -y > /dev/null
           # Smoke-test that the just-published version installs via bun.
@@ -811,46 +840,7 @@ jobs:
               sleep 30
             fi
           done
-          # The GitHub release below is now created whenever the publish and
-          # the tag push succeeded, regardless of this step, so a bun failure
-          # must NOT be papered over as success. The old fallback here (treat
-          # mirror lag as a passing verification once `npm view` confirmed the
-          # version) still let a total failure skip the Release: pm-linear run
-          # 35323736826 (2026-09-18) failed this step, the Release was skipped,
-          # and tag v2026.09.18 has had no Release since. npm acceptance is
-          # already proven by the publish step above; this step verifies bun
-          # alone, so a failure here is reported as a failure and the gate
-          # step below fails the job visibly.
+          # Publication and the GitHub release already succeeded. Fail this
+          # separate read-only acceptance job so mirror lag stays visible.
           echo "::error::bun could not resolve ${pkg_name}@${pkg_version} after ${bun_attempts} attempts across a 10-minute window. npm accepted the publish and the GitHub release is created regardless of this step; this failure keeps the bun mirror problem visible instead of silent."
-          exit 1
-      - name: Create GitHub release
-        # Created even when bun verification failed: this Release used to be
-        # skipped behind that step, which is how pm-linear v2026.09.18 ended
-        # up tagged with no Release. It depends only on the publish and the
-        # tag push; a bun failure is surfaced by the gate step below so
-        # nothing goes silent. !cancelled() is required: with the default
-        # success() condition any earlier failure would skip this step.
-        if: >-
-          !cancelled() &&
-          steps.publish.outcome == 'success' &&
-          steps.push_tag.outcome == 'success'
-        env:
-          REPO_NAME: ${{ github.event.repository.name }}
-          RELEASE_TAG: ${{ steps.decide.outputs.tag }}
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "${RELEASE_TAG}" --title "${REPO_NAME} ${RELEASE_TAG}" --notes-file RELEASE_NOTES.md --verify-tag
-
-      # The visible half of the bun decoupling: the Release above is created
-      # regardless of bun verification, so without this gate a bun failure
-      # would end in a green run and mirror lag would be invisible. Only a
-      # bun FAILURE trips it - a skipped bun step means the publish or the
-      # tag push already failed the job on its own.
-      - name: Fail the job on bun verification failure
-        if: >-
-          !cancelled() &&
-          steps.verify_bun.outcome == 'failure'
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "::error::bun install verification failed (see the step log above); the npm publish, the tag push and the GitHub release were not affected. Failing the job so the bun mirror problem is not silent."
           exit 1

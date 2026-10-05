@@ -63,3 +63,19 @@ export async function scenario(run: (fixture: Awaited<ReturnType<typeof project>
   try { await run(fixture, server); }
   finally { if (previous === undefined) delete process.env.PM_JEV_BASE_URL; else process.env.PM_JEV_BASE_URL = previous; await server.close(); fixture.dispose(); }
 }
+
+/** Route a synthetic HTTPS origin to the loopback server; this is no TLS acceptance claim. */
+export function hostedFixture(server: Awaited<ReturnType<typeof endpoint>>): () => void {
+  const previousUrl = process.env.PM_JEV_BASE_URL;
+  const previousFetch = globalThis.fetch;
+  process.env.PM_JEV_BASE_URL = "https://synthetic.example";
+  globalThis.fetch = (input, init) => {
+    const url = String(input).replace("https://synthetic.example", server.url);
+    return previousFetch(url, init);
+  };
+  return () => {
+    globalThis.fetch = previousFetch;
+    if (previousUrl === undefined) delete process.env.PM_JEV_BASE_URL;
+    else process.env.PM_JEV_BASE_URL = previousUrl;
+  };
+}

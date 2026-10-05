@@ -159,7 +159,10 @@ at 32; invalid limits fall back to the default.
 Hosted configuration uses `provider: "typesafe"`, default base URL
 `https://api.typesafe.ai`, default model `jev-latest`, runtime `TYPESAFE_API_KEY`, and
 literal boolean `jev.allow_external: true`. Both the key and explicit opt-in are
-required. A string `"true"` does not opt in. Any non-loopback URL also requires opt-in,
+required. Hosted credential destinations must use HTTPS. A custom HTTPS origin
+(including a different port) must be supplied through `PM_JEV_BASE_URL`; tracker
+settings alone cannot authorize it. A string `"true"` does not opt in.
+Any non-loopback URL also requires opt-in,
 even if the provider is named `ollama`; redirects are rejected. Credentials, query
 strings and fragments are refused in the base URL. Request bodies are never logged,
 and provider error bodies are omitted from public diagnostics.
@@ -242,9 +245,15 @@ See [the v0 validation receipt](docs/v0-validation.md) for measured evidence.
 The daily release workflow generates CHANGELOG.md and release notes with pm-changelog.
 Generation and drift checks include closed and in-progress implementations;
 tracker closure remains the orchestrator's verification step.
-It must be disabled by the orchestrator when the repository is created until the owner
-approves releasing this new package. No GitHub repository, remote, push or npm publication
-has been performed by this work.
+Scheduled and manual release runs are disabled in code by default. After approving the
+first publish and configuring npm trusted publishing, the owner enables releases by
+setting the repository variable `PM_JEV_RELEASE_ENABLED` to `true`. The main-branch
+gate remains required. Dependency installation, builds, checks and packing run with
+`contents: read` and no persisted checkout credentials. The publishing job downloads
+the verified tarball, runs no repository scripts or package dependency installation,
+and uses npm OIDC. Git credentials are provided only to push steps; protected release
+metadata must land on main with the verified tree before publishing. A second release
+on the same Vienna calendar day is refused.
 
 This v0 has bounded synthetic plausibility evidence, not production calibration.
 The [vendor's model limitations](https://docs.typesafe.ai/model-jaggedness/jev-1.13)

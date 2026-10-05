@@ -63,7 +63,8 @@ export interface ResolvedJevEndpoint {
  * @param env - Environment to read `PM_JEV_BASE_URL`, `PM_JEV_MODEL` and
  *              `TYPESAFE_API_KEY` from.
  * @returns The endpoint configuration and the hosted opt-in verdict.
- * @throws {PmCliExpectedError} The `jev.provider` setting names an unknown provider.
+ * @throws {PmCliExpectedError} The provider or URL is invalid, or a hosted
+ *         credential destination is not explicitly trusted.
  */
 export declare function resolveJevEndpoint(pmRoot: string, env: Record<string, string | undefined>): Promise<ResolvedJevEndpoint>;
 /**

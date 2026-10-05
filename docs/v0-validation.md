@@ -115,5 +115,5 @@ open rather than replacing verified gates with an older toolchain. No production
 exploit is established by this development dependency report.
 
 Items remain open/in progress for orchestrator verification and closure. Claims are
-released at handoff. The daily release workflow must be disabled by the orchestrator
-when a repository is created until the owner approves release of this new package.
+released at handoff. Scheduled and manual releases are disabled in code until the owner approves the
+first publish and sets the repository variable `PM_JEV_RELEASE_ENABLED` to `true`.

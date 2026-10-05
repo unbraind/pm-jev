@@ -5,7 +5,7 @@ import test from "node:test";
 import { TypeSafeClient, APIConnectionError, APITimeoutError, APIUserAbortError, APIError } from "@typesafe-ai/sdk";
 import type { Questions } from "@typesafe-ai/sdk";
 import { createJevClient, resolveJevEndpoint, runDecision, translateDecisionError, createPmCliExpectedError, listDecisionModels } from "../index.ts";
-import { answers, scenario } from "./fixtures.ts";
+import { answers, scenario, hostedFixture } from "./fixtures.ts";
 
 const questions: Questions = { safe: { type: "noul", instructions: "Is it synthetic?" } };
 
@@ -122,12 +122,13 @@ test("doctor distinguishes a missing hosted model on the synthetic endpoint", as
   await scenario(async (fixture, server) => {
     const previous = process.env.TYPESAFE_API_KEY;
     process.env.TYPESAFE_API_KEY = "synthetic";
+    const restoreHosted = hostedFixture(server);
     try {
       writeFileSync(getSettingsPath(fixture.pmRoot), JSON.stringify({ jev: { provider: "typesafe", allow_external: true } }));
       server.setReply((_, response) => response.end(JSON.stringify({ models: [{ name: "other" }] })));
       const result = await fixture.harness.runCommand({ command: "jev doctor", pmRoot: fixture.pmRoot });
       assert.equal((result.result as { status: string }).status, "degraded");
-    } finally { if (previous === undefined) delete process.env.TYPESAFE_API_KEY; else process.env.TYPESAFE_API_KEY = previous; }
+    } finally { restoreHosted(); if (previous === undefined) delete process.env.TYPESAFE_API_KEY; else process.env.TYPESAFE_API_KEY = previous; }
   });
 });
 

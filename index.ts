@@ -244,7 +244,8 @@ function stringSetting(value: unknown): string | undefined {
  *
  * @param section - The raw `jev` settings section.
  * @returns The selected provider name, validated.
- * @throws {PmCliExpectedError} The `jev.provider` setting names an unknown provider.
+ * @throws {PmCliExpectedError} The provider or URL is invalid, or a hosted
+ *         credential destination is not explicitly trusted.
  */
 function resolveProvider(section: JevSettingsSection): JevProvider {
   const raw = stringSetting(section.provider)?.toLowerCase();
@@ -268,7 +269,8 @@ function resolveProvider(section: JevSettingsSection): JevProvider {
  * @param env - Environment to read `PM_JEV_BASE_URL`, `PM_JEV_MODEL` and
  *              `TYPESAFE_API_KEY` from.
  * @returns The endpoint configuration and the hosted opt-in verdict.
- * @throws {PmCliExpectedError} The `jev.provider` setting names an unknown provider.
+ * @throws {PmCliExpectedError} The provider or URL is invalid, or a hosted
+ *         credential destination is not explicitly trusted.
  */
 export async function resolveJevEndpoint(
   pmRoot: string,
@@ -289,9 +291,19 @@ export async function resolveJevEndpoint(
     envModel ??
     sectionModel ??
     (provider === "typesafe" ? DEFAULT_TYPESAFE_MODEL : DEFAULT_OLLAMA_MODEL);
-  const url = new URL(baseUrl);
+  let url: URL;
+  try { url = new URL(baseUrl); } catch {
+    throw createPmCliExpectedError("jev base URL must be an absolute HTTP(S) URL.", { context: { code: "jev_invalid_url" } });
+  }
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
     throw createPmCliExpectedError("jev base URL must be HTTP(S) without credentials, query or fragment.", { context: { code: "jev_invalid_url" } });
+  }
+  if (provider === "typesafe" && (url.protocol !== "https:" ||
+    (url.origin !== new URL(DEFAULT_TYPESAFE_BASE_URL).origin && envBaseUrl === undefined))) {
+    throw createPmCliExpectedError(
+      "Hosted TypeSafe credentials require HTTPS; configure a non-default origin with PM_JEV_BASE_URL.",
+      { context: { code: "jev_untrusted_credential_host" } },
+    );
   }
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
   const hostedBlocked: HostedBlock | null = (provider === "typesafe" || !local) && section.allow_external !== true
@@ -1017,6 +1029,7 @@ async function runTriageCommand(ctx: CommandHandlerContext): Promise<TriageDecis
     });
   }
   const boundary = await openDecisionBoundary(ctx);
+  const threshold = probabilityOption(ctx.options, "minConfidence", ["min_confidence"], boundary.config.minConfidence);
   const settings = await readSettings(boundary.pmRoot);
   const questions = buildTriageQuestions(settings);
   const item = await loadItem(boundary, id.trim());
@@ -1040,7 +1053,6 @@ async function runTriageCommand(ctx: CommandHandlerContext): Promise<TriageDecis
     needs_human: { kind: "noul", probability: (result.answers.needs_human as NoulResponse).noul },
     sensitive: { kind: "noul", probability: (result.answers.sensitive as NoulResponse).noul },
   };
-  const threshold = probabilityOption(ctx.options, "minConfidence", ["min_confidence"], boundary.config.minConfidence);
   const written: string[] = [];
   const changes: { type?: string; priority?: number } = {};
   if (readBooleanOption(ctx.options, "apply") === true) {
@@ -1369,11 +1381,11 @@ async function runGateCommand(ctx: CommandHandlerContext): Promise<GateDecision>
   }
   const expected = rawExpected !== "false";
   const boundary = await openDecisionBoundary(ctx);
+  const threshold = probabilityOption(ctx.options, "threshold", [], boundary.config.gateThreshold);
   const state: unknown = text !== undefined ? truncateStateText(text) : projectItemState(await loadItem(boundary, (itemId as string).trim()));
   const result = await runDecision(boundary.decision, boundary.config, state, {
     proposition: { type: "noul", instructions: proposition },
   });
-  const threshold = probabilityOption(ctx.options, "threshold", [], boundary.config.gateThreshold);
   const probability = (result.answers.proposition as NoulResponse).noul;
   const decision: GateDecision = {
     proposition,

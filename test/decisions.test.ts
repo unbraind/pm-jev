@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { endpoint, project, answers, scenario } from "./fixtures.ts";
+import { endpoint, project, answers, scenario, hostedFixture } from "./fixtures.ts";
 import { resolveJevEndpoint, requireCallableEndpoint, parseQuestionsDocument, validateAnswers, projectItemState, buildTriageQuestions, rankDedupeCandidates } from "../index.ts";
 import { writeFileSync, rmSync } from "node:fs";
 import { getSettingsPath, readSettings } from "@unbrained/pm-cli/sdk";
@@ -117,7 +117,7 @@ test("ask, dedupe, gate and discovery dispatch on a real temporary tracker", asy
 test("provider settings refuse every external command before any HTTP request", async () => {
   const fixture = await project(); const server = await endpoint();
   const oldUrl = process.env.PM_JEV_BASE_URL, oldKey = process.env.TYPESAFE_API_KEY;
-  process.env.PM_JEV_BASE_URL = server.url; process.env.TYPESAFE_API_KEY = "synthetic-key";
+  const restoreHosted = hostedFixture(server); process.env.TYPESAFE_API_KEY = "synthetic-key";
   try {
     settings(fixture.pmRoot, { provider: "typesafe", allow_external: "true" });
     const run = (command: string, options = {}, args: string[] = []) => fixture.harness.runCommand({ command: `jev ${command}`, options, args, pmRoot: fixture.pmRoot });
@@ -137,7 +137,7 @@ test("provider settings refuse every external command before any HTTP request", 
     settings(fixture.pmRoot, { timeout_ms: "2500", total_deadline_ms: 3000, min_confidence: 0, gate_threshold: 1, model: "  custom  " });
     const configured = await resolveJevEndpoint(fixture.pmRoot, {});
     assert.equal(configured.config.model, "custom"); assert.equal(configured.config.minConfidence, 0);
-  } finally { if (oldUrl === undefined) delete process.env.PM_JEV_BASE_URL; else process.env.PM_JEV_BASE_URL = oldUrl; if (oldKey === undefined) delete process.env.TYPESAFE_API_KEY; else process.env.TYPESAFE_API_KEY = oldKey; await server.close(); fixture.dispose(); }
+  } finally { restoreHosted(); if (oldUrl === undefined) delete process.env.PM_JEV_BASE_URL; else process.env.PM_JEV_BASE_URL = oldUrl; if (oldKey === undefined) delete process.env.TYPESAFE_API_KEY; else process.env.TYPESAFE_API_KEY = oldKey; await server.close(); fixture.dispose(); }
 });
 
 test("local defaults, settings edge cases and bounded state stay deterministic", async () => {
@@ -194,4 +194,45 @@ test("scratch projects ignore inherited PM_PATH scope overrides", async () => {
     assert.match(created.item.id, /^synthetic-/);
     assert.equal((await fixture.pm.listAllComplete()).items.length, 1);
   } finally { fixture.dispose(); if (previous === undefined) delete process.env.PM_PATH; else process.env.PM_PATH = previous; }
+});
+
+test("hosted credentials require HTTPS and custom origins require an environment override", async () => {
+  const fixture = await project();
+  try {
+    settings(fixture.pmRoot, { provider: "typesafe", allow_external: true, base_url: "https://synthetic.example" });
+    await assert.rejects(resolveJevEndpoint(fixture.pmRoot, { TYPESAFE_API_KEY: "synthetic" }), { code: "jev_untrusted_credential_host" });
+    settings(fixture.pmRoot, { provider: "typesafe", allow_external: true });
+    for (const baseUrl of ["http://api.typesafe.ai", "http://localhost:11434"]) {
+      await assert.rejects(resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: baseUrl, TYPESAFE_API_KEY: "synthetic" }), { code: "jev_untrusted_credential_host" });
+    }
+    settings(fixture.pmRoot, { provider: "typesafe", allow_external: true, base_url: "https://api.typesafe.ai/v1" });
+    assert.equal((await resolveJevEndpoint(fixture.pmRoot, { TYPESAFE_API_KEY: "synthetic" })).hostedBlocked, null);
+    settings(fixture.pmRoot, { provider: "typesafe", allow_external: true, base_url: "https://api.typesafe.ai:8443" });
+    await assert.rejects(resolveJevEndpoint(fixture.pmRoot, { TYPESAFE_API_KEY: "synthetic" }), { code: "jev_untrusted_credential_host" });
+    assert.equal((await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: "https://synthetic.example", TYPESAFE_API_KEY: "synthetic" })).config.baseUrl, "https://synthetic.example");
+  } finally { fixture.dispose(); }
+});
+
+test("malformed URLs surface expected configuration errors without exposing the supplied value", async () => {
+  const fixture = await project();
+  try {
+    for (const baseUrl of ["not an absolute URL", "https://[broken"]) {
+      settings(fixture.pmRoot, { base_url: baseUrl });
+      await assert.rejects(resolveJevEndpoint(fixture.pmRoot, {}), { code: "jev_invalid_url", exitCode: 2 });
+      await assert.rejects(resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: baseUrl }), { code: "jev_invalid_url" });
+    }
+  } finally { fixture.dispose(); }
+});
+
+test("invalid gate and apply thresholds refuse before inference or tracker mutation", async () => {
+  await scenario(async (fixture, server) => {
+    const created = await fixture.pm.create({ type: "Issue", title: "Synthetic early-validation item" });
+    for (const value of ["2", "garbage", "-0.1"]) {
+      await assert.rejects(fixture.harness.runCommand({ command: "jev gate", options: { noul: "synthetic", item: created.item.id, threshold: value }, pmRoot: fixture.pmRoot }), /probability/);
+      await assert.rejects(fixture.harness.runCommand({ command: "jev triage", args: [created.item.id], options: { apply: true, minConfidence: value }, pmRoot: fixture.pmRoot }), /probability/);
+    }
+    assert.equal(server.requests.length, 0);
+    assert.equal((await fixture.pm.comments(created.item.id)).count, 0);
+    assert.equal((await fixture.pm.get(created.item.id)).item.type, "Issue");
+  });
 });
