@@ -656,7 +656,8 @@ test("a tag without its GitHub release resumes notes creation only", () => {
   // flag: without the flag this job must never run.
   assert.match(resume, /^ {4}if: github\.ref == 'refs\/heads\/main' && vars\.PM_JEV_RELEASE_ENABLED == 'true' && needs\.prepare\.outputs\.resume_release_notes == 'true'$/m);
   assert.match(resume, /^ {4}needs: prepare$/m);
-  assert.match(resume, /gh release create "\$\{RELEASE_TAG\}" --title "\$\{REPO_NAME\} \$\{RELEASE_TAG\}" --notes-file RELEASE_NOTES\.md --verify-tag/);
+  // No checkout in this job, so the repository is passed explicitly.
+  assert.match(resume, /gh release create "\$\{RELEASE_TAG\}" --repo "\$\{GITHUB_REPOSITORY\}" --title "\$\{REPO_NAME\} \$\{RELEASE_TAG\}" --notes-file RELEASE_NOTES\.md --verify-tag/);
   // Idempotent: a release that appeared between prepare and here is done, not
   // an error; gh release create would fail over an existing release.
   assert.match(resume, /releases\/tags\/\$\{RELEASE_TAG\}/);
@@ -708,4 +709,34 @@ test("artifact handoff rejects changed bytes, commit, tree and base before loadi
     assert.match(tampered.stdout, /FAILED/);
     assert.equal(execFileSync("git", ["rev-parse", "HEAD"], { cwd: receiver, encoding: "utf8" }).trim(), base);
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("reconciliation accepts an existing version only when its registry integrity equals this run's artifact", () => {
+  const release = executable(jobSource("release"));
+  assert.match(release, /registry_has_version && registry_version_is_attested && registry_integrity_matches/);
+  const start = release.indexOf("registry_integrity_matches() {");
+  const end = release.indexOf("\n          }", start);
+  assert.ok(start >= 0 && end > start, "registry_integrity_matches is defined in the release job");
+  const helper = release.slice(start, end + "\n          }".length);
+
+  const root = mkdtempSync(join(tmpdir(), "pm-jev-integrity-"));
+  try {
+    mkdirSync(join(root, "release-artifact"));
+    writeFileSync(join(root, "release-artifact", "package.tgz"), "verified tarball bytes");
+    const expected = `sha512-${execFileSync("sh", ["-c", "openssl dgst -sha512 -binary release-artifact/package.tgz | base64 -w0"], { cwd: root, encoding: "utf8" })}`;
+    // npm is replaced by a shell function (functions win over every PATH entry), answering
+    // `npm view <pkg>@<ver> dist.integrity` with whatever the case under test published.
+    const fakeNpm = `npm() { [ "$2" = "pm-jev@2026.10.5" ] && [ "$3" = "dist.integrity" ] && printf '%s' "$FAKE_INTEGRITY"; }`;
+    const run = (published: string): number | null => spawnSync("bash", ["-c", `${fakeNpm}\n${helper}\nregistry_integrity_matches`], {
+      cwd: root,
+      env: { PATH: process.env.PATH ?? "", FAKE_INTEGRITY: published, pkg_name: "pm-jev", NPM_VERSION: "2026.10.5" },
+    }).status;
+    assert.equal(run(expected), 0, "the same bytes reconcile");
+    assert.equal(run("sha512-AAAA"), 1, "an attested artifact from different bytes is refused");
+    assert.equal(run(""), 1, "missing integrity metadata is refused, never assumed");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+  // The refusal names the mismatch instead of claiming the attestation is missing.
+  assert.match(release, /its integrity does not match the verified artifact of this run/);
 });

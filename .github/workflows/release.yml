@@ -710,6 +710,17 @@ jobs:
           registry_has_version() {
             npm view "${pkg_name}@${NPM_VERSION}" version --prefer-online --json >/dev/null 2>&1
           }
+          # An attestation proves this workflow published SOMETHING at the
+          # coordinate, not that it is the artifact of this run (an earlier run of
+          # another commit attests just the same). npm records the sha512 SRI of
+          # the exact tarball bytes it received, so equality with the verified
+          # local tarball is what proves "our publish got through".
+          registry_integrity_matches() {
+            local published expected
+            published="$(npm view "${pkg_name}@${NPM_VERSION}" dist.integrity --prefer-online 2>/dev/null || true)"
+            expected="sha512-$(openssl dgst -sha512 -binary release-artifact/package.tgz | base64 -w0)"
+            [[ -n "${published}" && "${published}" == "${expected}" ]]
+          }
           # Answers one question and nothing else: is an attested copy of this
           # exact version visible right now? It must never terminate the step
           # itself -- attestation metadata can appear a moment after the version
@@ -718,7 +729,7 @@ jobs:
           # ahead of Git. The retry loop decides when to stop asking; the
           # refusal below decides what an exhausted loop means.
           reconciled_attested() {
-            registry_has_version && registry_version_is_attested
+            registry_has_version && registry_version_is_attested && registry_integrity_matches
           }
           # Reached only once the loop has stopped asking. An occupied
           # coordinate with no attestation is the case worth naming: this
@@ -731,7 +742,9 @@ jobs:
           # before use so visibility never depends on call-time reasoning.
           max_attempts=3
           refuse_unattested_or_fail() {
-            if registry_has_version; then
+            if registry_has_version && registry_version_is_attested; then
+              echo "::error::${pkg_name}@${NPM_VERSION} is attested on the registry, but its integrity does not match the verified artifact of this run. It was published from different bytes (another commit or run), and npm forbids overwriting a version. Refusing to tag and release around it; investigate before re-running."
+            elif registry_has_version; then
               echo "::error::${pkg_name}@${NPM_VERSION} exists on the registry WITHOUT a visible provenance attestation. This workflow only ever publishes with --provenance, so either that artifact did not come from this job, or its attestation never became visible. Refusing to tag and release around it; investigate before re-running."
             else
               # Never claim the publish failed when only visibility was not
@@ -747,7 +760,7 @@ jobs:
           # main was still at 2026.8.7) reconcile instead of failing with a 403
           # when the workflow catches up and re-runs the transaction.
           if reconciled_attested; then
-            echo "::notice::${pkg_name}@${NPM_VERSION} already published and attested; skipping publish step."
+            echo "::notice::${pkg_name}@${NPM_VERSION} already published, attested and byte-identical to the artifact of this run; skipping publish step."
             exit 0
           fi
           publish_with_provenance() {
@@ -896,7 +909,8 @@ jobs:
             echo "::notice::GitHub release for ${RELEASE_TAG} already exists; nothing to resume."
             exit 0
           fi
-          gh release create "${RELEASE_TAG}" --title "${REPO_NAME} ${RELEASE_TAG}" --notes-file RELEASE_NOTES.md --verify-tag
+          # This job has no checkout, so gh has no repository context of its own.
+          gh release create "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" --title "${REPO_NAME} ${RELEASE_TAG}" --notes-file RELEASE_NOTES.md --verify-tag
           echo "Created the missing GitHub release for ${RELEASE_TAG}." >> "$GITHUB_STEP_SUMMARY"
 
   verify_bun:

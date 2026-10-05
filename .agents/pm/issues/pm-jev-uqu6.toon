@@ -6,14 +6,13 @@ status: in_progress
 priority: 2
 tags[1]: "pkg:pm-jev"
 created_at: "2026-10-05T11:03:20.757Z"
-updated_at: "2026-10-05T11:30:29.497Z"
-assignee: pi-glm
-claim_principal: pi-glm
+updated_at: "2026-10-05T11:30:46.336Z"
 author: pi-glm
 parent: pm-jev-0w3q
-comments[2]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-10-05T11:03:25.561Z",pi-glm,"Starting: read both Greptile comments (4182583802, 4182583829) and the pm-brief reference implementation. Plan: (a) release job gets actions: write with a scoped comment, approve only runs whose head SHA is the release PR head and whose workflow is this repo's CI (name: CI), keep the URL warning when approval is not permitted; (b) prepare decides a resume mode when the latest tag is unchanged but has no GitHub release, regenerates release notes read-only, and a minimal contents:write job creates only the GitHub release (no bump, publish or tag)."
   "2026-10-05T11:30:29.497Z",pi-glm,"Both findings implemented and verified. (1) 4182583802: release job now holds actions: write (only job in the workflow with it; comment explains it runs no dependency code, so untrusted build inputs cannot exercise the grant); the merge wait approves a parked run only when its head SHA is the release PR head AND its workflow name is CI, and reports the run URL both before the attempt and on approval failure (best-effort, ported from the fleet release standard). (2) 4182583829: the unchanged-tag skip in prepare now probes the GitHub release for the latest tag (read-only gh api); when it is missing or unknown, prepare outputs resume_release_notes=true and regenerates release notes read-only, and a new minimal resume_release job (contents: write only, needs prepare, same main/opt-in gates) creates only the GitHub release for the existing tag - no version bump, publish or tag - re-checking idempotently before creating. Test file extended: behavioral fake-gh coverage of the resume decision (exists vs missing), pinning of actions:write scope, SHA+CI-workflow matching, approve fallback URL, resume-mode gates, and that the full-release steps never fire on resume. actionlint clean."
+  "2026-10-05T11:30:45.666Z",pi-glm,"Done and pushed to feat/typed-local-decisions as 62b51d2 (SteveBot, .agents/pm committed with the code). Gates: npm run release:check exit 0 (typecheck, lint, duplication, docstring, coverage 100/100/100/100 across line/branch/func counts, audit:prod, pack:dry-run, changelog:check, attestation verify); node --test test/release-workflow.test.ts 17/17 pass (was 14 tests, +3 covering approval scoping and resume mode); pm health --strict-exit exit 0; actionlint clean on release.yml. CHANGELOG regenerated via pm-changelog. Kept: default-off PM_JEV_RELEASE_ENABLED gate on all publishing jobs, SHA-pinned actions, persist-credentials:false, read-only prepare job (the gh probe in decide is read-only observation under contents:read). Open risks: approval stays best-effort - if the token may not approve, a maintainer still must once, but the run URL is logged instead of a silent 30-minute wait; the resume probe treats any gh failure as resume, which is safe because the resume job re-checks existence before creating."
 tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   "npm run release:check",project,pi-glm,"2026-10-05T11:29:33.495Z",local_mutation,feat/typed-local-decisions
   node --test test/release-workflow.test.ts,project,pi-glm,"2026-10-05T11:29:34.332Z",local_mutation,feat/typed-local-decisions
