@@ -1,0 +1,9 @@
+# The commit from which the identity and host-path gate applies.
+#
+# This repository began with a single initialization commit, so there is no
+# pre-baseline history to freeze: the baseline anchors the gate at the
+# repository's first commit, and every commit after it is audited forward from
+# there. The gate fails closed on any commit whose author or committer email
+# is not on the approved list in approved-git-identities.txt, and on any
+# newly added absolute home path.
+b75bc7491c1ad99481cdd7382ed51e819dd87333

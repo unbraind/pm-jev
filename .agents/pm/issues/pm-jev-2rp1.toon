@@ -1,0 +1,12 @@
+id: pm-jev-2rp1
+title: Resolve development glob toolchain audit findings without downgrading fleet gates
+description: "Full npm audit reports four high-severity development dependency findings through braces, micromatch, fast-glob and pm-ops. The production-only audit passes with zero vulnerabilities. The automatic suggested fix downgrades pm-ops and would drop the verified fleet gate toolchain; a compatible upstream fix is deferred. No production exploit or package runtime vulnerability is established by this development dependency report."
+type: Issue
+status: open
+priority: 2
+tags[3]: deferred,dependencies,"pkg:pm-jev"
+created_at: "2026-10-05T05:39:35.257Z"
+updated_at: "2026-10-05T05:39:35.257Z"
+author: codex-sol
+parent: pm-jev-0w3q
+body: ""

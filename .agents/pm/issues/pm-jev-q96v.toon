@@ -1,0 +1,12 @@
+id: pm-jev-q96v
+title: Rust client against the TypeSafe OpenAPI schema is deferred
+description: "No official Rust SDK exists in TypeSafe's SDK index; a Rust pm-jev client needs independent OpenAPI parity checks (auth, all three primitives, model discovery, 401/422/429/529, timeouts) or must wait for vendor support. Deferred out of v0."
+type: Issue
+status: open
+priority: 2
+tags[3]: deferred,"pkg:pm-jev",rust
+created_at: "2026-10-05T04:38:50.058Z"
+updated_at: "2026-10-05T04:38:50.058Z"
+author: pi-glm
+parent: pm-jev-0w3q
+body: ""

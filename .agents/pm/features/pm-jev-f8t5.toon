@@ -1,0 +1,23 @@
+id: pm-jev-f8t5
+title: pm-jev models and doctor commands
+description: "List decision models at the configured endpoint (SDK models.list when it works, Ollama /api/tags capability fallback) and a reachability/degradation check."
+type: Feature
+status: in_progress
+priority: 2
+tags[1]: "pkg:pm-jev"
+created_at: "2026-10-05T04:38:44.842Z"
+updated_at: "2026-10-05T05:56:49.571Z"
+author: pi-glm
+parent: pm-jev-0w3q
+comments[1]{created_at,author,text}:
+  "2026-10-05T05:56:44.588Z",codex-sol,"Verified the shared 17 command/transport tests within the 86-test all-source suite: real TypeSafe SDK HTTP, host extension harness, and isolated real pm projects. All source coverage dimensions are 100%; live local tev1 schema/plausibility and packed npm/Bun installation acceptance passed. Implementation and receipts are linked in README.md and docs/v0-validation.md. Leaving this item in progress for orchestrator verification and closure."
+files[3]{path,scope}:
+  index.ts,project
+  test/decisions.test.ts,project
+  test/transport.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/decisions.test.ts,project,codex-sol,"2026-10-05T05:02:39.187Z",local_mutation,feat/typed-local-decisions
+docs[2]{path,scope}:
+  docs/v0-validation.md,project
+  README.md,project
+body: ""

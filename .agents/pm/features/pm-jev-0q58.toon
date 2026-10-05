@@ -1,0 +1,30 @@
+id: pm-jev-0q58
+title: "pm-jev packaging, gates and CI"
+description: "manifest.json + compiled entry, npm/bun installability, extension install from a local dir, eslint/jscpd/docstring/coverage gates, pm health, CI/codeql/release workflows mirroring the fleet, identity/privacy audit test."
+type: Feature
+status: in_progress
+priority: 2
+tags[1]: "pkg:pm-jev"
+created_at: "2026-10-05T04:38:46.001Z"
+updated_at: "2026-10-05T05:56:46.842Z"
+author: pi-glm
+parent: pm-jev-0w3q
+comments[3]{created_at,author,text}:
+  "2026-10-05T05:42:03.512Z",codex-sol,"All-source coverage passes across 9 source files including every script, with 100% statements, branches, functions and lines and no coverage exemptions. The docstring gate checks all 131 function/export declarations, including callbacks and short helpers. Local npm and Bun packed imports and local-directory pm installation passed, followed by real tev1 triage through npx and bunx and negative gate JSON/exit 1. CI/CodeQL/dependency/release workflows are present; no remote CI run or publication occurred. Follow-ups pm-jev-5h61 and pm-jev-2rp1 record the development-checkout scan cap and development-only audit findings."
+  "2026-10-05T05:51:02.994Z",codex-sol,"The linked-test runner exposed a fixture boundary bug: resolvePmRoot honored inherited PM_PATH and routed temporary-project SDK operations into the linked schema sandbox. Fixtures now use the SDK resolveImplicitPmRoot workspace resolver, preserving explicit fresh tracker roots without hardcoded storage paths. A regression test verifies synthetic IDs and one-item isolation under an inherited PM_PATH override. Direct package behavior was already passing; linked acceptance is rerunning against truly isolated projects."
+  "2026-10-05T05:56:45.743Z",codex-sol,"Final linked coverage passed: 86 tests, 86 passed, zero failed/skipped/canceled, all 9 source files measured at 100% statements/branches/functions/lines. c8 totals: 2531/2531 statements and lines, 481/481 branches, 61/61 functions. Docstrings: all 131 function/export checks documented. The inherited PM_PATH regression is covered. Linked local installation passed npm/Bun imports, npx/bunx live triage, and negative CLI gate JSON with exit 1. Direct release:check passed; production dependency audit is clean. Claims are being released for handoff; no item will be closed."
+files[3]{path,scope}:
+  index.ts,project
+  test/decisions.test.ts,project
+  test/transport.test.ts,project
+tests[6]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  npm run coverage,project,pi-glm,"2026-10-05T04:39:07.127Z",local_mutation,feat/typed-local-decisions
+  npm run lint && npm run duplication && npm run docstring && node_modules/.bin/pm health --strict-exit,project,pi-glm,"2026-10-05T04:39:11.557Z",local_mutation,feat/typed-local-decisions
+  "npm run test:install",project,pi-glm,"2026-10-05T04:39:12.544Z",local_mutation,feat/typed-local-decisions
+  npm test,project,codex-sol,"2026-10-05T05:01:41.906Z",local_mutation,feat/typed-local-decisions
+  node --test test/docstring-gate.test.ts,project,codex-sol,"2026-10-05T05:21:28.722Z",local_mutation,feat/typed-local-decisions
+  "npm run release:check",project,codex-sol,"2026-10-05T05:38:07.449Z",local_mutation,feat/typed-local-decisions
+docs[2]{path,scope}:
+  docs/v0-validation.md,project
+  README.md,project
+body: ""

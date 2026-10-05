@@ -1,0 +1,25 @@
+id: pm-jev-ny9g
+title: pm-jev provider config and privacy gate
+description: Provider selection from pm settings (providers.ollama defaults; jev settings section; env overrides PM_JEV_BASE_URL/PM_JEV_MODEL). Hosted TypeSafe requires TYPESAFE_API_KEY plus explicit jev.allow_external=true opt-in; refuse otherwise (adversarially tested).
+type: Feature
+status: in_progress
+priority: 2
+tags[1]: "pkg:pm-jev"
+created_at: "2026-10-05T04:38:45.443Z"
+updated_at: "2026-10-05T05:56:50.119Z"
+author: pi-glm
+parent: pm-jev-0w3q
+comments[2]{created_at,author,text}:
+  "2026-10-05T05:17:11.002Z",codex-sol,"Adversarial tests now reject missing or string-valued hosted opt-in before any HTTP request, including provider=ollama with an external URL override. Redirects are refused, request/response logging is disabled, and transport errors omit reflected provider bodies. HTTP tests exercise 429/529 retry limits, total deadlines, timeouts, unreachable endpoints, missing models, and malformed answers before apply."
+  "2026-10-05T05:56:45.157Z",codex-sol,"Verified the shared 17 command/transport tests within the 86-test all-source suite: real TypeSafe SDK HTTP, host extension harness, and isolated real pm projects. All source coverage dimensions are 100%; live local tev1 schema/plausibility and packed npm/Bun installation acceptance passed. Implementation and receipts are linked in README.md and docs/v0-validation.md. Leaving this item in progress for orchestrator verification and closure."
+files[3]{path,scope}:
+  index.ts,project
+  test/decisions.test.ts,project
+  test/transport.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/decisions.test.ts,project,codex-sol,"2026-10-05T05:02:40.413Z",local_mutation,feat/typed-local-decisions
+  node --test test/transport.test.ts,project,codex-sol,"2026-10-05T05:13:16.752Z",local_mutation,feat/typed-local-decisions
+docs[2]{path,scope}:
+  docs/v0-validation.md,project
+  README.md,project
+body: ""

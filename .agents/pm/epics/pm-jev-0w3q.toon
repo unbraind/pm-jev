@@ -1,0 +1,21 @@
+id: pm-jev-0w3q
+title: "pm-jev: typed local-first System One decisions for pm items"
+description: "Build pm-jev v0: an opt-in pm extension and library that runs Jev-style System One decision models (local Ollama tev1 by default) over minimized pm item state, returning typed proposals that never mutate items unless --apply clears a configured threshold."
+type: Epic
+status: in_progress
+priority: 2
+tags[3]: agents,"pkg:pm-jev",typesafe-ai
+created_at: "2026-10-05T04:38:37.202Z"
+updated_at: "2026-10-05T05:56:46.325Z"
+author: pi-glm
+comments[4]{created_at,author,text}:
+  "2026-10-05T04:38:56.018Z",pi-glm,"Starting v0 implementation. Orientation verified: local Ollama 0.35.1 serves POST /v1/systemone wire-compatible with the hosted Jev API; @typesafe-ai/sdk 0.6.0 systemOne works against it (~12s per batched call), while the SDK models.list() fails against Ollama ('expected { models: [...] }') so pm-jev models/doctor will fall back to Ollama /api/tags filtered on capability decision. Companion spec: pm-cli-website-flnt (fleet hub)."
+  "2026-10-05T05:01:40.944Z",codex-sol,"Resuming interrupted work as codex-sol. Preserving the four existing commits and tracker items; verifying the implementation and retaining the uncommitted fleet workflows in a focused checkpoint. Remaining work includes deterministic HTTP and host-harness tests, all-source four-dimension coverage, local tev1 acceptance, scratch installation, and complete usage documentation."
+  "2026-10-05T05:20:55.871Z",codex-sol,"npm run test:live passed against real local tev1:4b: triage Bug probability 0.9435 and priority 0 probability 0.9791; dedupe selected the existing synthetic item probability 0.7931; mixed ask returned bug probability 0.9916, impact score 1.9789 and broken noul 0.9839; positive gate 0.94 passed and negative gate 0.02 returned exit_code 1. One live acceptance test passed in 25.4s; no mutation, no hosted API. This bounded plausibility check is not a calibration dataset."
+  "2026-10-05T05:56:40.224Z",codex-sol,"Final real local tev1:4b acceptance passed through pm test --run --progress using isolated synthetic projects: triage Bug p=0.730584 and priority 0 p=0.980728; dedupe selected the existing item p=0.766467; ask bug p=0.991604, impact score=1.978899, broken noul=0.983936; positive gate p=0.940974 passed, negative gate p=0.015977 returned exit 1. One live test passed; no item mutation and no hosted API call. Linked coverage and installation also passed. See docs/v0-validation.md for full scope and deferred risks."
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "npm run test:live",project,pi-glm,"2026-10-05T04:39:12.030Z",local_mutation,feat/typed-local-decisions
+docs[2]{path,scope}:
+  docs/v0-validation.md,project
+  README.md,project
+body: "Companion spec item: pm-cli-website-flnt (TypeSafe AI Jev integration contract) in the fleet hub; research snapshot docs/pm-jev-typesafe-research-2026-09-26.md. Scope for v0: commands jev triage/dedupe/ask/gate/models/doctor, provider config (local Ollama default, hosted TypeSafe behind an explicit privacy opt-in), full test coverage and fleet CI. Out of scope: Rust client, hosted live acceptance, threshold calibration dataset."

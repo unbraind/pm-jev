@@ -1,0 +1,24 @@
+id: pm-jev-2e0n
+title: "pm-jev ask command: caller-defined typed questions against an item"
+description: "Load a JSON question file, validate it against the SDK Questions contract, project the item state, run the batch and return typed answers with model/usage metadata."
+type: Feature
+status: in_progress
+priority: 2
+tags[1]: "pkg:pm-jev"
+created_at: "2026-10-05T04:38:43.533Z"
+updated_at: "2026-10-05T05:56:48.426Z"
+author: pi-glm
+parent: pm-jev-0w3q
+comments[2]{created_at,author,text}:
+  "2026-10-05T05:19:34.722Z",codex-sol,"Real tev1 acceptance found that Ollama rejects explicit criteria:null for noul although the official SDK Questions type permits it. Caller-file parsing now omits absent noul criteria while preserving explicit true/false descriptions. The initial live triage selected Bug at probability 0.944 and priority 0 at 0.979; dedupe selected the existing synthetic item. Full live acceptance is being rerun after the compatibility fix."
+  "2026-10-05T05:56:43.123Z",codex-sol,"Verified the shared 17 command/transport tests within the 86-test all-source suite: real TypeSafe SDK HTTP, host extension harness, and isolated real pm projects. All source coverage dimensions are 100%; live local tev1 schema/plausibility and packed npm/Bun installation acceptance passed. Implementation and receipts are linked in README.md and docs/v0-validation.md. Leaving this item in progress for orchestrator verification and closure."
+files[3]{path,scope}:
+  index.ts,project
+  test/decisions.test.ts,project
+  test/transport.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/decisions.test.ts,project,codex-sol,"2026-10-05T05:02:37.106Z",local_mutation,feat/typed-local-decisions
+docs[2]{path,scope}:
+  docs/v0-validation.md,project
+  README.md,project
+body: ""

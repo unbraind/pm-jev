@@ -1,0 +1,12 @@
+id: pm-jev-6uoz
+title: Threshold calibration dataset via pm-rl is deferred
+description: "Noul thresholds and min-confidence defaults are provisional until question-specific calibration datasets (negations, boundary cases, adversarial state, long context) are measured through pm-rl with consented traces. Deferred out of v0."
+type: Issue
+status: open
+priority: 2
+tags[3]: deferred,"pkg:pm-jev",pm-rl
+created_at: "2026-10-05T04:38:51.021Z"
+updated_at: "2026-10-05T04:38:51.021Z"
+author: pi-glm
+parent: pm-jev-0w3q
+body: ""

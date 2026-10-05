@@ -1,0 +1,12 @@
+id: pm-jev-5h61
+title: Direct development checkout installation exceeds the host source scan cap
+description: "The pinned host refuses local package source snapshots after 10000 entries, even for a development checkout whose dependencies are not shipped. Installing a local directory extracted from the packed package is the supported v0 workaround. Improving host inventory filtering or source-scan budgeting belongs upstream and is outside this package-only run."
+type: Issue
+status: open
+priority: 2
+tags[3]: deferred,host-boundary,"pkg:pm-jev"
+created_at: "2026-10-05T05:32:01.950Z"
+updated_at: "2026-10-05T05:32:01.950Z"
+author: codex-sol
+parent: pm-jev-0w3q
+body: ""

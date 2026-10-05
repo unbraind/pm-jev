@@ -1,0 +1,18 @@
+id: pm-jev-5jw9
+title: Registry recovery needs exact packed-artifact provenance verification
+description: "Outside the eight PR 1 findings: the inherited publish recovery path accepts an existing npm coordinate when dist.attestations is merely nonempty. Require integrity/subject verification against the prepared tarball and intended release commit before treating an existing artifact as the verified release. No claim that presence alone proves artifact identity."
+type: Issue
+status: open
+priority: 2
+tags[1]: "pkg:pm-jev"
+created_at: "2026-10-05T06:53:46.916Z"
+updated_at: "2026-10-05T06:54:49.274Z"
+author: codex-sol
+parent: pm-jev-0w3q
+comments[1]{created_at,author,text}:
+  "2026-10-05T06:54:49.274Z",codex-sol,Observed while implementing PR 1 finding 4181327583. registry_version_is_attested checks only that dist.attestations is nonempty; it does not verify integrity or the provenance subject against the transferred checked tarball. Existing behavior retained to keep the eight-finding patch bounded. Follow-up remains open for owner review.
+files[1]{path,scope}:
+  .github/workflows/release.yml,project
+docs[1]{path,scope}:
+  README.md,project
+body: ""

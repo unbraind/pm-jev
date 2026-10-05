@@ -1,0 +1,13 @@
+{
+  "name": "pm-jev",
+  "version": "2026.10.5",
+  "description": "Typed, local-first System One decisions for pm items: batched choice/score/noul questions over a least-privilege item projection, answered by a local Ollama tev1 model by default or TypeSafe's hosted Jev behind an explicit privacy opt-in. Decisions are proposals: nothing is mutated unless --apply clears a configured probability threshold, and every applied proposal records a redacted receipt comment. Commands: jev triage, jev dedupe, jev ask, jev gate, jev models, jev doctor.",
+  "author": "@unbraind",
+  "entry": "./dist/index.js",
+  "pm_min_version": "2026.10.5",
+  "priority": 90,
+  "capabilities": [
+    "commands",
+    "schema"
+  ]
+}

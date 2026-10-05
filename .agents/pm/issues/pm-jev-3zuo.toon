@@ -1,0 +1,58 @@
+id: pm-jev-3zuo
+title: Address PR 1 eight CodeRabbit review findings
+description: "Verify and address findings 4181327570, 4181327572, 4181327583, 4181327585, 4181327596, 4181327600, 4181327602, 4181327609; record each disposition and gate evidence. No merge or GitHub replies."
+type: Issue
+status: in_progress
+priority: 2
+tags[1]: "pkg:pm-jev"
+created_at: "2026-10-05T06:43:29.373Z"
+updated_at: "2026-10-05T06:58:25.667Z"
+author: codex-sol
+parent: pm-jev-0w3q
+comments[6]{created_at,author,text}:
+  "2026-10-05T06:44:04.265Z",codex-sol,"All eight findings verified as valid. Plan: pin actions and disable checkout credentials; default-off owner release gate; read-only preparation/checks/pack with artifact handoff to privileged publication; same-day refusal; trusted HTTPS credential destinations; expected malformed-URL error; option validation before inference; folded-scalar interpolation regression tests. Publishing retains only contents and pull-requests writes for protected release metadata plus OIDC; no actions write, dependency installs or repository scripts."
+  "2026-10-05T06:52:17.790Z",codex-sol,"Initial full release:check passed: 98 tests, zero failures/skips, all nine authored source files at 100% statements/branches/functions/lines; lint, duplication (0%), docstrings, typecheck, production audit, pack dry-run, changelog and publish-attestation passed. Actionlint 1.7.12 passed CI/release/CodeQL workflows. Runtime findings 4181327596/4181327600/4181327602 fixed with regression coverage; workflow findings 4181327570/4181327572/4181327583/4181327585/4181327609 fixed. Existing protected metadata PR flow is retained; actions-write automation removed; Bun acceptance is a separate read-only job. OIDC preflight precedes remote writes; local version preparation occurs without write credentials."
+  "2026-10-05T06:54:02.287Z",codex-sol,"Artifact handoff shell was exercised with a synthetic metadata bundle: valid commit/tree/hash passed; changed tarball bytes, commit, tree and base all failed before loading release metadata. Same-day shell regression covers first release, unchanged skip, and changed duplicate standard/suffixed tags. Existing registry recovery verifies only attestation presence; exact artifact/subject verification is outside these findings and tracked in pm-jev-5jw9."
+  "2026-10-05T06:54:46.585Z",codex-sol,"Linked npm run test:install passed: packed npm/Node and Bun library imports, npx/bunx installed-extension live triage, compact/full CLI output, negative JSON gate and secret/clean safety gate exit codes. Fixtures used local tev1 and synthetic data; no hosted acceptance or npm publication. Strict pm health --strict-exit --require-merge-drivers --json passed with zero warnings/findings. PM linked-test result tracking is disabled, so durable results are recorded in comments and the review receipt."
+  "2026-10-05T06:56:47.031Z",codex-sol,The final linked release gate caught one duplicate shell-extraction snippet introduced by the added handoff regression. Refactored it into one test helper without changing the 0% gate. The duplication gate now passes; rerunning the full linked release gate on the corrected suite.
+  "2026-10-05T06:58:25.097Z",codex-sol,"Final linked npm run release:check passed with 99 tests and zero failures/skips; 100/100/100/100 across all nine authored sources, lint, zero duplication, docstrings, typecheck, production audit, pack contents, changelog and attestation all passed. Publishing retains actions: read only to diagnose pending release PR runs, never actions: write; focused workflow suite (15/15) and Actionlint passed after this minimal read permission correction. All eight comment IDs are fixed, with dispositions in docs/pr-1-review-findings.md. Items remain in_progress/open for orchestrator verification. Open boundaries: actual OIDC/protected-PR execution untested; registry recovery identity verification deferred in pm-jev-5jw9."
+files[9]{path,scope}:
+  .github/workflows/ci.yml,project
+  .github/workflows/release.yml,project
+  dist/index.d.ts,project
+  dist/index.js,project
+  index.ts,project
+  test/decisions.test.ts,project
+  test/fixtures.ts,project
+  test/release-workflow.test.ts,project
+  test/transport.test.ts,project
+tests[3]:
+  - command: node --test test/decisions.test.ts test/transport.test.ts test/release-workflow.test.ts
+    scope: project
+    provenance:
+      author: codex-sol
+      created_at: "2026-10-05T06:51:30.755Z"
+      source_kind: local_mutation
+      source_ref: feat/typed-local-decisions
+  - command: "npm run release:check"
+    scope: project
+    timeout_seconds: 600
+    provenance:
+      author: codex-sol
+      created_at: "2026-10-05T06:52:18.557Z"
+      source_kind: local_mutation
+      source_ref: feat/typed-local-decisions
+  - command: "npm run test:install"
+    scope: project
+    timeout_seconds: 600
+    provenance:
+      author: codex-sol
+      created_at: "2026-10-05T06:52:19.191Z"
+      source_kind: local_mutation
+      source_ref: feat/typed-local-decisions
+docs[4]{path,scope}:
+  CHANGELOG.md,project
+  docs/pr-1-review-findings.md,project
+  docs/v0-validation.md,project
+  README.md,project
+body: ""

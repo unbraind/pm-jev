@@ -17,6 +17,11 @@ coverage/
 # has landed. Deliberately outside any `pm-cli:` fence, which the CLI rewrites.
 .agents/pm/transactions/
 
+
+
+# Managed extension distributions are installed locally; version and preview receipts live in docs.
+.agents/pm/extensions/
+
 # pm-cli:runtime-cache:start
 .agents/pm/runtime/
 .agents/pm/search/*
@@ -25,6 +30,3 @@ coverage/
 .agents/pm/checkpoints/
 !.agents/pm/search/eval-queries.json
 # pm-cli:runtime-cache:end
-
-# Managed extension distributions are installed locally; version and preview receipts live in docs.
-.agents/pm/extensions/
