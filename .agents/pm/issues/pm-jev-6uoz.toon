@@ -1,12 +1,28 @@
 id: pm-jev-6uoz
-title: Threshold calibration dataset via pm-rl is deferred
-description: "Noul thresholds and min-confidence defaults are provisional until question-specific calibration datasets (negations, boundary cases, adversarial state, long context) are measured through pm-rl with consented traces. Deferred out of v0."
+title: Synthetic threshold calibration dataset and local harness
+description: "Implement a versioned seed-generated synthetic corpus covering negations, boundary cases, adversarial state and long context, plus an opt-in local Ollama harness using the production decision path. Derive empirical family thresholds and a common min-confidence candidate with held-out evaluation; retain provisional defaults unless evidence supports changing them. No user traces, external inference or training. See the linked method, real local report and tests."
 type: Issue
-status: open
+status: in_progress
 priority: 2
 tags[3]: deferred,"pkg:pm-jev",pm-rl
 created_at: "2026-10-05T04:38:51.021Z"
-updated_at: "2026-10-05T04:38:51.021Z"
+updated_at: "2026-10-08T00:05:54.434Z"
 author: pi-glm
 parent: pm-jev-0w3q
+comments[5]{created_at,author,text}:
+  "2026-10-07T23:58:24.649Z",codex-sol,"Implement a seed-generated synthetic-only dataset, local-only official-SDK decision harness, probability and confidence reliability curves, and real local calibration receipt. No user traces or external inference. Keep recommendations advisory unless model-specific evidence supports default changes; inspect pm-rl public environment contracts without modifying that package."
+  "2026-10-08T00:03:26.741Z",codex-sol,"Synthetic corpus v1 has 64 noul questions across four balanced families with disjoint calibration and held-out splits. Official-SDK local HTTP tests pass for inclusive cutoff selection, tied confidences, minimum support, null outcomes, holdout isolation, cloud-tag rejection, response validation and model digest changes. The harness reports separate selective-confidence and positive-class gate precision curves; defaults remain provisional."
+  "2026-10-08T00:03:58.926Z",codex-sol,"Revert proof: replacing the derived confidence cutoff with provisional 0.8 and the derived gate cutoff with provisional 0.5 makes the two focused derivation tests fail (exit 1). Independently reverting only the gate derivation also fails (exit 1). Restored source byte-for-byte; both focused tests pass (2/2). Full package coverage passes all 11 authored sources at 100% statements, branches, functions and lines; lint, zero duplication and docstring gates pass."
+  "2026-10-08T00:05:24.579Z",codex-sol,"Real local tev1:4b calibration completed: corpus v1, 64/64 correct; 32/32 calibration and 32/32 held-out. Each family has 8/8 held-out correct, empirical precision and coverage 100%, gate precision and recall 100%. Model digest and per-question metrics are committed in calibration/report-v1.json. Gate recommendations are 0.5; confidence recommendations are 0 on this perfect narrow sample. Retain provisional gate_threshold=0.5 and min_confidence=0.8: no production or choice/score evidence justifies lowering defaults. pm-rl public contracts were inspected read-only; training-loop integration adds no value for this inference-only corpus."
+  "2026-10-08T00:05:53.939Z",codex-sol,"Initial npm release:check passed with all 11 authored sources at 100% coverage and zero duplication; production audit found zero vulnerabilities. The committed report replay test also validates recorded decisions and refits the published curves. Final verification includes npm and Bun release checks with ordinary and disposable HOME/global-git configurations; all thresholds remain unchanged. Existing development audit follow-up pm-jev-2rp1 remains out of scope."
+files[5]{path,scope}:
+  calibration.ts,project
+  calibration/dataset-v1.json,project
+  calibration/report-v1.json,project
+  scripts/calibrate.ts,project
+  test/calibration.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/calibration.test.ts,project,codex-sol,"2026-10-08T00:03:19.613Z",local_mutation,feat/threshold-calibration
+docs[1]{path,scope}:
+  docs/threshold-calibration.md,project
 body: ""

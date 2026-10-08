@@ -260,4 +260,8 @@ The [vendor's model limitations](https://docs.typesafe.ai/model-jaggedness/jev-1
 include literal interpretation, adversarial state, option-order effects, and weak math,
 dates/counting and multi-hop reasoning. Gate thresholds need workload-specific evaluation;
 false positives and false negatives remain possible. Rust/OpenAPI parity, hosted acceptance,
-and a pm-rl threshold-calibration dataset remain deferred tracker issues.
+and production threshold calibration remain deferred tracker issues.
+The opt-in [synthetic calibration harness](docs/threshold-calibration.md) generates
+a versioned four-family corpus and measures local Ollama reliability curves with
+`npm run calibration`; tests require no Ollama. Its model-specific recommendations
+are advisory and do not change the provisional defaults automatically.
