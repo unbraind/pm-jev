@@ -135,3 +135,13 @@ allowed duplication: `npm run release:check` and `bun run release:check`, each
 also under a disposable HOME with `GIT_CONFIG_GLOBAL=/dev/null` and
 `GIT_CONFIG_NOSYSTEM=1`. `npm run changelog:full` regenerates the tracker-linked
 changelog after pm mutations. No merge, publish or release is part of this work.
+
+On implementation commit `89fb245`, all four required release checks passed:
+112/112 package tests, 100% statements/branches/functions/lines across all 11
+inventoried authored TypeScript sources, zero duplication, zero production audit
+findings, current changelog and valid publication attestation. Linked pm tests
+passed 10/10. Strict pm health passed. Separate pm validation reported existing
+package-wide missing metadata warnings; those are not a calibration failure.
+The final receipt commit changes only documentation and matching tracker history;
+implementation source and the measured artifacts remain identical to the tested
+commit.
