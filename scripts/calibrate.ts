@@ -1,4 +1,7 @@
-import { readFileSync, writeFileSync } from "node:fs";
+/** Generate reproducible calibration input and publish complete reports without truncating existing readers' files. */
+import { randomUUID } from "node:crypto";
+import { readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { calibrate, datasetBytes, generateDataset, readDataset } from "../calibration.ts";
 import { isMainInvocation } from "./main-invocation.ts";
 
@@ -26,12 +29,19 @@ export function parseArgs(args: readonly string[]): CalibrationCommand {
 
 /** Opt-in entry point; fixed synthetic input and explicit positional local settings. */
 export async function main(args: readonly string[]): Promise<void> {
+  /** Validated output destination and local-only calibration parameters. */
   const command = parseArgs(args);
-  if (command.mode === "generate") writeFileSync(command.output, datasetBytes(generateDataset(command.seed)));
-  else {
-    const dataset = readDataset(readFileSync("calibration/dataset-v1.json", "utf8"));
-    const report = await calibrate(dataset, command.baseUrl, command.model, command.target);
-    writeFileSync(command.output, `${JSON.stringify(report, null, 2)}\n`);
+  /** Fully computed bytes precede filesystem mutation, so failed calibration leaves the previous result intact. */
+  const contents = command.mode === "generate"
+    ? datasetBytes(generateDataset(command.seed))
+    : `${JSON.stringify(await calibrate(readDataset(readFileSync("calibration/dataset-v1.json", "utf8")), command.baseUrl, command.model, command.target), null, 2)}\n`;
+  /** Exclusive same-directory file permits one atomic rename of a flushed complete result. */
+  const temporary = join(dirname(command.output), `.${basename(command.output)}.${randomUUID()}.tmp`);
+  try {
+    writeFileSync(temporary, contents, { flag: "wx", mode: 0o600, flush: true });
+    renameSync(temporary, command.output);
+  } finally {
+    rmSync(temporary, { force: true });
   }
 }
 

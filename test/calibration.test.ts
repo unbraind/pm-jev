@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import test from "node:test";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { linkSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { endpoint } from "./fixtures.ts";
@@ -191,9 +191,22 @@ test("opt-in script parses defaults and executes generator and harness over real
     mkdirSync("calibration");
     await main(["generate"]);
     assert.equal(readFileSync("calibration/dataset-v1.json", "utf8"), datasetBytes(corpus));
+    await main(["generate", "42", "calibration/seed42.json"]);
+    /** Retained bytes from an actual non-default seed generation, independent of another invocation. */
+    const generatedSeed42 = readFileSync("calibration/seed42.json", "utf8");
+    await main(["generate", "42", "calibration/seed42.json"]);
+    assert.equal(readFileSync("calibration/seed42.json", "utf8"), generatedSeed42);
+    assert.notEqual(generatedSeed42, datasetBytes(corpus));
+    writeFileSync("calibration/report.json", "previous complete report");
+    linkSync("calibration/report.json", "calibration/retained-report.json");
     await main(["run", "tev1:4b", server.url, "calibration/report.json", "0.95"]);
+    assert.equal(readFileSync("calibration/retained-report.json", "utf8"), "previous complete report", "publishing a new report must preserve the previous inode for existing readers");
     const report = JSON.parse(readFileSync("calibration/report.json", "utf8"));
     assert.equal(report.observations.length, 64);
+    /** Actual rename failure must remove unpublished temporary files without replacing the directory. */
+    const beforeFailure = readdirSync(".").sort();
+    await assert.rejects(main(["generate", "42", "calibration"]));
+    assert.deepEqual(readdirSync(".").sort(), beforeFailure);
     writeFileSync("calibration/dataset-v1.json", "{}");
     await assert.rejects(main(["run", "tev1:4b", server.url, "unwritten.json"]));
   } finally { process.chdir(cwd); await server.close(); rmSync(scratch, { recursive: true, force: true }); }

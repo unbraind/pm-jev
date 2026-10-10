@@ -145,3 +145,38 @@ package-wide missing metadata warnings; those are not a calibration failure.
 The final receipt commit changes only documentation and matching tracker history;
 implementation source and the measured artifacts remain identical to the tested
 commit.
+
+## Atomic output review correction
+
+Dataset and report contents are now fully computed before writing an exclusive
+temporary file in the destination directory. The file is flushed and renamed
+over the destination; unpublished temporary files are removed on failure.
+Existing readers retain the previous complete report until the replacement is
+published. This is atomic replacement, not a claim of directory durability
+after power loss.
+
+The real filesystem regression retains a hardlink to the previous report and
+runs the actual HTTP calibration script. Direct truncation changes that retained
+reader and fails the test; atomic replacement preserves it. An existing-directory
+destination exercises a real rename failure and verifies temporary-file cleanup.
+Two independent invocations with non-default seed 42 produce identical bytes and
+different bytes from the default corpus. The ten calibration tests and all 112
+package tests pass. The unchanged full gate reports 100% statements, branches,
+functions and lines across all 11 authored TypeScript sources. The local model
+measurement above remains the October 8 synthetic run; this filesystem repair
+does not introduce a new model-performance claim.
+
+The current candidate pins published SDK 2026.10.10. Its complete release gate
+passes 112 tests and all four 100% metrics over the 11 authored sources. The packed
+fixture explicitly installs that same SDK identity, isolates its global tracker,
+uses native `bunx --bun`, and reuses the npm library consumer for extension
+activation instead of installing identical dependencies a third time.
+
+Fresh live packed acceptance remains blocked. One run completed both library
+imports, npx and native bunx live triage, compact/full output and the three safety
+exit checks, but exceeded the unchanged 240-second total deadline (296.7 seconds
+including cleanup). The reduced-install rerun then hit the existing 120-second
+npm-install deadline under concurrent host load. Those failed receipts are not a
+packed-acceptance pass; no deadline or production threshold was relaxed. Review,
+published-package privacy approval and a timely complete live consumer run remain
+open gates.
