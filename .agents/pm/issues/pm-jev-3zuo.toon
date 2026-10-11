@@ -2,13 +2,18 @@ id: pm-jev-3zuo
 title: Address PR 1 eight CodeRabbit review findings
 description: "Verify and address findings 4181327570, 4181327572, 4181327583, 4181327585, 4181327596, 4181327600, 4181327602, 4181327609; record each disposition and gate evidence. No merge or GitHub replies."
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags[1]: "pkg:pm-jev"
 created_at: "2026-10-05T06:43:29.373Z"
-updated_at: "2026-10-11T05:17:24.890Z"
+updated_at: "2026-10-11T23:29:32.002Z"
+closed_at: "2026-10-11T23:29:31.984Z"
+completed_at: "2026-10-11T23:29:31.984Z"
 author: codex-sol
 parent: pm-jev-0w3q
+resolution: "Implemented and merged in https://github.com/unbraind/pm-jev/pull/7: PR 1 review findings verified as addressed on main"
+expected_result: The acceptance criteria recorded on pm-jev-3zuo are met on main.
+actual_result: "Merged in https://github.com/unbraind/pm-jev/pull/7 after its full CI, an isolated release gate and a CodeRabbit full review with every finding resolved; PR 1 review findings verified as addressed on main"
 comments[7]{created_at,author,text}:
   "2026-10-05T06:44:04.265Z",codex-sol,"All eight findings verified as valid. Plan: pin actions and disable checkout credentials; default-off owner release gate; read-only preparation/checks/pack with artifact handoff to privileged publication; same-day refusal; trusted HTTPS credential destinations; expected malformed-URL error; option validation before inference; folded-scalar interpolation regression tests. Publishing retains only contents and pull-requests writes for protected release metadata plus OIDC; no actions write, dependency installs or repository scripts."
   "2026-10-05T06:52:17.790Z",codex-sol,"Initial full release:check passed: 98 tests, zero failures/skips, all nine authored source files at 100% statements/branches/functions/lines; lint, duplication (0%), docstrings, typecheck, production audit, pack dry-run, changelog and publish-attestation passed. Actionlint 1.7.12 passed CI/release/CodeQL workflows. Runtime findings 4181327596/4181327600/4181327602 fixed with regression coverage; workflow findings 4181327570/4181327572/4181327583/4181327585/4181327609 fixed. Existing protected metadata PR flow is retained; actions-write automation removed; Bun acceptance is a separate read-only job. OIDC preflight precedes remote writes; local version preparation occurs without write credentials."
@@ -57,4 +62,5 @@ docs[5]{path,scope}:
   docs/tracker-reconciliation.md,project
   docs/v0-validation.md,project
   README.md,project
+close_reason: "Delivered by https://github.com/unbraind/pm-jev/pull/7 (merged); PR 1 review findings verified as addressed on main"
 body: ""

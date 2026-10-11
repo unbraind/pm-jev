@@ -2,14 +2,18 @@ id: pm-jev-6uoz
 title: Synthetic threshold calibration dataset and local harness
 description: "Implement a versioned seed-generated synthetic corpus covering negations, boundary cases, adversarial state and long context, plus an opt-in local Ollama harness using the production decision path. Derive empirical family thresholds and a common min-confidence candidate with held-out evaluation; retain provisional defaults unless evidence supports changing them. No user traces, external inference or training. See the linked method, real local report and tests."
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags[3]: deferred,"pkg:pm-jev",pm-rl
 created_at: "2026-10-05T04:38:51.021Z"
-updated_at: "2026-10-11T05:18:36.277Z"
+updated_at: "2026-10-11T23:29:33.355Z"
+closed_at: "2026-10-11T23:29:33.334Z"
+completed_at: "2026-10-11T23:29:33.334Z"
 author: pi-glm
 parent: pm-jev-0w3q
-actual_result: "Atomic dataset/report replacement and explicit non-default-seed reproducibility verified with real HTTP/filesystem regressions. Published SDK2026.10.10 full release gate passes112/112 and four100 across all11 authored sources. Final fixture lint/typecheck pass. Fresh live packed acceptance remains failed: all library/triage/compact/full/safety behavior checks completed in one run but240s deadline exceeded; reduced-install rerun hit120s npm-install limit. No threshold or deadline changes; required reviews, timely packed run and publication privacy remain open."
+resolution: "Implemented and merged in https://github.com/unbraind/pm-jev/pull/4: synthetic threshold calibration dataset and local harness"
+expected_result: The acceptance criteria recorded on pm-jev-6uoz are met on main.
+actual_result: "Merged in https://github.com/unbraind/pm-jev/pull/4 after its full CI, an isolated release gate and a CodeRabbit full review with every finding resolved; synthetic threshold calibration dataset and local harness"
 comments[11]{created_at,author,text}:
   "2026-10-07T23:58:24.649Z",codex-sol,"Implement a seed-generated synthetic-only dataset, local-only official-SDK decision harness, probability and confidence reliability curves, and real local calibration receipt. No user traces or external inference. Keep recommendations advisory unless model-specific evidence supports default changes; inspect pm-rl public environment contracts without modifying that package."
   "2026-10-08T00:03:26.741Z",codex-sol,"Synthetic corpus v1 has 64 noul questions across four balanced families with disjoint calibration and held-out splits. Official-SDK local HTTP tests pass for inclusive cutoff selection, tied confidences, minimum support, null outcomes, holdout isolation, cloud-tag rejection, response validation and model digest changes. The harness reports separate selective-confidence and positive-class gate precision curves; defaults remain provisional."
@@ -33,4 +37,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
 docs[2]{path,scope}:
   docs/threshold-calibration.md,project
   docs/tracker-reconciliation.md,project
+close_reason: "Delivered by https://github.com/unbraind/pm-jev/pull/4 (merged); synthetic threshold calibration dataset and local harness"
 body: ""
