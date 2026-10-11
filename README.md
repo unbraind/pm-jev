@@ -22,11 +22,8 @@ From a built local checkout, install into a scratch or existing pm project:
 npm install
 npm run build
 npm pack --ignore-scripts
-mkdir pm-jev.local
-tar -xzf pm-jev-2026.10.5.tgz --strip-components=1 -C pm-jev.local
-# In the destination pm project, install dependencies and then the local extension:
-npm install --ignore-scripts ../pm-jev/pm-jev-2026.10.5.tgz
-pm install ../pm-jev/pm-jev.local
+# In the destination pm project, install the archive directly:
+pm install ./pm-jev-2026.10.5.tgz
 pm jev doctor
 pm --json jev models
 ```
@@ -40,10 +37,12 @@ ollama pull tev1:4b
 pm-jev exports a library and a pm extension, with no standalone executable. npm and
 Bun consumers can import `pm-jev`; commands run through the host executable with
 `npx --no-install pm jev …` or `bunx --no-install pm jev …` when pm is installed.
-A full development checkout with many dependency files can exceed the host's 10,000-entry
-local-source scan cap. The extracted local package directory avoids that cap while
-using the same shipped entry and dependencies. The host copies the extension; npm/Bun
-installs its dependencies in the destination project. Use the host-owned `--json` global flag; pm-jev declares no competing JSON flag.
+Use `bunx --bun --no-install pm jev …` to force a native Bun host run; bare
+`bunx` may follow pm's Node shebang.
+The host installs and activates the packed extension, including its dependencies.
+For a library consumer, use `npm install ./pm-jev-2026.10.5.tgz` or
+`bun add ./pm-jev-2026.10.5.tgz` with a compatible pm host installed in that project.
+Use the host-owned `--json` global flag; pm-jev declares no competing JSON flag.
 Default text/TOON decisions round probabilities, confidence and scores to three decimals.
 Choices show the top three options plus the chosen option when needed, with
 `omitted_options` counting hidden options; dedupe candidate details follow that selection.
@@ -58,6 +57,8 @@ Runtime tracker paths come from the host and SDK, including custom pm storage ro
 | --- | --- |
 | `pm jev triage <id>` | One batch proposing type, priority, needs_human and sensitive; no writes. |
 | `pm jev triage <id> --apply --min-confidence 0.8` | Apply qualifying type/priority changes and append a receipt comment. |
+| `pm jev triage --open --type Issue --limit 20` | Stream compact proposals for a bounded open backlog; no writes. |
+| `pm --json jev triage --open --apply --min-confidence 0.8 --refresh` | Emit JSON lines, apply qualifying changes, and refresh matching receipts. |
 | `pm jev dedupe --title "Fix login crash" --body "Details" --limit 8` | Rank all tracker items in code, then choose a candidate id or `none`. |
 | `pm jev ask <id> --questions questions.json` | Validate and answer caller-defined choice, score and noul questions. |
 | `pm jev gate --noul "The text contains credentials or private data." --text "Synthetic text" --threshold 0.5 --expect false` | Exit 0 when the proposition does not hold; exit 1 when credentials/private data are detected. |
@@ -77,7 +78,9 @@ The former `passed` field has been removed. Operational errors remain errors.
 | true | false (secret/private-data gate) | false | 1 |
 | false | false (secret/private-data gate) | true | 0 |
 
-Triage and ask project only title, type, description, body, tags and status. Text
+Triage projects title, description, distinct body and nonempty tags. It omits
+current type/priority/status from model input and avoids repeating description as body.
+Ask retains title, type, description, body, tags and status. Text
 fields and free gate text are bounded to 4,000 characters; tags to 32 entries of
 128 characters. Comments, history,
 authors, linked files and paths from tracker metadata are excluded. A path or secret
@@ -94,6 +97,22 @@ threshold, updates only qualifying changed type/priority fields through the SDK,
 and records resolved model, catalog version, rounded probabilities and applied fields.
 A receipt is also appended when no field qualifies. Qualifying fields and the receipt
 are submitted together in one SDK update, preserving the host mutation and history contract.
+Inference source is re-read before returning proposals; an item-lock mutation guard
+also refuses stale writes. Batch receipts hash full title/description/body/tags/status,
+including text beyond truncation, while excluding inferred type/priority and annotations.
+The hash therefore remains valid after applied routing writes. A matching current-catalog
+receipt skips inference unless `--refresh`; dry runs never append receipts.
+
+Backlog selection uses the host's role-derived open lifecycle bucket, type normalization,
+ordering and strict reads. `--limit` defaults to 20 and accepts integers from 1 to 1000.
+One total deadline covers the invocation, with a shared abort signal across requests
+and retries. One client and question catalog are reused; Ollama model residency is
+kept warm through `keep_alive`. Each selected item produces one compact TOON table row
+or one JSON line, followed by changed/would_change/skipped/failed counts. Counts are
+items, not fields; unchanged or low-probability proposals are skipped. Stale inference
+is skipped without a receipt; operational failures count as failed and exit 1.
+`--type`, `--limit`, `--refresh` require `--open`; an id and `--open` are incompatible,
+and `--full` is single-item only. See [batch contracts and limits](docs/batch-triage.md).
 
 Dedupe uses a complete, fail-closed SDK read, deterministic title similarity, stable
 id tie-breaking and a bounded candidate list. Run it before `pm create`. Both duplicate
@@ -143,6 +162,7 @@ settings. There is no separate pm-jev configuration file or credential store.
     "total_deadline_ms": 270000,
     "min_confidence": 0.8,
     "gate_threshold": 0.5,
+    "keep_alive": "5m",
     "allow_external": false
   }
 }
@@ -155,6 +175,8 @@ The default total deadline is at least 240 seconds and three per-attempt timeout
 (270 seconds with the default timeout). Settings thresholds are bounded to [0,1].
 CLI probability flags outside that range fail. Dedupe defaults to 8 candidates, capped
 at 32; invalid limits fall back to the default.
+Ollama `keep_alive` accepts finite seconds (including zero or negative values), or
+a duration such as `5m`; the default is `5m`. It is omitted for hosted TypeSafe calls.
 
 Hosted configuration uses `provider: "typesafe"`, default base URL
 `https://api.typesafe.ai`, default model `jev-latest`, runtime `TYPESAFE_API_KEY`, and

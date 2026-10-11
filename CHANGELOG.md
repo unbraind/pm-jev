@@ -5,6 +5,7 @@
 ### Added
 
 - Compact decision output for agent context budgets ([pm-jev-qriu](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-qriu.toon))
+- Batch open backlog triage with bounded streaming and stable receipts ([pm-jev-k8qe](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-k8qe.toon))
 - pm-jev dedupe command: model-confirmed duplicate screening before create ([pm-jev-m9v5](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-m9v5.toon))
 - pm-jev ask command: caller-defined typed questions against an item ([pm-jev-2e0n](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-2e0n.toon))
 - pm-jev gate command: calibrated noul exit gate for agents and CI ([pm-jev-nn3x](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-nn3x.toon))

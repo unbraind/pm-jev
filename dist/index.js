@@ -19,7 +19,8 @@
 // `jev.allow_external=true` setting, and refuses loudly otherwise. Request
 // bodies are never logged.
 import { APIConnectionError, APIError, APITimeoutError, APIUserAbortError, TypeSafeClient, } from "@typesafe-ai/sdk";
-import { createPmCliExpectedError, getSettingsPath, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, scoreItemSimilarity, } from "@unbrained/pm-cli/sdk";
+import { createHash } from "node:crypto";
+import { createPmCliExpectedError, getSettingsPath, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
 import { defineCommand, defineExtension } from "@unbrained/pm-cli/sdk/authoring";
 /** Re-export the structural expected-error predicate for package consumers. */
 export { isPmCliExpectedError };
@@ -86,6 +87,16 @@ const STATE_TEXT_LIMIT = 4_000;
 const TIMEOUT_MS_MIN = 1_000;
 /** Largest per-attempt timeout accepted from settings, milliseconds. */
 const TIMEOUT_MS_MAX = 600_000;
+/** Validate the Ollama wire value without interpreting it as a request timeout. */
+function keepAliveSetting(value) {
+    if (value === undefined)
+        return "5m";
+    if (typeof value === "number" && Number.isFinite(value))
+        return value;
+    if (typeof value === "string" && /^-?\d+(\.\d+)?(ns|us|µs|ms|s|m|h)$/.test(value))
+        return value;
+    throw createPmCliExpectedError("jev.keep_alive must be finite seconds or an Ollama duration such as 5m.", { context: { code: "jev_invalid_keep_alive" } });
+}
 /**
  * Read the `jev` section from pm's own `settings.json`.
  *
@@ -232,6 +243,7 @@ export async function resolveJevEndpoint(pmRoot, env) {
             totalDeadlineMs,
             minConfidence: probabilitySetting(section.min_confidence, DEFAULT_MIN_CONFIDENCE),
             gateThreshold: probabilitySetting(section.gate_threshold, DEFAULT_GATE_THRESHOLD),
+            ...(provider === "ollama" ? { keepAlive: keepAliveSetting(section.keep_alive) } : {}),
         },
     };
 }
@@ -316,6 +328,32 @@ export function projectItemState(item) {
         body: truncateStateText(item.body),
     };
 }
+/** Remove a description repeated as the body or its leading paragraph. */
+function distinctTriageBody(item) {
+    const body = item.body?.trim();
+    const description = item.description?.trim();
+    if (description && body?.startsWith(description)) {
+        const rest = body.slice(description.length);
+        if (rest.length === 0 || rest.startsWith("\n") || rest.startsWith("\r"))
+            return rest.trim();
+    }
+    return body;
+}
+/** Project only triage evidence, bounding text and omitting a duplicated description. */
+export function projectTriageState(item) {
+    const description = truncateStateText(item.description);
+    const body = truncateStateText(distinctTriageBody(item));
+    return {
+        title: truncateStateText(item.title),
+        ...(description ? { description } : {}),
+        ...(body ? { body } : {}),
+        ...(item.tags.length ? { tags: item.tags.slice(0, 32).map(/** Bound each retained triage tag. */ /** Bound each retained triage tag. */ tag => tag.slice(0, 128)) } : {}),
+    };
+}
+/** Hash complete source evidence, excluding inferred type/priority and receipt metadata. */
+export function triageSourceHash(item) {
+    return createHash("sha256").update(JSON.stringify([item.title, item.description ?? "", item.body ?? "", item.tags, item.status])).digest("hex");
+}
 /**
  * Assert a value is a finite probability in `[0, 1]`.
  *
@@ -396,12 +434,15 @@ export function validateAnswers(questions, raw) {
  * @param config - Call-ready configuration (model, deadline).
  * @param state - Projected decision state.
  * @param questions - Named typed questions, each evaluated independently.
+ * @param signal - Optional shared run deadline; otherwise create a per-decision deadline.
  * @returns The validated response with resolved model and usage.
  * @throws {PmCliExpectedError} A mapped transport/validation failure.
  */
-export async function runDecision(client, config, state, questions) {
+export async function runDecision(client, config, state, questions, signal) {
     try {
-        const result = await client.systemOne({ state: state, questions, model: config.model }, { signal: AbortSignal.timeout(config.totalDeadlineMs) });
+        const request = { state: state, questions, model: config.model,
+            ...(config.provider === "ollama" && config.keepAlive !== undefined ? { keep_alive: config.keepAlive } : {}) };
+        const result = await client.systemOne(request, { signal: signal ?? AbortSignal.timeout(config.totalDeadlineMs) });
         validateAnswers(questions, result);
         return result;
     }
@@ -619,7 +660,7 @@ async function openDecisionBoundary(ctx) {
     const resolved = await resolveJevEndpoint(ctx.pm_root, process.env);
     const config = requireCallableEndpoint(resolved);
     const decision = createJevClient(resolved, process.env);
-    const pm = new PmClient({ pmRoot: ctx.pm_root, cwd: ctx.source_workspace_root, author: ctx.global.author });
+    const pm = ctx.sdk?.client ?? new PmClient({ pmRoot: ctx.pm_root, cwd: ctx.source_workspace_root, author: ctx.global.author });
     return { pm, pmRoot: ctx.pm_root, decision, config };
 }
 /**
@@ -786,18 +827,79 @@ function winningLevel(probabilities, rubricSize) {
  * @throws {PmCliExpectedError} Configuration, transport, or validation failure.
  */
 async function runTriageCommand(ctx) {
+    const started = performance.now();
     const id = readStringOption(ctx.options, "item", ["id"]) ?? ctx.args[0];
-    if (id === undefined || id.trim().length === 0) {
-        throw createPmCliExpectedError("jev triage needs an item id: pm jev triage <id>", {
+    const open = readBooleanOption(ctx.options, "open") === true;
+    if (ctx.args.length > 1 || (open && id !== undefined) ||
+        (!open && ["type", "limit", "refresh"].some(/** Reject backlog-only options on a single item. */ /** Reject backlog-only options on a single item. */ key => ctx.options[key] !== undefined)) ||
+        (open && readBooleanOption(ctx.options, "full") === true)) {
+        throw createPmCliExpectedError("Use either jev triage <id> [--full] or jev triage --open [--type <t>] [--limit N] [--refresh].", { context: { code: "jev_triage_arguments" } });
+    }
+    if (!open && (id === undefined || id.trim().length === 0)) {
+        throw createPmCliExpectedError("jev triage needs an item id or --open: pm jev triage <id> | --open", {
             context: { code: "jev_item_required" },
         });
     }
+    const limit = batchLimit(ctx.options);
     const boundary = await openDecisionBoundary(ctx);
     const threshold = probabilityOption(ctx.options, "minConfidence", ["min_confidence"], boundary.config.minConfidence);
     const settings = await readSettings(boundary.pmRoot);
     const questions = buildTriageQuestions(settings);
-    const item = await loadItem(boundary, id.trim());
-    const result = await runDecision(boundary.decision, boundary.config, projectItemState(item), questions);
+    const apply = readBooleanOption(ctx.options, "apply") === true;
+    const rawType = readStringOption(ctx.options, "type");
+    const type = resolveTypeName(rawType, resolveItemTypeRegistry(settings));
+    if (ctx.options.type !== undefined && type === undefined)
+        throw createPmCliExpectedError("--type must name a configured item type.", { context: { code: "jev_triage_type" } });
+    if (open)
+        return runBacklogTriage(ctx, boundary, questions, threshold, limit, started, type);
+    const item = await loadTriageSource(boundary, id.trim());
+    return decideTriage(boundary, item, questions, threshold, apply);
+}
+/** Require a positive bounded item count instead of silently repairing a CLI typo. */
+function batchLimit(options) {
+    const raw = readStringOption(options, "limit");
+    if (options.limit === undefined)
+        return 20;
+    if (raw === undefined)
+        throw createPmCliExpectedError("--limit must be an integer from 1 to 1000.", { context: { code: "jev_triage_limit" } });
+    const value = Number(raw);
+    if (!/^\d+$/.test(raw) || !Number.isSafeInteger(value) || value < 1 || value > 1000) {
+        throw createPmCliExpectedError("--limit must be an integer from 1 to 1000.", { context: { code: "jev_triage_limit" } });
+    }
+    return value;
+}
+/** Read unbounded source fields through the host, never truncating receipt or hash inputs. */
+async function loadTriageSource(boundary, id) {
+    const result = await boundary.pm.get(id, { fields: "id,title,type,status,priority,tags,description,body,updated_at,comments", outputBudget: "unbounded", outputLimit: "unbounded" });
+    return result.item;
+}
+/** Compare complete evidence and host coordinates before returning or persisting proposals. */
+function sameTriageSource(left, right) {
+    return triageInputHash(left) === triageInputHash(right);
+}
+/** Hash the complete inference evidence and routing/update coordinates for lock-scoped validation. */
+function triageInputHash(item) {
+    return createHash("sha256").update(JSON.stringify([triageSourceHash(item), item.updated_at, item.type, item.priority])).digest("hex");
+}
+/** Reject stale or expired inference inside the host lock before either artifact is persisted. */
+function guardTriageMutation(ctx) {
+    if (ctx.before === null || ctx.after === null)
+        return;
+    const added = (ctx.after.metadata.comments ?? []).slice((ctx.before.metadata.comments ?? []).length);
+    for (const comment of added) {
+        if (!comment.text.startsWith("pm-jev triage receipt: model="))
+            continue;
+        const guard = /, input_sha256=([a-f0-9]{64}), deadline_ms=(\d+),/.exec(comment.text);
+        if (guard === null)
+            continue;
+        if (guard[1] === triageInputHash({ ...ctx.before.metadata, body: ctx.before.body }) && Date.now() < Number(guard[2]))
+            continue;
+        return { allow: false, code: "jev_stale_inference", message: "Triage source changed or the run deadline expired.", remediation: "Retry triage against the current item." };
+    }
+}
+/** Infer one item, authorize each field independently, and atomically append a stable receipt. */
+async function decideTriage(boundary, item, questions, threshold, apply, signal, deadline = Date.now() + boundary.config.totalDeadlineMs) {
+    const result = await runDecision(boundary.decision, boundary.config, projectTriageState(item), questions, signal);
     const typeAnswer = result.answers.type;
     const scoreAnswer = result.answers.priority;
     const proposals = {
@@ -819,17 +921,21 @@ async function runTriageCommand(ctx) {
     };
     const written = [];
     const changes = {};
-    if (readBooleanOption(ctx.options, "apply") === true) {
-        if ((proposals.type.probabilities[proposals.type.value]) >= threshold && proposals.type.value !== item.type) {
-            changes.type = proposals.type.value;
-            written.push(`type=${proposals.type.value}`);
-        }
-        const levelProbability = proposals.priority.probabilities[String(proposals.priority.level)];
-        if (levelProbability >= threshold && proposals.priority.level !== item.priority) {
-            changes.priority = proposals.priority.level;
-            written.push(`priority=${proposals.priority.level}`);
-        }
-        await boundary.pm.update(item.id, { ...changes, comment: [formatTriageReceipt(result.model, proposals, threshold, written)], message: "pm-jev triage proposals and receipt" });
+    if ((proposals.type.probabilities[proposals.type.value]) >= threshold && proposals.type.value !== item.type) {
+        changes.type = proposals.type.value;
+        written.push(`type=${proposals.type.value}`);
+    }
+    const levelProbability = proposals.priority.probabilities[String(proposals.priority.level)];
+    if (levelProbability >= threshold && proposals.priority.level !== item.priority) {
+        changes.priority = proposals.priority.level;
+        written.push(`priority=${proposals.priority.level}`);
+    }
+    if (!sameTriageSource(item, await loadTriageSource(boundary, item.id))) {
+        throw createPmCliExpectedError("Item changed during triage; retry against the current source.", { context: { code: "jev_stale_inference" } });
+    }
+    signal?.throwIfAborted();
+    if (apply) {
+        await boundary.pm.update(item.id, { ...changes, comment: [formatTriageReceipt(result.model, proposals, threshold, written, item, deadline)], message: "pm-jev triage proposals and receipt" });
     }
     return {
         item: item.id,
@@ -837,7 +943,7 @@ async function runTriageCommand(ctx) {
         model: result.model,
         usage: result.usage,
         catalog_version: TRIAGE_CATALOG_VERSION,
-        applied: written,
+        applied: apply ? written : [],
     };
 }
 /**
@@ -851,12 +957,17 @@ async function runTriageCommand(ctx) {
  * @param proposals - The validated proposals for this item.
  * @param threshold - Probability threshold used for this run.
  * @param written - Fields actually written by this run.
+ * @param source - Full source evidence used for redacted content and revision hashes.
+ * @param deadline - Absolute expiry checked by the host mutation guard before persistence.
  * @returns The single-line receipt comment text.
  */
-function formatTriageReceipt(model, proposals, threshold, written) {
+function formatTriageReceipt(model, proposals, threshold, written, source, deadline) {
     const parts = [
         `pm-jev triage receipt: model=${model}`,
         `catalog=${TRIAGE_CATALOG_VERSION}`,
+        `source_sha256=${triageSourceHash(source)}`,
+        `input_sha256=${triageInputHash(source)}`,
+        `deadline_ms=${deadline}`,
         `type=${proposals.type.value} p=${roundProbability(proposals.type.probabilities[proposals.type.value])}`,
         `priority=${proposals.priority.level} p=${roundProbability(proposals.priority.probabilities[String(proposals.priority.level)])}`,
         `needs_human=${roundProbability(proposals.needs_human.probability)}`,
@@ -864,6 +975,76 @@ function formatTriageReceipt(model, proposals, threshold, written) {
         `threshold=${roundProbability(threshold)}`,
     ];
     return `${parts.join(", ")}${written.length > 0 ? `, applied=[${written.join(", ")}]` : ", applied=none"}.`;
+}
+/** Select JSON lines using precisely the same host precedence as single-item output. */
+function jsonDecisionOutput(ctx) {
+    return ctx.global.json === true || ctx.global.outputFormat === "json" ||
+        (ctx.global.json === undefined && ctx.global.outputFormat === undefined && ctx.global.defaultOutputFormat === "json");
+}
+/** Emit one JSON line or TOON table row through the host's public output primitive. */
+function streamTriageRow(ctx, row) {
+    if (ctx.global.quiet === true)
+        return;
+    if (jsonDecisionOutput(ctx)) {
+        writeStdout(`${JSON.stringify(row)}\n`);
+        return;
+    }
+    writeStdout(`  ${Object.values(row).map(/** Quote string cells and preserve primitive types in a TOON table. */ /** Quote string cells and preserve primitive types in a TOON table. */ value => JSON.stringify(typeof value === "number" ? Math.round(value * 1000) / 1000 : value)).join(",")}\n`);
+}
+/** Emit a TOON table header once; row framing remains independent of response latency. */
+function streamTriageHeader(ctx, name, count, keys) {
+    if (ctx.global.quiet !== true && !jsonDecisionOutput(ctx))
+        writeStdout(`${name}[${count}]{${keys.join(",")}}:\n`);
+}
+/** Detect only current catalog receipts matching complete source evidence. */
+function hasTriageReceipt(item) {
+    const marker = `, catalog=${TRIAGE_CATALOG_VERSION}, source_sha256=${triageSourceHash(item)},`;
+    return item.comments.some(/** Ignore unrelated comments and receipts from other source revisions. */ /** Ignore unrelated comments and receipts from other source revisions. */ comment => comment.text.startsWith("pm-jev triage receipt: model=") && comment.text.includes(marker));
+}
+/** Infer a bounded host-selected backlog with shared client, questions, and one abort deadline. */
+async function runBacklogTriage(ctx, boundary, questions, threshold, limit, started, type) {
+    const remaining = Math.max(1, Math.ceil(boundary.config.totalDeadlineMs - (performance.now() - started)));
+    const deadline = Date.now() + remaining;
+    const signal = AbortSignal.timeout(remaining);
+    const selected = await boundary.pm.list({ lifecycleBucket: "open", type, limit: String(limit), fields: "id", strictRead: true, outputBudget: "unbounded", outputLimit: "unbounded" });
+    const counts = { changed: 0, would_change: 0, skipped: 0, failed: 0 };
+    const empty = { type: null, type_probability: null, priority: null, priority_probability: null, needs_human: null, sensitive: null, reason: null };
+    streamTriageHeader(ctx, "items", selected.items.length, ["item", "outcome", ...Object.keys(empty)]);
+    for (const entry of selected.items) {
+        const id = entry.id;
+        let row;
+        try {
+            signal.throwIfAborted();
+            const item = await loadTriageSource(boundary, id);
+            signal.throwIfAborted();
+            if (readBooleanOption(ctx.options, "refresh") !== true && hasTriageReceipt(item)) {
+                row = { item: id, outcome: "skipped", ...empty, reason: "prior_receipt" };
+            }
+            else {
+                const apply = readBooleanOption(ctx.options, "apply") === true;
+                const result = await decideTriage(boundary, item, questions, threshold, apply, signal, deadline);
+                const p = result.proposals;
+                const wouldChange = (p.type.probabilities[p.type.value] >= threshold && p.type.value !== item.type) ||
+                    (p.priority.probabilities[String(p.priority.level)] >= threshold && p.priority.level !== item.priority);
+                row = { item: id, outcome: wouldChange ? apply ? "changed" : "would_change" : "skipped",
+                    type: p.type.value, type_probability: p.type.probabilities[p.type.value], priority: p.priority.level,
+                    priority_probability: p.priority.probabilities[String(p.priority.level)], needs_human: p.needs_human.probability,
+                    sensitive: p.sensitive.probability, reason: wouldChange ? null : "no_qualifying_change" };
+            }
+        }
+        catch (error) {
+            const mapped = translateDecisionError(error, boundary.config);
+            const stale = mapped.code === "jev_stale_inference";
+            row = { item: id, outcome: stale ? "skipped" : "failed", ...empty, reason: mapped.code ?? "jev_triage_failure" };
+        }
+        counts[row.outcome] += 1;
+        streamTriageRow(ctx, row);
+    }
+    const summary = { record_type: "pm-jev.triage.summary", selected: selected.items.length, ...counts,
+        has_more: selected.has_more, elapsed_ms: Math.round(performance.now() - started), exit_code: counts.failed > 0 ? 1 : 0 };
+    streamTriageHeader(ctx, "summary", 1, Object.keys(summary));
+    streamTriageRow(ctx, summary);
+    return { ...suppressHostOutput(summary), ...(summary.failed > 0 ? { exit_code: 1 } : {}) };
 }
 /**
  * Rank tracker items against a proposed title deterministically, in code.
@@ -1228,6 +1409,10 @@ const FULL_FLAG = {
 /** Flags for the triage command. */
 const TRIAGE_FLAGS = [
     FULL_FLAG,
+    { long: "--open", value_type: "boolean", description: "Stream a bounded backlog selected with the host's open lifecycle semantics" },
+    { long: "--type", value_name: "t", value_type: "string", description: "Host item type filter (requires --open)" },
+    { long: "--limit", value_name: "N", value_type: "string", description: "Backlog item bound (default 20, maximum 1000; requires --open)" },
+    { long: "--refresh", value_type: "boolean", description: "Re-evaluate items with matching source receipts (requires --open)" },
     {
         long: "--apply",
         value_type: "boolean",
@@ -1285,15 +1470,15 @@ function registerCommands(api) {
         name: "jev triage",
         description: "Propose item type, priority, needs_human and sensitive flags with one batched System One decision",
         intent: "Route and rank a pm item with typed, probabilistic proposals before any human or agent edits it",
-        arguments: [{ name: "id", required: true, description: "Item id to triage" }],
+        arguments: [{ name: "id", required: false, description: "Item id to triage; omit with --open" }],
         flags: TRIAGE_FLAGS,
         failure_hints: [
             "Start the local Ollama server and pull the model: ollama pull tev1:4b",
             "Check the endpoint with: pm jev doctor",
         ],
-        examples: ["pm jev triage my-item-1a2b", "pm jev triage my-item-1a2b --apply --min-confidence 0.9"],
+        examples: ["pm jev triage my-item-1a2b", "pm jev triage my-item-1a2b --apply --min-confidence 0.9", "pm jev triage --open --limit 10"],
         /** Dispatch the registered command with the host-resolved tracker and flags. */
-        run: (ctx) => decisionOutput(ctx, runTriageCommand),
+        run: (ctx) => readBooleanOption(ctx.options, "open") === true ? runTriageCommand(ctx) : decisionOutput(ctx, runTriageCommand),
     }));
     api.registerCommand(defineCommand({
         name: "jev dedupe",
@@ -1355,6 +1540,7 @@ export default defineExtension({
     description: "Typed, local-first System One decisions for pm items (Jev-style models via @typesafe-ai/sdk)",
     /** Register the versioned decision commands with the pm host. */
     activate(api) {
+        api.hooks.beforeMutation(guardTriageMutation);
         registerCommands(api);
     },
 });

@@ -1,22 +1,25 @@
-import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { resolve, join } from "node:path";
+import { join } from "node:path";
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { PmClient, resolveImplicitPmRoot } from "@unbrained/pm-cli/sdk";
+import { createExtensionCommandSdk, PmClient, resolveImplicitPmRoot } from "@unbrained/pm-cli/sdk";
 import { createExtensionTestHarness } from "@unbrained/pm-cli/sdk/testing";
 import extension from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
 
-/** Create an isolated real tracker through the host CLI and bind the real harness. */
+/** Create an isolated real tracker through the host SDK and bind its actual client to the harness. */
 export async function project() {
   const cwd = mkdtempSync(join(tmpdir(), "jev-test-"));
-  execFileSync(resolve("node_modules/.bin/pm"), ["--no-extensions", "init", "--defaults", "--prefix", "synthetic", "--agent-guidance", "skip"], { cwd, env: { ...process.env, PM_PATH: "", PM_AUTHOR: "fixture" }, stdio: "pipe" });
   const pmRoot = resolveImplicitPmRoot(cwd);
   const pm = new PmClient({ cwd, pmRoot, noExtensions: true, author: "fixture" });
-  const harness = await createExtensionTestHarness(extension, { capabilities: ["commands", "schema"] });
-  return { cwd, pmRoot, pm, harness, dispose: () => rmSync(cwd, { recursive: true, force: true }) };
+  await pm.init("synthetic", { defaults: true, agentGuidance: "skip" });
+  const harness = await createExtensionTestHarness(extension, { capabilities: ["commands", "schema", "hooks"] });
+  const bound = { ...harness,
+    /** Supply the real scratch client through the public host SDK factory. */
+    runCommand: (options: Parameters<typeof harness.runCommand>[0]) => harness.runCommand({ ...options, sdk: createExtensionCommandSdk(pmRoot, pm, "fixture", options.command) }),
+  };
+  return { cwd, pmRoot, pm, harness: bound, dispose: () => rmSync(cwd, { recursive: true, force: true }) };
 }
 
 /** Start a real loopback HTTP boundary with replaceable deterministic responses. */

@@ -41,6 +41,8 @@ export interface JevConfig {
     readonly minConfidence: number;
     /** Probability threshold the gate command compares a noul against. */
     readonly gateThreshold: number;
+    /** Ollama model residency after a request, in seconds or a duration string. */
+    readonly keepAlive?: number | string;
 }
 /** Why a hosted (typesafe) provider is not callable; local callers see `null`. */
 export type HostedBlock = "missing_opt_in" | "missing_api_key";
@@ -139,6 +141,17 @@ export interface ProjectedItemState {
  * @returns The state object sent to the decision model.
  */
 export declare function projectItemState(item: ProjectableItem): ProjectedItemState;
+/** Minimal triage evidence; excludes routing outputs and redundant body text. */
+export interface TriageItemState {
+    readonly title: string;
+    readonly description?: string;
+    readonly body?: string;
+    readonly tags?: readonly string[];
+}
+/** Project only triage evidence, bounding text and omitting a duplicated description. */
+export declare function projectTriageState(item: ProjectableItem): TriageItemState;
+/** Hash complete source evidence, excluding inferred type/priority and receipt metadata. */
+export declare function triageSourceHash(item: ProjectableItem): string;
 /** Validate every answer, probability, rubric, model and usage before any mutation. */
 export declare function validateAnswers(questions: Questions, raw: unknown): asserts raw is SystemOneResult<Questions>;
 /**
@@ -149,10 +162,11 @@ export declare function validateAnswers(questions: Questions, raw: unknown): ass
  * @param config - Call-ready configuration (model, deadline).
  * @param state - Projected decision state.
  * @param questions - Named typed questions, each evaluated independently.
+ * @param signal - Optional shared run deadline; otherwise create a per-decision deadline.
  * @returns The validated response with resolved model and usage.
  * @throws {PmCliExpectedError} A mapped transport/validation failure.
  */
-export declare function runDecision(client: TypeSafeClient, config: JevConfig, state: unknown, questions: Questions): Promise<SystemOneResult<Questions>>;
+export declare function runDecision(client: TypeSafeClient, config: JevConfig, state: unknown, questions: Questions, signal?: AbortSignal): Promise<SystemOneResult<Questions>>;
 /**
  * Map any decision-call failure onto a typed expected CLI error.
  *
@@ -236,6 +250,30 @@ export interface TriageDecision {
  * @returns The typed question map for the triage batch.
  */
 export declare function buildTriageQuestions(settings: PmSettings): Questions;
+/** One compact batch row, intentionally excluding source text and answer distributions. */
+export interface BacklogTriageRow {
+    readonly item: string;
+    readonly outcome: "changed" | "would_change" | "skipped" | "failed";
+    readonly type: string | null;
+    readonly type_probability: number | null;
+    readonly priority: number | null;
+    readonly priority_probability: number | null;
+    readonly needs_human: number | null;
+    readonly sensitive: number | null;
+    readonly reason: string | null;
+}
+/** Constant-size terminal receipt retained by host hooks and embedding callers. */
+export interface BacklogTriageSummary {
+    readonly record_type: "pm-jev.triage.summary";
+    readonly selected: number;
+    readonly changed: number;
+    readonly would_change: number;
+    readonly skipped: number;
+    readonly failed: number;
+    readonly has_more: boolean;
+    readonly elapsed_ms: number;
+    readonly exit_code: number;
+}
 /** One code-ranked duplicate candidate for the model to confirm. */
 export interface DedupeCandidate {
     /** Candidate item id. */

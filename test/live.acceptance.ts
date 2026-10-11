@@ -3,7 +3,15 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { project } from "./fixtures.ts";
-import type { TriageDecision, DedupeDecision, AskDecision, GateDecision } from "../index.ts";
+import { isHostOutputSuppressed } from "@unbrained/pm-cli/sdk";
+import type { BacklogTriageSummary, TriageDecision, DedupeDecision, AskDecision, GateDecision } from "../index.ts";
+
+/** Restore scoped provider overrides after a live scenario. */
+function restoreLiveEnvironment(url: string | undefined, model: string | undefined): void {
+  for (const [key, value] of [["PM_JEV_BASE_URL", url], ["PM_JEV_MODEL", model]]) {
+    if (value === undefined) delete process.env[key as string]; else process.env[key as string] = value;
+  }
+}
 
 test("real local tev1: triage, dedupe, ask and gate on synthetic state", { timeout: 240000 }, async () => {
   const fixture = await project();
@@ -54,5 +62,49 @@ test("real local tev1: triage, dedupe, ask and gate on synthetic state", { timeo
     assert.equal(clean.ok, true);
     assert.equal(clean.exit_code, undefined);
     console.log("LIVE ACCEPTANCE: schema and plausibility passed for triage, dedupe, ask, positive gate, negative gate, secret safety gate and clean safety gate; no item mutation");
-  } finally { if (previousUrl === undefined) delete process.env.PM_JEV_BASE_URL; else process.env.PM_JEV_BASE_URL = previousUrl; if (previousModel === undefined) delete process.env.PM_JEV_MODEL; else process.env.PM_JEV_MODEL = previousModel; fixture.dispose(); }
+  } finally { restoreLiveEnvironment(previousUrl, previousModel); fixture.dispose(); }
+});
+
+test("real local tev1: bounded batch dry-run, apply, receipt reuse and refresh counts/timings", { timeout: 360000 }, async () => {
+  const fixture = await project();
+  const previousUrl = process.env.PM_JEV_BASE_URL;
+  const previousModel = process.env.PM_JEV_MODEL;
+  const previousFetch = globalThis.fetch;
+  /** Restore the transport within the same scoped test ownership. */
+  const restoreFetch = () => { globalThis.fetch = previousFetch; };
+  let requests = 0;
+  globalThis.fetch = (input, init) => {
+    if (String(input).endsWith("/v1/systemone")) requests++;
+    return previousFetch(input, init);
+  };
+  process.env.PM_JEV_BASE_URL = "http://localhost:11434";
+  process.env.PM_JEV_MODEL = "tev1:4b";
+  try {
+    for (let index = 0; index < 2; index++) await fixture.pm.create({ type: "Feature", title: `Login regression ${index}: every user crashes`, description: "Login throws an exception and closes the application. Existing login worked before the update.", priority: 3 });
+    const run = async (phase: string, options: Record<string, unknown>) => {
+      const countBefore = requests;
+      const started = performance.now();
+      const response = await fixture.harness.runCommand({ command: "jev triage", pmRoot: fixture.pmRoot, options: { open: true, limit: "2", ...options } });
+      assert.ok(isHostOutputSuppressed(response.result));
+      const result = response.result.result as BacklogTriageSummary;
+      assert.equal(result.selected, 2);
+      assert.equal(result.failed, 0);
+      console.log(JSON.stringify({ phase, requests: requests - countBefore, wall_ms: Math.round(performance.now() - started), ...result }));
+      return result;
+    };
+    const dry = await run("batch-dry", {});
+    assert.equal(dry.changed, 0);
+    for (const item of (await fixture.pm.listAllComplete()).items) assert.equal((await fixture.pm.comments(item.id)).count, 0);
+    await run("batch-apply", { apply: true });
+    const countBefore = requests;
+    assert.equal((await run("batch-reuse", { apply: true })).skipped, 2);
+    assert.equal(requests, countBefore);
+    await run("batch-refresh", { refresh: true });
+    assert.equal(requests, 6);
+    console.log("LIVE BATCH ACCEPTANCE: 2 synthetic items; 6 independent-state requests; receipt reuse made zero requests");
+  } finally {
+    restoreFetch();
+    restoreLiveEnvironment(previousUrl, previousModel);
+    fixture.dispose();
+  }
 });
