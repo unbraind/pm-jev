@@ -6,10 +6,10 @@ status: in_progress
 priority: 2
 tags[1]: "pkg:pm-jev"
 created_at: "2026-10-11T05:08:46.971Z"
-updated_at: "2026-10-11T06:25:57.776Z"
+updated_at: "2026-10-11T07:04:47.870Z"
 author: codex-sol-implementation
 parent: pm-jev-0w3q
-comments[11]{created_at,author,text}:
+comments[15]{created_at,author,text}:
   "2026-10-11T05:09:51.100Z",codex-sol-implementation,"Implementation scope: bounded open backlog selection and one deadline; compact streaming; full source hashes and redacted apply receipts; stale inference checks; smaller triage state; supported Ollama keep_alive; direct tarball acceptance. Existing reconciliation items remain owned by the orchestrator. Live model calls are waiting for baseline completion."
   "2026-10-11T05:20:38.930Z",codex-sol-implementation,"Inspected the host authoring contracts: streaming uses public writeStdout and suppressHostOutput, while SDK read output controls are static rather than an asynchronous item iterator. Ollama systemone accepts shared state plus named questions and no independent-state batch or streaming response. Reuse one boundary/client/catalog and one run AbortSignal across sequential item requests. The official TypeSafe SDK forwards additional request properties, so Ollama keep_alive uses its actual systemone wire field without a custom transport. Existing triage already used one systemOne call for four questions. Hosted opt-in and redirect refusal remain enforced."
   "2026-10-11T05:32:07.365Z",codex-sol-implementation,"Implementation uses complete untruncated source SHA-256 for receipt reuse, plus a redacted inference revision hash and expiry checked by the host mutation guard under the item lock. Source reuse ignores inferred type/priority and annotations so apply does not invalidate its receipt. Tests bind real scratch clients with createExtensionCommandSdk and initialize real trackers through PmClient.init, avoiding repeated CLI boot overhead and accidental package-workspace scope. Packed acceptance uses deterministic loopback HTTP and direct archive installation; real model acceptance remains separate and has not run."
@@ -21,7 +21,12 @@ comments[11]{created_at,author,text}:
   "2026-10-11T06:11:54.674Z",codex-sol-implementation,"npm run release:check passed: 127 tests passed, zero failed/canceled/skipped; native and c8 whole-source coverage 100 percent across all 11 TypeScript source files; 214 documented declarations; zero duplicate lines across 29 checked sources; production audit zero vulnerabilities; 14 packed files including batch documentation; changelog and publication attestation checks passed. Bun and isolated identity gates are still pending. npm ci initially reported four high development advisories already covered by existing tracking; no existing reconciliation item was modified."
   "2026-10-11T06:21:06.960Z",codex-sol-implementation,"bun run release:check passed with 127 passed tests, zero failures/cancellations/skips and 100 percent whole-source lines/branches/functions across 11 source files. npm run test:install passed one complete acceptance scenario: direct archive npm/Bun imports, bundled documentation, direct host installation, Node and native Bun triage, compact/full output, gate exits, batch JSON lines, apply, zero-request Bun receipt reuse, changed-source skip and real item-lock refusal. Consumers use matching host SDK 2026.10.10. Earlier dependency provisioning stalled; the successful final run used a bounded install timeout with forced termination on expiry. No live model requests were run. Isolated identity gate remains pending."
   "2026-10-11T06:25:43.933Z",codex-sol-implementation,"Final isolated gate passed with HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check: 127 passed, zero failed/canceled/skipped, 100 percent whole-source coverage across 11 files, clean production audit, unchanged thresholds and passing packaging/changelog/attestation checks. All three requested release gates passed. Final scope includes implementation, generated dist, TypeScript regressions, minimal projection, source-stable receipts, lock-scoped freshness/deadline refusal and direct tarball docs/acceptance. Live acceptance is added behind test:live but was not run; measured model latency remains external. SDK limits: shared-state systemOne has no independent-state batch or response streaming, and tracker operations do not accept cancellation. CLI orientation reported list-open deprecated; linked test-result persistence is disabled by existing project policy. No push, PR, release, tag or existing reconciliation mutation was performed; this feature remains in progress for orchestrator verification."
-files[8]{path,scope}:
+  "2026-10-11T06:31:36.446Z",codex-sol,"Orchestrator real local latency acceptance: Ollama 0.35.1, tev1:4b digest 9b5bb969e46c4b776826d6f2d401e22893205693f172653af6254897255025b8, fresh synthetic tracker and identical two-line login regression. Main 7c0f0e0 cold command/HTTP 53072/44974ms, immediate warm 8237/7630ms; both 2530 input and 5 output tokens, ONE request with four questions. Candidate cold command/HTTP 43839/43269ms, warm 11783/11162ms; both 2466/5 tokens and ONE request. Both cold inventories initially empty; baseline server startup measured 25.30s. Input fell 64 tokens (2.5%); these noisy samples do NOT establish a warm speedup. Client initialization, scheduling and cache effects are separate from load/prompt work. See docs/latency-baseline.md for the actual protocol profile and limitations."
+  "2026-10-11T06:31:40.624Z",codex-sol,"Orchestrator live batch acceptance with real local tev1:4b: three synthetic open items, limit 3. Dry 48024ms: changed0/would_change3/skipped0/failed0, 3 requests. Apply 43242ms: changed3/would_change0/skipped0/failed0, 3 requests. Reuse 656ms: skipped3, failed0, ZERO requests. Refresh 35507ms: skipped3/no qualifying changes, failed0, 3 requests. Each inference reported 2466-2470 input tokens and 5 output tokens. npm run test:live separately passed 2/2 tests, zero failed/canceled/skipped, 171205.7ms overall. Two-item live phases wall time/counts: dry36085ms/would_change2/requests2; apply34772ms/changed2/requests2; reuse572ms/skipped2/requests0; refresh24575ms/skipped2/requests2. No real backlog or hosted input was used."
+  "2026-10-11T06:31:43.686Z",codex-sol,"Independent real-model packed acceptance passed: direct tarball installation into a fresh tracker with host 2026.10.10; doctor 5/5. npx dry2 and reuse2, native bunx apply2 and refresh2; each emitted two item JSON lines plus one summary, zero failures. Process wall times dry58708/apply33980/reuse8583/refresh33443ms; extension elapsed49846/28121/759/27448ms. Both items retained exactly one receipt after apply/reuse/dry refresh; installed-host item-lock guard accepted current-source apply. Runtime source matches implementation commit c3e77cb, cherry-picked as 158bfa1. Full npm, Bun and isolated HOME/Git release gates each passed 127/127, 100/100/100/100 coverage across 11 source files and zero duplication. Expanded deterministic packed acceptance passed 1/1, including stale-source and expired-receipt refusal. The behavioral revert proof failed 3/3 unchanged compiled regressions and restored 3/3. Main reconciliation is in docs/tracker-reconciliation.md: nine criteria sets implemented; ny9g providers.ollama fallback remains a gap; review status is unavailable, so no items were closed."
+  "2026-10-11T06:47:06.362Z",codex-sol,"Final combined-branch archive was freshly packed and installed into another real scratch tracker with host 2026.10.10. Real local model/version/digest reconfirmed unchanged. Doctor5/5; dry2 would_change, apply2 changed, reuse2 skipped, refresh2 skipped/no qualifying changes; failed0 throughout. Each emitted exactly two JSON item lines plus one summary; both items retained one receipt. Final process wall times dry59680/apply58878/reuse14643/refresh49188ms; extension elapsed50227/47268/1054/33994ms. Variability remains substantial; no warm throughput improvement is claimed. Compiled regressions on the combined branch passed 3/3. Runtime, manifest, dependencies and test sources remain byte-identical to the candidate that passed all three 127-test release gates. Updated docs/latency-baseline.md records final artifact timings."
+files[9]{path,scope}:
+  docs/latency-baseline.md,project
   index.ts,project
   manifest.json,project
   package.json,project
@@ -30,9 +35,27 @@ files[8]{path,scope}:
   test/install.acceptance.ts,project
   test/live.acceptance.ts,project
   test/triage-dist.test.ts,project
-tests[1]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
-  node --test test/batch-triage.test.ts,project,600,codex-sol-implementation,"2026-10-11T05:32:44.385Z",local_mutation,feat/batch-backlog-triage-code
-docs[2]{path,scope}:
+tests[2]:
+  - command: node --test test/batch-triage.test.ts
+    scope: project
+    timeout_seconds: 600
+    provenance:
+      author: codex-sol-implementation
+      created_at: "2026-10-11T05:32:44.385Z"
+      source_kind: local_mutation
+      source_ref: feat/batch-backlog-triage-code
+  - command: "npm run test:live"
+    scope: project
+    timeout_seconds: 600
+    pm_context_mode: none
+    workspace_context_mode: snapshot
+    provenance:
+      author: codex-sol
+      created_at: "2026-10-11T06:31:48.260Z"
+      source_kind: local_mutation
+      source_ref: feat/batch-backlog-triage
+docs[3]{path,scope}:
   docs/batch-triage.md,project
+  docs/latency-baseline.md,project
   README.md,project
 body: ""
