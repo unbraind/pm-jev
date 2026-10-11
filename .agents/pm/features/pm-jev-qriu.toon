@@ -6,11 +6,11 @@ status: in_progress
 priority: 2
 tags[1]: "pkg:pm-jev"
 created_at: "2026-10-05T06:12:33.466Z"
-updated_at: "2026-10-05T06:24:17.457Z"
+updated_at: "2026-10-11T05:18:15.066Z"
 author: codex-sol
 parent: pm-jev-0w3q
 release: 2026.10.5
-comments[7]{created_at,author,text}:
+comments[11]{created_at,author,text}:
   "2026-10-05T06:12:55.405Z",codex-sol,"TDD plan: exercise triage, dedupe, mixed ask and gate compact output, top-three ties and selected-option retention, omitted_options counts, empty dedupe, full/JSON/output-format=json preservation, and unchanged two-decimal receipts. Pinned host reserved flags exclude full; register one shared full flag for the four commands. Measure the same live crash triage receipt through the host TOON renderer before and after."
   "2026-10-05T06:16:10.893Z",codex-sol,"Red phase: linked agent UX tests failed as expected because default probabilities and confidence were unrounded. Live tev1:4b crash-report triage baseline: 1035 TOON bytes including the renderer newline, 11 configured item types. Saved the full receipt for an identical-response comparison after formatting changes."
   "2026-10-05T06:18:50.886Z",codex-sol,"Default release-note generation selects only closed items, but orchestrator rules require these implementations to remain in progress. Make changelog generation/check/release-note status selection consistently include closed,in_progress so pending implementations are visible without closing tracker items or disabling drift checking."
@@ -18,11 +18,15 @@ comments[7]{created_at,author,text}:
   "2026-10-05T06:21:37.491Z",codex-sol,"Strengthened regressions after baseline gates: verify dedupe retains exact SDK similarity 2/3 in JSON/full and rounds it to 0.667 in compact output. Extend packed CLI acceptance to parse full and expect false flags through the actual host, asserting compact TOON omissions, complete full output, and real secret/clean process exits."
   "2026-10-05T06:23:47.693Z",codex-sol,"Verification complete: 88/88 tests pass; c8 statements/lines 2599/2599, branches 533/533, functions 63/63 (100/100/100/100), nine source files including scripts. Typecheck and test compilation pass, lint passes, duplication 0%, docstrings 139/139. Real local live and packed npm/Bun CLI acceptance pass (including full and safety exits). Strict source-worktree PM health passes with zero findings; linked PM health also passes after selecting tracker context instead of the empty schema fixture. Production audit, pack dry run, changelog drift check and publish-attestation checks pass. Tracker test-result tracking is disabled, so PM comments and docs carry receipts. Remaining risk: bounded synthetic evidence does not establish calibrated production accuracy; existing hosted/calibration items remain deferred."
   "2026-10-05T06:24:17.457Z",codex-sol,"Final coverage receipt correction: the latest c8 report counts 532/532 branches, with 2599/2599 statements/lines and 63/63 functions. The earlier successful run counted 533/533 branches; both enforce all four 100% dimensions. docs/agent-ux-validation.md uses the final report."
+  "2026-10-11T05:07:28.788Z",codex-sol,Reconciling merged main 7c0f0e0 acceptance criteria against implementation and targeted tests. The tracker schema has no review status; fully evidenced items will stay in_progress for orchestrator closure.
+  "2026-10-11T05:11:47.851Z",codex-sol,"Real local baseline on merged main 7c0f0e0: Ollama 0.35.1 tev1:4b, synthetic two-line Feature with login crash title and description. Cold triage 53072ms end-to-end, 44974ms HTTP, 2530 input tokens and 5 output tokens; initially no loaded models. Warm identical repeat 8237ms end-to-end, 7630ms HTTP, same 2530/5 tokens. Server startup logs measured runner load 25.30s; the System One response has no load/evaluation duration fields. Four typed questions already use one HTTP call, so latency work targets bounded state and warm-model reuse rather than claiming to eliminate four requests. No tracker changes in these baseline decisions."
+  "2026-10-11T05:13:55.306Z",codex-sol,"Acceptance met on main 7c0f0e0: index.ts:857 compactDecisionValue rounds three decimals and retains top three plus the selected choice; index.ts:887 preserves full precision for host JSON/full. Test: compact all four commands while JSON and full retain precision and every option (test/agent-ux.test.ts:57). Fresh main acceptance: node --test test/agent-ux.test.ts test/decisions.test.ts test/transport.test.ts test/release-workflow.test.ts test/calibration.test.ts passed 51/51, zero failures/skips. Tracker schema has no review status, so status stays in_progress; not closed. Cross-reference docs/tracker-reconciliation.md; line numbers refer to checked main."
+  "2026-10-11T05:15:25.859Z",codex-sol,"Independent main reconciliation verified 51/51 targeted tests, zero failures, canceled, skipped or TODO cases (175.8s). The same exact command passed 51/51 through pm test --run --only-last --progress in a snapshot workspace (127.9s). Loopback tests use real trackers and the official model SDK. docs/tracker-reconciliation.md distinguishes nine implemented acceptance sets from the providers.ollama fallback gap on pm-jev-ny9g. No item is closed."
 files[3]{path,scope}:
   index.ts,project
   package.json,project
   test/agent-ux.test.ts,project
-tests[9]:
+tests[10]:
   - command: node --test test/agent-ux.test.ts
     scope: project
     provenance:
@@ -87,8 +91,20 @@ tests[9]:
       created_at: "2026-10-05T06:23:46.415Z"
       source_kind: local_mutation
       source_ref: feat/typed-local-decisions
-docs[3]{path,scope}:
+  - command: node --test test/agent-ux.test.ts test/decisions.test.ts test/transport.test.ts test/release-workflow.test.ts test/calibration.test.ts
+    scope: project
+    timeout_seconds: 600
+    pm_context_mode: none
+    workspace_context_mode: snapshot
+    provenance:
+      author: codex-sol
+      created_at: "2026-10-11T05:11:16.847Z"
+      source_kind: local_mutation
+      source_ref: feat/batch-backlog-triage
+docs[5]{path,scope}:
   CHANGELOG.md,project
   docs/agent-ux-validation.md,project
+  docs/latency-baseline.md,project
+  docs/tracker-reconciliation.md,project
   README.md,project
 body: ""

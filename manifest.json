@@ -8,6 +8,7 @@
   "priority": 90,
   "capabilities": [
     "commands",
-    "schema"
+    "schema",
+    "hooks"
   ]
 }
