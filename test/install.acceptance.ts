@@ -1,6 +1,7 @@
 /** Exercise direct packed installation and deterministic HTTP decisions with matched host SDKs. */
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { promisify } from "node:util";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -8,6 +9,7 @@ import { join, resolve } from "node:path";
 import { tmpdir, devNull } from "node:os";
 import test from "node:test";
 import { answers, endpoint, project } from "./fixtures.ts";
+import { triageSourceHash } from "../dist/index.js";
 import type { Questions } from "@typesafe-ai/sdk";
 
 const execute = promisify(execFile);
@@ -105,12 +107,33 @@ test("packed npm and Bun consumers install the tarball directly and run host tri
     });
     const stale = await execute(pmBin, [...applyArgs, "--refresh"], { cwd: fixture.cwd, env, timeout: 120000 });
     assert.equal((JSON.parse(stale.stdout.trim().split("\n")[0]) as { reason: string }).reason, "jev_stale_inference");
-    const expiredReceipt = receipt.replace(/deadline_ms=\d+/, "deadline_ms=0");
-    const denied = await execute(pmBin, ["--json", "update", created.item.id, "--type", "Feature", "--priority", "3", "--comment", expiredReceipt], { cwd: fixture.cwd, env, timeout: 120000 }).then(() => { throw new Error("host accepted an expired triage receipt"); }, error => error as { code: number; stdout: string; stderr: string });
+    const staleReceipt = receipt.replace(/deadline_ms=\d+/, `deadline_ms=${Number.MAX_SAFE_INTEGER}`);
+    const denied = await execute(pmBin, ["--json", "update", created.item.id, "--type", "Feature", "--priority", "3", "--comment", staleReceipt], { cwd: fixture.cwd, env, timeout: 120000 }).then(() => { throw new Error("host accepted a stale triage receipt"); }, error => error as { code: number; stdout: string; stderr: string });
     assert.notEqual(denied.code, 0);
     assert.match(`${denied.stdout}${denied.stderr}`, /jev_stale_inference/);
     assert.equal((await fixture.pm.get(created.item.id)).item.type, "Issue");
     assert.equal((await fixture.pm.comments(created.item.id)).count, 1);
-    console.log("installed host: apply, zero-request Bun receipt reuse, stale inference and item-lock refusal passed");
+    console.log("installed host: apply, zero-request Bun receipt reuse, stale inference and stale-receipt refusal passed");
+    const current = (await fixture.pm.get(created.item.id, { full: true })).item;
+    assert.ok(typeof current.title === "string" && typeof current.type === "string" && typeof current.status === "string" && Array.isArray(current.tags));
+    assert.equal(typeof current.updated_at, "string");
+    const sourceHash = triageSourceHash({ ...current, title: current.title, type: current.type, status: current.status, tags: current.tags });
+    const inputHash = createHash("sha256").update(JSON.stringify([sourceHash, current.updated_at, current.type, current.priority])).digest("hex");
+    const expiredReceipt = receipt
+      .replace(/source_sha256=[a-f0-9]{64}/, `source_sha256=${sourceHash}`)
+      .replace(/input_sha256=[a-f0-9]{64}/, `input_sha256=${inputHash}`)
+      .replace(/deadline_ms=\d+/, "deadline_ms=0");
+    const updateArgs = ["--json", "update", created.item.id, "--type", "Feature", "--priority", "3", "--comment"];
+    const expired = await execute(pmBin, [...updateArgs, expiredReceipt], { cwd: fixture.cwd, env, timeout: 120000 }).then(() => { throw new Error("host accepted an expired triage receipt with matching current-source hashes"); }, error => error as { code: number; stdout: string; stderr: string });
+    assert.notEqual(expired.code, 0);
+    assert.match(`${expired.stdout}${expired.stderr}`, /jev_stale_inference/);
+    assert.match(`${expired.stdout}${expired.stderr}`, /run deadline expired/);
+    assert.deepEqual((await fixture.pm.get(created.item.id, { full: true })).item, current);
+    const validReceipt = expiredReceipt.replace("deadline_ms=0", `deadline_ms=${Number.MAX_SAFE_INTEGER}`);
+    await execute(pmBin, [...updateArgs, validReceipt], { cwd: fixture.cwd, env, timeout: 120000 });
+    assert.equal((await fixture.pm.get(created.item.id)).item.type, "Feature");
+    assert.equal((await fixture.pm.get(created.item.id)).item.priority, 3);
+    assert.equal((await fixture.pm.comments(created.item.id)).count, 2);
+    console.log("installed host: matching current-source expired receipt refused without mutation; future deadline accepted");
   } finally { await server.close(); fixture.dispose(); rmSync(scratch, { recursive: true, force: true }); }
 });
