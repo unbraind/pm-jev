@@ -6,14 +6,14 @@ status: closed
 priority: 2
 tags[1]: "pkg:pm-jev"
 created_at: "2026-10-05T06:12:33.466Z"
-updated_at: "2026-10-11T23:29:27.882Z"
+updated_at: "2026-10-12T00:39:43.471Z"
 closed_at: "2026-10-11T23:29:27.857Z"
 completed_at: "2026-10-11T23:29:27.857Z"
 author: codex-sol
 parent: pm-jev-0w3q
 release: 2026.10.5
 resolution: "Implemented and merged in https://github.com/unbraind/pm-jev/pull/7: compact decision output verified against code and tests"
-expected_result: The acceptance criteria recorded on pm-jev-qriu are met on main.
+expected_result: "Delivered outcome: Compact decision output for agent context budgets."
 actual_result: "Merged in https://github.com/unbraind/pm-jev/pull/7 after its full CI, an isolated release gate and a CodeRabbit full review with every finding resolved; compact decision output verified against code and tests"
 comments[11]{created_at,author,text}:
   "2026-10-05T06:12:55.405Z",codex-sol,"TDD plan: exercise triage, dedupe, mixed ask and gate compact output, top-three ties and selected-option retention, omitted_options counts, empty dedupe, full/JSON/output-format=json preservation, and unchanged two-decimal receipts. Pinned host reserved flags exclude full; register one shared full flag for the four commands. Measure the same live crash triage receipt through the host TOON renderer before and after."
