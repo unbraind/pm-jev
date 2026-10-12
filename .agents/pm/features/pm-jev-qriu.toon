@@ -2,14 +2,19 @@ id: pm-jev-qriu
 title: Compact decision output for agent context budgets
 description: "Round default decision output to three decimals and retain top three choice options plus the selected option; preserve full precision and options for JSON and full. Follow-up to triage, dedupe and ask implementation."
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags[1]: "pkg:pm-jev"
 created_at: "2026-10-05T06:12:33.466Z"
-updated_at: "2026-10-11T05:18:15.066Z"
+updated_at: "2026-10-12T00:57:43.567Z"
+closed_at: "2026-10-11T23:29:27.857Z"
+completed_at: "2026-10-11T23:29:27.857Z"
 author: codex-sol
 parent: pm-jev-0w3q
 release: 2026.10.5
+resolution: "Implemented and merged in https://github.com/unbraind/pm-jev/pull/7: compact decision output verified against code and tests"
+expected_result: "Delivered outcome: Compact decision output for agent context budgets."
+actual_result: "Merged in https://github.com/unbraind/pm-jev/pull/7 with green required CI checks and a completed CodeRabbit full review with every finding resolved; compact decision output verified against code and tests"
 comments[11]{created_at,author,text}:
   "2026-10-05T06:12:55.405Z",codex-sol,"TDD plan: exercise triage, dedupe, mixed ask and gate compact output, top-three ties and selected-option retention, omitted_options counts, empty dedupe, full/JSON/output-format=json preservation, and unchanged two-decimal receipts. Pinned host reserved flags exclude full; register one shared full flag for the four commands. Measure the same live crash triage receipt through the host TOON renderer before and after."
   "2026-10-05T06:16:10.893Z",codex-sol,"Red phase: linked agent UX tests failed as expected because default probabilities and confidence were unrounded. Live tev1:4b crash-report triage baseline: 1035 TOON bytes including the renderer newline, 11 configured item types. Saved the full receipt for an identical-response comparison after formatting changes."
@@ -107,4 +112,5 @@ docs[5]{path,scope}:
   docs/latency-baseline.md,project
   docs/tracker-reconciliation.md,project
   README.md,project
+close_reason: "Delivered by https://github.com/unbraind/pm-jev/pull/7 (merged); compact decision output verified against code and tests"
 body: ""

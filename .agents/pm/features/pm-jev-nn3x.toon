@@ -2,13 +2,18 @@ id: pm-jev-nn3x
 title: "pm-jev gate command: calibrated noul exit gate for agents and CI"
 description: One noul proposition over --text or a projected --item; exit code 0/1 from the calibrated probability against --threshold.
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags[1]: "pkg:pm-jev"
 created_at: "2026-10-05T04:38:44.189Z"
-updated_at: "2026-10-11T05:15:07.936Z"
+updated_at: "2026-10-12T00:57:42.134Z"
+closed_at: "2026-10-11T23:29:29.266Z"
+completed_at: "2026-10-11T23:29:29.266Z"
 author: pi-glm
 parent: pm-jev-0w3q
+resolution: "Implemented and merged in https://github.com/unbraind/pm-jev/pull/7: calibrated noul gate command verified against code and tests"
+expected_result: "Delivered outcome: pm-jev gate command: calibrated noul exit gate for agents and CI."
+actual_result: "Merged in https://github.com/unbraind/pm-jev/pull/7 with green required CI checks and a completed CodeRabbit full review with every finding resolved; calibrated noul gate command verified against code and tests"
 comments[2]{created_at,author,text}:
   "2026-10-05T05:56:44.011Z",codex-sol,"Verified the shared 17 command/transport tests within the 86-test all-source suite: real TypeSafe SDK HTTP, host extension harness, and isolated real pm projects. All source coverage dimensions are 100%; live local tev1 schema/plausibility and packed npm/Bun installation acceptance passed. Implementation and receipts are linked in README.md and docs/v0-validation.md. Leaving this item in progress for orchestrator verification and closure."
   "2026-10-11T05:14:56.691Z",codex-sol,"Acceptance met on main 7c0f0e0: index.ts:1367 runGateCommand requires exactly one text/item source, validates threshold and computes the noul verdict inclusively with host-owned exit_code=1 on mismatch. Tests: ask, dedupe, gate and discovery dispatch on a real temporary tracker (test/decisions.test.ts:88); near-threshold gate output preserves the probability used for its exit code (test/transport.test.ts:135). Default thresholds remain provisional. Fresh main acceptance: node --test test/agent-ux.test.ts test/decisions.test.ts test/transport.test.ts test/release-workflow.test.ts test/calibration.test.ts passed 51/51, zero failures/skips. Tracker schema has no review status, so status stays in_progress; not closed. Cross-reference docs/tracker-reconciliation.md; line numbers refer to checked main."
@@ -22,4 +27,5 @@ docs[3]{path,scope}:
   docs/tracker-reconciliation.md,project
   docs/v0-validation.md,project
   README.md,project
+close_reason: "Delivered by https://github.com/unbraind/pm-jev/pull/7 (merged); calibrated noul gate command verified against code and tests"
 body: ""

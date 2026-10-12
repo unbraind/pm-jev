@@ -2,13 +2,18 @@ id: pm-jev-k8qe
 title: Batch open backlog triage with bounded streaming and stable receipts
 description: "Implement open backlog selection, one run deadline, compact per-item streaming, content receipt reuse, stale inference protection, minimal projection and direct packed install acceptance."
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags[1]: "pkg:pm-jev"
 created_at: "2026-10-11T05:08:46.971Z"
-updated_at: "2026-10-11T07:53:32.659Z"
+updated_at: "2026-10-12T00:57:39.334Z"
+closed_at: "2026-10-11T23:29:26.911Z"
+completed_at: "2026-10-11T23:29:26.911Z"
 author: codex-sol-implementation
 parent: pm-jev-0w3q
+resolution: "Implemented and merged in https://github.com/unbraind/pm-jev/pull/7: bounded streaming backlog triage with content-hash receipt reuse"
+expected_result: "Delivered outcome: Batch open backlog triage with bounded streaming and stable receipts."
+actual_result: "Merged in https://github.com/unbraind/pm-jev/pull/7 with green required CI checks and a completed CodeRabbit full review with every finding resolved; bounded streaming backlog triage with content-hash receipt reuse"
 comments[18]{created_at,author,text}:
   "2026-10-11T05:09:51.100Z",codex-sol-implementation,"Implementation scope: bounded open backlog selection and one deadline; compact streaming; full source hashes and redacted apply receipts; stale inference checks; smaller triage state; supported Ollama keep_alive; direct tarball acceptance. Existing reconciliation items remain owned by the orchestrator. Live model calls are waiting for baseline completion."
   "2026-10-11T05:20:38.930Z",codex-sol-implementation,"Inspected the host authoring contracts: streaming uses public writeStdout and suppressHostOutput, while SDK read output controls are static rather than an asynchronous item iterator. Ollama systemone accepts shared state plus named questions and no independent-state batch or streaming response. Reuse one boundary/client/catalog and one run AbortSignal across sequential item requests. The official TypeSafe SDK forwards additional request properties, so Ollama keep_alive uses its actual systemone wire field without a custom transport. Existing triage already used one systemOne call for four questions. Hosted opt-in and redirect refusal remain enforced."
@@ -69,4 +74,5 @@ docs[3]{path,scope}:
   docs/batch-triage.md,project
   docs/latency-baseline.md,project
   README.md,project
+close_reason: "Delivered by https://github.com/unbraind/pm-jev/pull/7 (merged); bounded streaming backlog triage with content-hash receipt reuse"
 body: ""
