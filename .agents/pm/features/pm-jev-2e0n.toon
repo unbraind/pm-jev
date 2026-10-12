@@ -6,14 +6,14 @@ status: closed
 priority: 2
 tags[1]: "pkg:pm-jev"
 created_at: "2026-10-05T04:38:43.533Z"
-updated_at: "2026-10-12T00:39:31.488Z"
+updated_at: "2026-10-12T00:57:36.723Z"
 closed_at: "2026-10-11T23:29:29.952Z"
 completed_at: "2026-10-11T23:29:29.952Z"
 author: pi-glm
 parent: pm-jev-0w3q
 resolution: "Implemented and merged in https://github.com/unbraind/pm-jev/pull/7: ask command verified against code and tests"
 expected_result: "Delivered outcome: pm-jev ask command: caller-defined typed questions against an item."
-actual_result: "Merged in https://github.com/unbraind/pm-jev/pull/7 after its full CI, an isolated release gate and a CodeRabbit full review with every finding resolved; ask command verified against code and tests"
+actual_result: "Merged in https://github.com/unbraind/pm-jev/pull/7 with green required CI checks and a completed CodeRabbit full review with every finding resolved; ask command verified against code and tests"
 comments[3]{created_at,author,text}:
   "2026-10-05T05:19:34.722Z",codex-sol,"Real tev1 acceptance found that Ollama rejects explicit criteria:null for noul although the official SDK Questions type permits it. Caller-file parsing now omits absent noul criteria while preserving explicit true/false descriptions. The initial live triage selected Bug at probability 0.944 and priority 0 at 0.979; dedupe selected the existing synthetic item. Full live acceptance is being rerun after the compatibility fix."
   "2026-10-05T05:56:43.123Z",codex-sol,"Verified the shared 17 command/transport tests within the 86-test all-source suite: real TypeSafe SDK HTTP, host extension harness, and isolated real pm projects. All source coverage dimensions are 100%; live local tev1 schema/plausibility and packed npm/Bun installation acceptance passed. Implementation and receipts are linked in README.md and docs/v0-validation.md. Leaving this item in progress for orchestrator verification and closure."
