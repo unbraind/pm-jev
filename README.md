@@ -169,7 +169,15 @@ settings. There is no separate pm-jev configuration file or credential store.
 ```
 
 `PM_JEV_BASE_URL` and `PM_JEV_MODEL` override those settings. Without a `jev` override,
-pm-jev uses its own decision-model defaults rather than pm's general chat-model settings.
+pm-jev falls back to the tracker's typed `providers.ollama` settings (`base_url`,
+`model`), read through the pm SDK's `readSettings` projection — never by parsing
+the settings file — and finally to its own decision-model defaults. So the full
+precedence is: environment overrides, then the `jev` section, then
+`providers.ollama`, then the built-in local defaults. The `providers.ollama`
+fallback feeds the local provider only; hosted TypeSafe resolution ignores it, so
+an Ollama endpoint can never silently become a hosted credential destination.
+A non-loopback URL taken from `providers.ollama` still requires the explicit
+`jev.allow_external` opt-in, exactly like any other URL source.
 The per-attempt timeout is bounded to 1–600 seconds; total deadline to 1–3,600 seconds.
 The default total deadline is at least 240 seconds and three per-attempt timeouts
 (270 seconds with the default timeout). Settings thresholds are bounded to [0,1].

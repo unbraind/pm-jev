@@ -59,7 +59,9 @@ export interface ResolvedJevEndpoint {
  * of dying on it.
  *
  * Precedence: environment overrides win, then the `jev` settings section, then
- * pm's typed `providers.ollama` settings, then built-in defaults.
+ * pm's typed `providers.ollama` settings (local provider only), then built-in
+ * defaults. Hosted TypeSafe resolution never consults `providers.ollama`: an
+ * Ollama endpoint must not silently become a hosted credential destination.
  *
  * @param pmRoot - Resolved pm tracker root.
  * @param env - Environment to read `PM_JEV_BASE_URL`, `PM_JEV_MODEL` and
