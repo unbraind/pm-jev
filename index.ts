@@ -274,12 +274,33 @@ function resolveProvider(section: JevSettingsSection): JevProvider {
 }
 
 /**
+ * Read the local Ollama endpoint pm itself is configured with, through the
+ * SDK's typed `readSettings` projection — never by parsing `settings.json`.
+ *
+ * `readSettings` is total by contract: an absent or malformed settings
+ * document resolves to typed defaults whose `providers.ollama` values are
+ * empty strings, and `stringSetting` treats blank values as "not configured",
+ * so resolution falls through to the built-in defaults. Reads are local file
+ * access only: resolving settings never spawns an external command.
+ *
+ * @param pmRoot - Resolved pm tracker root (the `.agents/pm` directory).
+ * @returns The typed `providers.ollama` base URL and model when configured.
+ */
+async function readOllamaProviderSettings(pmRoot: string): Promise<{ readonly baseUrl?: string; readonly model?: string }> {
+  const settings = await readSettings(pmRoot);
+  const ollama = settings.providers.ollama;
+  return { baseUrl: stringSetting(ollama.base_url), model: stringSetting(ollama.model) };
+}
+
+/**
  * Resolve the fully configured decision endpoint, without enforcing the hosted
  * privacy gate — so `jev doctor` can diagnose a refused configuration instead
  * of dying on it.
  *
  * Precedence: environment overrides win, then the `jev` settings section, then
- * pm's typed `providers.ollama` settings, then built-in defaults.
+ * pm's typed `providers.ollama` settings (local provider only), then built-in
+ * defaults. Hosted TypeSafe resolution never consults `providers.ollama`: an
+ * Ollama endpoint must not silently become a hosted credential destination.
  *
  * @param pmRoot - Resolved pm tracker root.
  * @param env - Environment to read `PM_JEV_BASE_URL`, `PM_JEV_MODEL` and
@@ -299,13 +320,16 @@ export async function resolveJevEndpoint(
   const envModel = stringSetting(env.PM_JEV_MODEL);
   const sectionBaseUrl = stringSetting(section.base_url);
   const sectionModel = stringSetting(section.model);
+  const ollama = provider === "ollama" ? await readOllamaProviderSettings(pmRoot) : {};
   const baseUrl =
     envBaseUrl ??
     sectionBaseUrl ??
+    ollama.baseUrl ??
     (provider === "typesafe" ? DEFAULT_TYPESAFE_BASE_URL : DEFAULT_OLLAMA_BASE_URL);
   const model =
     envModel ??
     sectionModel ??
+    ollama.model ??
     (provider === "typesafe" ? DEFAULT_TYPESAFE_MODEL : DEFAULT_OLLAMA_MODEL);
   let url: URL;
   try { url = new URL(baseUrl); } catch {

@@ -2,13 +2,25 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { endpoint, project, answers, scenario, hostedFixture } from "./fixtures.ts";
 import { resolveJevEndpoint, requireCallableEndpoint, parseQuestionsDocument, validateAnswers, projectItemState, buildTriageQuestions, rankDedupeCandidates } from "../index.ts";
-import { writeFileSync, rmSync } from "node:fs";
+import { writeFileSync, rmSync, readFileSync } from "node:fs";
 import { getSettingsPath, readSettings } from "@unbrained/pm-cli/sdk";
 import type { Questions, SystemOneResult } from "@typesafe-ai/sdk";
 
 /** Replace fixture-only settings without modifying any shared project. */
 function settings(pmRoot: string, jev: unknown): void {
   writeFileSync(getSettingsPath(pmRoot), JSON.stringify({ jev }));
+}
+
+/**
+ * Merge typed `providers.ollama` settings into the fixture tracker's real,
+ * schema-valid settings document — the same way pm's own `pm config` surface
+ * would — instead of replacing the file with a hand-built stub.
+ */
+function providerSettings(pmRoot: string, ollama: { base_url?: string; model?: string }, jev?: Record<string, unknown> | null): void {
+  const path = getSettingsPath(pmRoot);
+  const current = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+  const providers = { ...(current.providers as Record<string, unknown> | undefined), ollama };
+  writeFileSync(path, JSON.stringify({ ...current, providers, ...(jev === undefined ? {} : { jev: jev ?? undefined }) }));
 }
 
 test("trailing slashes on the endpoint base URL are trimmed before the API path is appended", async () => {
@@ -241,4 +253,64 @@ test("invalid gate and apply thresholds refuse before inference or tracker mutat
     assert.equal((await fixture.pm.comments(created.item.id)).count, 0);
     assert.equal((await fixture.pm.get(created.item.id)).item.type, "Issue");
   });
+});
+
+test("typed providers.ollama settings supply the local endpoint when jev does not", async () => {
+  const fixture = await project(); const server = await endpoint();
+  const previous = process.env.PM_JEV_BASE_URL; delete process.env.PM_JEV_BASE_URL;
+  try {
+    providerSettings(fixture.pmRoot, { base_url: `${server.url}/`, model: "chat-model" });
+    const typed = await readSettings(fixture.pmRoot);
+    assert.equal(typed.providers.ollama.base_url, `${server.url}/`);
+    const resolved = await resolveJevEndpoint(fixture.pmRoot, {});
+    assert.equal(resolved.config.baseUrl, server.url);
+    assert.equal(resolved.config.model, "chat-model");
+    assert.equal(resolved.hostedBlocked, null);
+    const created = await fixture.pm.create({ type: "Feature", title: "Application crashes on every login", description: "Regression throws an exception and blocks every user", priority: 3 });
+    const decision = await fixture.harness.runCommand({ command: "jev triage", args: [created.item.id], pmRoot: fixture.pmRoot });
+    assert.equal(decision.handled, true);
+    assert.equal(server.requests.length, 1);
+    assert.equal((server.requests[0].body as { model?: string }).model, "chat-model");
+  } finally { if (previous === undefined) delete process.env.PM_JEV_BASE_URL; else process.env.PM_JEV_BASE_URL = previous; await server.close(); fixture.dispose(); }
+});
+
+test("environment and jev settings outrank typed providers.ollama; blanks fall back to built-ins", async () => {
+  const fixture = await project();
+  try {
+    providerSettings(fixture.pmRoot, { base_url: "http://127.0.0.1:1", model: "chat-model" }, { model: "  jev-model  " });
+    const viaSettings = await resolveJevEndpoint(fixture.pmRoot, {});
+    assert.equal(viaSettings.config.model, "jev-model");
+    assert.equal(viaSettings.config.baseUrl, "http://127.0.0.1:1");
+    const viaEnv = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: "http://localhost:11434", PM_JEV_MODEL: "env-model" });
+    assert.equal(viaEnv.config.baseUrl, "http://localhost:11434");
+    assert.equal(viaEnv.config.model, "env-model");
+    providerSettings(fixture.pmRoot, { base_url: "  ", model: "" }, null);
+    const blanks = await resolveJevEndpoint(fixture.pmRoot, {});
+    assert.equal(blanks.config.baseUrl, "http://localhost:11434");
+    assert.equal(blanks.config.model, "tev1:4b");
+  } finally { fixture.dispose(); }
+});
+
+test("a non-loopback providers.ollama endpoint still requires explicit opt-in", async () => {
+  const fixture = await project();
+  try {
+    providerSettings(fixture.pmRoot, { base_url: "http://10.9.8.7:11434", model: "chat-model" });
+    const blocked = await resolveJevEndpoint(fixture.pmRoot, {});
+    assert.equal(blocked.config.baseUrl, "http://10.9.8.7:11434");
+    assert.equal(blocked.hostedBlocked, "missing_opt_in");
+    assert.throws(() => requireCallableEndpoint(blocked), /Refusing/);
+    providerSettings(fixture.pmRoot, { base_url: "http://10.9.8.7:11434", model: "chat-model" }, { allow_external: true });
+    assert.equal((await resolveJevEndpoint(fixture.pmRoot, {})).hostedBlocked, null);
+  } finally { fixture.dispose(); }
+});
+
+test("hosted typesafe resolution never adopts the ollama provider endpoint", async () => {
+  const fixture = await project();
+  try {
+    providerSettings(fixture.pmRoot, { base_url: "http://10.9.8.7:11434", model: "chat-model" }, { provider: "typesafe", allow_external: true });
+    const hosted = await resolveJevEndpoint(fixture.pmRoot, { TYPESAFE_API_KEY: "synthetic" });
+    assert.equal(hosted.config.baseUrl, "https://api.typesafe.ai");
+    assert.equal(hosted.config.model, "jev-latest");
+    assert.equal(hosted.hostedBlocked, null);
+  } finally { fixture.dispose(); }
 });
