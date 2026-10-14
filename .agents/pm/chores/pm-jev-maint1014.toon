@@ -1,0 +1,33 @@
+id: pm-jev-maint1014
+title: Enable the gated GitHub issue sync and drop the braces chain
+description: Enable the SHA-pinned fail-closed issue sync caller and remove fast-glob by adopting published pm-ops 2026.10.14. Keep existing thresholds and verify isolated npm and Bun release gates. This combined maintenance chore implements the dependency remediation tracked by pm-jev-2rp1 and leaves those items open for verification.
+type: Chore
+status: in_progress
+priority: 1
+tags: []
+created_at: "2026-10-14T09:54:14.621Z"
+updated_at: "2026-10-14T11:07:36.090Z"
+author: codex-agent
+comments[6]{created_at,author,text}:
+  "2026-10-14T09:54:31.644Z",codex-agent,"Plan: author this package own thin caller, pin workflow SHA and pm-github to 2026.10.13, and verify isolated npm/Bun release gates without changing thresholds. Remove fast-glob and any jscpd4 alias; pin pm-ops 2026.10.14. Published changelog reviewed: attestation alias/function rejection, read-only pack prepare, release repair and Windows proof support. Duplication now uses Node glob with jscpd 5. No workflow dispatch, bot requests, merges, or source function changes."
+  "2026-10-14T09:56:27.909Z",codex-agent,"Audit before: full 4 vulnerabilities (4 high), production 0. After: full 0, production 0; npm ls braces is empty. The caller runs at 17 3 * * * UTC. It validates access, previews the complete plan, imports with --gate, verifies repeat-import idempotency and privacy, then checks strict health before commit/push/PR. SHA pin matches published pm-github 2026.10.13. Actionlint skipped: binary missing and offline npx registry metadata unavailable. GitHub Actions PR-creation setting verified enabled. Direct fast-glob import found in the documentation scanner; native glob replacement and regression proof will follow."
+  "2026-10-14T10:01:12.060Z",codex-agent,"Adapted this package own prepare launcher to the published artifact-time contract by editing its original source, without copying another consumer repo file. Added a regression for pack/publish with pinned and stale installers: exit 0, one skip notice, byte-identical Git config. Focused regression passes 1/1; reverting only the launcher makes it fail, then fixed source restored. Existing install/ci failure checks remain covered."
+  "2026-10-14T10:02:02.907Z",codex-agent,"Replaced the documentation scanner fast-glob import with node:fs/promises glob, preserving TS/TSX discovery and generated/test/hidden exclusions. Scanner, gate and CLI now await discovery; tests await their outcomes and forward unrelated reporter output. Build:test passed; scanner and docstring launcher tests passed 13/13 with no skips. Behavioural revert proof: restoring synchronous iteration only inside auditFunctionDocs makes the native scanner regression fail at runtime; async loop restored. Prepare artifact regression also passes 1/1 and fails with only its launcher reverted. Full release gates remain required."
+  "2026-10-14T10:37:43.518Z",codex-agent,"Preflight caught six duplicated test lines after adapting stream capture for async discovery. Factored one typed capture helper instead of changing the zero-duplication threshold. Build:test and focused scanner/launcher tests now pass 13/13; lint passes; duplication reports 0/7175 duplicated lines across 30 sources and 0 clone pairs; docstring gate reports 11 files and 215 documented declarations. Full npm and Bun release gates are still pending."
+  "2026-10-14T11:07:34.851Z",codex-agent,"Validation complete: npm: 134/134 tests passed, 0 skipped; bun: 134/134 tests passed, 0 skipped. Both isolated release:check gates passed at unchanged thresholds. Full audit 0, production audit 0, npm ls braces empty. Caller identity check reports only unbraind/pm-github. Behavioural revert proof: artifact-prepare regression passes 1/1 and fails when only the previous launcher is restored. Changelog regenerated and checked. Actionlint unavailable offline as recorded above. Item stays in progress for orchestrator verification."
+files[9]{path,scope}:
+  .github/workflows/pm-github-sync.yml,project
+  package-lock.json,project
+  package.json,project
+  scripts/docstring-gate.ts,project
+  scripts/function-docs.ts,project
+  scripts/prepare-merge-driver.ts,project
+  test/docstring-gate.test.ts,project
+  test/function-docs-glob.test.ts,project
+  test/prepare-merge-driver.test.ts,project
+tests[2]{command,scope,timeout_seconds,pm_context_mode,provenance{author,created_at,source_kind,source_ref}}:
+  "env -u PM_PATH -u PM_AUTHOR HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check",project,3600,tracker,codex-agent,"2026-10-14T09:57:21.612Z",local_mutation,chore/gated-issue-sync-and-braces-free-gates
+  "env -u PM_PATH -u PM_AUTHOR HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 bun run release:check",project,3600,tracker,codex-agent,"2026-10-14T09:57:34.133Z",local_mutation,chore/gated-issue-sync-and-braces-free-gates
+docs[1]{path,scope}:
+  CHANGELOG.md,project
+body: ""

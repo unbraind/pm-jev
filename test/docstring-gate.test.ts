@@ -24,20 +24,34 @@ import { isMainInvocation, main, runGate } from "../scripts/docstring-gate.ts";
 /** This package's own root, the default the CLI entry point scans. */
 const packageRoot = resolve(import.meta.dirname, "..");
 
-test("docstring gate runGate reports this package as fully documented", () => {
-  const result = runGate(packageRoot);
+/** Capture gate output while forwarding reporter writes during asynchronous discovery. */
+function captureGateStream(stream: NodeJS.WriteStream): { written: string[]; restore: () => void } {
+  const written: string[] = [];
+  const previous = stream.write;
+  const forward = previous.bind(stream);
+  stream.write = ((...args: Parameters<typeof stream.write>): boolean => {
+    const text = String(args[0]);
+    if (!text.startsWith("docstring-gate:")) return forward(...args);
+    written.push(text);
+    return true;
+  }) as typeof stream.write;
+  return { written, restore: () => { stream.write = previous; } };
+}
+
+test("docstring gate runGate reports this package as fully documented", async () => {
+  const result = await runGate(packageRoot);
   assert.equal(result.exitCode, 0, result.stderr);
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /^docstring-gate: \d+ file\(s\), \d+ declaration\(s\) documented\.$/);
 });
 
 for (const extension of ["ts", "tsx"]) {
-  test(`docstring gate rejects an undocumented ${extension} declaration`, () => {
+  test(`docstring gate rejects an undocumented ${extension} declaration`, async () => {
     const root = mkdtempSync(join(tmpdir(), "pm-jev-docgate-"));
     try {
       mkdirSync(join(root, "src"), { recursive: true });
       writeFileSync(join(root, "src", `sample.${extension}`), "export function undocumented(value: string): string {\n  return value;\n}\n");
-      const result = runGate(root);
+      const result = await runGate(root);
       assert.equal(result.exitCode, 1);
       assert.equal(result.stdout, "", "a failing run writes nothing to stdout");
       assert.match(result.stderr, /1 violation\(s\)/);
@@ -52,7 +66,7 @@ for (const extension of ["ts", "tsx"]) {
 
 }
 
-test("docstring gate runGate passes a root whose every declaration is documented", () => {
+test("docstring gate runGate passes a root whose every declaration is documented", async () => {
   const root = mkdtempSync(join(tmpdir(), "pm-jev-docgate-clean-"));
   try {
     mkdirSync(join(root, "src"), { recursive: true });
@@ -60,7 +74,7 @@ test("docstring gate runGate passes a root whose every declaration is documented
       join(root, "src", "sample.ts"),
       "/** Return the value unchanged, so the identity case has a named home. */\nexport function identity(value: string): string {\n  return value;\n}\n",
     );
-    const result = runGate(root);
+    const result = await runGate(root);
     assert.equal(result.exitCode, 0);
     assert.equal(result.stderr, "");
   } finally {
@@ -68,12 +82,12 @@ test("docstring gate runGate passes a root whose every declaration is documented
   }
 });
 
-test("docstring gate runGate throws rather than passing vacuously on a root with no TypeScript", () => {
+test("docstring gate runGate throws rather than passing vacuously on a root with no TypeScript", async () => {
   const root = mkdtempSync(join(tmpdir(), "pm-jev-docgate-empty-"));
   try {
     let thrown: unknown;
     try {
-      runGate(root);
+      await runGate(root);
     } catch (error) {
       thrown = error;
     }
@@ -84,23 +98,18 @@ test("docstring gate runGate throws rather than passing vacuously on a root with
   }
 });
 
-test("docstring gate main with no arguments scans this package and leaves the exit code at zero", () => {
+test("docstring gate main with no arguments scans this package and leaves the exit code at zero", async () => {
   const previousExitCode = process.exitCode;
-  const written: string[] = [];
-  const restore = process.stdout.write.bind(process.stdout);
-  process.stdout.write = ((chunk: string | Uint8Array): boolean => {
-    written.push(String(chunk));
-    return true;
-  }) as typeof process.stdout.write;
+  const { written, restore } = captureGateStream(process.stdout);
   // Seeded to a failing value so the assertion below proves main drove it to 0,
   // rather than passing on whatever a previous test happened to leave behind.
   process.exitCode = 1;
   let observedExitCode: typeof process.exitCode;
   try {
-    main([]);
+    await main([]);
     observedExitCode = process.exitCode;
   } finally {
-    process.stdout.write = restore;
+    restore();
     process.exitCode = previousExitCode;
   }
   assert.equal(observedExitCode, 0, "a clean run must clear a non-zero exit code, not merely leave it");
@@ -108,27 +117,22 @@ test("docstring gate main with no arguments scans this package and leaves the ex
   assert.match(written[0]!, /documented\.\n$/, "main appends the trailing newline runGate omits");
 });
 
-test("docstring gate main with an explicit root writes the failure stream and sets a non-zero exit code", () => {
+test("docstring gate main with an explicit root writes the failure stream and sets a non-zero exit code", async () => {
   const root = mkdtempSync(join(tmpdir(), "pm-jev-docgate-main-"));
   try {
     mkdirSync(join(root, "src"), { recursive: true });
     writeFileSync(join(root, "src", "sample.ts"), "export function undocumented(value: string): string {\n  return value;\n}\n");
     const previousExitCode = process.exitCode;
-    const written: string[] = [];
-    const restore = process.stderr.write.bind(process.stderr);
-    process.stderr.write = ((chunk: string | Uint8Array): boolean => {
-      written.push(String(chunk));
-      return true;
-    }) as typeof process.stderr.write;
+    const { written, restore } = captureGateStream(process.stderr);
     // Seeded to 0 so the assertion cannot pass on state inherited from an
     // earlier failing test — it must be main that sets 1.
     process.exitCode = 0;
     let observedExitCode: typeof process.exitCode;
     try {
-      main([root]);
+      await main([root]);
       observedExitCode = process.exitCode;
     } finally {
-      process.stderr.write = restore;
+      restore();
       process.exitCode = previousExitCode;
     }
     assert.equal(observedExitCode, 1, "a violating run sets process.exitCode rather than exiting");
@@ -206,16 +210,16 @@ test("docstring gate isMainInvocation throws rather than skipping the gate when 
   );
 });
 
-test("docstrings are required on short internal helpers, callbacks and default exports", () => {
+test("docstrings are required on short internal helpers, callbacks and default exports", async () => {
   const root = mkdtempSync(join(tmpdir(), "jev-function-docs-"));
   try {
     writeFileSync(join(root, "index.ts"), 'function tiny() { return 1; }\nconst callback = () => 1;\nexport default tiny;\n// ordinary comment\n/**a*/\nconst weak = () => 1;\nconst holes = [,];\n');
-    const result = runGate(root);
+    const result = await runGate(root);
     assert.equal(result.exitCode, 1);
     assert.match(result.stderr, /tiny/);
     assert.match(result.stderr, /ArrowFunctionExpression/);
     assert.match(result.stderr, /ExportDefaultDeclaration/);
     writeFileSync(join(root, "index.ts"), '/** Compute a tiny synthetic result. */\nfunction tiny() { return 1; }\n/** Expose the synthetic function. */\nexport default tiny;\nconst object = { /** Return the synthetic value from a method. */ method() { return tiny(); } };\n');
-    assert.equal(runGate(root).exitCode, 0);
+    assert.equal((await runGate(root)).exitCode, 0);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });

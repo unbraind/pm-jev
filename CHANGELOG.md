@@ -23,4 +23,5 @@
 
 ### Other
 
+- Enable the gated GitHub issue sync and drop the braces chain ([pm-jev-maint1014](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-maint1014.toon))
 - pm-jev: typed local-first System One decisions for pm items ([pm-jev-0w3q](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/epics/pm-jev-0w3q.toon))

@@ -62,9 +62,9 @@ const defaultRoot = resolve(import.meta.dirname, "..");
  * @returns The exit code and the newline-free stdout/stderr content; {@link main}
  *          appends the trailing newline when it writes them.
  */
-export function runGate(root: string): GateResult {
+export async function runGate(root: string): Promise<GateResult> {
   const base = analyzeDocstringCoverage({ root });
-  const functions = auditFunctionDocs(root);
+  const functions = await auditFunctionDocs(root);
   const unique = new Map([...base.violations, ...functions.violations].map(
     /** Keep one diagnostic when both analyzers reject the same source line. */
     violation => [`${violation.file}:${violation.line}`, violation],
@@ -112,8 +112,8 @@ export function runGate(root: string): GateResult {
  *
  * @param args - The argv slice after the script path; empty selects this package.
  */
-export function main(args: readonly string[]): void {
-  const result = runGate(args[0] === undefined ? defaultRoot : resolve(args[0]));
+export async function main(args: readonly string[]): Promise<void> {
+  const result = await runGate(args[0] === undefined ? defaultRoot : resolve(args[0]));
   if (result.stdout) process.stdout.write(`${result.stdout}\n`);
   if (result.stderr) process.stderr.write(`${result.stderr}\n`);
   process.exitCode = result.exitCode;
@@ -127,6 +127,6 @@ export function main(args: readonly string[]): void {
 // uncoverable branch. The placeholder takes the same argument as `main` so
 // element 0 - the one a test-run import invokes - is a covered function call
 // rather than an unused expression.
-[/** Leave imports inert; callers invoke main explicitly. */ (_args: readonly string[]): void => {}, main][Number(isMainInvocation(process.argv, import.meta.url))](
+await [/** Leave imports inert; callers invoke main explicitly. */ async (_args: readonly string[]): Promise<void> => {}, main][Number(isMainInvocation(process.argv, import.meta.url))](
   process.argv.slice(2),
 );

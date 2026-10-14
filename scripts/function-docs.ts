@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
-import { relative } from "node:path";
+import { glob } from "node:fs/promises";
+import { join, relative } from "node:path";
 import { parse } from "@babel/parser";
 import { VISITOR_KEYS } from "@babel/types";
 import type { Node } from "@babel/types";
-import glob from "fast-glob";
 
 /** One undocumented function or export, identified without including source content. */
 export interface FunctionDocViolation {
@@ -18,11 +18,12 @@ export interface FunctionDocViolation {
 }
 
 /** Audit all functions, including short helpers and callbacks, with a full syntax tree. */
-export function auditFunctionDocs(root: string): { checked: number; violations: FunctionDocViolation[] } {
-  const files = glob.sync("**/*.{ts,tsx}", { cwd: root, absolute: true, ignore: ["node_modules/**", "dist/**", "dist-test/**", "coverage/**", "test/**", "tests/**", ".agents/**", ".git/**"] });
+export async function auditFunctionDocs(root: string): Promise<{ checked: number; violations: FunctionDocViolation[] }> {
+  const files = glob("**/*.{ts,tsx}", { cwd: root, exclude: ["node_modules/**", "dist/**", "dist-test/**", "coverage/**", "test/**", "tests/**", ".agents/**", ".git/**", "**/.*", "**/.*/**"] });
   const violations: FunctionDocViolation[] = [];
   let checked = 0;
-  for (const file of files) {
+  for await (const entry of files) {
+    const file = join(root, entry);
     const tree = parse(readFileSync(file, "utf8"), { sourceType: "module", plugins: ["typescript", "jsx"] });
     /** Visit parser-owned child nodes and judge function and export documentation. */
     function visit(node: Node, parents: readonly Node[]): void {

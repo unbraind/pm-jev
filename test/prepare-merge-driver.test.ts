@@ -132,3 +132,21 @@ test("a malformed lookup path preserves the original installer failure", () => {
   assert.match(result.stderr, /MODULE_NOT_FOUND/);
   assert.doesNotMatch(result.stderr, /ENOTDIR|skipping merge-driver install/);
 });
+
+test("artifact prepare leaves Git config untouched and never resolves an installer", () => {
+  for (const command of ["pack", "publish"]) {
+    for (const installation of ["pinned", "stale"] as const) {
+      const directory = checkout(`artifact-${command}-${installation}`, installation);
+      const before = readFileSync(join(directory, ".git", "config"), "utf8");
+      const result = spawnSync(process.execPath, [launcher], {
+        cwd: directory,
+        encoding: "utf8",
+        env: { ...process.env, PATH: hostPath, NODE_PATH: "", npm_command: command },
+      });
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stderr, `npm ${command}: skipping merge-driver install during artifact creation\n`);
+      assert.equal(readFileSync(join(directory, ".git", "config"), "utf8"), before);
+      assert.deepEqual(registeredDrivers(directory), []);
+    }
+  }
+});
