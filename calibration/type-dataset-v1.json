@@ -1,0 +1,353 @@
+{
+  "version": "pm-jev-type-classification/1",
+  "customTypes": [
+    {
+      "name": "Knowledge",
+      "folder": "knowledge",
+      "description": "Reference knowledge, explanations or research findings; no action is requested"
+    },
+    {
+      "name": "Run",
+      "folder": "runs",
+      "description": "A record of a completed execution with its outcome and evidence"
+    }
+  ],
+  "samples": [
+    {
+      "id": "issue-0",
+      "expected": "Issue",
+      "current": "Issue",
+      "split": "calibration",
+      "text": "Login crashes after the update; previously it worked."
+    },
+    {
+      "id": "issue-1",
+      "expected": "Issue",
+      "current": "Issue",
+      "split": "calibration",
+      "text": "Decide how to fix checkout: it charges customers twice instead of once."
+    },
+    {
+      "id": "issue-2",
+      "expected": "Issue",
+      "current": "Feature",
+      "split": "calibration",
+      "text": "Export returns an exception instead of the requested file."
+    },
+    {
+      "id": "issue-3",
+      "expected": "Issue",
+      "current": "Issue",
+      "split": "evaluation",
+      "text": "Choose a repair for search: existing results disappear after sorting."
+    },
+    {
+      "id": "issue-4",
+      "expected": "Issue",
+      "current": "Issue",
+      "split": "evaluation",
+      "text": "The save button loses entered text, a regression from yesterday."
+    },
+    {
+      "id": "issue-5",
+      "expected": "Issue",
+      "current": "Feature",
+      "split": "evaluation",
+      "text": "Notifications stopped arriving although delivery previously worked."
+    },
+    {
+      "id": "feature-0",
+      "expected": "Feature",
+      "current": "Feature",
+      "split": "calibration",
+      "text": "Add a CSV export capability that does not exist yet."
+    },
+    {
+      "id": "feature-1",
+      "expected": "Feature",
+      "current": "Feature",
+      "split": "calibration",
+      "text": "Allow customers to subscribe to alerts for the first time."
+    },
+    {
+      "id": "feature-2",
+      "expected": "Feature",
+      "current": "Task",
+      "split": "calibration",
+      "text": "Introduce dark mode as a new user-facing capability."
+    },
+    {
+      "id": "feature-3",
+      "expected": "Feature",
+      "current": "Feature",
+      "split": "evaluation",
+      "text": "Support a new payment method alongside the existing ones."
+    },
+    {
+      "id": "feature-4",
+      "expected": "Feature",
+      "current": "Feature",
+      "split": "evaluation",
+      "text": "Add offline access, which the product has never supported."
+    },
+    {
+      "id": "feature-5",
+      "expected": "Feature",
+      "current": "Task",
+      "split": "evaluation",
+      "text": "Provide a new dashboard to compare monthly sales."
+    },
+    {
+      "id": "task-0",
+      "expected": "Task",
+      "current": "Task",
+      "split": "calibration",
+      "text": "Implement the approved wire protocol adapter as one concrete action."
+    },
+    {
+      "id": "task-1",
+      "expected": "Task",
+      "current": "Task",
+      "split": "calibration",
+      "text": "Write tests for the already specified sorting algorithm."
+    },
+    {
+      "id": "task-2",
+      "expected": "Task",
+      "current": "Chore",
+      "split": "calibration",
+      "text": "Translate the approved button labels into Spanish."
+    },
+    {
+      "id": "task-3",
+      "expected": "Task",
+      "current": "Task",
+      "split": "evaluation",
+      "text": "Configure the worker to use the agreed queue as an implementation step."
+    },
+    {
+      "id": "task-4",
+      "expected": "Task",
+      "current": "Task",
+      "split": "evaluation",
+      "text": "Implement the parser described in the accepted specification."
+    },
+    {
+      "id": "task-5",
+      "expected": "Task",
+      "current": "Chore",
+      "split": "evaluation",
+      "text": "Verify the approved migration on a synthetic fixture."
+    },
+    {
+      "id": "chore-0",
+      "expected": "Chore",
+      "current": "Chore",
+      "split": "calibration",
+      "text": "Update development dependencies as routine maintenance."
+    },
+    {
+      "id": "chore-1",
+      "expected": "Chore",
+      "current": "Chore",
+      "split": "calibration",
+      "text": "Remove unused imports during regular housekeeping."
+    },
+    {
+      "id": "chore-2",
+      "expected": "Chore",
+      "current": "Epic",
+      "split": "calibration",
+      "text": "Refresh the dependency lockfile during maintenance."
+    },
+    {
+      "id": "chore-3",
+      "expected": "Chore",
+      "current": "Chore",
+      "split": "evaluation",
+      "text": "Reformat source files to match the existing style guide."
+    },
+    {
+      "id": "chore-4",
+      "expected": "Chore",
+      "current": "Chore",
+      "split": "evaluation",
+      "text": "Rotate the synthetic build cache as scheduled housekeeping."
+    },
+    {
+      "id": "chore-5",
+      "expected": "Chore",
+      "current": "Epic",
+      "split": "evaluation",
+      "text": "Update stale documentation links during routine maintenance."
+    },
+    {
+      "id": "epic-0",
+      "expected": "Epic",
+      "current": "Epic",
+      "split": "calibration",
+      "text": "Deliver the billing overhaul, grouping invoicing, refunds and subscription features."
+    },
+    {
+      "id": "epic-1",
+      "expected": "Epic",
+      "current": "Epic",
+      "split": "calibration",
+      "text": "Modernize authentication across several features and teams."
+    },
+    {
+      "id": "epic-2",
+      "expected": "Epic",
+      "current": "Decision",
+      "split": "calibration",
+      "text": "Build the reporting programme spanning dashboards, exports and alerts."
+    },
+    {
+      "id": "epic-3",
+      "expected": "Epic",
+      "current": "Epic",
+      "split": "evaluation",
+      "text": "Coordinate the accessibility initiative across navigation, forms and media."
+    },
+    {
+      "id": "epic-4",
+      "expected": "Epic",
+      "current": "Epic",
+      "split": "evaluation",
+      "text": "Deliver the international expansion objective through multiple localization features."
+    },
+    {
+      "id": "epic-5",
+      "expected": "Epic",
+      "current": "Decision",
+      "split": "evaluation",
+      "text": "Complete the platform modernization grouping database, API and deployment work."
+    },
+    {
+      "id": "decision-0",
+      "expected": "Decision",
+      "current": "Decision",
+      "split": "calibration",
+      "text": "Choose PostgreSQL or SQLite for the new service; both meet requirements."
+    },
+    {
+      "id": "decision-1",
+      "expected": "Decision",
+      "current": "Decision",
+      "split": "calibration",
+      "text": "Approve or reject the proposed retention policy before implementation."
+    },
+    {
+      "id": "decision-2",
+      "expected": "Decision",
+      "current": "Knowledge",
+      "split": "calibration",
+      "text": "Select one of two design directions; human judgment is required."
+    },
+    {
+      "id": "decision-3",
+      "expected": "Decision",
+      "current": "Decision",
+      "split": "evaluation",
+      "text": "Decide whether to fund option A or option B; no behavior is broken."
+    },
+    {
+      "id": "decision-4",
+      "expected": "Decision",
+      "current": "Decision",
+      "split": "evaluation",
+      "text": "Agree on the product launch date before scheduling implementation."
+    },
+    {
+      "id": "decision-5",
+      "expected": "Decision",
+      "current": "Knowledge",
+      "split": "evaluation",
+      "text": "Choose the licensing policy for a new component; record human approval."
+    },
+    {
+      "id": "knowledge-0",
+      "expected": "Knowledge",
+      "current": "Knowledge",
+      "split": "calibration",
+      "text": "Reference note: the queue preserves FIFO ordering within a partition; no work is requested."
+    },
+    {
+      "id": "knowledge-1",
+      "expected": "Knowledge",
+      "current": "Knowledge",
+      "split": "calibration",
+      "text": "Documented finding: the tokenizer separates punctuation; keep this as reference knowledge."
+    },
+    {
+      "id": "knowledge-2",
+      "expected": "Knowledge",
+      "current": "Run",
+      "split": "calibration",
+      "text": "Reference explanation of the published retry protocol; no implementation action."
+    },
+    {
+      "id": "knowledge-3",
+      "expected": "Knowledge",
+      "current": "Knowledge",
+      "split": "evaluation",
+      "text": "Research finding: synthetic tests reveal an ordering invariant; retain the observation."
+    },
+    {
+      "id": "knowledge-4",
+      "expected": "Knowledge",
+      "current": "Knowledge",
+      "split": "evaluation",
+      "text": "Record how the checksum algorithm works for future reference."
+    },
+    {
+      "id": "knowledge-5",
+      "expected": "Knowledge",
+      "current": "Run",
+      "split": "evaluation",
+      "text": "Reference glossary explaining the meaning of a delivery receipt."
+    },
+    {
+      "id": "run-0",
+      "expected": "Run",
+      "current": "Run",
+      "split": "calibration",
+      "text": "Execution record: the synthetic build completed successfully with all checks passing."
+    },
+    {
+      "id": "run-1",
+      "expected": "Run",
+      "current": "Run",
+      "split": "calibration",
+      "text": "Execution record: benchmark invocation finished; elapsed time was recorded."
+    },
+    {
+      "id": "run-2",
+      "expected": "Run",
+      "current": "Issue",
+      "split": "calibration",
+      "text": "Completed test invocation receipt with counts and outcome, not future work."
+    },
+    {
+      "id": "run-3",
+      "expected": "Run",
+      "current": "Run",
+      "split": "evaluation",
+      "text": "Execution record: a scheduled synthetic validation completed with two failures."
+    },
+    {
+      "id": "run-4",
+      "expected": "Run",
+      "current": "Run",
+      "split": "evaluation",
+      "text": "Completed calibration invocation receipt with model digest and measured scores."
+    },
+    {
+      "id": "run-5",
+      "expected": "Run",
+      "current": "Issue",
+      "split": "evaluation",
+      "text": "Record of a finished deployment rehearsal with its outcome and evidence."
+    }
+  ]
+}

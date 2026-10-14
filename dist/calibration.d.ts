@@ -81,6 +81,8 @@ export declare function familyMetrics(rows: readonly Observation[], targetPrecis
 };
 /** Constrain calibration to HTTP loopback and installed decision models. */
 export declare function localConfig(baseUrl?: string, model?: string): JevConfig;
+/** Verify installed model provenance; refuse cloud-backed tags before inference. */
+export declare function localModel(config: JevConfig): Promise<string>;
 /** Run the committed synthetic corpus through the production decision boundary. */
 export declare function calibrate(dataset: CalibrationDataset, baseUrl: string, model: string, targetPrecision?: number, minAccepted?: number): Promise<{
     schemaVersion: string;

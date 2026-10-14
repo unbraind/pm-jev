@@ -187,7 +187,7 @@ export function localConfig(baseUrl = "http://127.0.0.1:11434", model = "tev1:4b
 }
 
 /** Verify installed model provenance; refuse cloud-backed tags before inference. */
-async function localModel(config: JevConfig): Promise<string> {
+export async function localModel(config: JevConfig): Promise<string> {
   const response = await fetch(`${config.baseUrl}/api/tags`, { redirect: "error", signal: AbortSignal.timeout(config.timeoutMs) });
   if (!response.ok) throw new Error("Local model inventory failed");
   const raw: unknown = await response.json();

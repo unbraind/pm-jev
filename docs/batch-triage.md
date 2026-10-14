@@ -27,12 +27,33 @@ travels through the official transport. It is provider-specific and never sent t
 hosted TypeSafe. Redirect refusal, external opt-in, credential checks, response schema
 validation and per-field probability thresholds apply to every item.
 
-Triage sends bounded title, description, distinct body and nonempty tags. Current
-routing fields are excluded, and a description repeated in body is sent once. The
+Triage sends bounded title, description, distinct body and nonempty tags. The explicit keep-current candidate names the current type and its registry definition.
+Current routing fields are excluded from the evidence state, and a description repeated in body is sent once. The
 receipt's SHA-256 hashes the complete untruncated title, description, body, ordered
 tags and status. Type, priority, timestamps and annotations are excluded so the
-receipt remains valid after apply and does not invalidate itself. Only matching
-current-catalog receipt comments are reused; `--refresh` bypasses them. Dry runs
+receipt remains valid after apply and does not invalidate itself. Each receipt also
+records `expected_type`, the type after this run's writes (or the unchanged current
+type), and `apply_threshold`, the full-precision requested threshold. Reuse requires
+the current type to match `expected_type`, so external type edits cause re-evaluation
+while triage's own type write preserves reuse. Equal or raised thresholds reuse the
+receipt; a lower requested threshold re-evaluates so previously withheld changes can
+be applied. Only matching current-catalog receipt comments with these fields and a
+matching `type_question_sha256` are reused;
+`--refresh` bypasses them. The fingerprint is SHA-256 of the JSON-serialized type
+choice question (kind, instructions, ordered candidate labels and effective
+definitions), with the keep-current option bound to the stable `__keep_current__`
+placeholder, plus `TYPE_MARGIN_THRESHOLD` and `TYPE_CHANGE_PROBABILITY`. This
+captures the keep-current instruction template while excluding the item's routing
+type so an applied change does not invalidate its own receipt. Definitions use
+normalized registry descriptions, built-in criteria, or the folder fallback, exactly
+as sent to the model. Editing a definition or adding a candidate invalidates reuse;
+edits that leave the effective question unchanged do not cause model calls.
+
+Pre-change receipts without this fingerprint, expected type or full-precision apply
+threshold are stale for type decisions. The next
+batch invocation re-evaluates each such item; an apply appends a new receipt so later
+unchanged runs can skip it. Existing receipts and comments are never rewritten or
+removed. Dry runs
 leave items and history untouched. This is receipt reuse, not a model-result cache.
 
 Before returning any inferred result, the command compares full evidence, current
@@ -59,3 +80,28 @@ PM SDK mocks. `npm run test:install` exercises the tarball path directly with pa
 npm/Bun consumers and their installed hosts. `npm run test:live` separately exercises
 local model decisions and emits batch counts/timings on synthetic tracker state.
 Live acceptance must be scheduled after any external baseline measurement completes.
+
+## Type calibration policy
+
+Catalog `pm-jev-triage/2` describes every registered type and includes an explicit
+keep-current candidate. For each item the shared catalog is bound to its current
+type. Code ranks full-precision label probabilities with stable registry ordering.
+A top-two margin below the frozen empirical cutoff returns no type proposal,
+`abstained: true` and `reason: top_two_margin_below_threshold`. Margin equality is
+accepted. This applies to labels including keep-current and the current type; those
+are distinct candidates and are not merged into an inflated probability.
+
+After the margin check, a keep-current winner or a competing label below 0.8
+retains the current type with `kept_current: true` and an explicit reason. Apply
+then compares a changed proposal's own probability against the requested threshold.
+`proposals.type.probability`, receipt `type=… p=…` and batch `type_probability`
+measure the label probability of the resolved type, including a retained current
+type. They never sum the current-type and keep-current candidates. `selected_label`
+continues to show the policy's keep-current option; its separate probability is
+available in `probabilities`. On abstention, single-item `probability` describes the
+leading label while `value` is null; batch type/probability are both null.
+Abstention affects only type: an independently qualifying priority can still change.
+Batch rows include `abstained` and the reason, with null type/probability on abstention.
+Single-item `--full` and JSON include definitions and every label probability;
+compact TOON omits definitions and preserves the existing top-three contract.
+See [the measured threshold](threshold-calibration.md) and its limitations.

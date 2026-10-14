@@ -87,9 +87,17 @@ authors, linked files and paths from tracker metadata are excluded. A path or se
 written inside title/body still belongs to that content: the `sensitive` answer is
 a proposal, not a sanitizer or an authorization rule.
 
-Triage reads the project's actual configured item types through the pm SDK, including
-custom types and their descriptions. Built-ins with no schema description get semantic
-catalog descriptions; other undescribed custom types use their configured names. The priority rubric is index-aligned with pm:
+Triage reads the project's actual configured item types through the pm SDK. Each
+candidate has a one-line registry description; built-ins fall back to canonical
+semantics and undescribed custom types retain their name and registry folder metadata.
+An explicit keep-current candidate includes the current type and its definition in
+the question, while routing fields remain excluded from the evidence state.
+A new type needs at least 0.8 top-label probability even if the apply flag is lower.
+Close top-two labels abstain before this keep-current rule: the proposal value is
+null with `abstained: true` and an explicit reason. The measured margin cutoff and
+its held-out trade-off are documented in [type calibration](docs/threshold-calibration.md).
+Default TOON retains compact probabilities and the policy outcome; `--full` and
+JSON include every probability and the definitions used. The priority rubric is index-aligned with pm:
 0 critical, 1 high, 2 medium, 3 low, 4 minimal. The highest-probability priority level
 wins, with ties going to the lowest index. Probability is distinct from the model's
 reported confidence. `--apply` compares each proposed field's probability to the
@@ -292,6 +300,6 @@ dates/counting and multi-hop reasoning. Gate thresholds need workload-specific e
 false positives and false negatives remain possible. Rust/OpenAPI parity, hosted acceptance,
 and production threshold calibration remain deferred tracker issues.
 The opt-in [synthetic calibration harness](docs/threshold-calibration.md) generates
-a versioned four-family corpus and measures local Ollama reliability curves with
+versioned noul and type-classification corpora and measures local Ollama reliability curves with
 `npm run calibration`; tests require no Ollama. Its model-specific recommendations
 are advisory and do not change the provisional defaults automatically.

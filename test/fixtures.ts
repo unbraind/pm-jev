@@ -82,3 +82,13 @@ export function hostedFixture(server: Awaited<ReturnType<typeof endpoint>>): () 
     else process.env.PM_JEV_BASE_URL = previousUrl;
   };
 }
+
+/** Return a normalized triage distribution with unspecified registry labels set to zero. */
+export function typeAnswers(questions: Questions, weights: Record<string, number>) {
+  const question = questions.type;
+  if (question.type !== "choice") throw new Error("Expected triage choice");
+  const result = answers(questions);
+  result.answers.type = { type: "choice", choice: Object.keys(weights)[0], confidence: 1,
+    probabilities: Object.fromEntries(Object.keys(question.criteria).map(label => [label, weights[label] ?? 0])) };
+  return result;
+}

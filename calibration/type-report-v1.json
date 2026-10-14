@@ -1,0 +1,3072 @@
+{
+  "schemaVersion": "pm-jev-type-report/1",
+  "family": "type_classification",
+  "dataset": {
+    "version": "pm-jev-type-classification/1",
+    "customTypes": [
+      {
+        "name": "Knowledge",
+        "folder": "knowledge",
+        "description": "Reference knowledge, explanations or research findings; no action is requested"
+      },
+      {
+        "name": "Run",
+        "folder": "runs",
+        "description": "A record of a completed execution with its outcome and evidence"
+      }
+    ],
+    "samples": [
+      {
+        "id": "issue-0",
+        "expected": "Issue",
+        "current": "Issue",
+        "split": "calibration",
+        "text": "Login crashes after the update; previously it worked."
+      },
+      {
+        "id": "issue-1",
+        "expected": "Issue",
+        "current": "Issue",
+        "split": "calibration",
+        "text": "Decide how to fix checkout: it charges customers twice instead of once."
+      },
+      {
+        "id": "issue-2",
+        "expected": "Issue",
+        "current": "Feature",
+        "split": "calibration",
+        "text": "Export returns an exception instead of the requested file."
+      },
+      {
+        "id": "issue-3",
+        "expected": "Issue",
+        "current": "Issue",
+        "split": "evaluation",
+        "text": "Choose a repair for search: existing results disappear after sorting."
+      },
+      {
+        "id": "issue-4",
+        "expected": "Issue",
+        "current": "Issue",
+        "split": "evaluation",
+        "text": "The save button loses entered text, a regression from yesterday."
+      },
+      {
+        "id": "issue-5",
+        "expected": "Issue",
+        "current": "Feature",
+        "split": "evaluation",
+        "text": "Notifications stopped arriving although delivery previously worked."
+      },
+      {
+        "id": "feature-0",
+        "expected": "Feature",
+        "current": "Feature",
+        "split": "calibration",
+        "text": "Add a CSV export capability that does not exist yet."
+      },
+      {
+        "id": "feature-1",
+        "expected": "Feature",
+        "current": "Feature",
+        "split": "calibration",
+        "text": "Allow customers to subscribe to alerts for the first time."
+      },
+      {
+        "id": "feature-2",
+        "expected": "Feature",
+        "current": "Task",
+        "split": "calibration",
+        "text": "Introduce dark mode as a new user-facing capability."
+      },
+      {
+        "id": "feature-3",
+        "expected": "Feature",
+        "current": "Feature",
+        "split": "evaluation",
+        "text": "Support a new payment method alongside the existing ones."
+      },
+      {
+        "id": "feature-4",
+        "expected": "Feature",
+        "current": "Feature",
+        "split": "evaluation",
+        "text": "Add offline access, which the product has never supported."
+      },
+      {
+        "id": "feature-5",
+        "expected": "Feature",
+        "current": "Task",
+        "split": "evaluation",
+        "text": "Provide a new dashboard to compare monthly sales."
+      },
+      {
+        "id": "task-0",
+        "expected": "Task",
+        "current": "Task",
+        "split": "calibration",
+        "text": "Implement the approved wire protocol adapter as one concrete action."
+      },
+      {
+        "id": "task-1",
+        "expected": "Task",
+        "current": "Task",
+        "split": "calibration",
+        "text": "Write tests for the already specified sorting algorithm."
+      },
+      {
+        "id": "task-2",
+        "expected": "Task",
+        "current": "Chore",
+        "split": "calibration",
+        "text": "Translate the approved button labels into Spanish."
+      },
+      {
+        "id": "task-3",
+        "expected": "Task",
+        "current": "Task",
+        "split": "evaluation",
+        "text": "Configure the worker to use the agreed queue as an implementation step."
+      },
+      {
+        "id": "task-4",
+        "expected": "Task",
+        "current": "Task",
+        "split": "evaluation",
+        "text": "Implement the parser described in the accepted specification."
+      },
+      {
+        "id": "task-5",
+        "expected": "Task",
+        "current": "Chore",
+        "split": "evaluation",
+        "text": "Verify the approved migration on a synthetic fixture."
+      },
+      {
+        "id": "chore-0",
+        "expected": "Chore",
+        "current": "Chore",
+        "split": "calibration",
+        "text": "Update development dependencies as routine maintenance."
+      },
+      {
+        "id": "chore-1",
+        "expected": "Chore",
+        "current": "Chore",
+        "split": "calibration",
+        "text": "Remove unused imports during regular housekeeping."
+      },
+      {
+        "id": "chore-2",
+        "expected": "Chore",
+        "current": "Epic",
+        "split": "calibration",
+        "text": "Refresh the dependency lockfile during maintenance."
+      },
+      {
+        "id": "chore-3",
+        "expected": "Chore",
+        "current": "Chore",
+        "split": "evaluation",
+        "text": "Reformat source files to match the existing style guide."
+      },
+      {
+        "id": "chore-4",
+        "expected": "Chore",
+        "current": "Chore",
+        "split": "evaluation",
+        "text": "Rotate the synthetic build cache as scheduled housekeeping."
+      },
+      {
+        "id": "chore-5",
+        "expected": "Chore",
+        "current": "Epic",
+        "split": "evaluation",
+        "text": "Update stale documentation links during routine maintenance."
+      },
+      {
+        "id": "epic-0",
+        "expected": "Epic",
+        "current": "Epic",
+        "split": "calibration",
+        "text": "Deliver the billing overhaul, grouping invoicing, refunds and subscription features."
+      },
+      {
+        "id": "epic-1",
+        "expected": "Epic",
+        "current": "Epic",
+        "split": "calibration",
+        "text": "Modernize authentication across several features and teams."
+      },
+      {
+        "id": "epic-2",
+        "expected": "Epic",
+        "current": "Decision",
+        "split": "calibration",
+        "text": "Build the reporting programme spanning dashboards, exports and alerts."
+      },
+      {
+        "id": "epic-3",
+        "expected": "Epic",
+        "current": "Epic",
+        "split": "evaluation",
+        "text": "Coordinate the accessibility initiative across navigation, forms and media."
+      },
+      {
+        "id": "epic-4",
+        "expected": "Epic",
+        "current": "Epic",
+        "split": "evaluation",
+        "text": "Deliver the international expansion objective through multiple localization features."
+      },
+      {
+        "id": "epic-5",
+        "expected": "Epic",
+        "current": "Decision",
+        "split": "evaluation",
+        "text": "Complete the platform modernization grouping database, API and deployment work."
+      },
+      {
+        "id": "decision-0",
+        "expected": "Decision",
+        "current": "Decision",
+        "split": "calibration",
+        "text": "Choose PostgreSQL or SQLite for the new service; both meet requirements."
+      },
+      {
+        "id": "decision-1",
+        "expected": "Decision",
+        "current": "Decision",
+        "split": "calibration",
+        "text": "Approve or reject the proposed retention policy before implementation."
+      },
+      {
+        "id": "decision-2",
+        "expected": "Decision",
+        "current": "Knowledge",
+        "split": "calibration",
+        "text": "Select one of two design directions; human judgment is required."
+      },
+      {
+        "id": "decision-3",
+        "expected": "Decision",
+        "current": "Decision",
+        "split": "evaluation",
+        "text": "Decide whether to fund option A or option B; no behavior is broken."
+      },
+      {
+        "id": "decision-4",
+        "expected": "Decision",
+        "current": "Decision",
+        "split": "evaluation",
+        "text": "Agree on the product launch date before scheduling implementation."
+      },
+      {
+        "id": "decision-5",
+        "expected": "Decision",
+        "current": "Knowledge",
+        "split": "evaluation",
+        "text": "Choose the licensing policy for a new component; record human approval."
+      },
+      {
+        "id": "knowledge-0",
+        "expected": "Knowledge",
+        "current": "Knowledge",
+        "split": "calibration",
+        "text": "Reference note: the queue preserves FIFO ordering within a partition; no work is requested."
+      },
+      {
+        "id": "knowledge-1",
+        "expected": "Knowledge",
+        "current": "Knowledge",
+        "split": "calibration",
+        "text": "Documented finding: the tokenizer separates punctuation; keep this as reference knowledge."
+      },
+      {
+        "id": "knowledge-2",
+        "expected": "Knowledge",
+        "current": "Run",
+        "split": "calibration",
+        "text": "Reference explanation of the published retry protocol; no implementation action."
+      },
+      {
+        "id": "knowledge-3",
+        "expected": "Knowledge",
+        "current": "Knowledge",
+        "split": "evaluation",
+        "text": "Research finding: synthetic tests reveal an ordering invariant; retain the observation."
+      },
+      {
+        "id": "knowledge-4",
+        "expected": "Knowledge",
+        "current": "Knowledge",
+        "split": "evaluation",
+        "text": "Record how the checksum algorithm works for future reference."
+      },
+      {
+        "id": "knowledge-5",
+        "expected": "Knowledge",
+        "current": "Run",
+        "split": "evaluation",
+        "text": "Reference glossary explaining the meaning of a delivery receipt."
+      },
+      {
+        "id": "run-0",
+        "expected": "Run",
+        "current": "Run",
+        "split": "calibration",
+        "text": "Execution record: the synthetic build completed successfully with all checks passing."
+      },
+      {
+        "id": "run-1",
+        "expected": "Run",
+        "current": "Run",
+        "split": "calibration",
+        "text": "Execution record: benchmark invocation finished; elapsed time was recorded."
+      },
+      {
+        "id": "run-2",
+        "expected": "Run",
+        "current": "Issue",
+        "split": "calibration",
+        "text": "Completed test invocation receipt with counts and outcome, not future work."
+      },
+      {
+        "id": "run-3",
+        "expected": "Run",
+        "current": "Run",
+        "split": "evaluation",
+        "text": "Execution record: a scheduled synthetic validation completed with two failures."
+      },
+      {
+        "id": "run-4",
+        "expected": "Run",
+        "current": "Run",
+        "split": "evaluation",
+        "text": "Completed calibration invocation receipt with model digest and measured scores."
+      },
+      {
+        "id": "run-5",
+        "expected": "Run",
+        "current": "Issue",
+        "split": "evaluation",
+        "text": "Record of a finished deployment rehearsal with its outcome and evidence."
+      }
+    ]
+  },
+  "datasetSha256": "a0a911c2762cf960e6a709da6a61140fc1438919973bc98b9a1d3e502809e06c",
+  "model": "tev1:4b",
+  "modelDigest": "9b5bb969e46c4b776826d6f2d401e22893205693f172653af6254897255025b8",
+  "resolvedModels": [
+    "tev1:4b"
+  ],
+  "recordedAt": "2026-10-14T20:07:00.364Z",
+  "durationMs": 1139259,
+  "usage": {
+    "inputTokens": 260616,
+    "outputTokens": 480
+  },
+  "registeredTypes": [
+    "Chore",
+    "Decision",
+    "Epic",
+    "Event",
+    "Feature",
+    "Issue",
+    "Knowledge",
+    "Meeting",
+    "Milestone",
+    "Plan",
+    "Reminder",
+    "Run",
+    "Task"
+  ],
+  "definitions": {
+    "Chore": "Routine maintenance, dependency updates, or housekeeping",
+    "Decision": "A choice requiring human judgment, approval, or direction",
+    "Epic": "A large objective grouping multiple related features or tasks",
+    "Event": "An occurrence scheduled at a particular time",
+    "Feature": "A request for a new capability or new user-facing behavior",
+    "Issue": "A defect, bug, crash, or broken existing behavior",
+    "Knowledge": "Reference knowledge, explanations or research findings; no action is requested",
+    "Meeting": "A scheduled discussion between people",
+    "Milestone": "A significant project checkpoint or delivery outcome",
+    "Plan": "An ordered sequence of proposed work steps",
+    "Reminder": "A prompt to revisit something at a particular time",
+    "Run": "A record of a completed execution with its outcome and evidence",
+    "Task": "A concrete implementation action that is not itself a defect or a new capability",
+    "__keep_current__": "Keep the current item type when evidence for reclassification is weak or ambiguous"
+  },
+  "fit": {
+    "targetPrecision": 0.95,
+    "minAccepted": 4,
+    "threshold": 0.05136322250317049,
+    "curve": [
+      {
+        "threshold": 0,
+        "accepted": 24,
+        "correct": 23,
+        "coverage": 1,
+        "precision": 0.9583333333333334
+      },
+      {
+        "threshold": 0.05136322250317049,
+        "accepted": 24,
+        "correct": 23,
+        "coverage": 1,
+        "precision": 0.9583333333333334
+      },
+      {
+        "threshold": 0.18923902111589697,
+        "accepted": 23,
+        "correct": 23,
+        "coverage": 0.9583333333333334,
+        "precision": 1
+      },
+      {
+        "threshold": 0.21398396697942024,
+        "accepted": 22,
+        "correct": 22,
+        "coverage": 0.9166666666666666,
+        "precision": 1
+      },
+      {
+        "threshold": 0.28928974182057987,
+        "accepted": 21,
+        "correct": 21,
+        "coverage": 0.875,
+        "precision": 1
+      },
+      {
+        "threshold": 0.3068035853131116,
+        "accepted": 20,
+        "correct": 20,
+        "coverage": 0.8333333333333334,
+        "precision": 1
+      },
+      {
+        "threshold": 0.35090862996517513,
+        "accepted": 19,
+        "correct": 19,
+        "coverage": 0.7916666666666666,
+        "precision": 1
+      },
+      {
+        "threshold": 0.4210200229231657,
+        "accepted": 18,
+        "correct": 18,
+        "coverage": 0.75,
+        "precision": 1
+      },
+      {
+        "threshold": 0.5784942819528824,
+        "accepted": 17,
+        "correct": 17,
+        "coverage": 0.7083333333333334,
+        "precision": 1
+      },
+      {
+        "threshold": 0.6325797102992754,
+        "accepted": 16,
+        "correct": 16,
+        "coverage": 0.6666666666666666,
+        "precision": 1
+      },
+      {
+        "threshold": 0.6371609262471349,
+        "accepted": 15,
+        "correct": 15,
+        "coverage": 0.625,
+        "precision": 1
+      },
+      {
+        "threshold": 0.7010322985249133,
+        "accepted": 14,
+        "correct": 14,
+        "coverage": 0.5833333333333334,
+        "precision": 1
+      },
+      {
+        "threshold": 0.7087908530213012,
+        "accepted": 13,
+        "correct": 13,
+        "coverage": 0.5416666666666666,
+        "precision": 1
+      },
+      {
+        "threshold": 0.7769168902975755,
+        "accepted": 12,
+        "correct": 12,
+        "coverage": 0.5,
+        "precision": 1
+      },
+      {
+        "threshold": 0.7935523361960022,
+        "accepted": 11,
+        "correct": 11,
+        "coverage": 0.4583333333333333,
+        "precision": 1
+      },
+      {
+        "threshold": 0.8148794285341368,
+        "accepted": 10,
+        "correct": 10,
+        "coverage": 0.4166666666666667,
+        "precision": 1
+      },
+      {
+        "threshold": 0.8234254603806681,
+        "accepted": 9,
+        "correct": 9,
+        "coverage": 0.375,
+        "precision": 1
+      },
+      {
+        "threshold": 0.8793367740289736,
+        "accepted": 8,
+        "correct": 8,
+        "coverage": 0.3333333333333333,
+        "precision": 1
+      },
+      {
+        "threshold": 0.9072796440901533,
+        "accepted": 7,
+        "correct": 7,
+        "coverage": 0.2916666666666667,
+        "precision": 1
+      },
+      {
+        "threshold": 0.9526519677632183,
+        "accepted": 6,
+        "correct": 6,
+        "coverage": 0.25,
+        "precision": 1
+      },
+      {
+        "threshold": 0.9616130305745743,
+        "accepted": 5,
+        "correct": 5,
+        "coverage": 0.20833333333333334,
+        "precision": 1
+      },
+      {
+        "threshold": 0.9691892861229947,
+        "accepted": 4,
+        "correct": 4,
+        "coverage": 0.16666666666666666,
+        "precision": 1
+      },
+      {
+        "threshold": 0.9730709381563212,
+        "accepted": 3,
+        "correct": 3,
+        "coverage": 0.125,
+        "precision": 1
+      },
+      {
+        "threshold": 0.9844621311666962,
+        "accepted": 2,
+        "correct": 2,
+        "coverage": 0.08333333333333333,
+        "precision": 1
+      },
+      {
+        "threshold": 0.986079283553139,
+        "accepted": 1,
+        "correct": 1,
+        "coverage": 0.041666666666666664,
+        "precision": 1
+      },
+      {
+        "threshold": 1,
+        "accepted": 0,
+        "correct": 0,
+        "coverage": 0,
+        "precision": null
+      }
+    ]
+  },
+  "before": {
+    "count": 24,
+    "accepted": 24,
+    "correct": 23,
+    "precision": 0.9583333333333334,
+    "abstentionRate": 0,
+    "perType": {
+      "Issue": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Feature": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Task": {
+        "support": 3,
+        "predicted": 2,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Chore": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Epic": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Decision": {
+        "support": 3,
+        "predicted": 4,
+        "precision": 0.75,
+        "abstentionRate": 0
+      },
+      "Knowledge": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Run": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      }
+    }
+  },
+  "newPrompt": {
+    "count": 24,
+    "accepted": 24,
+    "correct": 24,
+    "precision": 1,
+    "abstentionRate": 0,
+    "perType": {
+      "Issue": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Feature": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Task": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Chore": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Epic": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Decision": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Knowledge": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Run": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      }
+    }
+  },
+  "after": {
+    "count": 24,
+    "accepted": 24,
+    "correct": 23,
+    "precision": 0.9583333333333334,
+    "abstentionRate": 0,
+    "perType": {
+      "Issue": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Feature": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Task": {
+        "support": 3,
+        "predicted": 2,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Chore": {
+        "support": 3,
+        "predicted": 4,
+        "precision": 0.75,
+        "abstentionRate": 0
+      },
+      "Epic": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Decision": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Knowledge": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      },
+      "Run": {
+        "support": 3,
+        "predicted": 3,
+        "precision": 1,
+        "abstentionRate": 0
+      }
+    }
+  },
+  "observations": [
+    {
+      "id": "issue-0",
+      "expected": "Issue",
+      "current": "Issue",
+      "split": "calibration",
+      "text": "Login crashes after the update; previously it worked.",
+      "before": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.0076294679776744935,
+          "Decision": 0.0016260193907055524,
+          "Epic": 0.0010860420770628103,
+          "Event": 0.0000322141022439328,
+          "Feature": 0.00003608551571928347,
+          "Issue": 0.9890842105415987,
+          "Knowledge": 0.00009430258706201953,
+          "Meeting": 0.000005816485688162056,
+          "Milestone": 0.000013232346498286789,
+          "Plan": 0.000004067817130617029,
+          "Reminder": 0.0000013581371679435178,
+          "Run": 0.000019845775584610126,
+          "Task": 0.00036733724586331205
+        },
+        "confidence": 0.9723605931718424
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.0065288300602187165,
+          "Decision": 0.0007471785724573218,
+          "Epic": 0.00019353361979273655,
+          "Event": 0.000032715221675837565,
+          "Feature": 0.00002612646542854404,
+          "Issue": 0.8146932811192984,
+          "Knowledge": 0.0001133047815870267,
+          "Meeting": 0.000011681804026939701,
+          "Milestone": 0.000044567907990972695,
+          "Plan": 0.000010981242036520382,
+          "Reminder": 0.0000036199862410310014,
+          "Run": 0.000027285210016891235,
+          "Task": 0.000034539137065536746,
+          "__keep_current__": 0.17753235487216346
+        },
+        "confidence": 0.8041848809632107
+      }
+    },
+    {
+      "id": "issue-1",
+      "expected": "Issue",
+      "current": "Issue",
+      "split": "calibration",
+      "text": "Decide how to fix checkout: it charges customers twice instead of once.",
+      "before": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.013034773582490842,
+          "Decision": 0.024114586474095746,
+          "Epic": 0.007136910495710499,
+          "Event": 0.0000732618864459282,
+          "Feature": 0.00026995080151446344,
+          "Issue": 0.9461517528413232,
+          "Knowledge": 0.0001270534842947708,
+          "Meeting": 0.000022249882120543047,
+          "Milestone": 0.000055091679524966696,
+          "Plan": 0.00001505008511529543,
+          "Reminder": 0.000003540536392475694,
+          "Run": 0.000021520947736448565,
+          "Task": 0.008974257303235107
+        },
+        "confidence": 0.8902044652722847
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.0028537935765555,
+          "Decision": 0.027804120325245464,
+          "Epic": 0.0007247519921094702,
+          "Event": 0.00005332966076058445,
+          "Feature": 0.00012991807252058348,
+          "Issue": 0.5782933076524259,
+          "Knowledge": 0.00018879186980508806,
+          "Meeting": 0.00003018368916042238,
+          "Milestone": 0.00022596290243568848,
+          "Plan": 0.000050424908950760054,
+          "Reminder": 0.000008393034093972012,
+          "Run": 0.000022028170934173527,
+          "Task": 0.0005607076084734825,
+          "__keep_current__": 0.38905428653652896
+        },
+        "confidence": 0.6907545339626557
+      }
+    },
+    {
+      "id": "issue-2",
+      "expected": "Issue",
+      "current": "Feature",
+      "split": "calibration",
+      "text": "Export returns an exception instead of the requested file.",
+      "before": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.0061700226579581375,
+          "Decision": 0.005519054384780768,
+          "Epic": 0.007515791062692376,
+          "Event": 0.0000737542133416111,
+          "Feature": 0.0017063351712666883,
+          "Issue": 0.9733145052464575,
+          "Knowledge": 0.00031019244543484703,
+          "Meeting": 0.00002187234354496558,
+          "Milestone": 0.0001357883353371891,
+          "Plan": 0.00001477035267042751,
+          "Reminder": 0.0000039569584915593635,
+          "Run": 0.0008771072150259689,
+          "Task": 0.004336849612998082
+        },
+        "confidence": 0.934235310370984
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.0023938918130884724,
+          "Decision": 0.0009067836651024192,
+          "Epic": 0.0020829934866692574,
+          "Event": 0.00005903725440301313,
+          "Feature": 0.000566365101932584,
+          "Issue": 0.9771639688612054,
+          "Knowledge": 0.0007599965842548332,
+          "Meeting": 0.00001843837773921682,
+          "Milestone": 0.00018180176772888753,
+          "Plan": 0.000016943517104700158,
+          "Reminder": 0.000006416575842690923,
+          "Run": 0.00007596570720601465,
+          "Task": 0.00021645900109136014,
+          "__keep_current__": 0.01555093828663109
+        },
+        "confidence": 0.9485325260126434
+      }
+    },
+    {
+      "id": "issue-3",
+      "expected": "Issue",
+      "current": "Issue",
+      "split": "evaluation",
+      "text": "Choose a repair for search: existing results disappear after sorting.",
+      "before": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.015362891740309003,
+          "Decision": 0.005554103737156747,
+          "Epic": 0.013046376799050257,
+          "Event": 0.00009716041646734646,
+          "Feature": 0.0003696852036961655,
+          "Issue": 0.9624358012270285,
+          "Knowledge": 0.0007929612863991851,
+          "Meeting": 0.00001772381522112613,
+          "Milestone": 0.00016236957242320553,
+          "Plan": 0.000014971136779453838,
+          "Reminder": 0.0000031358231607923445,
+          "Run": 0.000017666438951421882,
+          "Task": 0.002125152803356849
+        },
+        "confidence": 0.9177270325866053
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.005237883542307777,
+          "Decision": 0.0020346633076073015,
+          "Epic": 0.0006007024205920844,
+          "Event": 0.00004703270457475673,
+          "Feature": 0.00010347930532094804,
+          "Issue": 0.700017126466405,
+          "Knowledge": 0.0002498146643603002,
+          "Meeting": 0.000017701601069428146,
+          "Milestone": 0.00007841838572814084,
+          "Plan": 0.0000152867678977298,
+          "Reminder": 0.000004407285527166194,
+          "Run": 0.000014112516149435305,
+          "Task": 0.0000825714216927005,
+          "__keep_current__": 0.29149679961076713
+        },
+        "confidence": 0.7502311851161113
+      }
+    },
+    {
+      "id": "issue-4",
+      "expected": "Issue",
+      "current": "Issue",
+      "split": "evaluation",
+      "text": "The save button loses entered text, a regression from yesterday.",
+      "before": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.009080830804218126,
+          "Decision": 0.001123974712110014,
+          "Epic": 0.0028032975593204057,
+          "Event": 0.0000579687952242497,
+          "Feature": 0.00028870683150059875,
+          "Issue": 0.9850540679622373,
+          "Knowledge": 0.00005799445237547588,
+          "Meeting": 0.000008702507584668145,
+          "Milestone": 0.00001657454034811748,
+          "Plan": 0.0000048358838274002295,
+          "Reminder": 0.0000016328962716319107,
+          "Run": 0.000008930930922375423,
+          "Task": 0.0014924821240592328
+        },
+        "confidence": 0.9628450370227974
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.006567832941982199,
+          "Decision": 0.0006393819200574813,
+          "Epic": 0.0004761244487126865,
+          "Event": 0.00004846805705316934,
+          "Feature": 0.00008960052149826351,
+          "Issue": 0.774223154373827,
+          "Knowledge": 0.00008589558593029065,
+          "Meeting": 0.000015448595957529763,
+          "Milestone": 0.00003902697395759663,
+          "Plan": 0.000015931191032376923,
+          "Reminder": 0.000004404772956965181,
+          "Run": 0.00001495432700171696,
+          "Task": 0.00005722878258808789,
+          "__keep_current__": 0.21772254750744435
+        },
+        "confidence": 0.78210365027683
+      }
+    },
+    {
+      "id": "issue-5",
+      "expected": "Issue",
+      "current": "Feature",
+      "split": "evaluation",
+      "text": "Notifications stopped arriving although delivery previously worked.",
+      "before": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.01260338570615372,
+          "Decision": 0.005293625318189915,
+          "Epic": 0.005993385615375974,
+          "Event": 0.00008641040992701914,
+          "Feature": 0.0004377047854262235,
+          "Issue": 0.9740266735433784,
+          "Knowledge": 0.0006156354009626563,
+          "Meeting": 0.00001967650395844245,
+          "Milestone": 0.00004873995895448909,
+          "Plan": 0.000011769922807071335,
+          "Reminder": 0.000004344870044791481,
+          "Run": 0.000023786239430754498,
+          "Task": 0.0008348617253903637
+        },
+        "confidence": 0.9395809088367427
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Issue",
+        "probabilities": {
+          "Chore": 0.007672744226727797,
+          "Decision": 0.00328005099585964,
+          "Epic": 0.0034306519884667527,
+          "Event": 0.000054607461077684646,
+          "Feature": 0.0002145331528993954,
+          "Issue": 0.9726017793130873,
+          "Knowledge": 0.0011916684597435784,
+          "Meeting": 0.000017599342849116422,
+          "Milestone": 0.00005311871034888938,
+          "Plan": 0.00001068643793508781,
+          "Reminder": 0.000006937370710159659,
+          "Run": 0.00001894916521649882,
+          "Task": 0.00021617781990796803,
+          "__keep_current__": 0.011230495555170134
+        },
+        "confidence": 0.9369647845705433
+      }
+    },
+    {
+      "id": "feature-0",
+      "expected": "Feature",
+      "current": "Feature",
+      "split": "calibration",
+      "text": "Add a CSV export capability that does not exist yet.",
+      "before": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.010896924240368122,
+          "Decision": 0.00114893051392933,
+          "Epic": 0.018494197052888593,
+          "Event": 0.00007494132800672683,
+          "Feature": 0.963002147151204,
+          "Issue": 0.00005363666366777005,
+          "Knowledge": 0.00002117869009977702,
+          "Meeting": 0.000009783102130222088,
+          "Milestone": 0.000016413514498572835,
+          "Plan": 0.000006196401360018929,
+          "Reminder": 0.0000013811069616042902,
+          "Run": 0.00000551161394184729,
+          "Task": 0.006268758620943601
+        },
+        "confidence": 0.9216973873303127
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.0054122367748469895,
+          "Decision": 0.0003915678813263694,
+          "Epic": 0.021256570894130286,
+          "Event": 0.00004975111129877938,
+          "Feature": 0.8830089797922427,
+          "Issue": 0.00003984308066313749,
+          "Knowledge": 0.000028572711315929684,
+          "Meeting": 0.000015449848651386775,
+          "Milestone": 0.000025523851486975132,
+          "Plan": 0.000006710925719072899,
+          "Reminder": 0.000004079740364892428,
+          "Run": 0.000008372680508964174,
+          "Task": 0.0002956971112042779,
+          "__keep_current__": 0.08945664359624048
+        },
+        "confidence": 0.8320384276248445
+      }
+    },
+    {
+      "id": "feature-1",
+      "expected": "Feature",
+      "current": "Feature",
+      "split": "calibration",
+      "text": "Allow customers to subscribe to alerts for the first time.",
+      "before": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.003363140688558173,
+          "Decision": 0.0013745974308085789,
+          "Epic": 0.038338768827758246,
+          "Event": 0.00009701541792438915,
+          "Feature": 0.9547943418599534,
+          "Issue": 0.00004632318624745938,
+          "Knowledge": 0.0000510124916019824,
+          "Meeting": 0.000014696389437808397,
+          "Milestone": 0.00002654440226961572,
+          "Plan": 0.000008097809122260524,
+          "Reminder": 0.000001689060719055141,
+          "Run": 0.000005178516660170848,
+          "Task": 0.0018785939189388224
+        },
+        "confidence": 0.9174674498179134
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.00237392399598848,
+          "Decision": 0.0004975939090519977,
+          "Epic": 0.0411275817444526,
+          "Event": 0.00005774499864519384,
+          "Feature": 0.8283478432565768,
+          "Issue": 0.00006576798551803366,
+          "Knowledge": 0.00004270276493934612,
+          "Meeting": 0.000018206071291397154,
+          "Milestone": 0.00003219908146420758,
+          "Plan": 0.000008445384297064133,
+          "Reminder": 0.000004672389411902356,
+          "Run": 0.000008325305080974065,
+          "Task": 0.00009944838161869362,
+          "__keep_current__": 0.12731554473166345
+        },
+        "confidence": 0.7835952019439649
+      }
+    },
+    {
+      "id": "feature-2",
+      "expected": "Feature",
+      "current": "Task",
+      "split": "calibration",
+      "text": "Introduce dark mode as a new user-facing capability.",
+      "before": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.001491331053525343,
+          "Decision": 0.0022705757315678653,
+          "Epic": 0.016743525329104593,
+          "Event": 0.00004731812047305027,
+          "Feature": 0.9791339941329152,
+          "Issue": 0.000014675478722032479,
+          "Knowledge": 0.00004234326321599247,
+          "Meeting": 0.000008951386889028341,
+          "Milestone": 0.000018546731746746125,
+          "Plan": 0.000004091276912887444,
+          "Reminder": 0.0000010350051901842242,
+          "Run": 0.000002821905660396061,
+          "Task": 0.0002207905840769425
+        },
+        "confidence": 0.9547832525227539
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.0011217292028652696,
+          "Decision": 0.0028072115993136343,
+          "Epic": 0.0111935740781432,
+          "Event": 0.000023403090793313114,
+          "Feature": 0.9842645122344644,
+          "Issue": 0.000011979330844265477,
+          "Knowledge": 0.00002918857067693434,
+          "Meeting": 0.0000056517750351134,
+          "Milestone": 0.000013822039730370861,
+          "Plan": 0.000002789625463729131,
+          "Reminder": 0.0000010981320406971885,
+          "Run": 0.0000022796591490033973,
+          "Task": 0.00004849311702190598,
+          "__keep_current__": 0.000474267544457904
+        },
+        "confidence": 0.963958349186416
+      }
+    },
+    {
+      "id": "feature-3",
+      "expected": "Feature",
+      "current": "Feature",
+      "split": "evaluation",
+      "text": "Support a new payment method alongside the existing ones.",
+      "before": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.02323171135357984,
+          "Decision": 0.016500668652446055,
+          "Epic": 0.19476025011596998,
+          "Event": 0.00015842747885783313,
+          "Feature": 0.7419588100783634,
+          "Issue": 0.00008554284315075978,
+          "Knowledge": 0.0001097202523375318,
+          "Meeting": 0.000043554554909077825,
+          "Milestone": 0.00010055522692635351,
+          "Plan": 0.00011562362188551638,
+          "Reminder": 0.0000047691538070163594,
+          "Run": 0.000012016849866085238,
+          "Task": 0.022918349817900627
+        },
+        "confidence": 0.6929654479366301
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.01144178440457663,
+          "Decision": 0.006621693658247525,
+          "Epic": 0.12676652724689277,
+          "Event": 0.00007601128817634793,
+          "Feature": 0.7452193946946948,
+          "Issue": 0.00005792171208458139,
+          "Knowledge": 0.00008596269938665548,
+          "Meeting": 0.00002593088619423605,
+          "Milestone": 0.000052572806352645006,
+          "Plan": 0.000017933318678426305,
+          "Reminder": 0.000005854389210722625,
+          "Run": 0.000010241042318050637,
+          "Task": 0.0003811070133819438,
+          "__keep_current__": 0.1092370648398047
+        },
+        "confidence": 0.6917483287910557
+      }
+    },
+    {
+      "id": "feature-4",
+      "expected": "Feature",
+      "current": "Feature",
+      "split": "evaluation",
+      "text": "Add offline access, which the product has never supported.",
+      "before": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.022241869776301,
+          "Decision": 0.011153837406042942,
+          "Epic": 0.0790995117428739,
+          "Event": 0.0001466780503903519,
+          "Feature": 0.8653088864459383,
+          "Issue": 0.00038867168336342487,
+          "Knowledge": 0.00014708371174555139,
+          "Meeting": 0.00003529335714763569,
+          "Milestone": 0.00012543550063195898,
+          "Plan": 0.000030779186062343644,
+          "Reminder": 0.000004732039930780122,
+          "Run": 0.000022835486127771658,
+          "Task": 0.0212943856134441
+        },
+        "confidence": 0.7854220657572759
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.022192221370050842,
+          "Decision": 0.0035940393994025603,
+          "Epic": 0.09396173178367281,
+          "Event": 0.00011191000743766607,
+          "Feature": 0.7863118648660952,
+          "Issue": 0.00022157168082705684,
+          "Knowledge": 0.00010873110051219431,
+          "Meeting": 0.000037032051277479,
+          "Milestone": 0.00007387768989427113,
+          "Plan": 0.000016108871015617314,
+          "Reminder": 0.000008564107762750039,
+          "Run": 0.00001629529141171733,
+          "Task": 0.0017847525936149757,
+          "__keep_current__": 0.0915612991870251
+        },
+        "confidence": 0.7152078896338602
+      }
+    },
+    {
+      "id": "feature-5",
+      "expected": "Feature",
+      "current": "Task",
+      "split": "evaluation",
+      "text": "Provide a new dashboard to compare monthly sales.",
+      "before": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.011071751244896469,
+          "Decision": 0.00937663624375349,
+          "Epic": 0.16851333993251016,
+          "Event": 0.0001814825130232629,
+          "Feature": 0.7882864589478661,
+          "Issue": 0.00010378578765170353,
+          "Knowledge": 0.00008456736724546679,
+          "Meeting": 0.000048143877240901715,
+          "Milestone": 0.00011499877879296066,
+          "Plan": 0.000039077438829090896,
+          "Reminder": 0.000004880640340384927,
+          "Run": 0.000014849219827298068,
+          "Task": 0.022160028008022664
+        },
+        "confidence": 0.738349237385791
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Feature",
+        "probabilities": {
+          "Chore": 0.0062486499773518065,
+          "Decision": 0.006119007196805981,
+          "Epic": 0.10516829198926632,
+          "Event": 0.00013151797613519806,
+          "Feature": 0.8627808831752558,
+          "Issue": 0.00011903162444291268,
+          "Knowledge": 0.00006341914556273307,
+          "Meeting": 0.00003430903744102236,
+          "Milestone": 0.0000899869885608956,
+          "Plan": 0.000027429409355549984,
+          "Reminder": 0.0000062902302068103175,
+          "Run": 0.000012798947798567034,
+          "Task": 0.005563815973400015,
+          "__keep_current__": 0.013634568328416098
+        },
+        "confidence": 0.8032974057553685
+      }
+    },
+    {
+      "id": "task-0",
+      "expected": "Task",
+      "current": "Task",
+      "split": "calibration",
+      "text": "Implement the approved wire protocol adapter as one concrete action.",
+      "before": {
+        "type": "choice",
+        "choice": "Task",
+        "probabilities": {
+          "Chore": 0.011616198969964785,
+          "Decision": 0.0038880015172377803,
+          "Epic": 0.007748276814656483,
+          "Event": 0.000059983256971693346,
+          "Feature": 0.0003239004846326887,
+          "Issue": 0.000011921310033878687,
+          "Knowledge": 0.000015755500734500153,
+          "Meeting": 0.00000883891153381961,
+          "Milestone": 0.00016483248744814525,
+          "Plan": 0.00013295080453719826,
+          "Reminder": 0.000005669595183043759,
+          "Run": 0.000032185205133486516,
+          "Task": 0.9759914851419323
+        },
+        "confidence": 0.9448992079080148
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Task",
+        "probabilities": {
+          "Chore": 0.005556034558782969,
+          "Decision": 0.004354897029212538,
+          "Epic": 0.005463806747671646,
+          "Event": 0.000040954169859970166,
+          "Feature": 0.00017286870375889243,
+          "Issue": 0.000010373021964744404,
+          "Knowledge": 0.000015332906042191887,
+          "Meeting": 0.000011711118095606563,
+          "Milestone": 0.00016751558218299528,
+          "Plan": 0.00004236943912687314,
+          "Reminder": 0.000009398165834836024,
+          "Run": 0.000024691259131840353,
+          "Task": 0.9317334106636543,
+          "__keep_current__": 0.05239663663468076
+        },
+        "confidence": 0.8840597283956764
+      }
+    },
+    {
+      "id": "task-1",
+      "expected": "Task",
+      "current": "Task",
+      "split": "calibration",
+      "text": "Write tests for the already specified sorting algorithm.",
+      "before": {
+        "type": "choice",
+        "choice": "Task",
+        "probabilities": {
+          "Chore": 0.15943829247617197,
+          "Decision": 0.009826039874507963,
+          "Epic": 0.08361394464927213,
+          "Event": 0.00037268826539014116,
+          "Feature": 0.001895354910738392,
+          "Issue": 0.00027939041201117243,
+          "Knowledge": 0.0008976413858165066,
+          "Meeting": 0.000046656281906949595,
+          "Milestone": 0.00021372957983367742,
+          "Plan": 0.013829055249185056,
+          "Reminder": 0.00003307037815494362,
+          "Run": 0.00012929771016809236,
+          "Task": 0.7294248388268428
+        },
+        "confidence": 0.6638642872369216
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Task",
+        "probabilities": {
+          "Chore": 0.09358800455354917,
+          "Decision": 0.00850293427738903,
+          "Epic": 0.04626372383032356,
+          "Event": 0.0003027754842044947,
+          "Feature": 0.002355943205610294,
+          "Issue": 0.0014042779435555906,
+          "Knowledge": 0.0024039134645289215,
+          "Meeting": 0.00006635939614937121,
+          "Milestone": 0.0001868350901410316,
+          "Plan": 0.002258284939732712,
+          "Reminder": 0.00004466730757186899,
+          "Run": 0.00008390405878054597,
+          "Task": 0.5746709808807875,
+          "__keep_current__": 0.2678673955676759
+        },
+        "confidence": 0.5705733668110107
+      }
+    },
+    {
+      "id": "task-2",
+      "expected": "Task",
+      "current": "Chore",
+      "split": "calibration",
+      "text": "Translate the approved button labels into Spanish.",
+      "before": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.22314535684313766,
+          "Decision": 0.1690504761759766,
+          "Epic": 0.18154188681446312,
+          "Event": 0.0008141875299081636,
+          "Feature": 0.20863003629848856,
+          "Issue": 0.002275324123136888,
+          "Knowledge": 0.10100780964483524,
+          "Meeting": 0.00019335098992211364,
+          "Milestone": 0.000517430380331082,
+          "Plan": 0.0008315454821631159,
+          "Reminder": 0.000045897213892649345,
+          "Run": 0.00013100861158043536,
+          "Task": 0.11181568989216455
+        },
+        "confidence": 0.3055612097229563
+      },
+      "after": {
+        "type": "choice",
+        "choice": "__keep_current__",
+        "probabilities": {
+          "Chore": 0.21293226483948616,
+          "Decision": 0.21998161945725137,
+          "Epic": 0.08470505528101353,
+          "Event": 0.0008761345447244665,
+          "Feature": 0.1329043898415562,
+          "Issue": 0.002854404751476382,
+          "Knowledge": 0.009584909428316328,
+          "Meeting": 0.00025304714944286374,
+          "Milestone": 0.0006029991868446894,
+          "Plan": 0.00045109520800722385,
+          "Reminder": 0.0000707312237136829,
+          "Run": 0.0000974646286482957,
+          "Task": 0.06334104249909689,
+          "__keep_current__": 0.27134484196042186
+        },
+        "confidence": 0.337817585356317
+      }
+    },
+    {
+      "id": "task-3",
+      "expected": "Task",
+      "current": "Task",
+      "split": "evaluation",
+      "text": "Configure the worker to use the agreed queue as an implementation step.",
+      "before": {
+        "type": "choice",
+        "choice": "Task",
+        "probabilities": {
+          "Chore": 0.028721524566692243,
+          "Decision": 0.020761177032319816,
+          "Epic": 0.07544746765964419,
+          "Event": 0.0003371282581346442,
+          "Feature": 0.0031911738621209626,
+          "Issue": 0.000042802574861766446,
+          "Knowledge": 0.0004316972331078502,
+          "Meeting": 0.000045574924343246375,
+          "Milestone": 0.0008148166680088147,
+          "Plan": 0.02633564906034338,
+          "Reminder": 0.000023714234863449405,
+          "Run": 0.00009597847003680042,
+          "Task": 0.8437512954555227
+        },
+        "confidence": 0.7470827145320009
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Task",
+        "probabilities": {
+          "Chore": 0.018877671831568896,
+          "Decision": 0.016475328997595497,
+          "Epic": 0.014143257547198114,
+          "Event": 0.0001327824050143895,
+          "Feature": 0.0017308126523183805,
+          "Issue": 0.00003858473119677015,
+          "Knowledge": 0.00016159362915155634,
+          "Meeting": 0.00003687093565021865,
+          "Milestone": 0.00027804808665976365,
+          "Plan": 0.0013933809463191067,
+          "Reminder": 0.000025941943239271765,
+          "Run": 0.00003896694844688701,
+          "Task": 0.5351903501386757,
+          "__keep_current__": 0.4114764092069655
+        },
+        "confidence": 0.6478844670086897
+      }
+    },
+    {
+      "id": "task-4",
+      "expected": "Task",
+      "current": "Task",
+      "split": "evaluation",
+      "text": "Implement the parser described in the accepted specification.",
+      "before": {
+        "type": "choice",
+        "choice": "Task",
+        "probabilities": {
+          "Chore": 0.03530396453399752,
+          "Decision": 0.0037565519157026876,
+          "Epic": 0.22823982490255415,
+          "Event": 0.0003066812416648422,
+          "Feature": 0.033412118658358025,
+          "Issue": 0.0002903159385365096,
+          "Knowledge": 0.000980905088413536,
+          "Meeting": 0.00006882671634067933,
+          "Milestone": 0.0007184617619572149,
+          "Plan": 0.0020165291172016143,
+          "Reminder": 0.000025684178216070763,
+          "Run": 0.00031281589281629077,
+          "Task": 0.6945673200542408
+        },
+        "confidence": 0.6585750410909155
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Task",
+        "probabilities": {
+          "Chore": 0.01056640624976021,
+          "Decision": 0.001996793269018218,
+          "Epic": 0.09525552731124344,
+          "Event": 0.0001898799550606017,
+          "Feature": 0.011734557785569442,
+          "Issue": 0.00025790471039060234,
+          "Knowledge": 0.00045730923222101,
+          "Meeting": 0.00005297210583984002,
+          "Milestone": 0.0003310299012504522,
+          "Plan": 0.0004429012705143261,
+          "Reminder": 0.000022530820761021562,
+          "Run": 0.00007234575326635866,
+          "Task": 0.557946621133639,
+          "__keep_current__": 0.32067322050146546
+        },
+        "confidence": 0.6052807300718726
+      }
+    },
+    {
+      "id": "task-5",
+      "expected": "Task",
+      "current": "Chore",
+      "split": "evaluation",
+      "text": "Verify the approved migration on a synthetic fixture.",
+      "before": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.2104482709674513,
+          "Decision": 0.33192128196372445,
+          "Epic": 0.024642491195761923,
+          "Event": 0.0006229618453218141,
+          "Feature": 0.0004620355747121628,
+          "Issue": 0.0001274305118521195,
+          "Knowledge": 0.002045420282474167,
+          "Meeting": 0.00008525047362658943,
+          "Milestone": 0.006011136574514926,
+          "Plan": 0.0007780973200980706,
+          "Reminder": 0.00006431165983490322,
+          "Run": 0.20236450829768957,
+          "Task": 0.22042680333293793
+        },
+        "confidence": 0.41455572948276553
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Task",
+        "probabilities": {
+          "Chore": 0.21546340501866051,
+          "Decision": 0.18653918057877586,
+          "Epic": 0.01715407020063403,
+          "Event": 0.0005832614069492667,
+          "Feature": 0.0004489180814012898,
+          "Issue": 0.0003320711203180323,
+          "Knowledge": 0.004747005985286714,
+          "Meeting": 0.0001205779248807446,
+          "Milestone": 0.0035104387481397817,
+          "Plan": 0.0004362830500147402,
+          "Reminder": 0.00010030706455062433,
+          "Run": 0.20281880405539462,
+          "Task": 0.27818444477272947,
+          "__keep_current__": 0.08956123199226448
+        },
+        "confidence": 0.36705047825686377
+      }
+    },
+    {
+      "id": "chore-0",
+      "expected": "Chore",
+      "current": "Chore",
+      "split": "calibration",
+      "text": "Update development dependencies as routine maintenance.",
+      "before": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.9973142327339394,
+          "Decision": 0.00031637018879043105,
+          "Epic": 0.0008754742982596574,
+          "Event": 0.00003307053642567684,
+          "Feature": 0.000015320087925209267,
+          "Issue": 0.0000024873111238445385,
+          "Knowledge": 0.000030649016460422324,
+          "Meeting": 0.000003327311020024663,
+          "Milestone": 0.000002275859897108349,
+          "Plan": 0.000010639396562830355,
+          "Reminder": 0.0000037860182263445024,
+          "Run": 0.000004483402522241161,
+          "Task": 0.0013878838388468782
+        },
+        "confidence": 0.9915454874320236
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.8883497705510165,
+          "Decision": 0.00008403907334021568,
+          "Epic": 0.00007166284857162272,
+          "Event": 0.000009753496573501998,
+          "Feature": 0.0000064782224285013475,
+          "Issue": 0.000001700589826825033,
+          "Knowledge": 0.000009696440304597995,
+          "Meeting": 0.000002840227297749306,
+          "Milestone": 0.0000032358307471329213,
+          "Plan": 0.0000028723041636432702,
+          "Reminder": 0.00000236776367350807,
+          "Run": 0.0000037561789757285155,
+          "Task": 0.000018946219639409617,
+          "__keep_current__": 0.11143288025344099
+        },
+        "confidence": 0.8666619438659742
+      }
+    },
+    {
+      "id": "chore-1",
+      "expected": "Chore",
+      "current": "Chore",
+      "split": "calibration",
+      "text": "Remove unused imports during regular housekeeping.",
+      "before": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.9869996804709787,
+          "Decision": 0.000512210153693661,
+          "Epic": 0.0023852264341447252,
+          "Event": 0.00006516494316202813,
+          "Feature": 0.00003982116080060545,
+          "Issue": 0.000007326324443037873,
+          "Knowledge": 0.0001434179206932998,
+          "Meeting": 0.00000831379268992616,
+          "Milestone": 0.000005756555580477146,
+          "Plan": 0.00010987930985017058,
+          "Reminder": 0.000006164067254877489,
+          "Run": 0.000014224260411741605,
+          "Task": 0.009702814606297001
+        },
+        "confidence": 0.9688244403700594
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.7889591126637371,
+          "Decision": 0.00022764201240871047,
+          "Epic": 0.00011580073979724452,
+          "Event": 0.000016565991858656322,
+          "Feature": 0.000012063848327355521,
+          "Issue": 0.000003879443651157104,
+          "Knowledge": 0.00002203865766017441,
+          "Meeting": 0.000007059957332240902,
+          "Milestone": 0.000005296021045965616,
+          "Plan": 0.000006466926589109333,
+          "Reminder": 0.000003742827079836152,
+          "Run": 0.000008678133756733287,
+          "Task": 0.0001468220659011774,
+          "__keep_current__": 0.21046483071085467
+        },
+        "confidence": 0.8028677254182661
+      }
+    },
+    {
+      "id": "chore-2",
+      "expected": "Chore",
+      "current": "Epic",
+      "split": "calibration",
+      "text": "Refresh the dependency lockfile during maintenance.",
+      "before": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.97588812717593,
+          "Decision": 0.000700626581754055,
+          "Epic": 0.006998229233453354,
+          "Event": 0.0002561640680635782,
+          "Feature": 0.00004818287251570991,
+          "Issue": 0.000007160979722666605,
+          "Knowledge": 0.00014846239292508182,
+          "Meeting": 0.000010654291656129396,
+          "Milestone": 0.000009990166019837739,
+          "Plan": 0.00011452695332378601,
+          "Reminder": 0.000028542616015847336,
+          "Run": 0.00002832265638056717,
+          "Task": 0.015761010012239854
+        },
+        "confidence": 0.9474033152825563
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.9714701882311075,
+          "Decision": 0.0006717908920449893,
+          "Epic": 0.006054167229777924,
+          "Event": 0.0003256830701652603,
+          "Feature": 0.00006141714018353877,
+          "Issue": 0.00001043875749169937,
+          "Knowledge": 0.0003210328076411856,
+          "Meeting": 0.000011748167289478692,
+          "Milestone": 0.000013009096612515541,
+          "Plan": 0.00003645208227202924,
+          "Reminder": 0.000016438014438525266,
+          "Run": 0.000016275287867018304,
+          "Task": 0.0021731387552192238,
+          "__keep_current__": 0.018818220467889286
+        },
+        "confidence": 0.9397666594810902
+      }
+    },
+    {
+      "id": "chore-3",
+      "expected": "Chore",
+      "current": "Chore",
+      "split": "evaluation",
+      "text": "Reformat source files to match the existing style guide.",
+      "before": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.5193144824728145,
+          "Decision": 0.0009278378266704505,
+          "Epic": 0.04919939566314156,
+          "Event": 0.00011479354821450442,
+          "Feature": 0.00009427686900882125,
+          "Issue": 0.000012009391792126526,
+          "Knowledge": 0.00018611236684282003,
+          "Meeting": 0.0000188539706998899,
+          "Milestone": 0.000043048648589196326,
+          "Plan": 0.0017048111530426455,
+          "Reminder": 0.00000767585774294844,
+          "Run": 0.00005475927076763462,
+          "Task": 0.42832194296067305
+        },
+        "confidence": 0.6592962312682704
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.42731036258118604,
+          "Decision": 0.0008294659368377776,
+          "Epic": 0.008340066572948177,
+          "Event": 0.00004728514408531022,
+          "Feature": 0.000038115170028362514,
+          "Issue": 0.00001128170347115765,
+          "Knowledge": 0.00005718971560532981,
+          "Meeting": 0.000020799045685090356,
+          "Milestone": 0.000023579377569016246,
+          "Plan": 0.00006217649226109836,
+          "Reminder": 0.000008160698065437943,
+          "Run": 0.000027940597819602673,
+          "Task": 0.34605443907570593,
+          "__keep_current__": 0.2171691378887317
+        },
+        "confidence": 0.5790201649307052
+      }
+    },
+    {
+      "id": "chore-4",
+      "expected": "Chore",
+      "current": "Chore",
+      "split": "evaluation",
+      "text": "Rotate the synthetic build cache as scheduled housekeeping.",
+      "before": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.9782414820390241,
+          "Decision": 0.00048432478907258717,
+          "Epic": 0.0067997395132982676,
+          "Event": 0.003983751507752276,
+          "Feature": 0.00004592094124810824,
+          "Issue": 0.00000530022456947299,
+          "Knowledge": 0.0001054876535200281,
+          "Meeting": 0.000011421995648941915,
+          "Milestone": 0.000008080027770120224,
+          "Plan": 0.00007382226088061817,
+          "Reminder": 0.00015087714963422233,
+          "Run": 0.00008220339804786898,
+          "Task": 0.010007588499533707
+        },
+        "confidence": 0.9486299007812997
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.8459699831570359,
+          "Decision": 0.00019599690587565233,
+          "Epic": 0.00046707235792893683,
+          "Event": 0.0007248411819567509,
+          "Feature": 0.000014822012385197514,
+          "Issue": 0.0000029185382205893327,
+          "Knowledge": 0.000027339127135213127,
+          "Meeting": 0.000006994962466809979,
+          "Milestone": 0.000005833640045574608,
+          "Plan": 0.000007778242236913985,
+          "Reminder": 0.000008356494811929012,
+          "Run": 0.000014009985431879852,
+          "Task": 0.00012131901694414896,
+          "__keep_current__": 0.15243273437752483
+        },
+        "confidence": 0.8329648545861476
+      }
+    },
+    {
+      "id": "chore-5",
+      "expected": "Chore",
+      "current": "Epic",
+      "split": "evaluation",
+      "text": "Update stale documentation links during routine maintenance.",
+      "before": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.9758229792607789,
+          "Decision": 0.0006028005233433857,
+          "Epic": 0.004626826523905508,
+          "Event": 0.00031718132167130785,
+          "Feature": 0.00003651053098955548,
+          "Issue": 0.00000995214815000733,
+          "Knowledge": 0.00005167463655427353,
+          "Meeting": 0.0000073191873116171274,
+          "Milestone": 0.00000599323929804813,
+          "Plan": 0.00002548534723884869,
+          "Reminder": 0.0000074333134203371196,
+          "Run": 0.000015266138995783242,
+          "Task": 0.01847057782834262
+        },
+        "confidence": 0.9488528965881354
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Chore",
+        "probabilities": {
+          "Chore": 0.9797589871916998,
+          "Decision": 0.0003477172686663158,
+          "Epic": 0.00337545536169163,
+          "Event": 0.00016713723481458692,
+          "Feature": 0.00003172564936689094,
+          "Issue": 0.000012486183780125894,
+          "Knowledge": 0.00011289071431425099,
+          "Meeting": 0.000006164390704639117,
+          "Milestone": 0.000006416116987296183,
+          "Plan": 0.000008237137450602913,
+          "Reminder": 0.00000470567755034001,
+          "Run": 0.000008468903087791746,
+          "Task": 0.0029895980317382652,
+          "__keep_current__": 0.013170010138147425
+        },
+        "confidence": 0.9546169287724466
+      }
+    },
+    {
+      "id": "epic-0",
+      "expected": "Epic",
+      "current": "Epic",
+      "split": "calibration",
+      "text": "Deliver the billing overhaul, grouping invoicing, refunds and subscription features.",
+      "before": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.0060163266356959896,
+          "Decision": 0.0016289745323626562,
+          "Epic": 0.9541582352571177,
+          "Event": 0.00013907808018631283,
+          "Feature": 0.020710419260905593,
+          "Issue": 0.000017576346654600684,
+          "Knowledge": 0.00006290299204881808,
+          "Meeting": 0.000050235651129713904,
+          "Milestone": 0.007499788565586381,
+          "Plan": 0.0006446624907129679,
+          "Reminder": 0.0000068372003196552735,
+          "Run": 0.00002359712732058828,
+          "Task": 0.009041365859958626
+        },
+        "confidence": 0.9013087060338418
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.0029477641297162706,
+          "Decision": 0.000524928508326478,
+          "Epic": 0.8472506380552539,
+          "Event": 0.00007378453635071319,
+          "Feature": 0.008766088614686996,
+          "Issue": 0.000013231361858387295,
+          "Knowledge": 0.00003858738070022989,
+          "Meeting": 0.000026056793173126973,
+          "Milestone": 0.0015523081382488961,
+          "Plan": 0.00007864336650541467,
+          "Reminder": 0.000008924145352597877,
+          "Run": 0.0000186110137993763,
+          "Task": 0.00024064892207449875,
+          "__keep_current__": 0.13845978503395273
+        },
+        "confidence": 0.8137685893079747
+      }
+    },
+    {
+      "id": "epic-1",
+      "expected": "Epic",
+      "current": "Epic",
+      "split": "calibration",
+      "text": "Modernize authentication across several features and teams.",
+      "before": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.013841557044208927,
+          "Decision": 0.005471578953479737,
+          "Epic": 0.9543622840911027,
+          "Event": 0.00009894293550098609,
+          "Feature": 0.012275670491472547,
+          "Issue": 0.00001627420138204398,
+          "Knowledge": 0.00011340921232772948,
+          "Meeting": 0.00007085389465258777,
+          "Milestone": 0.0003144903814824596,
+          "Plan": 0.001209018938511475,
+          "Reminder": 0.000006350160209597377,
+          "Run": 0.000021015760263449226,
+          "Task": 0.012198553935406036
+        },
+        "confidence": 0.9010325042207167
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.008395068643987005,
+          "Decision": 0.0020878173678951584,
+          "Epic": 0.8091781966963396,
+          "Event": 0.00005641169692215763,
+          "Feature": 0.0032411340236331784,
+          "Issue": 0.000010556429039518304,
+          "Knowledge": 0.000051710231082499725,
+          "Meeting": 0.000024485703878350584,
+          "Milestone": 0.0000815038172745718,
+          "Plan": 0.00007359437219332515,
+          "Reminder": 0.000006449717894209423,
+          "Run": 0.000012055912353478708,
+          "Task": 0.00018252899044278096,
+          "__keep_current__": 0.1765984863970642
+        },
+        "confidence": 0.7901446363533322
+      }
+    },
+    {
+      "id": "epic-2",
+      "expected": "Epic",
+      "current": "Decision",
+      "split": "calibration",
+      "text": "Build the reporting programme spanning dashboards, exports and alerts.",
+      "before": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.003473334843767955,
+          "Decision": 0.00319597992621756,
+          "Epic": 0.9381841390911163,
+          "Event": 0.00012059735921678521,
+          "Feature": 0.029775160760887112,
+          "Issue": 0.000019968340829769195,
+          "Knowledge": 0.00012957767485122384,
+          "Meeting": 0.0000693632231371196,
+          "Milestone": 0.0025252980086918004,
+          "Plan": 0.008560719790724218,
+          "Reminder": 0.000009195897271496372,
+          "Run": 0.00002681995579884366,
+          "Task": 0.013909845127489757
+        },
+        "confidence": 0.8747064238869844
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.003330681299242219,
+          "Decision": 0.004664623000634246,
+          "Epic": 0.9395099275820735,
+          "Event": 0.00009652353182321487,
+          "Feature": 0.032230283491920225,
+          "Issue": 0.000016163963162530503,
+          "Knowledge": 0.00013020012897687702,
+          "Meeting": 0.00004993840018898777,
+          "Milestone": 0.0018882906363493436,
+          "Plan": 0.004692392993730482,
+          "Reminder": 0.000011766230528900565,
+          "Run": 0.00001827192538993666,
+          "Task": 0.003061562705331025,
+          "__keep_current__": 0.010299374110648537
+        },
+        "confidence": 0.8793951576202718
+      }
+    },
+    {
+      "id": "epic-3",
+      "expected": "Epic",
+      "current": "Epic",
+      "split": "evaluation",
+      "text": "Coordinate the accessibility initiative across navigation, forms and media.",
+      "before": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.006067067604246211,
+          "Decision": 0.011865161004546362,
+          "Epic": 0.9015395948735778,
+          "Event": 0.00021114347652935404,
+          "Feature": 0.023415554707211485,
+          "Issue": 0.00003615933789066726,
+          "Knowledge": 0.0003964318490425513,
+          "Meeting": 0.0016164680545933455,
+          "Milestone": 0.0020329884666676814,
+          "Plan": 0.01642821258238744,
+          "Reminder": 0.000016463256609562522,
+          "Run": 0.000044616088673548865,
+          "Task": 0.03633013869802406
+        },
+        "confidence": 0.8121762096242509
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.0028232734852637175,
+          "Decision": 0.005907823291807928,
+          "Epic": 0.6142606788893128,
+          "Event": 0.00010503812653192856,
+          "Feature": 0.014138652260128472,
+          "Issue": 0.00004600940324551836,
+          "Knowledge": 0.0001392208714623565,
+          "Meeting": 0.00008409198714225983,
+          "Milestone": 0.00025460921722005264,
+          "Plan": 0.0005582561741584095,
+          "Reminder": 0.000013939138339614386,
+          "Run": 0.000025656979570457596,
+          "Task": 0.0013163643359897094,
+          "__keep_current__": 0.360326385839827
+        },
+        "confidence": 0.6994573708350926
+      }
+    },
+    {
+      "id": "epic-4",
+      "expected": "Epic",
+      "current": "Epic",
+      "split": "evaluation",
+      "text": "Deliver the international expansion objective through multiple localization features.",
+      "before": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.0012397419326590625,
+          "Decision": 0.0053701770637118555,
+          "Epic": 0.9656204406447513,
+          "Event": 0.00014258398038578089,
+          "Feature": 0.01926805939548325,
+          "Issue": 0.000014521376061063605,
+          "Knowledge": 0.00016767845155291625,
+          "Meeting": 0.00004871760560346458,
+          "Milestone": 0.0031459042202767683,
+          "Plan": 0.0010533038442270624,
+          "Reminder": 0.000006805876204679624,
+          "Run": 0.000027064794150204582,
+          "Task": 0.0038950008149323647
+        },
+        "confidence": 0.9232218758209502
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.0009940572035631403,
+          "Decision": 0.0014021990043553464,
+          "Epic": 0.8205747294224564,
+          "Event": 0.0000646818196362561,
+          "Feature": 0.005115001890970959,
+          "Issue": 0.000008899795722582466,
+          "Knowledge": 0.0000465051128123519,
+          "Meeting": 0.000019014298081982343,
+          "Milestone": 0.0004543599167238328,
+          "Plan": 0.0000708155937586329,
+          "Reminder": 0.000007321833556385927,
+          "Run": 0.000012851982910705692,
+          "Task": 0.00008123013171157121,
+          "__keep_current__": 0.17114833199373983
+        },
+        "confidence": 0.8052253256975009
+      }
+    },
+    {
+      "id": "epic-5",
+      "expected": "Epic",
+      "current": "Decision",
+      "split": "evaluation",
+      "text": "Complete the platform modernization grouping database, API and deployment work.",
+      "before": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.032864974573541414,
+          "Decision": 0.003553563629810384,
+          "Epic": 0.8169458641050573,
+          "Event": 0.0002273259197604008,
+          "Feature": 0.00802018556569456,
+          "Issue": 0.00002685663409736357,
+          "Knowledge": 0.00013029254646173606,
+          "Meeting": 0.00010321704213376788,
+          "Milestone": 0.004819825005495409,
+          "Plan": 0.02030770402197241,
+          "Reminder": 0.000024477695645754162,
+          "Run": 0.00022316557694553374,
+          "Task": 0.11275254768338437
+        },
+        "confidence": 0.7296092282380602
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Epic",
+        "probabilities": {
+          "Chore": 0.025073845443950964,
+          "Decision": 0.012401665475352775,
+          "Epic": 0.8690058749646445,
+          "Event": 0.00022613278759622775,
+          "Feature": 0.003928195666007109,
+          "Issue": 0.00002417374870020372,
+          "Knowledge": 0.0001614077322015906,
+          "Meeting": 0.0000900242417166306,
+          "Milestone": 0.003765249677875345,
+          "Plan": 0.009271709169491516,
+          "Reminder": 0.000027850999165975695,
+          "Run": 0.00007267837989078971,
+          "Task": 0.05146939071813062,
+          "__keep_current__": 0.024481800995275624
+        },
+        "confidence": 0.771144952155294
+      }
+    },
+    {
+      "id": "decision-0",
+      "expected": "Decision",
+      "current": "Decision",
+      "split": "calibration",
+      "text": "Choose PostgreSQL or SQLite for the new service; both meet requirements.",
+      "before": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.0037920097505623742,
+          "Decision": 0.9834231924392959,
+          "Epic": 0.004541868489558313,
+          "Event": 0.00026000781489850385,
+          "Feature": 0.00018073257464614316,
+          "Issue": 0.00001799104772420468,
+          "Knowledge": 0.004754177856713771,
+          "Meeting": 0.000104472381795498,
+          "Milestone": 0.00008891452313434903,
+          "Plan": 0.00020478121321637274,
+          "Reminder": 0.000013683108656056276,
+          "Run": 0.000035220193102875634,
+          "Task": 0.0025829486066955955
+        },
+        "confidence": 0.9567863915538033
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.003578404539817373,
+          "Decision": 0.9036498181824095,
+          "Epic": 0.0005453769747994153,
+          "Event": 0.0000886778346848871,
+          "Feature": 0.000040295402649409874,
+          "Issue": 0.000010851568034536251,
+          "Knowledge": 0.0029538200986998398,
+          "Meeting": 0.00004898077204992029,
+          "Milestone": 0.0000377755545711211,
+          "Plan": 0.00004789653532588237,
+          "Reminder": 0.000012488172557290385,
+          "Run": 0.000025437269751164152,
+          "Task": 0.0001897874463768672,
+          "__keep_current__": 0.08877038964827275
+        },
+        "confidence": 0.8663425384532215
+      }
+    },
+    {
+      "id": "decision-1",
+      "expected": "Decision",
+      "current": "Decision",
+      "split": "calibration",
+      "text": "Approve or reject the proposed retention policy before implementation.",
+      "before": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.006952233617406903,
+          "Decision": 0.9737066769871231,
+          "Epic": 0.006417904600857081,
+          "Event": 0.0002660285629585628,
+          "Feature": 0.00018645630486974402,
+          "Issue": 0.000011594964207285245,
+          "Knowledge": 0.00016357205932339004,
+          "Meeting": 0.00010061930733559715,
+          "Milestone": 0.00021893287121493328,
+          "Plan": 0.0003644791221303572,
+          "Reminder": 0.00014911028190772914,
+          "Run": 0.000053142576034560235,
+          "Task": 0.011409248744631029
+        },
+        "confidence": 0.9388800224333503
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.003784006143439128,
+          "Decision": 0.9080967954877209,
+          "Epic": 0.0009988899703594963,
+          "Event": 0.0001691801444686805,
+          "Feature": 0.00006767828399830099,
+          "Issue": 0.000011333152492615445,
+          "Knowledge": 0.00012583532410223987,
+          "Meeting": 0.00007478682732191636,
+          "Milestone": 0.00011161838705259526,
+          "Plan": 0.0001314353446664839,
+          "Reminder": 0.00007295747590021047,
+          "Run": 0.00004384130973642087,
+          "Task": 0.0016403070416884018,
+          "__keep_current__": 0.08467133510705278
+        },
+        "confidence": 0.8702060429845083
+      }
+    },
+    {
+      "id": "decision-2",
+      "expected": "Decision",
+      "current": "Knowledge",
+      "split": "calibration",
+      "text": "Select one of two design directions; human judgment is required.",
+      "before": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.00241821196905316,
+          "Decision": 0.9700171942514073,
+          "Epic": 0.0181142747256051,
+          "Event": 0.0005328342755326108,
+          "Feature": 0.006385349301206598,
+          "Issue": 0.00004938993719778592,
+          "Knowledge": 0.0008695464906744463,
+          "Meeting": 0.00013590467681904182,
+          "Milestone": 0.00019726097274228436,
+          "Plan": 0.000287061200005156,
+          "Reminder": 0.000015968518664774724,
+          "Run": 0.000040893872021666407,
+          "Task": 0.0009361098090699015
+        },
+        "confidence": 0.9329378359284635
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.0014556852473866745,
+          "Decision": 0.978790947088475,
+          "Epic": 0.005052583328849598,
+          "Event": 0.000318507778352497,
+          "Feature": 0.002636166905332647,
+          "Issue": 0.000099797156845987,
+          "Knowledge": 0.0011334293594868414,
+          "Meeting": 0.00010106447837963252,
+          "Milestone": 0.00015567185373715193,
+          "Plan": 0.0001527750718013117,
+          "Reminder": 0.000028608947781223503,
+          "Run": 0.00004376945515358668,
+          "Task": 0.000429332362937565,
+          "__keep_current__": 0.009601660965480277
+        },
+        "confidence": 0.9483350075376596
+      }
+    },
+    {
+      "id": "decision-3",
+      "expected": "Decision",
+      "current": "Decision",
+      "split": "evaluation",
+      "text": "Decide whether to fund option A or option B; no behavior is broken.",
+      "before": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.017324326853479382,
+          "Decision": 0.8971037001939649,
+          "Epic": 0.05118584678942276,
+          "Event": 0.004593782934420833,
+          "Feature": 0.0145245766935937,
+          "Issue": 0.00015864730759422783,
+          "Knowledge": 0.0006267156222865087,
+          "Meeting": 0.00013604653872684817,
+          "Milestone": 0.0006208714081632658,
+          "Plan": 0.0023575433255693425,
+          "Reminder": 0.000058949767525574835,
+          "Run": 0.00020298886747038445,
+          "Task": 0.011106003697782203
+        },
+        "confidence": 0.8111634348829375
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.005606194269039999,
+          "Decision": 0.7570660790997265,
+          "Epic": 0.0039628502900757815,
+          "Event": 0.0004640202372997313,
+          "Feature": 0.0007923962068990555,
+          "Issue": 0.00007179288786614686,
+          "Knowledge": 0.00016832381650086194,
+          "Meeting": 0.000048823094367231304,
+          "Milestone": 0.00012262892417496158,
+          "Plan": 0.00013072118907143704,
+          "Reminder": 0.00003538853704529423,
+          "Run": 0.000051677742519021956,
+          "Task": 0.0002996669915443451,
+          "__keep_current__": 0.23117943671386978
+        },
+        "confidence": 0.765946557868658
+      }
+    },
+    {
+      "id": "decision-4",
+      "expected": "Decision",
+      "current": "Decision",
+      "split": "evaluation",
+      "text": "Agree on the product launch date before scheduling implementation.",
+      "before": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.018987331225897745,
+          "Decision": 0.4134184996080431,
+          "Epic": 0.11031240122822301,
+          "Event": 0.07060895578640117,
+          "Feature": 0.0008545629170547115,
+          "Issue": 0.000046550992330756256,
+          "Knowledge": 0.001565021001216742,
+          "Meeting": 0.03798156219604554,
+          "Milestone": 0.11688973863573754,
+          "Plan": 0.15023145385484452,
+          "Reminder": 0.000398921465253838,
+          "Run": 0.00017026476326268173,
+          "Task": 0.07853473632568862
+        },
+        "confidence": 0.3170640498930519
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.009961079456940834,
+          "Decision": 0.5489128697324305,
+          "Epic": 0.019317732632908105,
+          "Event": 0.028307705848621304,
+          "Feature": 0.0004404932808026391,
+          "Issue": 0.000042034546266380876,
+          "Knowledge": 0.00282920446556765,
+          "Meeting": 0.01322632292007393,
+          "Milestone": 0.05456578004901958,
+          "Plan": 0.06681103021662661,
+          "Reminder": 0.00016253378930622953,
+          "Run": 0.00013823773268196917,
+          "Task": 0.007436011942468488,
+          "__keep_current__": 0.24784896338628576
+        },
+        "confidence": 0.4868425397020989
+      }
+    },
+    {
+      "id": "decision-5",
+      "expected": "Decision",
+      "current": "Knowledge",
+      "split": "evaluation",
+      "text": "Choose the licensing policy for a new component; record human approval.",
+      "before": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.010031113470329164,
+          "Decision": 0.9775903696111269,
+          "Epic": 0.002969832742826208,
+          "Event": 0.00030576715823403354,
+          "Feature": 0.0006278432778439336,
+          "Issue": 0.000011555819072272265,
+          "Knowledge": 0.00015678525649038698,
+          "Meeting": 0.0000178717870764985,
+          "Milestone": 0.000027567427883705808,
+          "Plan": 0.000027487385041634166,
+          "Reminder": 0.000008374429033565574,
+          "Run": 0.000040586236916347015,
+          "Task": 0.008184845398125353
+        },
+        "confidence": 0.9474355732694877
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Decision",
+        "probabilities": {
+          "Chore": 0.004255028438957707,
+          "Decision": 0.9680378048933903,
+          "Epic": 0.002716696861747366,
+          "Event": 0.00027723812812567003,
+          "Feature": 0.0018632290676333962,
+          "Issue": 0.000023478583336443566,
+          "Knowledge": 0.000270322551159438,
+          "Meeting": 0.000026847773571142936,
+          "Milestone": 0.00009889756019192757,
+          "Plan": 0.000056041011752710615,
+          "Reminder": 0.000025770641974851055,
+          "Run": 0.00004990783546134092,
+          "Task": 0.008646498879640892,
+          "__keep_current__": 0.013652237773056948
+        },
+        "confidence": 0.9282365797663449
+      }
+    },
+    {
+      "id": "knowledge-0",
+      "expected": "Knowledge",
+      "current": "Knowledge",
+      "split": "calibration",
+      "text": "Reference note: the queue preserves FIFO ordering within a partition; no work is requested.",
+      "before": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.017198617669533595,
+          "Decision": 0.001161387829419202,
+          "Epic": 0.0030850482387698567,
+          "Event": 0.00041114639479527333,
+          "Feature": 0.004016237437300891,
+          "Issue": 0.00023595204920457154,
+          "Knowledge": 0.970936263097122,
+          "Meeting": 0.00004991311912313593,
+          "Milestone": 0.000062275421872117,
+          "Plan": 0.0001317274784776064,
+          "Reminder": 0.00003082715813531142,
+          "Run": 0.00024401842026902898,
+          "Task": 0.002436585685977428
+        },
+        "confidence": 0.9334025146097145
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.0012281038683586766,
+          "Decision": 0.00012661645524468732,
+          "Epic": 0.000058731818473238786,
+          "Event": 0.00002960011007537151,
+          "Feature": 0.00011722622263480886,
+          "Issue": 0.000020523899385226467,
+          "Knowledge": 0.7096865136802241,
+          "Meeting": 0.000011745937665347495,
+          "Milestone": 0.000012034580134651808,
+          "Plan": 0.000012884355956664528,
+          "Reminder": 0.000006945817732853805,
+          "Run": 0.000009358035785691226,
+          "Task": 0.000013224461270418042,
+          "__keep_current__": 0.28866649075705836
+        },
+        "confidence": 0.7672189791248022
+      }
+    },
+    {
+      "id": "knowledge-1",
+      "expected": "Knowledge",
+      "current": "Knowledge",
+      "split": "calibration",
+      "text": "Documented finding: the tokenizer separates punctuation; keep this as reference knowledge.",
+      "before": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.006948133857196608,
+          "Decision": 0.003408853254712039,
+          "Epic": 0.004141709444083093,
+          "Event": 0.00023017890899802642,
+          "Feature": 0.001603130894679463,
+          "Issue": 0.000783129757045896,
+          "Knowledge": 0.9801440684953245,
+          "Meeting": 0.00003343018681778688,
+          "Milestone": 0.000052313735798608754,
+          "Plan": 0.00002678189756999318,
+          "Reminder": 0.00001356277844762957,
+          "Run": 0.00005781200252865559,
+          "Task": 0.002556894786797405
+        },
+        "confidence": 0.9488321870397549
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.004530337620704341,
+          "Decision": 0.0008015761724762381,
+          "Epic": 0.00021680050510565667,
+          "Event": 0.00008809806763724918,
+          "Feature": 0.00022588793212971128,
+          "Issue": 0.000068877211627816,
+          "Knowledge": 0.6724129971355426,
+          "Meeting": 0.000022861089496195638,
+          "Milestone": 0.0000238729838281317,
+          "Plan": 0.000021922797977605307,
+          "Reminder": 0.000015352659766666747,
+          "Run": 0.000018165644437589595,
+          "Task": 0.000048883008902491015,
+          "__keep_current__": 0.32150436717036746
+        },
+        "confidence": 0.7466315091659836
+      }
+    },
+    {
+      "id": "knowledge-2",
+      "expected": "Knowledge",
+      "current": "Run",
+      "split": "calibration",
+      "text": "Reference explanation of the published retry protocol; no implementation action.",
+      "before": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.003133581212989381,
+          "Decision": 0.001305215018304892,
+          "Epic": 0.0009397095377086718,
+          "Event": 0.00016031713440462357,
+          "Feature": 0.0003811658965869678,
+          "Issue": 0.000029064571881307204,
+          "Knowledge": 0.9935213683579163,
+          "Meeting": 0.000026126564366081344,
+          "Milestone": 0.000019614957130976708,
+          "Plan": 0.000024126464234032288,
+          "Reminder": 0.000007958484252062644,
+          "Run": 0.000015778626731415755,
+          "Task": 0.000435973173493175
+        },
+        "confidence": 0.9809609920704689
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.004236378544436355,
+          "Decision": 0.0013278994246914862,
+          "Epic": 0.0005395572349044263,
+          "Event": 0.00009973654721042919,
+          "Feature": 0.0001902816584151789,
+          "Issue": 0.00004168118724531336,
+          "Knowledge": 0.9903156620975754,
+          "Meeting": 0.00003526657473516448,
+          "Milestone": 0.00002136514161079836,
+          "Plan": 0.000025796262841912526,
+          "Reminder": 0.00001653693140122989,
+          "Run": 0.000023174485161971075,
+          "Task": 0.00010056174608150548,
+          "__keep_current__": 0.003026102163688611
+        },
+        "confidence": 0.9740882984180884
+      }
+    },
+    {
+      "id": "knowledge-3",
+      "expected": "Knowledge",
+      "current": "Knowledge",
+      "split": "evaluation",
+      "text": "Research finding: synthetic tests reveal an ordering invariant; retain the observation.",
+      "before": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.0023450555776300553,
+          "Decision": 0.003593753110679315,
+          "Epic": 0.001608869008860074,
+          "Event": 0.00011953043468113534,
+          "Feature": 0.00015722051776473423,
+          "Issue": 0.00005140626166476683,
+          "Knowledge": 0.9904904080566725,
+          "Meeting": 0.000022535311379482877,
+          "Milestone": 0.00008791526489463131,
+          "Plan": 0.000028255694754094163,
+          "Reminder": 0.000009250590205392342,
+          "Run": 0.0010264661371790175,
+          "Task": 0.0004593340336348155
+        },
+        "confidence": 0.9729957721756061
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.00239955348293022,
+          "Decision": 0.0014209726916429573,
+          "Epic": 0.00017642169483633933,
+          "Event": 0.00007796537976234534,
+          "Feature": 0.00008563605790781731,
+          "Issue": 0.00004103944251187651,
+          "Knowledge": 0.5713183304144115,
+          "Meeting": 0.000030093439052624865,
+          "Milestone": 0.000059791813930664076,
+          "Plan": 0.000043682926281044535,
+          "Reminder": 0.000015801003848165205,
+          "Run": 0.00010870269246732387,
+          "Task": 0.00004277694871301283,
+          "__keep_current__": 0.4241792320117042
+        },
+        "confidence": 0.729522482645563
+      }
+    },
+    {
+      "id": "knowledge-4",
+      "expected": "Knowledge",
+      "current": "Knowledge",
+      "split": "evaluation",
+      "text": "Record how the checksum algorithm works for future reference.",
+      "before": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.10993883127328175,
+          "Decision": 0.001111125298006271,
+          "Epic": 0.028206206763176287,
+          "Event": 0.0003415996464809023,
+          "Feature": 0.0022436092009956933,
+          "Issue": 0.000078713898143411,
+          "Knowledge": 0.7783027823584348,
+          "Meeting": 0.00007293799629018332,
+          "Milestone": 0.00018709683478635288,
+          "Plan": 0.0005483708572976362,
+          "Reminder": 0.00020046390176050883,
+          "Run": 0.012180024154664409,
+          "Task": 0.06658823781668172
+        },
+        "confidence": 0.6860068223169573
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.118380781495903,
+          "Decision": 0.0011266786545318958,
+          "Epic": 0.005205018807929331,
+          "Event": 0.0001452837925009854,
+          "Feature": 0.0007703354680785035,
+          "Issue": 0.0000644235652101795,
+          "Knowledge": 0.5317616000994982,
+          "Meeting": 0.00007166544705164296,
+          "Milestone": 0.00007226059682548582,
+          "Plan": 0.0001423520588757099,
+          "Reminder": 0.00025296583724800304,
+          "Run": 0.004567624648312232,
+          "Task": 0.004478117018734788,
+          "__keep_current__": 0.3329608925093
+        },
+        "confidence": 0.6018953228058386
+      }
+    },
+    {
+      "id": "knowledge-5",
+      "expected": "Knowledge",
+      "current": "Run",
+      "split": "evaluation",
+      "text": "Reference glossary explaining the meaning of a delivery receipt.",
+      "before": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.0016001844152046113,
+          "Decision": 0.001017317598794615,
+          "Epic": 0.0013058630750967058,
+          "Event": 0.0002321752295107829,
+          "Feature": 0.003546617851313098,
+          "Issue": 0.000048123815351180784,
+          "Knowledge": 0.9920068169599531,
+          "Meeting": 0.00002269690131303281,
+          "Milestone": 0.00009159019590354243,
+          "Plan": 0.000011284835049981147,
+          "Reminder": 0.000006551273376703053,
+          "Run": 0.00003016041089686359,
+          "Task": 0.00008061743823639306
+        },
+        "confidence": 0.977095095972297
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Knowledge",
+        "probabilities": {
+          "Chore": 0.0026424493952474488,
+          "Decision": 0.0012765188291128892,
+          "Epic": 0.0007940672625775131,
+          "Event": 0.0003020201821286411,
+          "Feature": 0.001775505433145966,
+          "Issue": 0.00007487310495773783,
+          "Knowledge": 0.9772689288034256,
+          "Meeting": 0.00004676011455946055,
+          "Milestone": 0.0002704937769808802,
+          "Plan": 0.000058830929737034307,
+          "Reminder": 0.00003625740675448898,
+          "Run": 0.0009507439376052717,
+          "Task": 0.00015063978037327833,
+          "__keep_current__": 0.01435191104339369
+        },
+        "confidence": 0.9472475493010838
+      }
+    },
+    {
+      "id": "run-0",
+      "expected": "Run",
+      "current": "Run",
+      "split": "calibration",
+      "text": "Execution record: the synthetic build completed successfully with all checks passing.",
+      "before": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.011374461850229006,
+          "Decision": 0.0005289996711806496,
+          "Epic": 0.0017791412172878571,
+          "Event": 0.000664304411728676,
+          "Feature": 0.00013174669902414564,
+          "Issue": 0.000024043248169858155,
+          "Knowledge": 0.00009382534897628662,
+          "Meeting": 0.000030019486128911507,
+          "Milestone": 0.0023182257064187145,
+          "Plan": 0.00010514506531913504,
+          "Reminder": 0.00002492465136907444,
+          "Run": 0.9820382134192779,
+          "Task": 0.000886949224889675
+        },
+        "confidence": 0.955955016823522
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.006678884413362917,
+          "Decision": 0.00016626508043853801,
+          "Epic": 0.00013492424202587677,
+          "Event": 0.00008902652303594223,
+          "Feature": 0.000045927030513595505,
+          "Issue": 0.000014576042893539764,
+          "Knowledge": 0.000029116924145602878,
+          "Meeting": 0.000018507984253979965,
+          "Milestone": 0.0005718265809179137,
+          "Plan": 0.00006057432755375091,
+          "Reminder": 0.00002489286732518839,
+          "Run": 0.6030286449508806,
+          "Task": 0.00009215506119229263,
+          "__keep_current__": 0.38904467797146036
+        },
+        "confidence": 0.7285675629406386
+      }
+    },
+    {
+      "id": "run-1",
+      "expected": "Run",
+      "current": "Run",
+      "split": "calibration",
+      "text": "Execution record: benchmark invocation finished; elapsed time was recorded.",
+      "before": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.013399778031235881,
+          "Decision": 0.0027316299473428836,
+          "Epic": 0.004724516854166536,
+          "Event": 0.004022391518144066,
+          "Feature": 0.0005332480860546267,
+          "Issue": 0.00013160956971483665,
+          "Knowledge": 0.00036085775075543505,
+          "Meeting": 0.00008029556332928028,
+          "Milestone": 0.002133262915445432,
+          "Plan": 0.0002442505473369242,
+          "Reminder": 0.00005181542785767539,
+          "Run": 0.9706449788500482,
+          "Task": 0.0009413649385681556
+        },
+        "confidence": 0.9292958371754406
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.005198842443915522,
+          "Decision": 0.00046563182760626226,
+          "Epic": 0.00034375999133350255,
+          "Event": 0.0005341754557984901,
+          "Feature": 0.00008309049262915641,
+          "Issue": 0.000032899160220230466,
+          "Knowledge": 0.0000602785860661502,
+          "Meeting": 0.000024494508835807646,
+          "Milestone": 0.0004266460563372024,
+          "Plan": 0.00007248608714451465,
+          "Reminder": 0.00003170405430455669,
+          "Run": 0.6409540398294201,
+          "Task": 0.0001076534975481445,
+          "__keep_current__": 0.35166429800884025
+        },
+        "confidence": 0.7356736527946642
+      }
+    },
+    {
+      "id": "run-2",
+      "expected": "Run",
+      "current": "Issue",
+      "split": "calibration",
+      "text": "Completed test invocation receipt with counts and outcome, not future work.",
+      "before": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.007869908077259794,
+          "Decision": 0.0011741206996751753,
+          "Epic": 0.0009736253471061605,
+          "Event": 0.0014365118232091917,
+          "Feature": 0.0002789612348431878,
+          "Issue": 0.000046183665440686306,
+          "Knowledge": 0.0001326636813158917,
+          "Meeting": 0.00003764342861532102,
+          "Milestone": 0.002935613972858864,
+          "Plan": 0.00008957865072282896,
+          "Reminder": 0.000027259565689620344,
+          "Run": 0.9841083511795979,
+          "Task": 0.0008895786736653643
+        },
+        "confidence": 0.9583741681404528
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.0027295219036318906,
+          "Decision": 0.0007882628301691518,
+          "Epic": 0.0004096636002877325,
+          "Event": 0.0013619336885482964,
+          "Feature": 0.00016989462437994875,
+          "Issue": 0.00011919247298434048,
+          "Knowledge": 0.00011457469544405925,
+          "Meeting": 0.00002770894351149488,
+          "Milestone": 0.0025789611423900956,
+          "Plan": 0.0000656508032508035,
+          "Reminder": 0.00003741640465681146,
+          "Run": 0.987946643589816,
+          "Task": 0.0001660628778096778,
+          "__keep_current__": 0.003484512423119794
+        },
+        "confidence": 0.9669038032814091
+      }
+    },
+    {
+      "id": "run-3",
+      "expected": "Run",
+      "current": "Run",
+      "split": "evaluation",
+      "text": "Execution record: a scheduled synthetic validation completed with two failures.",
+      "before": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.020108552895756065,
+          "Decision": 0.0009216446499373712,
+          "Epic": 0.004716595553738682,
+          "Event": 0.05067608072063405,
+          "Feature": 0.00032094616409207967,
+          "Issue": 0.0004737600916717562,
+          "Knowledge": 0.00008186175753779446,
+          "Meeting": 0.00003813291341147198,
+          "Milestone": 0.00047247507461200096,
+          "Plan": 0.00006176091811415918,
+          "Reminder": 0.000033888180767602437,
+          "Run": 0.9214877837972666,
+          "Task": 0.0006065172824605798
+        },
+        "confidence": 0.8623108587396724
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.011175787713601622,
+          "Decision": 0.00046240739605571965,
+          "Epic": 0.00033860917991448665,
+          "Event": 0.024553238085992447,
+          "Feature": 0.00013081272697040722,
+          "Issue": 0.00027302846617669146,
+          "Knowledge": 0.000043178617593547706,
+          "Meeting": 0.000029790077422301664,
+          "Milestone": 0.00017594049207277676,
+          "Plan": 0.00004159232271155606,
+          "Reminder": 0.00002887441425906556,
+          "Run": 0.5889457632966584,
+          "Task": 0.0000664111200841151,
+          "__keep_current__": 0.3737345660904868
+        },
+        "confidence": 0.6839149347507105
+      }
+    },
+    {
+      "id": "run-4",
+      "expected": "Run",
+      "current": "Run",
+      "split": "evaluation",
+      "text": "Completed calibration invocation receipt with model digest and measured scores.",
+      "before": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.008380118213977618,
+          "Decision": 0.0012774687433634263,
+          "Epic": 0.0016179795559669744,
+          "Event": 0.0026376254189575126,
+          "Feature": 0.0003438050630557821,
+          "Issue": 0.00003794337248685583,
+          "Knowledge": 0.00017180567053332027,
+          "Meeting": 0.00002647056087390973,
+          "Milestone": 0.0035807002117870645,
+          "Plan": 0.00005433271478828849,
+          "Reminder": 0.000020130060303069415,
+          "Run": 0.9796164587480626,
+          "Task": 0.002235161665843553
+        },
+        "confidence": 0.9476496337024923
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.0070325005354643505,
+          "Decision": 0.0004606134053722778,
+          "Epic": 0.00016528378405467688,
+          "Event": 0.0006836310729499708,
+          "Feature": 0.00007314976176247923,
+          "Issue": 0.000018259905506740905,
+          "Knowledge": 0.0000412045843188043,
+          "Meeting": 0.000020256004202634497,
+          "Milestone": 0.000547576515546722,
+          "Plan": 0.00004097514883322547,
+          "Reminder": 0.000022403911299334234,
+          "Run": 0.6972299104197542,
+          "Task": 0.00010059071268434715,
+          "__keep_current__": 0.2935636442382501
+        },
+        "confidence": 0.7486589695867016
+      }
+    },
+    {
+      "id": "run-5",
+      "expected": "Run",
+      "current": "Issue",
+      "split": "evaluation",
+      "text": "Record of a finished deployment rehearsal with its outcome and evidence.",
+      "before": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.0010671020138880072,
+          "Decision": 0.0006973761692328151,
+          "Epic": 0.0003823055761743105,
+          "Event": 0.0029935151906386277,
+          "Feature": 0.00006448220497260068,
+          "Issue": 0.000020682681415786165,
+          "Knowledge": 0.00005738623785796843,
+          "Meeting": 0.00003886889146732743,
+          "Milestone": 0.0012900611468177213,
+          "Plan": 0.00007945012991922245,
+          "Reminder": 0.00002094644888748299,
+          "Run": 0.9931295717477941,
+          "Task": 0.00015825156093410585
+        },
+        "confidence": 0.9795839934639236
+      },
+      "after": {
+        "type": "choice",
+        "choice": "Run",
+        "probabilities": {
+          "Chore": 0.0006208003770215964,
+          "Decision": 0.00035344353755484205,
+          "Epic": 0.00010470198590265793,
+          "Event": 0.001323198732960466,
+          "Feature": 0.000031300343489032446,
+          "Issue": 0.00002299909663170968,
+          "Knowledge": 0.000029296467985929254,
+          "Meeting": 0.000028020865949139797,
+          "Milestone": 0.0007938401144218419,
+          "Plan": 0.000054554159032450837,
+          "Reminder": 0.000018868090279212044,
+          "Run": 0.9959319219734148,
+          "Task": 0.00005851422813900861,
+          "__keep_current__": 0.0006285400272172237
+        },
+        "confidence": 0.9871302728434759
+      }
+    }
+  ],
+  "catalogVersion": "pm-jev-triage/2",
+  "policy": {
+    "keepCurrentLabel": "__keep_current__",
+    "typeChangeProbability": 0.8,
+    "marginComparison": "strictly below"
+  }
+}
