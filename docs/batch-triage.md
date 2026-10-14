@@ -32,7 +32,21 @@ Current routing fields are excluded from the evidence state, and a description r
 receipt's SHA-256 hashes the complete untruncated title, description, body, ordered
 tags and status. Type, priority, timestamps and annotations are excluded so the
 receipt remains valid after apply and does not invalidate itself. Only matching
-current-catalog receipt comments are reused; `--refresh` bypasses them. Dry runs
+current-catalog receipt comments with a matching `type_question_sha256` are reused;
+`--refresh` bypasses them. The fingerprint is SHA-256 of the JSON-serialized type
+choice question (kind, instructions, ordered candidate labels and effective
+definitions), with the keep-current option bound to the stable `__keep_current__`
+placeholder, plus `TYPE_MARGIN_THRESHOLD` and `TYPE_CHANGE_PROBABILITY`. This
+captures the keep-current instruction template while excluding the item's routing
+type so an applied change does not invalidate its own receipt. Definitions use
+normalized registry descriptions, built-in criteria, or the folder fallback, exactly
+as sent to the model. Editing a definition or adding a candidate invalidates reuse;
+edits that leave the effective question unchanged do not cause model calls.
+
+Pre-change receipts without this fingerprint are stale for type decisions. The next
+batch invocation re-evaluates each such item; an apply appends a new receipt so later
+unchanged runs can skip it. Existing receipts and comments are never rewritten or
+removed. Dry runs
 leave items and history untouched. This is receipt reuse, not a model-result cache.
 
 Before returning any inferred result, the command compares full evidence, current

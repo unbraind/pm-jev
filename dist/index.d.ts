@@ -252,6 +252,8 @@ export interface TriageDecision {
     };
     /** Versioned question catalog that produced the proposals. */
     readonly catalog_version: string;
+    /** Stable identity of the effective type question and decision policy. */
+    readonly type_question_sha256: string;
     /** Fields written when --apply was passed; empty otherwise. */
     readonly applied: readonly string[];
 }

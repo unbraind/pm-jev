@@ -1028,6 +1028,8 @@ export interface TriageDecision {
   readonly usage: { readonly input_tokens: number; readonly output_tokens: number };
   /** Versioned question catalog that produced the proposals. */
   readonly catalog_version: string;
+  /** Stable identity of the effective type question and decision policy. */
+  readonly type_question_sha256: string;
   /** Fields written when --apply was passed; empty otherwise. */
   readonly applied: readonly string[];
 }
@@ -1087,6 +1089,15 @@ export function withCurrentType(questions: Questions, current: string): Question
   if (question.type !== "choice") throw new Error("Triage type question must be a choice");
   return { ...questions, type: { ...question, criteria: { ...question.criteria,
     [KEEP_CURRENT_TYPE]: `Keep current type ${current}: ${String(question.criteria[current])}. Prefer this when evidence for changing type is weak.` } } };
+}
+
+/** Hash ordered effective definitions and the keep-current template independently of applied routing. */
+function triageTypeQuestionHash(questions: Questions): string {
+  return createHash("sha256").update(JSON.stringify({
+    question: withCurrentType(questions, KEEP_CURRENT_TYPE).type,
+    margin_threshold: TYPE_MARGIN_THRESHOLD,
+    type_change_probability: TYPE_CHANGE_PROBABILITY,
+  })).digest("hex");
 }
 
 /** Resolve a validated label distribution in code: ambiguity abstains, weak changes retain the current type. */
@@ -1222,6 +1233,7 @@ function guardTriageMutation(ctx: BeforeMutationHookContext): BeforeMutationHook
 /** Infer one item, authorize each field independently, and atomically append a stable receipt. */
 async function decideTriage(boundary: DecisionWorkspace, item: TriageSource, questions: Questions, threshold: number, apply: boolean, signal?: AbortSignal, deadline = Date.now() + boundary.config.totalDeadlineMs): Promise<TriageDecision> {
   const boundQuestions = withCurrentType(questions, item.type);
+  const typeQuestionHash = triageTypeQuestionHash(questions);
   const result = await runDecision(boundary.decision, boundary.config, projectTriageState(item), boundQuestions, signal);
   const typeAnswer = result.answers.type as ChoiceResponse;
   const scoreAnswer = result.answers.priority as ScoreResponse;
@@ -1253,7 +1265,7 @@ async function decideTriage(boundary: DecisionWorkspace, item: TriageSource, que
   }
   signal?.throwIfAborted();
   if (apply) {
-    await boundary.pm.update(item.id, { ...changes, comment: [formatTriageReceipt(result.model, proposals, threshold, written, item, deadline)], message: "pm-jev triage proposals and receipt" });
+    await boundary.pm.update(item.id, { ...changes, comment: [formatTriageReceipt(result.model, proposals, threshold, written, item, deadline, typeQuestionHash)], message: "pm-jev triage proposals and receipt" });
   }
   return {
     item: item.id,
@@ -1261,6 +1273,7 @@ async function decideTriage(boundary: DecisionWorkspace, item: TriageSource, que
     model: result.model,
     usage: result.usage,
     catalog_version: TRIAGE_CATALOG_VERSION,
+    type_question_sha256: typeQuestionHash,
     applied: apply ? written : [],
   };
 }
@@ -1278,13 +1291,15 @@ async function decideTriage(boundary: DecisionWorkspace, item: TriageSource, que
  * @param written - Fields actually written by this run.
  * @param source - Full source evidence used for redacted content and revision hashes.
  * @param deadline - Absolute expiry checked by the host mutation guard before persistence.
+ * @param typeQuestionHash - Stable effective type question and policy fingerprint.
  * @returns The single-line receipt comment text.
  */
-function formatTriageReceipt(model: string, proposals: TriageProposals, threshold: number, written: readonly string[], source: TriageSource, deadline: number): string {
+function formatTriageReceipt(model: string, proposals: TriageProposals, threshold: number, written: readonly string[], source: TriageSource, deadline: number, typeQuestionHash: string): string {
   const parts = [
     `pm-jev triage receipt: model=${model}`,
     `catalog=${TRIAGE_CATALOG_VERSION}`,
     `source_sha256=${triageSourceHash(source)}`,
+    `type_question_sha256=${typeQuestionHash}`,
     `input_sha256=${triageInputHash(source)}`,
     `deadline_ms=${deadline}`,
     `type=${proposals.type.value} p=${roundProbability(proposals.type.probability)}`,
@@ -1343,9 +1358,9 @@ function streamTriageHeader(ctx: CommandHandlerContext, name: string, count: num
   if (ctx.global.quiet !== true && !jsonDecisionOutput(ctx)) writeStdout(`${name}[${count}]{${keys.join(",")}}:\n`);
 }
 
-/** Detect only current catalog receipts matching complete source evidence. */
-function hasTriageReceipt(item: TriageSource): boolean {
-  const marker = `, catalog=${TRIAGE_CATALOG_VERSION}, source_sha256=${triageSourceHash(item)},`;
+/** Detect only current catalog receipts matching complete source evidence and effective type policy. */
+function hasTriageReceipt(item: TriageSource, questions: Questions): boolean {
+  const marker = `, catalog=${TRIAGE_CATALOG_VERSION}, source_sha256=${triageSourceHash(item)}, type_question_sha256=${triageTypeQuestionHash(questions)},`;
   return item.comments.some(/** Ignore unrelated comments and receipts from other source revisions. */ comment => comment.text.startsWith("pm-jev triage receipt: model=") && comment.text.includes(marker));
 }
 
@@ -1365,7 +1380,7 @@ async function runBacklogTriage(ctx: CommandHandlerContext, boundary: DecisionWo
       signal.throwIfAborted();
       const item = await loadTriageSource(boundary, id);
       signal.throwIfAborted();
-      if (readBooleanOption(ctx.options, "refresh") !== true && hasTriageReceipt(item)) {
+      if (readBooleanOption(ctx.options, "refresh") !== true && hasTriageReceipt(item, questions)) {
         row = { item: id, outcome: "skipped", ...empty, reason: "prior_receipt" };
       } else {
         const apply = readBooleanOption(ctx.options, "apply") === true;
