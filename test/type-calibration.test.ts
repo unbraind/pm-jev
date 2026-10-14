@@ -105,6 +105,13 @@ test("type calibration rejects a changed model or insufficient empirical precisi
 });
 
 
+test("an invalid target precision is refused before any model call", async () => {
+  // Port 9 (discard) is never served here: reaching the model would fail with a connection error instead.
+  for (const target of [1.5, -0.1, Number.NaN]) {
+    await assert.rejects(calibrateTypes("http://127.0.0.1:9", "tev1:4b", target), /Probability must be in \[0,1\]/);
+  }
+});
+
 test("committed real type report replays its frozen threshold and per-type metrics", () => {
   const report = JSON.parse(readFileSync("calibration/type-report-v1.json", "utf8")) as Awaited<ReturnType<typeof calibrateTypes>>;
   assert.deepEqual(report.dataset, dataset);

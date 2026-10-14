@@ -298,7 +298,8 @@ node --test --test-name-pattern='margin abstention|keep-current rule' test/type-
 ### Delivery verification
 
 Both `npm run release:check` and `bun run release:check` pass with a disposable
-HOME, `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1`: 141/141 tests,
+HOME, `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1`: the full suite
+(151/151 tests at the 2026-10-15 review head),
 100% statements/branches/functions/lines across all 12 authored sources, 0%
 duplication, zero production audit findings, current changelog and valid release
 publication attestation. `npm run test:live` passes 2/2 tests against real tev1:4b;

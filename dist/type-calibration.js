@@ -53,6 +53,8 @@ export function fitTypeMargin(rows, targetPrecision = 0.95) {
 }
 /** Measure old and new prompts on real scratch items with all built-ins and two registered custom types. */
 export async function calibrateTypes(baseUrl, model, targetPrecision = 0.95) {
+    // Reject an invalid target before any model call, as the noul calibration path does.
+    deriveThreshold([], targetPrecision, 4);
     const config = localConfig(baseUrl, model);
     const digest = await localModel(config);
     const client = createJevClient({ config, hostedBlocked: null }, {});

@@ -1068,9 +1068,12 @@ function hasTriageReceipt(item, questions, threshold) {
         if (!comment.text.startsWith("pm-jev triage receipt: model=") || !comment.text.includes(marker) ||
             !comment.text.includes(`, expected_type=${JSON.stringify(item.type)},`))
             return false;
-        const recorded = /, apply_threshold=([^,]+),/.exec(comment.text);
-        return recorded !== null && Number.isFinite(Number(recorded[1])) && Number(recorded[1]) >= 0 &&
-            Number(recorded[1]) <= threshold;
+        const recorded = /, apply_threshold=([^,]*),/.exec(comment.text)?.[1].trim() ?? "";
+        // Number(" ") is 0, so only a nonempty decimal literal counts as a recorded threshold.
+        if (!/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(recorded))
+            return false;
+        const value = Number(recorded);
+        return value >= 0 && value <= 1 && value <= threshold;
     });
 }
 /** Infer a bounded host-selected backlog with shared client, questions, and one abort deadline. */

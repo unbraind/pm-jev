@@ -101,7 +101,7 @@ test("lowered full-precision threshold revisits proposals while equal or raised 
 });
 
 test("receipts without valid apply thresholds are revisited", async () => {
-  for (const field of ["", "apply_threshold=NaN, ", "apply_threshold=-1, "]) {
+  for (const field of ["", "apply_threshold=NaN, ", "apply_threshold=-1, ", "apply_threshold= , ", "apply_threshold=, ", "apply_threshold=2, "]) {
     await scenario(async (fixture, server) => {
       const donor = (await fixture.pm.create({ type: "Issue", title: "Synthetic crash", priority: 0 })).item;
       await apply(fixture);
