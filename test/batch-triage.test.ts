@@ -3,8 +3,8 @@ import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import test from "node:test";
 import { getSettingsPath, isHostOutputSuppressed, locateItem } from "@unbrained/pm-cli/sdk";
 import { answers, hostedFixture, scenario, typeAnswers } from "./fixtures.ts";
-import { projectTriageState, resolveJevEndpoint, triageSourceHash } from "../index.ts";
-import type { BacklogTriageRow, BacklogTriageSummary, ProjectableItem } from "../index.ts";
+import { KEEP_CURRENT_TYPE, projectTriageState, resolveJevEndpoint, triageSourceHash } from "../index.ts";
+import type { BacklogTriageRow, BacklogTriageSummary, ProjectableItem, TriageDecision } from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
 import type { BeforeMutationHookContext } from "@unbrained/pm-cli/sdk/authoring";
 
@@ -116,6 +116,34 @@ test("batch authorization uses per-field probabilities, supports abstention and 
     assert.equal(changed.priority, 3);
     assert.match((await fixture.pm.comments(item.id)).comments[1].text, /applied=\[type=Issue\]/);
     assert.equal(summary(await fixture.harness.runCommand({ command: "jev triage", pmRoot: fixture.pmRoot, options: { open: true, refresh: true, minConfidence: "1" } })).skipped, 1);
+  });
+});
+
+test("retained type probability follows the resolved label in full, compact, receipt and batch output", async () => {
+  await scenario(async (fixture, server) => {
+    const item = (await fixture.pm.create({ type: "Issue", title: "Synthetic crash", priority: 0 })).item;
+    for (const weights of [
+      { Feature: 0.7, Issue: 0.2, [KEEP_CURRENT_TYPE]: 0.1 },
+      { Feature: 0.05, Issue: 0.05, [KEEP_CURRENT_TYPE]: 0.9 },
+    ]) {
+      server.setReply((_, response, body) => response.end(JSON.stringify(typeAnswers((body as { questions: Questions }).questions, weights))));
+      for (const json of [true, false]) {
+        const result = (await fixture.harness.runCommand({ command: "jev triage", args: [item.id],
+          pmRoot: fixture.pmRoot, global: { json }, options: {} })).result as TriageDecision;
+        assert.equal(result.proposals.type.value, "Issue");
+        assert.equal(result.proposals.type.selected_label, KEEP_CURRENT_TYPE);
+        assert.equal(result.proposals.type.probability, weights.Issue);
+        assert.equal(result.proposals.type.probabilities[KEEP_CURRENT_TYPE], weights[KEEP_CURRENT_TYPE]);
+        assert.equal("definitions" in result.proposals.type, json);
+      }
+      const captured = await capture(() => fixture.harness.runCommand({ command: "jev triage", pmRoot: fixture.pmRoot,
+        options: { open: true, apply: true, refresh: true }, global: { json: true, quiet: false } }));
+      const row = JSON.parse(captured.lines[0]) as BacklogTriageRow;
+      assert.equal(row.type, "Issue");
+      assert.equal(row.type_probability, weights.Issue);
+      const comments = (await fixture.pm.comments(item.id)).comments;
+      assert.ok(comments.at(-1)?.text.includes(`type=Issue p=${weights.Issue},`));
+    }
   });
 });
 

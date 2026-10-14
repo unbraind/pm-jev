@@ -212,6 +212,13 @@ contains no project-specific custom labels. The model's full normalized probabil
 distributions are retained for deterministic report replay.
 
 The policy ranks probabilities rather than SDK confidence or a non-maximum choice.
+Current triage output reports the resolved type's own label probability, including
+when policy retains the current type; the keep-current option stays separate in
+the raw distribution. Earlier receipts reported the keep-current option's
+probability for retained types. Historical receipts and recorded reports remain
+unchanged. Type report v1 stores raw answers and correctness metrics rather than
+that receipt probability field: replay resolves keep-current to the current type,
+so the reporting correction leaves its fitted margin and precision unchanged.
 First it abstains if the top-two margin is strictly below the measured cutoff.
 Then it chooses keep-current if that candidate wins or a competing label has less
 than 0.8 probability. This fixed conservative evidence floor remains independent of

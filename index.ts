@@ -992,6 +992,7 @@ export interface TriageProposals {
     readonly kind: "choice";
     readonly value: string | null;
     readonly selected_label: string;
+    /** Probability of the resolved type; on abstention, probability of the leading label. */
     readonly probability: number;
     readonly probabilities: Record<string, number>;
     readonly confidence: number;
@@ -1109,7 +1110,7 @@ export function resolveTriageType(answer: ChoiceResponse, current: string, defin
   const kept = !abstained && (selected === KEEP_CURRENT_TYPE || top < TYPE_CHANGE_PROBABILITY);
   const label = kept ? KEEP_CURRENT_TYPE : selected;
   return { kind: "choice", value: abstained ? null : kept ? current : selected,
-    selected_label: label, probability: answer.probabilities[label] ?? 0, probabilities: answer.probabilities, confidence: answer.confidence,
+    selected_label: label, probability: answer.probabilities[kept ? current : selected] ?? 0, probabilities: answer.probabilities, confidence: answer.confidence,
     definitions, abstained, kept_current: kept, reason: abstained ? "top_two_margin_below_threshold" : kept ? "keep_current_under_weak_evidence" : null,
     margin, margin_threshold: marginThreshold };
 }
@@ -1300,6 +1301,8 @@ function formatTriageReceipt(model: string, proposals: TriageProposals, threshol
     `catalog=${TRIAGE_CATALOG_VERSION}`,
     `source_sha256=${triageSourceHash(source)}`,
     `type_question_sha256=${typeQuestionHash}`,
+    `expected_type=${JSON.stringify(written.includes(`type=${proposals.type.value}`) ? proposals.type.value : source.type)}`,
+    `apply_threshold=${threshold}`,
     `input_sha256=${triageInputHash(source)}`,
     `deadline_ms=${deadline}`,
     `type=${proposals.type.value} p=${roundProbability(proposals.type.probability)}`,
@@ -1318,6 +1321,7 @@ export interface BacklogTriageRow {
   readonly item: string;
   readonly outcome: "changed" | "would_change" | "skipped" | "failed";
   readonly type: string | null;
+  /** Resolved type's label probability; null on abstention or receipt reuse. */
   readonly type_probability: number | null;
   readonly priority: number | null;
   readonly priority_probability: number | null;
@@ -1358,10 +1362,16 @@ function streamTriageHeader(ctx: CommandHandlerContext, name: string, count: num
   if (ctx.global.quiet !== true && !jsonDecisionOutput(ctx)) writeStdout(`${name}[${count}]{${keys.join(",")}}:\n`);
 }
 
-/** Detect only current catalog receipts matching complete source evidence and effective type policy. */
-function hasTriageReceipt(item: TriageSource, questions: Questions): boolean {
+/** Reuse matching evidence/policy and post-run type only at equal or higher apply thresholds. */
+function hasTriageReceipt(item: TriageSource, questions: Questions, threshold: number): boolean {
   const marker = `, catalog=${TRIAGE_CATALOG_VERSION}, source_sha256=${triageSourceHash(item)}, type_question_sha256=${triageTypeQuestionHash(questions)},`;
-  return item.comments.some(/** Ignore unrelated comments and receipts from other source revisions. */ comment => comment.text.startsWith("pm-jev triage receipt: model=") && comment.text.includes(marker));
+  return item.comments.some(/** Ignore stale evidence, externally changed types and lower requested thresholds. */ comment => {
+    if (!comment.text.startsWith("pm-jev triage receipt: model=") || !comment.text.includes(marker) ||
+        !comment.text.includes(`, expected_type=${JSON.stringify(item.type)},`)) return false;
+    const recorded = /, apply_threshold=([^,]+),/.exec(comment.text);
+    return recorded !== null && Number.isFinite(Number(recorded[1])) && Number(recorded[1]) >= 0 &&
+      Number(recorded[1]) <= threshold;
+  });
 }
 
 /** Infer a bounded host-selected backlog with shared client, questions, and one abort deadline. */
@@ -1380,7 +1390,7 @@ async function runBacklogTriage(ctx: CommandHandlerContext, boundary: DecisionWo
       signal.throwIfAborted();
       const item = await loadTriageSource(boundary, id);
       signal.throwIfAborted();
-      if (readBooleanOption(ctx.options, "refresh") !== true && hasTriageReceipt(item, questions)) {
+      if (readBooleanOption(ctx.options, "refresh") !== true && hasTriageReceipt(item, questions, threshold)) {
         row = { item: id, outcome: "skipped", ...empty, reason: "prior_receipt" };
       } else {
         const apply = readBooleanOption(ctx.options, "apply") === true;

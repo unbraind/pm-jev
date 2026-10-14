@@ -208,6 +208,7 @@ export interface TriageProposals {
         readonly kind: "choice";
         readonly value: string | null;
         readonly selected_label: string;
+        /** Probability of the resolved type; on abstention, probability of the leading label. */
         readonly probability: number;
         readonly probabilities: Record<string, number>;
         readonly confidence: number;
@@ -277,6 +278,7 @@ export interface BacklogTriageRow {
     readonly item: string;
     readonly outcome: "changed" | "would_change" | "skipped" | "failed";
     readonly type: string | null;
+    /** Resolved type's label probability; null on abstention or receipt reuse. */
     readonly type_probability: number | null;
     readonly priority: number | null;
     readonly priority_probability: number | null;

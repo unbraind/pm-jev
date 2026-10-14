@@ -31,8 +31,14 @@ Triage sends bounded title, description, distinct body and nonempty tags. The ex
 Current routing fields are excluded from the evidence state, and a description repeated in body is sent once. The
 receipt's SHA-256 hashes the complete untruncated title, description, body, ordered
 tags and status. Type, priority, timestamps and annotations are excluded so the
-receipt remains valid after apply and does not invalidate itself. Only matching
-current-catalog receipt comments with a matching `type_question_sha256` are reused;
+receipt remains valid after apply and does not invalidate itself. Each receipt also
+records `expected_type`, the type after this run's writes (or the unchanged current
+type), and `apply_threshold`, the full-precision requested threshold. Reuse requires
+the current type to match `expected_type`, so external type edits cause re-evaluation
+while triage's own type write preserves reuse. Equal or raised thresholds reuse the
+receipt; a lower requested threshold re-evaluates so previously withheld changes can
+be applied. Only matching current-catalog receipt comments with these fields and a
+matching `type_question_sha256` are reused;
 `--refresh` bypasses them. The fingerprint is SHA-256 of the JSON-serialized type
 choice question (kind, instructions, ordered candidate labels and effective
 definitions), with the keep-current option bound to the stable `__keep_current__`
@@ -43,7 +49,8 @@ normalized registry descriptions, built-in criteria, or the folder fallback, exa
 as sent to the model. Editing a definition or adding a candidate invalidates reuse;
 edits that leave the effective question unchanged do not cause model calls.
 
-Pre-change receipts without this fingerprint are stale for type decisions. The next
+Pre-change receipts without this fingerprint, expected type or full-precision apply
+threshold are stale for type decisions. The next
 batch invocation re-evaluates each such item; an apply appends a new receipt so later
 unchanged runs can skip it. Existing receipts and comments are never rewritten or
 removed. Dry runs
@@ -87,6 +94,12 @@ are distinct candidates and are not merged into an inflated probability.
 After the margin check, a keep-current winner or a competing label below 0.8
 retains the current type with `kept_current: true` and an explicit reason. Apply
 then compares a changed proposal's own probability against the requested threshold.
+`proposals.type.probability`, receipt `type=… p=…` and batch `type_probability`
+measure the label probability of the resolved type, including a retained current
+type. They never sum the current-type and keep-current candidates. `selected_label`
+continues to show the policy's keep-current option; its separate probability is
+available in `probabilities`. On abstention, single-item `probability` describes the
+leading label while `value` is null; batch type/probability are both null.
 Abstention affects only type: an independently qualifying priority can still change.
 Batch rows include `abstained` and the reason, with null type/probability on abstention.
 Single-item `--full` and JSON include definitions and every label probability;
