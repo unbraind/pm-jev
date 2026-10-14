@@ -1,0 +1,12 @@
+id: pm-jev-2mg8
+title: Calibrate triage type proposals for projects with many item types
+description: "Measured 2026-10-14 on a copy of the pm-jev tracker with the local tev1:4b model: triage proposed type Decision at p=0.30 for an item that is an Issue. The apply threshold of 0.8 kept it from being written, so it did no harm, but the proposal is wrong and wastes reviewer attention. Projects with many registered types (built-in plus custom types such as Decision, Knowledge, Run or Generation) dilute the label set, and the prompt does not tell the model what each type means. Triage should present each candidate type with its definition, prefer keeping the current type unless the evidence is strong, abstain when the top two labels are close, and report a measured per-type precision against a labelled dataset."
+type: Issue
+status: open
+priority: 1
+tags[3]: calibration,decisions,triage
+created_at: "2026-10-14T19:42:55.763Z"
+updated_at: "2026-10-14T19:42:55.763Z"
+author: claude-hub
+acceptance_criteria: Triage presents every candidate type with a one-line definition drawn from the project's type registry; a keep-current-type option exists and is chosen when evidence is weak; triage abstains with an explicit reason when the margin between the top two labels is below a documented threshold; a labelled dataset that covers at least eight types including custom ones reports per-type precision and abstention rate with the real tev1 model; no type change below the apply threshold is ever written
+body: ""
