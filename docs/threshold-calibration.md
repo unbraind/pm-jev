@@ -1,8 +1,9 @@
 # Synthetic threshold calibration
 
 Item: [pm-jev-6uoz](../.agents/pm/issues/pm-jev-6uoz.toon).
-This is an opt-in local evaluation tool. It never reads a tracker, consumes user
-traces, trains a model, writes settings, or calls a hosted inference provider.
+This is an opt-in local evaluation tool. It never reads a user tracker, consumes
+user traces, trains a model, writes project settings, or calls a hosted inference
+provider. The type-classification family creates disposable synthetic trackers.
 
 ## Reproduce
 
@@ -180,3 +181,134 @@ npm-install deadline under concurrent host load. Those failed receipts are not a
 packed-acceptance pass; no deadline or production threshold was relaxed. Review,
 published-package privacy approval and a timely complete live consumer run remain
 open gates.
+
+## Many-type triage calibration
+
+Item: [pm-jev-2mg8](../.agents/pm/issues/pm-jev-2mg8.toon).
+Run `npm run calibration:types` (or `bun run calibration:types`) to compare catalog
+v1 with the registry-definition and keep-current prompt. Explicit arguments are
+model, loopback origin, output file and empirical target precision, as for noul.
+The defaults are `tev1:4b`, the local Ollama loopback origin,
+`calibration/type-report-v1.json` and 0.95.
+
+[Dataset](../calibration/type-dataset-v1.json) is synthetic and redistributable under
+the package license. Its fixed generator in `type-calibration.ts` supplies six
+hand-labelled cases each for Issue, Feature, Task, Chore, Epic, Decision, Knowledge
+and Run (48 total). Knowledge and Run are registered through the pinned SDK with
+explicit descriptions in a scratch tracker. All eleven built-ins remain candidates,
+so the comparison has thirteen actual types plus the new keep-current option.
+Two cases per type deliberately start misrouted; the other four start correctly
+routed. Near-misses include a defect phrased as a decision and completed runs versus
+future tasks. The first three cases per type fit the threshold; the remaining three
+are disjoint held-out examples. Ground truth is authored before inference.
+
+Both prompts receive the same bounded evidence, four questions and model revision.
+The old prompt is catalog v1 including its existing built-in semantics and custom
+registry descriptions; this is not an invented label-only baseline. The new prompt
+adds the explicit keep-current choice, current-type definition and defect-versus-
+decision guidance. Definitions come from the SDK registry, with normalized one-line
+descriptions, canonical built-in fallback or custom folder metadata; production code
+contains no project-specific custom labels. The model's full normalized probability
+distributions are retained for deterministic report replay.
+
+The policy ranks probabilities rather than SDK confidence or a non-maximum choice.
+First it abstains if the top-two margin is strictly below the measured cutoff.
+Then it chooses keep-current if that candidate wins or a competing label has less
+than 0.8 probability. This fixed conservative evidence floor remains independent of
+`--min-confidence`; the latter still independently authorizes every changed field.
+No rejected or abstained type is written, including at a lower apply threshold.
+
+The fitter evaluates all observed calibration margins plus 0 and 1, retaining tied
+margins together. It picks the lowest positive observed inclusive cutoff reaching 0.95 selective
+correctness with at least four accepted calibration cases. No qualifying cutoff
+fails the run rather than manufacturing a recommendation. It freezes that cutoff
+before scoring held-out labels. Zero is excluded so exact ties always abstain; no
+arbitrary epsilon is introduced. Report precision is correct proposed types divided
+by accepted proposals (including retained current types); per-type precision uses
+predictions of that type as denominator. Abstention rate is no-proposal cases over
+labelled examples, with per-type rates grouped by ground truth. Null precision
+means no predictions, not perfect correctness. Keep-current is a resolved type,
+not an abstention. `newPrompt` measures the unfiltered model choice with the explicit
+keep-current label mapped back to the current type.
+
+The report pins the dataset and its canonical compact-JSON SHA-256, model digest,
+requested/returned model, duration, token
+usage, all raw observations, fitting curve and per-type results. One balanced
+synthetic run is not production calibration: three held-out items per type,
+subjective Task/Chore boundaries, shared templates, model nondeterminism and current
+label quality limit transfer. Abstention can retain a misrouted item; reduced
+coverage is a material trade-off. The 0.8 apply default is unchanged.
+
+### Recorded tev1:4b comparison (2026-10-14)
+
+[Versioned report](../calibration/type-report-v1.json) records 96 validated model
+calls across all 48 items (24 fit, 24 held out), model digest
+`9b5bb969e46c4b776826d6f2d401e22893205693f172653af6254897255025b8`,
+1,139,259 ms and 260,616 input / 480 output tokens. The selected top-two margin is
+**0.05136322250317049**, the smallest positive observed calibration margin.
+It accepts 24/24 calibration cases with 23/24 correct (95.8%), meeting the declared
+empirical 0.95 target. A margin exactly equal to this cutoff is accepted; anything
+smaller abstains. This is a measured synthetic default, not a production guarantee.
+
+Each held-out type has support three. Precision uses predictions as denominator;
+counts expose misclassification even when a type's own precision remains 100%.
+
+| Type | Old prompt precision | New prompt precision | Conservative policy precision | Policy abstention |
+| --- | --- | --- | --- | --- |
+| Issue | 100% (3/3) | 100% (3/3) | 100% (3/3) | 0% |
+| Feature | 100% (3/3) | 100% (3/3) | 100% (3/3) | 0% |
+| Task | 100% (2/2) | 100% (3/3) | 100% (2/2) | 0% |
+| Chore | 100% (3/3) | 100% (3/3) | 75% (3/4) | 0% |
+| Epic | 100% (3/3) | 100% (3/3) | 100% (3/3) | 0% |
+| Decision | 75% (3/4) | 100% (3/3) | 100% (3/3) | 0% |
+| Knowledge | 100% (3/3) | 100% (3/3) | 100% (3/3) | 0% |
+| Run | 100% (3/3) | 100% (3/3) | 100% (3/3) | 0% |
+| Overall | 95.8% (23/24) | 100% (24/24) | 95.8% (23/24) | 0% (0/24) |
+
+The old prompt misclassified `task-5` as Decision. The new prompt correctly
+chooses Task at p=0.27818444477272947, but the conservative 0.8 rule retains its
+initial Chore type. This is the remaining policy error: keeping a wrong current
+label can lower correctness despite a better model ranking. Both fit and held-out
+samples have 0% margin abstention at the chosen cutoff; deterministic regression
+cases below the cutoff verify abstention in single-item JSON/TOON, batch JSON/TOON
+and apply. No nonzero workload abstention rate is claimed from this run.
+
+The raw distributions above were measured once. Fitting, metric calculation and
+policy replay require no further inference; zero-margin candidates are excluded
+from fitting to make exact-tie abstention meaningful without guessing an epsilon.
+Tests replay the committed report against the versioned generator and frozen cutoff.
+The earlier noul report remains byte-for-byte unchanged.
+
+Revert proof: independently disabling only the margin condition in
+`resolveTriageType` makes the focused margin regression exit 1; independently
+disabling only keep-current makes its regression exit 1. Restoring source
+byte-for-byte passes both tests (2/2):
+
+```sh
+node --test --test-name-pattern='margin abstention|keep-current rule' test/type-triage.test.ts
+```
+
+### Delivery verification
+
+Both `npm run release:check` and `bun run release:check` pass with a disposable
+HOME, `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1`: 141/141 tests,
+100% statements/branches/functions/lines across all 12 authored sources, 0%
+duplication, zero production audit findings, current changelog and valid release
+publication attestation. `npm run test:live` passes 2/2 tests against real tev1:4b;
+the batch scenario issues six requests and receipt reuse issues zero.
+
+Independently removing the type apply-probability comparison makes the real-tracker
+write-safety regression exit 1; restoring source byte-for-byte passes 1/1. This
+complements the independent keep-current and margin revert proofs above. The
+linked pm runner executed every required command. Project policy disables automatic
+test-result tracking; sanitized evidence is recorded in the item comments without
+changing that policy. Tracker closure remains the orchestrator's verification step.
+
+Final review also covers an SDK-registered custom type named `constructor`.
+Canonical descriptions use a Map, preventing inherited Object.prototype names from
+replacing registry folder metadata. Reverting only that safe lookup fails the real
+tracker definition regression; restoring it passes. All five linked commands were
+rerun after this correction and pass, including both 141-test release gates and
+both live-model tests. Strict tracker health passes with the same disposable HOME;
+the normal environment reports an unrelated extension/host compatibility mismatch.
+No dependency pin, extension configuration or telemetry setting was changed.

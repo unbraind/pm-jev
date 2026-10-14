@@ -27,8 +27,8 @@ travels through the official transport. It is provider-specific and never sent t
 hosted TypeSafe. Redirect refusal, external opt-in, credential checks, response schema
 validation and per-field probability thresholds apply to every item.
 
-Triage sends bounded title, description, distinct body and nonempty tags. Current
-routing fields are excluded, and a description repeated in body is sent once. The
+Triage sends bounded title, description, distinct body and nonempty tags. The explicit keep-current candidate names the current type and its registry definition.
+Current routing fields are excluded from the evidence state, and a description repeated in body is sent once. The
 receipt's SHA-256 hashes the complete untruncated title, description, body, ordered
 tags and status. Type, priority, timestamps and annotations are excluded so the
 receipt remains valid after apply and does not invalidate itself. Only matching
@@ -59,3 +59,22 @@ PM SDK mocks. `npm run test:install` exercises the tarball path directly with pa
 npm/Bun consumers and their installed hosts. `npm run test:live` separately exercises
 local model decisions and emits batch counts/timings on synthetic tracker state.
 Live acceptance must be scheduled after any external baseline measurement completes.
+
+## Type calibration policy
+
+Catalog `pm-jev-triage/2` describes every registered type and includes an explicit
+keep-current candidate. For each item the shared catalog is bound to its current
+type. Code ranks full-precision label probabilities with stable registry ordering.
+A top-two margin below the frozen empirical cutoff returns no type proposal,
+`abstained: true` and `reason: top_two_margin_below_threshold`. Margin equality is
+accepted. This applies to labels including keep-current and the current type; those
+are distinct candidates and are not merged into an inflated probability.
+
+After the margin check, a keep-current winner or a competing label below 0.8
+retains the current type with `kept_current: true` and an explicit reason. Apply
+then compares a changed proposal's own probability against the requested threshold.
+Abstention affects only type: an independently qualifying priority can still change.
+Batch rows include `abstained` and the reason, with null type/probability on abstention.
+Single-item `--full` and JSON include definitions and every label probability;
+compact TOON omits definitions and preserves the existing top-three contract.
+See [the measured threshold](threshold-calibration.md) and its limitations.

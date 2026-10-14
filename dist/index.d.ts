@@ -1,5 +1,5 @@
 import { TypeSafeClient } from "@typesafe-ai/sdk";
-import type { Questions, SystemOneResult } from "@typesafe-ai/sdk";
+import type { Questions, SystemOneResult, ChoiceResponse } from "@typesafe-ai/sdk";
 import { createPmCliExpectedError, isPmCliExpectedError } from "@unbrained/pm-cli/sdk";
 import type { ExtensionApi } from "@unbrained/pm-cli/sdk/authoring";
 import type { ItemMetadata, PmSettings } from "@unbrained/pm-cli/sdk";
@@ -12,7 +12,13 @@ export type { ItemMetadata, PmSettings };
 /** Re-export the SDK question-map and result contracts callers validate against. */
 export type { Questions, SystemOneResult };
 /** Version of the triage question catalog; surfaced in every triage receipt. */
-export declare const TRIAGE_CATALOG_VERSION = "pm-jev-triage/1";
+export declare const TRIAGE_CATALOG_VERSION = "pm-jev-triage/2";
+/** Explicit non-mutating candidate, distinct from every registered type. */
+export declare const KEEP_CURRENT_TYPE = "__keep_current__";
+/** Minimum evidence for a new type, independent of a lower CLI apply threshold. */
+export declare const TYPE_CHANGE_PROBABILITY = 0.8;
+/** Empirical calibration cutoff; see calibration/type-report-v1.json. */
+export declare const TYPE_MARGIN_THRESHOLD = 0.05136322250317049;
 /** Version of the dedupe question catalog; surfaced in dedupe output. */
 export declare const DEDUPE_CATALOG_VERSION = "pm-jev-dedupe/1";
 /**
@@ -200,9 +206,17 @@ export interface TriageProposals {
     /** Proposed item type with the full probability distribution. */
     readonly type: {
         readonly kind: "choice";
-        readonly value: string;
+        readonly value: string | null;
+        readonly selected_label: string;
+        readonly probability: number;
         readonly probabilities: Record<string, number>;
         readonly confidence: number;
+        readonly definitions: Record<string, string>;
+        readonly abstained: boolean;
+        readonly kept_current: boolean;
+        readonly reason: string | null;
+        readonly margin: number;
+        readonly margin_threshold: number;
     };
     /** Proposed priority with the level distribution over the 0..4 rubric. */
     readonly priority: {
@@ -252,6 +266,10 @@ export interface TriageDecision {
  * @returns The typed question map for the triage batch.
  */
 export declare function buildTriageQuestions(settings: PmSettings): Questions;
+/** Bind the non-mutating candidate to the current type without adding routing fields to evidence. */
+export declare function withCurrentType(questions: Questions, current: string): Questions;
+/** Resolve a validated label distribution in code: ambiguity abstains, weak changes retain the current type. */
+export declare function resolveTriageType(answer: ChoiceResponse, current: string, definitions: Record<string, string>, marginThreshold?: number): TriageProposals["type"];
 /** One compact batch row, intentionally excluding source text and answer distributions. */
 export interface BacklogTriageRow {
     readonly item: string;
@@ -263,6 +281,7 @@ export interface BacklogTriageRow {
     readonly needs_human: number | null;
     readonly sensitive: number | null;
     readonly reason: string | null;
+    readonly abstained: boolean;
 }
 /** Constant-size terminal receipt retained by host hooks and embedding callers. */
 export interface BacklogTriageSummary {

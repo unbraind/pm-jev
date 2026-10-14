@@ -2,11 +2,42 @@ id: pm-jev-2mg8
 title: Calibrate triage type proposals for projects with many item types
 description: "Measured 2026-10-14 on a copy of the pm-jev tracker with the local tev1:4b model: triage proposed type Decision at p=0.30 for an item that is an Issue. The apply threshold of 0.8 kept it from being written, so it did no harm, but the proposal is wrong and wastes reviewer attention. Projects with many registered types (built-in plus custom types such as Decision, Knowledge, Run or Generation) dilute the label set, and the prompt does not tell the model what each type means. Triage should present each candidate type with its definition, prefer keeping the current type unless the evidence is strong, abstain when the top two labels are close, and report a measured per-type precision against a labelled dataset."
 type: Issue
-status: open
+status: in_progress
 priority: 1
 tags[3]: calibration,decisions,triage
 created_at: "2026-10-14T19:42:55.763Z"
-updated_at: "2026-10-14T19:42:55.763Z"
+updated_at: "2026-10-14T20:24:51.497Z"
 author: claude-hub
 acceptance_criteria: Triage presents every candidate type with a one-line definition drawn from the project's type registry; a keep-current-type option exists and is chosen when evidence is weak; triage abstains with an explicit reason when the margin between the top two labels is below a documented threshold; a labelled dataset that covers at least eight types including custom ones reports per-type precision and abstention rate with the real tev1 model; no type change below the apply threshold is ever written
+comments[7]{created_at,author,text}:
+  "2026-10-14T19:48:02.474Z",codex-agent,"Claimed and inspected the existing triage catalog, source guards, compact output, calibration harness and pinned SDK registry. Plan: explicit keep-current candidate bound per item, registry descriptions with folder metadata fallback, probability floor independent of apply flags, measured top-two margin abstention, and a balanced eight-type synthetic scratch-tracker comparison with held-out evaluation. No custom project labels will be hardcoded into production routing."
+  "2026-10-14T19:56:39.864Z",codex-agent,"Implemented registry definitions, one-line custom folder fallback, item-bound keep-current candidate, code-owned probability ranking and explicit nullable type abstention. Independently restored the former no-abstention behavior: focused margin regression exited 1; independently restored the former no-keep behavior: focused keep-current regression exited 1. Restored source byte-for-byte and the two focused regressions pass. The real tev1 comparison is still running; no empirical cutoff has been installed yet."
+  "2026-10-14T20:09:26.331Z",codex-agent,"Real local tev1:4b comparison complete: 48 labelled items, eight types, two SDK-registered custom types, thirteen actual type candidates; 96 validated calls with unchanged model digest. Frozen positive margin 0.05136322250317049 is fitted only on 24 calibration cases (23/24 correct). Held-out old prompt: 23/24 correct, 95.8% precision; new raw prompt: 24/24 correct, 100%; conservative policy: 23/24 correct, 95.8%, with 0/24 margin abstentions. The policy retains one initially misrouted Task below the 0.8 evidence floor; this trade-off is explicit in the report and per-type table. Report replay and 24 focused tests pass. The earlier noul report is unchanged."
+  "2026-10-14T20:12:57.444Z",codex-agent,"Final coverage verification passes 141/141 tests and 100% statements, branches, functions and lines across all 12 inventoried authored TypeScript sources; duplication is 0%. Real tev1 test:live passes 2/2 tests, including single-item triage/dedupe/ask/safety gates and six batch requests with zero-request receipt reuse. The first linked release attempts caught duplicate test transport setup, now removed with a shared fixture helper; both full release gates are being rerun. pm test reports evidence tracking disabled by project policy, so results are retained in these comments rather than changing that policy."
+  "2026-10-14T20:16:43.790Z",codex-agent,"Verified final gates with disposable HOME and Git identity config disabled: npm run release:check and bun run release:check each pass 141/141 tests with unchanged 100% statements/branches/functions/lines over all 12 source files, zero duplication, zero production audit findings and valid publication attestation. Real npm run test:live passes 2/2; changelog check and focused policy regressions pass. Additional safety proof: removing only the type apply-probability comparison makes the real-tracker regression fail (exit 1); restoring source byte-for-byte passes 1/1. Required commands were executed through the linked pm runner; automatic result recording is disabled by existing policy, so this comment records the sanitized receipt. Remaining limitation: one small synthetic run, zero measured held-out abstentions, and one misrouted Task conservatively retained below 0.8. Ready for PR delivery; leave the item in progress for orchestrator verification."
+  "2026-10-14T20:19:24.897Z",codex-agent,"Final review found a valid custom type named constructor inherited Object.prototype through the built-in fallback dictionary. Changed canonical lookup to a ReadonlyMap so every undescribed custom type uses its real folder metadata. A real temp-tracker regression passes; reverting only the safe definition lookup fails that regression (exit 1), and source was restored byte-for-byte. Reclaimed for this narrow final correction and rerunning all linked gates. Dataset prompts, model observations and frozen threshold are unchanged."
+  "2026-10-14T20:24:49.755Z",codex-agent,"Final correction verified: all five linked commands pass with disposable HOME and Git identity config disabled. npm and Bun release gates each pass 141/141 tests and 100% of all four coverage dimensions across 12 sources; live acceptance passes 2/2 against tev1:4b; changelog check and both focused policy tests pass. Strict tracker health passes with disposable HOME and verifies storage integrity/history. Normal-environment health flags an unrelated extension/host compatibility mismatch; no pins, extension configuration or telemetry settings were changed. Definition lookup, keep-current, margin and apply-threshold revert proofs each fail independently and pass after byte-for-byte restoration. Ready for the requested feature PR; retain in_progress status for orchestrator verification."
+files[12]{path,scope}:
+  calibration.ts,project
+  calibration/type-dataset-v1.json,project
+  calibration/type-report-v1.json,project
+  index.ts,project
+  scripts/calibrate.ts,project
+  test/agent-ux.test.ts,project
+  test/batch-triage.test.ts,project
+  test/fixtures.ts,project
+  test/live.acceptance.ts,project
+  test/type-calibration.test.ts,project
+  test/type-triage.test.ts,project
+  type-calibration.ts,project
+tests[5]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  "npm run release:check",project,1800,codex-agent,"2026-10-14T19:58:01.409Z",local_mutation,feat/triage-type-calibration
+  "bun run release:check",project,1800,codex-agent,"2026-10-14T19:58:02.817Z",local_mutation,feat/triage-type-calibration
+  "npm run test:live",project,900,codex-agent,"2026-10-14T19:58:04.131Z",local_mutation,feat/triage-type-calibration
+  "npm run changelog:check",project,300,codex-agent,"2026-10-14T19:58:05.811Z",local_mutation,feat/triage-type-calibration
+  "node --test --test-name-pattern=\"margin abstention|keep-current rule\" test/type-triage.test.ts",project,300,codex-agent,"2026-10-14T19:58:07.184Z",local_mutation,feat/triage-type-calibration
+docs[3]{path,scope}:
+  docs/batch-triage.md,project
+  docs/threshold-calibration.md,project
+  README.md,project
 body: ""

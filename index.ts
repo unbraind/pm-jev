@@ -61,7 +61,14 @@ export type { Questions, SystemOneResult };
 // ---------------------------------------------------------------------------
 
 /** Version of the triage question catalog; surfaced in every triage receipt. */
-export const TRIAGE_CATALOG_VERSION = "pm-jev-triage/1";
+export const TRIAGE_CATALOG_VERSION = "pm-jev-triage/2";
+/** Explicit non-mutating candidate, distinct from every registered type. */
+export const KEEP_CURRENT_TYPE = "__keep_current__";
+/** Minimum evidence for a new type, independent of a lower CLI apply threshold. */
+export const TYPE_CHANGE_PROBABILITY = 0.8;
+/** Empirical calibration cutoff; see calibration/type-report-v1.json. */
+export const TYPE_MARGIN_THRESHOLD = 0.05136322250317049;
+
 /** Version of the dedupe question catalog; surfaced in dedupe output. */
 export const DEDUPE_CATALOG_VERSION = "pm-jev-dedupe/1";
 
@@ -81,7 +88,7 @@ export const PRIORITY_RUBRIC: readonly [string, string, string, string, string] 
 ];
 
 /** Semantic fallback descriptions for host built-ins whose schema omits descriptions. */
-const BUILTIN_TYPE_CRITERIA: Readonly<Record<string, string>> = {
+const BUILTIN_TYPE_CRITERIA: ReadonlyMap<string, string> = new Map(Object.entries({
   Issue: "A defect, bug, crash, or broken existing behavior",
   Feature: "A request for a new capability or new user-facing behavior",
   Task: "A concrete implementation action that is not itself a defect or a new capability",
@@ -93,7 +100,7 @@ const BUILTIN_TYPE_CRITERIA: Readonly<Record<string, string>> = {
   Milestone: "A significant project checkpoint or delivery outcome",
   Plan: "An ordered sequence of proposed work steps",
   Reminder: "A prompt to revisit something at a particular time",
-};
+}));
 
 /** Default local Ollama base URL when neither settings nor env configure one. */
 const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434";
@@ -940,7 +947,8 @@ function compactDecisionValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(/** Compact each array entry independently. */ entry => compactDecisionValue(entry));
   if (typeof value !== "object" || value === null) return value;
   const record = { ...value } as Record<string, unknown>;
-  const selected = record.kind === "choice" ? record.value : "duplicate_of" in record ? record.duplicate_of ?? "none" : undefined;
+  delete record.definitions;
+  const selected = record.kind === "choice" ? record.selected_label ?? record.value : "duplicate_of" in record ? record.duplicate_of ?? "none" : undefined;
   if (typeof selected === "string") {
     const entries = Object.entries(record.probabilities as Record<string, number>);
     entries.sort(/** Keep equal-probability options in their original stable order. */ ([, left], [, right]) => right - left);
@@ -982,9 +990,17 @@ export interface TriageProposals {
   /** Proposed item type with the full probability distribution. */
   readonly type: {
     readonly kind: "choice";
-    readonly value: string;
+    readonly value: string | null;
+    readonly selected_label: string;
+    readonly probability: number;
     readonly probabilities: Record<string, number>;
     readonly confidence: number;
+    readonly definitions: Record<string, string>;
+    readonly abstained: boolean;
+    readonly kept_current: boolean;
+    readonly reason: string | null;
+    readonly margin: number;
+    readonly margin_threshold: number;
   };
   /** Proposed priority with the level distribution over the 0..4 rubric. */
   readonly priority: {
@@ -1030,12 +1046,14 @@ export function buildTriageQuestions(settings: PmSettings): Questions {
   const registry = resolveItemTypeRegistry(settings);
   const criteria: Record<string, string> = {};
   for (const name of registry.types) {
-    criteria[name] = registry.by_type[name].description || BUILTIN_TYPE_CRITERIA[name] || `Item type "${name}" in this project's schema`;
+    const definition = registry.by_type[name];
+    criteria[name] = (definition.description || BUILTIN_TYPE_CRITERIA.get(name) || `Items classified as ${name}; registry folder: ${definition.folder}`).replace(/\s+/g, " ").trim();
   }
+  criteria[KEEP_CURRENT_TYPE] = "Keep the current item type when evidence for reclassification is weak or ambiguous";
   return {
     type: {
       type: "choice",
-      instructions: "Which kind of work is this item? Choose the item type that best matches it.",
+      instructions: "Classify the actual work using the definitions. Wording about deciding how to fix a defect is still a defect. Choose keep-current unless evidence clearly supports another type.",
       criteria,
     },
     priority: {
@@ -1061,6 +1079,28 @@ export function buildTriageQuestions(settings: PmSettings): Questions {
       },
     },
   };
+}
+
+/** Bind the non-mutating candidate to the current type without adding routing fields to evidence. */
+export function withCurrentType(questions: Questions, current: string): Questions {
+  const question = questions.type;
+  if (question.type !== "choice") throw new Error("Triage type question must be a choice");
+  return { ...questions, type: { ...question, criteria: { ...question.criteria,
+    [KEEP_CURRENT_TYPE]: `Keep current type ${current}: ${String(question.criteria[current])}. Prefer this when evidence for changing type is weak.` } } };
+}
+
+/** Resolve a validated label distribution in code: ambiguity abstains, weak changes retain the current type. */
+export function resolveTriageType(answer: ChoiceResponse, current: string, definitions: Record<string, string>, marginThreshold = TYPE_MARGIN_THRESHOLD): TriageProposals["type"] {
+  const ranked = Object.entries(answer.probabilities).sort(/** Preserve registry order for tied labels. */ ([, a], [, b]) => b - a);
+  const [selected, top] = ranked[0];
+  const margin = top - ranked[1][1];
+  const abstained = margin < marginThreshold;
+  const kept = !abstained && (selected === KEEP_CURRENT_TYPE || top < TYPE_CHANGE_PROBABILITY);
+  const label = kept ? KEEP_CURRENT_TYPE : selected;
+  return { kind: "choice", value: abstained ? null : kept ? current : selected,
+    selected_label: label, probability: answer.probabilities[label] ?? 0, probabilities: answer.probabilities, confidence: answer.confidence,
+    definitions, abstained, kept_current: kept, reason: abstained ? "top_two_margin_below_threshold" : kept ? "keep_current_under_weak_evidence" : null,
+    margin, margin_threshold: marginThreshold };
 }
 
 /**
@@ -1181,16 +1221,12 @@ function guardTriageMutation(ctx: BeforeMutationHookContext): BeforeMutationHook
 
 /** Infer one item, authorize each field independently, and atomically append a stable receipt. */
 async function decideTriage(boundary: DecisionWorkspace, item: TriageSource, questions: Questions, threshold: number, apply: boolean, signal?: AbortSignal, deadline = Date.now() + boundary.config.totalDeadlineMs): Promise<TriageDecision> {
-  const result = await runDecision(boundary.decision, boundary.config, projectTriageState(item), questions, signal);
+  const boundQuestions = withCurrentType(questions, item.type);
+  const result = await runDecision(boundary.decision, boundary.config, projectTriageState(item), boundQuestions, signal);
   const typeAnswer = result.answers.type as ChoiceResponse;
   const scoreAnswer = result.answers.priority as ScoreResponse;
   const proposals: TriageProposals = {
-    type: {
-      kind: "choice",
-      value: typeAnswer.choice,
-      probabilities: typeAnswer.probabilities,
-      confidence: typeAnswer.confidence,
-    },
+    type: resolveTriageType(typeAnswer, item.type, (boundQuestions.type as { criteria: Record<string, string> }).criteria),
     priority: {
       kind: "score",
       level: winningLevel(scoreAnswer.probabilities, PRIORITY_RUBRIC.length),
@@ -1203,7 +1239,7 @@ async function decideTriage(boundary: DecisionWorkspace, item: TriageSource, que
   };
   const written: string[] = [];
   const changes: { type?: string; priority?: number } = {};
-  if ((proposals.type.probabilities[proposals.type.value]) >= threshold && proposals.type.value !== item.type) {
+  if (proposals.type.value !== null && proposals.type.probability >= threshold && proposals.type.value !== item.type) {
     changes.type = proposals.type.value;
     written.push(`type=${proposals.type.value}`);
   }
@@ -1251,7 +1287,9 @@ function formatTriageReceipt(model: string, proposals: TriageProposals, threshol
     `source_sha256=${triageSourceHash(source)}`,
     `input_sha256=${triageInputHash(source)}`,
     `deadline_ms=${deadline}`,
-    `type=${proposals.type.value} p=${roundProbability(proposals.type.probabilities[proposals.type.value])}`,
+    `type=${proposals.type.value} p=${roundProbability(proposals.type.probability)}`,
+    `abstained=${proposals.type.abstained} kept_current=${proposals.type.kept_current} reason=${proposals.type.reason}`,
+    `margin=${roundProbability(proposals.type.margin)}`,
     `priority=${proposals.priority.level} p=${roundProbability(proposals.priority.probabilities[String(proposals.priority.level)])}`,
     `needs_human=${roundProbability(proposals.needs_human.probability)}`,
     `sensitive=${roundProbability(proposals.sensitive.probability)}`,
@@ -1271,6 +1309,7 @@ export interface BacklogTriageRow {
   readonly needs_human: number | null;
   readonly sensitive: number | null;
   readonly reason: string | null;
+  readonly abstained: boolean;
 }
 
 /** Constant-size terminal receipt retained by host hooks and embedding callers. */
@@ -1317,7 +1356,7 @@ async function runBacklogTriage(ctx: CommandHandlerContext, boundary: DecisionWo
   const signal = AbortSignal.timeout(remaining);
   const selected = await boundary.pm.list({ lifecycleBucket: "open", type, limit: String(limit), fields: "id", strictRead: true, outputBudget: "unbounded", outputLimit: "unbounded" }) as ListResult;
   const counts = { changed: 0, would_change: 0, skipped: 0, failed: 0 };
-  const empty = { type: null, type_probability: null, priority: null, priority_probability: null, needs_human: null, sensitive: null, reason: null };
+  const empty = { type: null, type_probability: null, priority: null, priority_probability: null, needs_human: null, sensitive: null, reason: null, abstained: false };
   streamTriageHeader(ctx, "items", selected.items.length, ["item", "outcome", ...Object.keys(empty)]);
   for (const entry of selected.items) {
     const id = entry.id as string;
@@ -1332,12 +1371,12 @@ async function runBacklogTriage(ctx: CommandHandlerContext, boundary: DecisionWo
         const apply = readBooleanOption(ctx.options, "apply") === true;
         const result = await decideTriage(boundary, item, questions, threshold, apply, signal, deadline);
         const p = result.proposals;
-        const wouldChange = (p.type.probabilities[p.type.value] >= threshold && p.type.value !== item.type) ||
+        const wouldChange = (p.type.value !== null && p.type.probability >= threshold && p.type.value !== item.type) ||
           (p.priority.probabilities[String(p.priority.level)] >= threshold && p.priority.level !== item.priority);
         row = { item: id, outcome: wouldChange ? apply ? "changed" : "would_change" : "skipped",
-          type: p.type.value, type_probability: p.type.probabilities[p.type.value], priority: p.priority.level,
+          type: p.type.value, type_probability: p.type.abstained ? null : p.type.probability, priority: p.priority.level,
           priority_probability: p.priority.probabilities[String(p.priority.level)], needs_human: p.needs_human.probability,
-          sensitive: p.sensitive.probability, reason: wouldChange ? null : "no_qualifying_change" };
+          sensitive: p.sensitive.probability, reason: p.type.reason ?? (wouldChange ? null : "no_qualifying_change"), abstained: p.type.abstained };
       }
     } catch (error) {
       const mapped = translateDecisionError(error, boundary.config);

@@ -107,8 +107,9 @@ test("compact all four commands while JSON and full retain precision and every o
         assert.equal(slim.confidence, 0.877);
         assert.equal(raw.confidence, 0.876543219);
         const keys = Object.keys(raw.probabilities);
-        assert.deepEqual(Object.keys(slim.probabilities), [...keys.slice(0, 3), keys.at(-1)]);
-        assert.equal(slim.omitted_options, keys.length - 4);
+        const retained = invocation.command === "triage" ? keys.slice(0, 3) : [...keys.slice(0, 3), keys.at(-1)];
+        assert.deepEqual(Object.keys(slim.probabilities), retained);
+        assert.equal(slim.omitted_options, keys.length - retained.length);
         assert.equal("omitted_options" in raw, false);
         if (invocation.command === "triage") {
           assert.equal(compact.proposals.priority.score, 0.123);

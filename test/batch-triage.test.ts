@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import test from "node:test";
 import { getSettingsPath, isHostOutputSuppressed, locateItem } from "@unbrained/pm-cli/sdk";
-import { answers, hostedFixture, scenario } from "./fixtures.ts";
+import { answers, hostedFixture, scenario, typeAnswers } from "./fixtures.ts";
 import { projectTriageState, resolveJevEndpoint, triageSourceHash } from "../index.ts";
 import type { BacklogTriageRow, BacklogTriageSummary, ProjectableItem } from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
@@ -299,5 +299,29 @@ test("TOON batches stream a table row per item; empty backlogs have a zero summa
     assert.equal(JSON.parse(json.lines[0]).outcome, "would_change");
     const settings = readFileSync(getSettingsPath(fixture.pmRoot), "utf8");
     assert.ok(settings.length > 0);
+  });
+});
+
+test("batch margin abstention emits an explicit null type in JSON and TOON while priority remains independent", async () => {
+  await scenario(async (fixture, server) => {
+    const item = (await fixture.pm.create({ type: "Feature", title: "Synthetic ambiguous work", priority: 3 })).item;
+    server.setReply((_, response, body) => {
+      response.end(JSON.stringify(typeAnswers((body as { questions: Questions }).questions, { Issue: 0.5, Feature: 0.5 })));
+    });
+    const run = (json: boolean, apply: boolean) => capture(() => fixture.harness.runCommand({ command: "jev triage", pmRoot: fixture.pmRoot,
+      options: { open: true, refresh: true, apply }, global: { json, quiet: false } }));
+    const json = await run(true, true);
+    const row = JSON.parse(json.lines[0]) as BacklogTriageRow;
+    assert.equal(row.type, null);
+    assert.equal(row.type_probability, null);
+    assert.equal(row.abstained, true);
+    assert.equal(row.reason, "top_two_margin_below_threshold");
+    assert.equal(row.outcome, "changed");
+    assert.equal((await fixture.pm.get(item.id)).item.type, "Feature");
+    assert.equal((await fixture.pm.get(item.id)).item.priority, 0);
+    assert.match((await fixture.pm.comments(item.id)).comments[0].text, /abstained=true/);
+    const toon = await run(false, false);
+    assert.match(toon.lines[0], /abstained/);
+    assert.match(toon.lines[1], /top_two_margin_below_threshold/);
   });
 });
