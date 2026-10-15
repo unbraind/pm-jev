@@ -59,6 +59,9 @@ Runtime tracker paths come from the host and SDK, including custom pm storage ro
 | `pm jev triage <id> --apply --min-confidence 0.8` | Apply qualifying type/priority changes and append a receipt comment. |
 | `pm jev triage --open --type Issue --limit 20` | Stream compact proposals for a bounded open backlog; no writes. |
 | `pm --json jev triage --open --apply --min-confidence 0.8 --refresh` | Emit JSON lines, apply qualifying changes, and refresh matching receipts. |
+| `pm jev link <id> --limit 8` | Rank candidates and batch typed relationship proposals; no item or history writes. |
+| `pm jev link <id> --apply --min-confidence 0.8` | Add qualifying new SDK edges and one receipt; hierarchy requires `--allow-parent`. |
+| `pm jev link --open --limit 20` | Stream a bounded open backlog with changed/would_change/skipped/failed counts. |
 | `pm jev dedupe --title "Fix login crash" --body "Details" --limit 8` | Rank all tracker items in code, then choose a candidate id or `none`. |
 | `pm jev ask <id> --questions questions.json` | Validate and answer caller-defined choice, score and noul questions. |
 | `pm jev gate --noul "The text contains credentials or private data." --text "Synthetic text" --threshold 0.5 --expect false` | Exit 0 when the proposition does not hold; exit 1 when credentials/private data are detected. |
@@ -127,6 +130,16 @@ id tie-breaking and a bounded candidate list. Run it before `pm create`. Both du
 and no-duplicate decisions exit 0; operational failures remain errors so agents do not
 interpret an unavailable model as permission to create a duplicate. With no candidates,
 code returns `none` without inference (zero usage and the configured model name).
+
+Link resolves supported canonical dependency kinds through the host SDK, adds `none`,
+and reuses dedupe ranking plus the type-calibration margin abstention rule.
+Existing edges, including inverse and symmetric representations, never become
+proposals. Single-item `--limit` bounds candidates (default 8, maximum 50); with
+`--open` it bounds source items and each source ranks up to 8 candidates.
+The bounded projection follows triage privacy rules. A request above 64 KiB fails
+before transfer; reduce the candidate limit. Dry-run preserves authoritative tracker
+files; host SDK reads can populate disposable runtime caches and context-usage records.
+See [relationship proposals](docs/link-proposals.md) for the contract and local acceptance.
 
 A questions file is a nonempty JSON object following the SDK `Questions` contract:
 

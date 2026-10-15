@@ -19,6 +19,7 @@
     "README.md",
     "CHANGELOG.md",
     "docs/batch-triage.md",
+    "docs/link-proposals.md",
     "docs/threshold-calibration.md",
     "calibration/type-dataset-v1.json",
     "calibration/type-report-v1.json"
