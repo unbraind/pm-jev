@@ -347,6 +347,32 @@ export interface DedupeDecision {
  * @returns Candidates with a positive similarity score, sorted descending.
  */
 export declare function rankDedupeCandidates(items: readonly ItemMetadata[], title: string, limit: number): DedupeCandidate[];
+/** Versioned relationship question and authorization contract. */
+export declare const LINK_CATALOG_VERSION = "pm-jev-link/1";
+/** One ranked relationship judgment; an existing or ambiguous edge has no proposal. */
+export interface LinkProposal {
+    readonly candidate: string;
+    readonly score: number;
+    readonly kind: string | null;
+    readonly selected_kind: string;
+    readonly probability: number;
+    readonly probabilities: Record<string, number>;
+    readonly abstained: boolean;
+    readonly reason: string | null;
+    readonly existing: boolean;
+    readonly margin: number;
+}
+/** One item decision with redacted evidence and the exact authorized edge additions. */
+export interface LinkDecision {
+    readonly item: string;
+    readonly outcome: "none" | "proposals";
+    readonly proposals: readonly LinkProposal[];
+    readonly applied: readonly string[];
+    readonly qualifying: readonly string[];
+    readonly model: string;
+    readonly catalog_version: string;
+    readonly usage: SystemOneResult<Questions>["usage"];
+}
 /** Answer for one caller-defined question, shape-checked by question type. */
 export type AskAnswer = {
     readonly kind: "noul";

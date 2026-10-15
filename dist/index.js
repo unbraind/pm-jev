@@ -20,7 +20,8 @@
 // bodies are never logged.
 import { APIConnectionError, APIError, APITimeoutError, APIUserAbortError, TypeSafeClient, } from "@typesafe-ai/sdk";
 import { createHash } from "node:crypto";
-import { createPmCliExpectedError, getSettingsPath, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
+import { DEPENDENCY_KIND_VALUES, createPmCliExpectedError, getSettingsPath, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
+import { RelationshipGraph, resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk/graph";
 import { defineCommand, defineExtension } from "@unbrained/pm-cli/sdk/authoring";
 /** Re-export the structural expected-error predicate for package consumers. */
 export { isPmCliExpectedError };
@@ -944,18 +945,22 @@ function triageInputHash(item) {
 }
 /** Reject stale or expired inference inside the host lock before either artifact is persisted. */
 function guardTriageMutation(ctx) {
+    return guardProposalMutation(ctx, "triage", triageInputHash);
+}
+/** Verify receipt coordinates while the host owns the source item mutation lock. */
+function guardProposalMutation(ctx, command, hash) {
     if (ctx.before === null || ctx.after === null)
         return;
     const added = (ctx.after.metadata.comments ?? []).slice((ctx.before.metadata.comments ?? []).length);
     for (const comment of added) {
-        if (!comment.text.startsWith("pm-jev triage receipt: model="))
+        if (!comment.text.startsWith(`pm-jev ${command} receipt: model=`))
             continue;
         const guard = /, input_sha256=([a-f0-9]{64}), deadline_ms=(\d+),/.exec(comment.text);
         if (guard === null)
             continue;
-        if (guard[1] === triageInputHash({ ...ctx.before.metadata, body: ctx.before.body }) && Date.now() < Number(guard[2]))
+        if (guard[1] === hash({ ...ctx.before.metadata, body: ctx.before.body }) && Date.now() < Number(guard[2]))
             continue;
-        return { allow: false, code: "jev_stale_inference", message: "Triage source changed or the run deadline expired.", remediation: "Retry triage against the current item." };
+        return { allow: false, code: "jev_stale_inference", message: "Decision source changed or the run deadline expired.", remediation: `Retry ${command} against the current item.` };
     }
 }
 /** Infer one item, authorize each field independently, and atomically append a stable receipt. */
@@ -1054,12 +1059,29 @@ function streamTriageRow(ctx, row) {
         writeStdout(`${JSON.stringify(row)}\n`);
         return;
     }
-    writeStdout(`  ${Object.values(row).map(/** Quote string cells and preserve primitive types in a TOON table. */ /** Quote string cells and preserve primitive types in a TOON table. */ value => JSON.stringify(typeof value === "number" ? Math.round(value * 1000) / 1000 : value)).join(",")}\n`);
+    writeStdout(`  ${Object.values(row).map(/** Quote string cells and preserve primitive types in a TOON table. */ /** Quote string cells and preserve primitive types in a TOON table. */ value => JSON.stringify(typeof value === "number" ? Math.round(value * 1000) / 1000 : Array.isArray(value) ? JSON.stringify(compactDecisionValue(value)) : value)).join(",")}\n`);
 }
 /** Emit a TOON table header once; row framing remains independent of response latency. */
 function streamTriageHeader(ctx, name, count, keys) {
     if (ctx.global.quiet !== true && !jsonDecisionOutput(ctx))
         writeStdout(`${name}[${count}]{${keys.join(",")}}:\n`);
+}
+/** Share one remaining invocation budget across model calls, retries and writes. */
+function decisionDeadline(config, started) {
+    const remaining = Math.max(1, Math.ceil(config.totalDeadlineMs - (performance.now() - started)));
+    return { deadline: Date.now() + remaining, signal: AbortSignal.timeout(remaining) };
+}
+/** Select strict source ids using host lifecycle roles and deterministic ordering. */
+async function selectOpenSources(boundary, limit, type) {
+    return await boundary.pm.list({ lifecycleBucket: "open", type, limit: String(limit), fields: "id", strictRead: true, outputBudget: "unbounded", outputLimit: "unbounded" });
+}
+/** Emit one terminal count receipt and prevent the host from rendering the stream twice. */
+function finishBacklog(ctx, command, selected, counts, started) {
+    const summary = { record_type: `pm-jev.${command}.summary`, selected: selected.items.length, ...counts,
+        has_more: selected.has_more, elapsed_ms: Math.round(performance.now() - started), exit_code: counts.failed > 0 ? 1 : 0 };
+    streamTriageHeader(ctx, "summary", 1, Object.keys(summary));
+    streamTriageRow(ctx, summary);
+    return { ...suppressHostOutput(summary), ...(summary.failed > 0 ? { exit_code: 1 } : {}) };
 }
 /** Reuse matching evidence/policy and post-run type only at equal or higher apply thresholds. */
 function hasTriageReceipt(item, questions, threshold) {
@@ -1078,10 +1100,8 @@ function hasTriageReceipt(item, questions, threshold) {
 }
 /** Infer a bounded host-selected backlog with shared client, questions, and one abort deadline. */
 async function runBacklogTriage(ctx, boundary, questions, threshold, limit, started, type) {
-    const remaining = Math.max(1, Math.ceil(boundary.config.totalDeadlineMs - (performance.now() - started)));
-    const deadline = Date.now() + remaining;
-    const signal = AbortSignal.timeout(remaining);
-    const selected = await boundary.pm.list({ lifecycleBucket: "open", type, limit: String(limit), fields: "id", strictRead: true, outputBudget: "unbounded", outputLimit: "unbounded" });
+    const { deadline, signal } = decisionDeadline(boundary.config, started);
+    const selected = await selectOpenSources(boundary, limit, type);
     const counts = { changed: 0, would_change: 0, skipped: 0, failed: 0 };
     const empty = { type: null, type_probability: null, priority: null, priority_probability: null, needs_human: null, sensitive: null, reason: null, abstained: false };
     streamTriageHeader(ctx, "items", selected.items.length, ["item", "outcome", ...Object.keys(empty)]);
@@ -1115,11 +1135,7 @@ async function runBacklogTriage(ctx, boundary, questions, threshold, limit, star
         counts[row.outcome] += 1;
         streamTriageRow(ctx, row);
     }
-    const summary = { record_type: "pm-jev.triage.summary", selected: selected.items.length, ...counts,
-        has_more: selected.has_more, elapsed_ms: Math.round(performance.now() - started), exit_code: counts.failed > 0 ? 1 : 0 };
-    streamTriageHeader(ctx, "summary", 1, Object.keys(summary));
-    streamTriageRow(ctx, summary);
-    return { ...suppressHostOutput(summary), ...(summary.failed > 0 ? { exit_code: 1 } : {}) };
+    return finishBacklog(ctx, "triage", selected, counts, started);
 }
 /**
  * Rank tracker items against a proposed title deterministically, in code.
@@ -1203,6 +1219,141 @@ async function runDedupeCommand(ctx) {
         usage: result.usage,
         catalog_version: DEDUPE_CATALOG_VERSION,
     };
+}
+// ---------------------------------------------------------------------------
+// Relationship proposals
+// ---------------------------------------------------------------------------
+/** Versioned relationship question and authorization contract. */
+export const LINK_CATALOG_VERSION = "pm-jev-link/1";
+/** Read complete relationship coordinates through the host's unbounded projection. */
+async function loadLinkSource(boundary, id) {
+    return (await boundary.pm.get(id, { full: true, outputBudget: "unbounded", outputLimit: "unbounded" })).item;
+}
+/** Include relationship coordinates in the item-lock guard as well as complete inference text. */
+function linkInputHash(item) {
+    return createHash("sha256").update(JSON.stringify([triageInputHash(item), item.parent, item.blocked_by, item.dependencies])).digest("hex");
+}
+/** Validate newly appended relationship receipts under the host mutation lock. */
+function guardLinkMutation(ctx) {
+    return guardProposalMutation(ctx, "link", linkInputHash);
+}
+/** Reject invalid bounds; single-item limits rank candidates and backlog limits select sources. */
+function linkLimit(options) {
+    if (options.limit === undefined)
+        return 8;
+    const raw = readStringOption(options, "limit");
+    const value = Number(raw);
+    if (raw === undefined || !/^\d+$/.test(raw) || !Number.isSafeInteger(value) || value < 1 || value > 50) {
+        throw createPmCliExpectedError("--limit must be an integer from 1 to 50.", { context: { code: "jev_link_limit" } });
+    }
+    return value;
+}
+/** Derive only canonical kinds accepted by the host dependency mutation contract. */
+function linkKinds(registry) {
+    const supported = new Set(DEPENDENCY_KIND_VALUES.map(/** Normalize host compatibility aliases. */ /** Normalize host compatibility aliases. */ kind => registry.require(kind).kind));
+    return registry.list().filter(/** Do not invent labels the host cannot persist. */ /** Do not invent labels the host cannot persist. */ definition => supported.has(definition.kind));
+}
+/** Find canonical existing edges including reverse inverse kinds, symmetric edges and scalar parents. */
+function existingLinkKinds(graph, source, target) {
+    const kinds = new Set();
+    for (const edge of graph.incidentEdges(source)) {
+        if (edge.source === source && edge.target === target)
+            kinds.add(edge.kind);
+        if (edge.target === source && edge.source === target) {
+            const definition = graph.registry().require(edge.kind);
+            if (definition.direction === "undirected")
+                kinds.add(edge.kind);
+            else if (definition.inverse !== undefined)
+                kinds.add(definition.inverse);
+        }
+    }
+    return kinds;
+}
+/** Ask one typed question per ranked candidate in a single request, then authorize in code. */
+async function decideLinks(boundary, id, limit, threshold, apply, allowParent, signal, deadline) {
+    signal.throwIfAborted();
+    const source = await loadLinkSource(boundary, id);
+    const corpus = (await boundary.pm.listAllComplete({ includeBody: true })).items;
+    const candidates = rankDedupeCandidates(corpus.filter(/** Never rank the source itself. */ /** Never rank the source itself. */ item => item.id !== source.id), source.title, limit);
+    const registry = resolveWorkspaceRelationshipKindRegistry();
+    const kinds = linkKinds(registry);
+    const graph = RelationshipGraph.fromItems(corpus, registry);
+    const questions = {};
+    const targets = [];
+    for (const [index, candidate] of candidates.entries()) {
+        const target = corpus.find(/** Use the same certified snapshot for inference and existing-edge checks. */ /** Use the same certified snapshot for inference and existing-edge checks. */ item => item.id === candidate.id);
+        targets.push(target);
+        questions[`candidate_${index}`] = { type: "choice", instructions: `Which relationship holds FROM source TO candidate_${index}? Choose none without explicit evidence; shared topic alone is not a dependency.`,
+            criteria: Object.fromEntries([...kinds.map(/** Describe direction using the actual SDK ontology. */ /** Describe direction using the actual SDK ontology. */ kind => [kind.kind, `${kind.kind}: ${[kind.direction, kind.precedence, kind.hierarchyDirection, kind.temporalOrder].filter(/** Omit inapplicable ontology attributes. */ /** Omit inapplicable ontology attributes. */ value => value !== undefined).join("; ").replaceAll("_", " ")}`]), ["none", "No supported relationship is justified"]]) };
+    }
+    const state = { source: projectTriageState(source), candidates: Object.fromEntries(targets.map(/** Send only bounded content, without ids or tracker annotations. */ (target, index) => [`candidate_${index}`, projectTriageState(target)])) };
+    if (Buffer.byteLength(JSON.stringify({ model: boundary.config.model, state, questions, keep_alive: boundary.config.keepAlive })) > 64 * 1024) {
+        throw createPmCliExpectedError("Relationship request exceeds 64 KiB; reduce --limit.", { context: { code: "jev_link_state_limit" } });
+    }
+    const result = candidates.length === 0 ? { model: boundary.config.model, answers: {}, usage: { input_tokens: 0, output_tokens: 0 } } :
+        await runDecision(boundary.decision, boundary.config, state, questions, signal);
+    const proposals = candidates.map(/** Rank probabilities rather than trusting the model's chosen label or confidence. */ (candidate, index) => {
+        const answer = result.answers[`candidate_${index}`];
+        const ranked = Object.entries(answer.probabilities).sort(/** Keep registry order on ties. */ ([, a], [, b]) => b - a);
+        const [selected, probability] = ranked[0];
+        const margin = probability - ranked[1][1];
+        const abstained = margin < TYPE_MARGIN_THRESHOLD;
+        const existing = existingLinkKinds(graph, source.id, candidate.id).has(selected);
+        const parentRefused = registry.resolve(selected)?.hierarchy === true && !allowParent;
+        return { candidate: candidate.id, score: candidate.score, kind: abstained || existing || selected === "none" ? null : selected, selected_kind: selected,
+            probability, probabilities: answer.probabilities, abstained, existing, margin,
+            reason: abstained ? "top_two_margin_below_threshold" : existing ? "existing_edge" : parentRefused ? "parent_requires_allow_parent" : selected === "none" ? "none" : null };
+    });
+    const qualifying = proposals.filter(/** Only new, unambiguous, permitted edges can clear the apply threshold. */ /** Only new, unambiguous, permitted edges can clear the apply threshold. */ proposal => proposal.kind !== null && proposal.probability >= threshold && proposal.reason === null)
+        .map(/** Use the exact host --dep spelling. */ /** Use the exact host --dep spelling. */ proposal => `id=${proposal.candidate},kind=${proposal.kind}`);
+    for (const item of [source, ...targets]) {
+        if (linkInputHash(item) !== linkInputHash(await loadLinkSource(boundary, item.id))) {
+            throw createPmCliExpectedError("Relationship evidence changed; retry against current items.", { context: { code: "jev_stale_inference" } });
+        }
+    }
+    signal.throwIfAborted();
+    if (apply) {
+        const receipt = `pm-jev link receipt: model=${result.model}, catalog=${LINK_CATALOG_VERSION}, input_sha256=${linkInputHash(source)}, deadline_ms=${deadline}, threshold=${threshold}, proposals=${JSON.stringify(proposals.map(/** Round all label probabilities without copying private item content. */ /** Round all label probabilities without copying private item content. */ proposal => ({ candidate: proposal.candidate, kind: proposal.kind, probabilities: Object.fromEntries(Object.entries(proposal.probabilities).map(/** Round receipt probabilities to two decimals. */ ([kind, probability]) => [kind, roundProbability(probability)])), reason: proposal.reason })))}, applied=${JSON.stringify(qualifying)}.`;
+        await boundary.pm.update(source.id, { dep: qualifying, comment: [receipt], message: "pm-jev relationship proposals and receipt" });
+    }
+    return { item: source.id, outcome: proposals.some(/** Count only actual proposed edges. */ /** Count only actual proposed edges. */ proposal => proposal.kind !== null) ? "proposals" : "none", proposals,
+        applied: apply ? qualifying : [], qualifying, model: result.model, catalog_version: LINK_CATALOG_VERSION, usage: result.usage };
+}
+/** Dispatch single-item or streamed bounded backlog relationship proposals with one total deadline. */
+async function runLinkCommand(ctx) {
+    const started = performance.now();
+    const open = readBooleanOption(ctx.options, "open") === true;
+    const id = ctx.args[0];
+    if (ctx.args.length > 1 || (open ? id !== undefined || readBooleanOption(ctx.options, "full") === true : id === undefined || id.trim() === "")) {
+        throw createPmCliExpectedError("Use jev link <id> [--limit N] or jev link --open [--limit N].", { context: { code: "jev_link_arguments" } });
+    }
+    const limit = linkLimit(ctx.options);
+    const boundary = await openDecisionBoundary(ctx);
+    const threshold = probabilityOption(ctx.options, "minConfidence", ["min_confidence"], boundary.config.minConfidence);
+    const apply = readBooleanOption(ctx.options, "apply") === true;
+    const allowParent = readBooleanOption(ctx.options, "allowParent", ["allow_parent"]) === true;
+    const { deadline, signal } = decisionDeadline(boundary.config, started);
+    if (!open)
+        return decideLinks(boundary, id.trim(), limit, threshold, apply, allowParent, signal, deadline);
+    const selected = await selectOpenSources(boundary, limit, undefined);
+    const counts = { changed: 0, would_change: 0, skipped: 0, failed: 0 };
+    streamTriageHeader(ctx, "items", selected.items.length, ["item", "outcome", "edges", "reason", "proposals"]);
+    for (const entry of selected.items) {
+        const item = entry.id;
+        let row;
+        try {
+            const result = await decideLinks(boundary, item, 8, threshold, apply, allowParent, signal, deadline);
+            row = { item, outcome: result.qualifying.length > 0 ? apply ? "changed" : "would_change" : "skipped", edges: result.qualifying.length, reason: null,
+                proposals: result.proposals.map(/** Stream each policy outcome without source text or complete distributions. */ /** Stream each policy outcome without source text or complete distributions. */ proposal => ({ candidate: proposal.candidate, kind: proposal.kind, probability: proposal.probability, abstained: proposal.abstained, existing: proposal.existing, reason: proposal.reason })) };
+        }
+        catch (error) {
+            const mapped = translateDecisionError(error, boundary.config);
+            row = { item, outcome: mapped.code === "jev_stale_inference" ? "skipped" : "failed", edges: 0, reason: mapped.code ?? "jev_link_failure", proposals: [] };
+        }
+        counts[row.outcome]++;
+        streamTriageRow(ctx, row);
+    }
+    return finishBacklog(ctx, "link", selected, counts, started);
 }
 /**
  * Run caller-defined typed questions against one item's projected state.
@@ -1542,6 +1693,17 @@ const GATE_FLAGS = [
  */
 function registerCommands(api) {
     api.registerCommand(defineCommand({
+        name: "jev link",
+        description: "Propose typed relationship edges between ranked pm items",
+        arguments: [{ name: "id", required: false, description: "Source item; omit with --open" }],
+        flags: [FULL_FLAG, ...TRIAGE_FLAGS.filter(/** Reuse host-compatible apply flags. */ /** Reuse host-compatible apply flags. */ flag => ["--open", "--apply", "--min-confidence"].includes(flag.long)),
+            { long: "--limit", value_name: "N", value_type: "string", description: "Candidate bound (backlog source bound with --open), default 8, maximum 50" },
+            { long: "--allow-parent", value_type: "boolean", description: "Permit proposed hierarchy edges on apply" }],
+        examples: ["pm jev link my-item-1a2b", "pm jev link --open --limit 10", "pm jev link my-item-1a2b --apply"],
+        /** Stream backlog rows or render a single decision using host output precedence. */
+        run: (ctx) => readBooleanOption(ctx.options, "open") === true ? runLinkCommand(ctx) : decisionOutput(ctx, runLinkCommand),
+    }));
+    api.registerCommand(defineCommand({
         name: "jev triage",
         description: "Propose item type, priority, needs_human and sensitive flags with one batched System One decision",
         intent: "Route and rank a pm item with typed, probabilistic proposals before any human or agent edits it",
@@ -1616,6 +1778,7 @@ export default defineExtension({
     /** Register the versioned decision commands with the pm host. */
     activate(api) {
         api.hooks.beforeMutation(guardTriageMutation);
+        api.hooks.beforeMutation(guardLinkMutation);
         registerCommands(api);
     },
 });

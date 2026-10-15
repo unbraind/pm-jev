@@ -5,6 +5,7 @@
 ### Added
 
 - Compact decision output for agent context budgets ([pm-jev-qriu](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-qriu.toon))
+- Propose typed relationship edges with the local decision model ([pm-jev-3ntg](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-3ntg.toon))
 - pm-jev triage command: batched typed decisions over one item ([pm-jev-f5zk](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-f5zk.toon))
 - pm-jev provider config and privacy gate ([pm-jev-ny9g](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-ny9g.toon))
 - pm-jev dedupe command: model-confirmed duplicate screening before create ([pm-jev-m9v5](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-m9v5.toon))
