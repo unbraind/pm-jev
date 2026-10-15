@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import path, { join } from "node:path";
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createExtensionCommandSdk, PmClient, resolveImplicitPmRoot } from "@unbrained/pm-cli/sdk";
@@ -95,12 +95,13 @@ export function typeAnswers(questions: Questions, weights: Record<string, number
 }
 
 /** Hash every authoritative tracker artifact; the host owns disposable runtime caches and usage ledgers. */
-export function trackerSnapshot(root: string): Record<string, string> {
+export function trackerSnapshot(root: string, paths: Pick<typeof path, "relative" | "sep"> = path): Record<string, string> {
   const entries: Record<string, string> = {};
   for (const entry of readdirSync(root, { recursive: true, withFileTypes: true })) {
     const path = join(entry.parentPath, entry.name);
-    if (!entry.isFile() || relative(root, path).startsWith("runtime/")) continue;
-    entries[relative(root, path)] = createHash("sha256").update(readFileSync(path)).digest("hex");
+    const relativePath = paths.relative(root, path);
+    if (!entry.isFile() || relativePath.split(paths.sep)[0] === "runtime") continue;
+    entries[relativePath] = createHash("sha256").update(readFileSync(path)).digest("hex");
   }
   return entries;
 }

@@ -127,6 +127,13 @@ thresholds, abstention, hierarchy opt-in, atomic edge/comment history, corrupt
 reads, payload bounds, stale source/candidate evidence, item-lock expiry, backlog
 counts, stream formats and deadline abort.
 
+`node --test test/fixtures.test.ts` checks the snapshot helper against real
+temporary directories with native and Windows path semantics. It excludes the
+root `runtime` directory by path segment while retaining `runtime-notes` and
+nested `tasks/runtime` artifacts. Restoring the slash-based exclusion fails the
+Windows-path case; using an overbroad prefix fails both cases. The restored helper
+passes both tests and detects changes to the authoritative sibling files.
+
 `npm run build && node --test test/link.acceptance.ts` installs the packed package
 and pinned real pm host into a disposable project. It creates eight realistic
 synthetic items, runs the actual `pm --json jev link` command against local
@@ -198,18 +205,23 @@ recorded in the pm comment is
 
 Both `npm run release:check` and `bun run release:check` pass under a disposable
 HOME with `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1`. Each runs
-**167/167 tests**, with zero failures, cancellations, skips or todos; all **12
+**169/169 tests**, with zero failures, cancellations, skips or todos; all **12
 authored source files** reach **100% statements, branches, functions and lines**.
 Duplication is 0%, production audit reports zero vulnerabilities, package dry-run
 includes this document, changelog is current and publication attestation passes.
 Thresholds, dependency pins and release configuration remain unchanged.
 
-The pm linked runner passes **4/4 commands**: focused tracker tests **14/14**, both
-full gates above, and final packed real-host acceptance **1/1**. Project policy
+The initial delivery's pm linked runner passed **4/4 commands**: focused tracker
+tests **14/14**, its two release gates **167/167** each, and final packed real-host
+acceptance **1/1**. Project policy
 disables automatic test-result tracking; sanitized evidence is appended as pm
 comments without changing that policy. The runner uses tracker context for
 source-workspace execution; its universal read-output controls do not apply to
 `pm test`.
+
+Review round 1 adds a separate pm-linked snapshot-helper run: **1/1 command**,
+**2/2 tests**. Its predicate-only revert proofs and both unchanged release gates
+are recorded on `pm-jev-3ntg`; the feature remains in progress for verification.
 
 The final packed-host repeat against the same model digest used eight items,
 six candidates and one decision request, reporting **67,033 ms**, **10,458 input /
