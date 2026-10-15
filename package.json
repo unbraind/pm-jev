@@ -18,7 +18,10 @@
     "manifest.json",
     "README.md",
     "CHANGELOG.md",
-    "docs/batch-triage.md"
+    "docs/batch-triage.md",
+    "docs/threshold-calibration.md",
+    "calibration/type-dataset-v1.json",
+    "calibration/type-report-v1.json"
   ],
   "scripts": {
     "build": "tsc",
@@ -45,7 +48,8 @@
     "coverage": "npm run build && npm run build:test && c8 --all --include=*.ts --include=scripts/**/*.ts --exclude=test/** --100 --reporter=text --reporter=json-summary --reporter=json node scripts/coverage-gate.ts",
     "verify:release-publish-attestation": "node scripts/verify-release-publish-attestation.ts",
     "calibration:generate": "node scripts/calibrate.ts generate",
-    "calibration": "node scripts/calibrate.ts run"
+    "calibration": "node scripts/calibrate.ts run",
+    "calibration:types": "node scripts/calibrate.ts types"
   },
   "dependencies": {
     "@typesafe-ai/sdk": "^0.6.0"
@@ -59,7 +63,7 @@
     "@babel/plugin-syntax-typescript": "8.0.3",
     "@babel/types": "^8.0.6",
     "@types/node": "26.6.5",
-    "@unbrained/pm-cli": "2026.10.10",
+    "@unbrained/pm-cli": "2026.10.11",
     "c8": "^12.0.0",
     "eslint": "10.12.0",
     "jscpd": "5.4.1",

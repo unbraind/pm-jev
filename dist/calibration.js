@@ -138,7 +138,7 @@ export function localConfig(baseUrl = "http://127.0.0.1:11434", model = "tev1:4b
     return { provider: "ollama", baseUrl: url.origin, model, timeoutMs: 90000, totalDeadlineMs: 270000, minConfidence: 0.8, gateThreshold: 0.5 };
 }
 /** Verify installed model provenance; refuse cloud-backed tags before inference. */
-async function localModel(config) {
+export async function localModel(config) {
     const response = await fetch(`${config.baseUrl}/api/tags`, { redirect: "error", signal: AbortSignal.timeout(config.timeoutMs) });
     if (!response.ok)
         throw new Error("Local model inventory failed");
