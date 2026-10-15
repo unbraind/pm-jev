@@ -14,6 +14,10 @@
 - Batch open backlog triage with bounded streaming and stable receipts ([pm-jev-k8qe](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-k8qe.toon))
 - pm-jev packaging, gates and CI ([pm-jev-0q58](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-0q58.toon))
 
+### Changed
+
+- Enable the gated GitHub issue sync and drop the braces chain ([pm-jev-maint1014](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-maint1014.toon))
+
 ### Fixed
 
 - Gate outcomes need explicit proposition and expected-result semantics ([pm-jev-43xa](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-43xa.toon))
@@ -24,5 +28,4 @@
 
 ### Other
 
-- Enable the gated GitHub issue sync and drop the braces chain ([pm-jev-maint1014](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-maint1014.toon))
 - pm-jev: typed local-first System One decisions for pm items ([pm-jev-0w3q](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/epics/pm-jev-0w3q.toon))
