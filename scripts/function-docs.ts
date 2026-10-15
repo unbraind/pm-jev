@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { glob } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { parse } from "@babel/parser";
@@ -24,6 +24,8 @@ export async function auditFunctionDocs(root: string): Promise<{ checked: number
   let checked = 0;
   for await (const entry of files) {
     const file = join(root, entry);
+    // A directory can match "*.ts" (for example fixtures.ts/); only regular files are parsed.
+    if (!statSync(file).isFile()) continue;
     const tree = parse(readFileSync(file, "utf8"), { sourceType: "module", plugins: ["typescript", "jsx"] });
     /** Visit parser-owned child nodes and judge function and export documentation. */
     function visit(node: Node, parents: readonly Node[]): void {

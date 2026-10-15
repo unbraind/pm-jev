@@ -18,11 +18,14 @@ test("native glob scanner awaits TS/TSX discovery and excludes generated, test a
       writeFileSync(join(root, directory, "ignored.ts"), "this is not valid TypeScript {{{");
     }
     writeFileSync(join(root, ".ignored.ts"), "this is not valid TypeScript {{{");
+    // A directory whose name matches the pattern must be skipped, not read as a file.
+    mkdirSync(join(root, "fixtures.ts"));
+    writeFileSync(join(root, "fixtures.ts", "inner.ts"), "function inner() { return 1; }\n");
     const pending = auditFunctionDocs(root);
     assert.ok(pending instanceof Promise, "native asynchronous discovery must be awaited");
     const report = await pending;
-    assert.equal(report.checked, 4);
-    assert.deepEqual(report.violations.map(violation => violation.file.replaceAll("\\", "/")).sort(), ["component.tsx", "nested/source.ts"]);
+    assert.equal(report.checked, 5);
+    assert.deepEqual(report.violations.map(violation => violation.file.replaceAll("\\", "/")).sort(), ["component.tsx", "fixtures.ts/inner.ts", "nested/source.ts"]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
