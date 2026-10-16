@@ -17,6 +17,7 @@
 
 ### Changed
 
+- Adopt pm-github 2026.10.16: default-branch-safe gated sync and daily gated closeout PRs ([pm-jev-qlnw](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-qlnw.toon))
 - Enable the gated GitHub issue sync and drop the braces chain ([pm-jev-maint1014](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-maint1014.toon))
 
 ### Fixed
