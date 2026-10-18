@@ -91,6 +91,47 @@ test("calibrate persists audited task/model receipts through the SDK while prese
   } finally { alpha.dispose(); beta.dispose(); }
 });
 
+test("synthetic dedupe evaluation excludes sibling duplicates while retaining canonical targets and negative controls", async () => {
+  const origin = await syntheticCorpus();
+  try {
+    await origin.pm.create({ id: "demo-sibling", type: "Issue", title: "Login crashes when session expires", status: "closed", closeReason: "duplicate of demo-bug" });
+    origin.commit();
+    const before = trackerSnapshot(origin.pmRoot);
+    await scenario(async (fixture, server) => {
+      let positives = 0;
+      let negatives = 0;
+      const candidateLists: string[][] = [];
+      server.setReply((request, response, body) => {
+        if (request.url === "/api/tags") { response.end(JSON.stringify({ models: [{ name: "tev1:4b", digest: "c".repeat(64) }] })); return; }
+        const questions = (body as { questions: Questions }).questions;
+        const question = questions.duplicate_of;
+        assert.equal(question.type, "choice");
+        const criteria = (question as { criteria: Record<string, string> }).criteria;
+        candidateLists.push(Object.keys(criteria));
+        const label = "demo-bug" in criteria ? "demo-bug" : "none";
+        if (label === "demo-bug") positives++; else negatives++;
+        const result = answers(questions);
+        result.answers.duplicate_of = { type: "choice", choice: label, confidence: 1,
+          probabilities: Object.fromEntries(Object.keys(criteria).map(candidate => [candidate, candidate === label ? 1 : 0])) };
+        response.end(JSON.stringify(result));
+      });
+      const result = await runEvaluationCommand(context(fixture, { task: "dedupe", from: origin.pmRoot, sample: "150" }), false, source) as {
+        model_calls: number; eligible_examples: number; retrieval_misses: number; metrics: Record<string, { count: number; accuracy: number; nll: number }>;
+      };
+      assert.equal(result.model_calls, 4);
+      assert.equal(result.eligible_examples, 4);
+      assert.equal(result.retrieval_misses, 0);
+      assert.equal(result.metrics.duplicate_of.count, 4);
+      assert.equal(result.metrics.duplicate_of.accuracy, 1);
+      assert.equal(result.metrics.duplicate_of.nll, 0);
+      assert.ok(candidateLists.every(candidates => !candidates.includes("demo-copy") && !candidates.includes("demo-sibling")));
+      assert.equal(positives, 2);
+      assert.equal(negatives, 2);
+    });
+    assert.deepEqual(trackerSnapshot(origin.pmRoot), before);
+  } finally { origin.dispose(); }
+});
+
 test("evaluation validation rejects bad flags, hosted providers, private-only data and single-repository fitting before inference", async () => {
   const origin = await syntheticCorpus();
   try {

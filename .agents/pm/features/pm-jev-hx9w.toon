@@ -6,7 +6,7 @@ status: in_progress
 priority: 2
 tags[2]: added,calibration
 created_at: "2026-10-18T03:02:22.167Z"
-updated_at: "2026-10-18T04:28:58.010Z"
+updated_at: "2026-10-18T05:43:03.895Z"
 author: codex-agent
 acceptance_criteria: "Temperature and threshold selection use calibration repositories only and validate on distinct repositories; SDK-locked settings preserve unrelated keys and pin task/model/data/question identities; compatible decisions use calibrated probabilities, enforce qualification and stricter explicit thresholds, retain legacy behavior without a fit, and report receipts; bounded public-data acceptance and measured README results are committed."
 parent: pm-jev-0w3q
@@ -14,7 +14,7 @@ dependencies[3]{id,kind,created_at,author,source_kind,author_source}:
   pm-jev-2mg8,related,"2026-10-18T03:03:33.416Z",codex-agent,"cli:update:dep",detected
   pm-jev-3ntg,related,"2026-10-18T03:03:33.416Z",codex-agent,"cli:update:dep",detected
   pm-jev-82ip,blocked_by,"2026-10-18T03:03:33.416Z",codex-agent,"cli:update:dep",detected
-comments[8]{created_at,author,text}:
+comments[14]{created_at,author,text}:
   "2026-10-18T03:03:27.426Z",codex-agent,"Plan: read only committed public fleet tracker snapshots through certified complete SDK reads. Deterministic repository-separated sampling; temperature scaling fit on calibration repositories only; validate precision with a one-sided Wilson bound before qualifying any threshold. Serial local-only requests, at most 150 calls, no release."
   "2026-10-18T03:13:10.936Z",codex-agent,"Implemented content-free evaluation receipts, committed public snapshots with no source writes, label-hidden triage, typed-edge labels and deterministic non-edge controls. Temperature fits use separate repository identities and proposal precision excludes none predictions. A serial niced 140-call live comparison is running across six verified public repositories. Existing focused legacy regressions are running alongside new real-temp-tracker tests."
   "2026-10-18T03:20:14.848Z",codex-agent,"Persistence regression found that normalized SDK settings callbacks omit opaque package sections: a later task receipt could replace earlier calibrations. Fixed by reading the opaque Jev section through the SDK while holding the audited mutation lock, then merging the task/model key. Regression verifies both prior calibrations and unrelated Jev settings survive. Calibrated link inference now uses the same pairwise state as evaluation; legacy batching remains unchanged. Source checks, lint, docstrings and zero-duplication checks have passed; full coverage measurement is running."
@@ -23,6 +23,12 @@ comments[8]{created_at,author,text}:
   "2026-10-18T04:09:21.099Z",codex-agent,"Final isolated release gates pass through the pinned pm runner: npm run release:check and bun run release:check each run 185/185 tests, zero failures/skips/cancellations/todos. Native Node and c8 both report 100 percent lines, branches, functions and statements across all 15 authored sources. Duplication is zero, production audit reports zero findings, changelog checks pass and publication attestation remains valid. The earlier native function gap was a threshold-sort comparator never exercised by uniform synthetic probabilities; mixed-confidence cases now verify selection of the highest-coverage qualifying threshold. Strict tracker health passes with required merge drivers and valid workspace history. Test-result tracking is disabled by existing project policy; these comments retain the sanitized receipts without changing that policy. The release-enable variable is absent and workflow defaults remain disabled. Follow-up pm-jev-w1zj records partial receipts and explicit call counts after endpoint interruption; no incomplete calibration is saved."
   "2026-10-18T04:17:06.187Z",codex-agent,"Bounded live receipt complete: 140 successful serial niced systemOne requests plus one verified failed small-model load attempt, total 141/150. Six public committed tracker snapshots, no source writes. Held-out 4b triage type: n=30, accuracy 40.0%, ECE 0.191 to 0.215; priority: 53.3%, ECE 0.133 to 0.118. Held-out 4b link: n=21, accuracy 47.6%, ECE 0.096 to 0.151. Held-out 0.8b triage type: n=21, accuracy 4.8%, ECE 0.519 to 0.093; priority: 33.3%, ECE 0.380 to 0.112. Every channel threshold remains null at target precision 0.9; calibration authorizes zero proposals. Raw 0.8 confidence gates before other mutation guards accept 3, 0, 0, 0 and 5 held-out decisions respectively. Link/small-model folds are too small for the uncertainty bound even if perfect. On identical 40-item inputs, 4b versus 0.8b raw type accuracy is 50.0% versus 12.5%, priority 60.0% versus 30.0%. Full class metrics, ten-bin reliability, curves, source/model/data digests, request latency and tokens are in calibration/public-report-v1.json. Audited SDK settings contain all three model/task receipts; no target was lowered. Packed Node and native Bun CLI smoke checks pass four scenarios: repeated source flags, JSON eval, variadic calibration with actual SDK persistence, and default TOON. Synthetic models and public-visibility doubles were used for install checks. The pinned linked focused command passes 16/16 tests. Release remains disabled; source and gate code are stable."
   "2026-10-18T04:28:53.179Z",codex-agent,"PR https://github.com/unbraind/pm-jev/pull/24 is open, not merged. First source head cb157020071174caabdc6a78ecd252e0cc388728 passed GitHub CI test (22), test (26) and CodeQL. CI run: https://github.com/unbraind/pm-jev/actions/runs/39096845795 . Local npm and Bun release gates each passed 185/185 tests and unchanged 100 percent statements/branches/functions/lines across 15 authored sources. All 140 successful live-request receipts replay exactly and match SDK project settings; the single failed load attempt makes the total 141/150. Final packed-artifact Node/native-Bun smoke checks pass 4/4, and strict tracker health passes with required merge drivers. All six source repositories are still public, with unchanged commit/data digests; all have zero explicit duplicate targets, so dedupe has synthetic ground-truth coverage only. All five measured channels remain unqualified at target precision 0.9. Source code and data are final; this tracker-only closeout commit records CI evidence and releases implementation claims. Its exact remote head checks will be verified before delivery. Automatic reviewer neutral/skipped statuses are not approvals. Release remains disabled, and items remain in_progress for orchestrator verification."
+  "2026-10-18T05:28:07.099Z",codex-agent,"Round 1 PR #24: verified absent-label probabilities produce NaN NLL and prevent temperature fitting; verified decideTriage rebuilds settings-derived classification per item. Plan finite zero-probability clamp and command-scoped classification reused by single/backlog paths, each with regression and independent behavioral revert. Preserve thresholds; run npm and Bun release gates under isolated CI identity. No live model receipt rerun."
+  "2026-10-18T05:30:44.682Z",codex-agent,"Independent behavioral revert proofs, each rebuilt before running: (1) revert only reliability missing-label fallback; node --test --test-name-pattern=\"absent ground-truth labels\" test/decision-calibration.test.ts exits 1 (NaN versus 34.538776394910684). (2) revert only fitTemperature missing-label fallback; same test exits 1 (temperature < 1 fails). (3) restore per-item settings read/classification construction only inside decideTriage; node --test --test-name-pattern=\"backlog triage reuses\" test/calibrated-decisions.test.ts exits 1 (second request differs). Fixed authored sources restored byte-for-byte and rebuilt. Published receipt has 240 observations and zero absent labels, so NLL fix leaves all published live metrics unchanged; no live rerun."
+  "2026-10-18T05:30:55.470Z",codex-agent,"All three review findings accepted with minimal fixes: missing labels use zero before the existing NLL clamp; triage passes command-level classification to both single and backlog paths; positive dedupe pools exclude siblings but retain canonical targets. No threshold or receipt changes. CI identity isolation will use a fresh HOME and disabled global/system git config for both required release gates."
+  "2026-10-18T05:31:34.311Z",codex-agent,"Fixed-state linked verification: pm test pm-jev-hx9w --run --only-last --progress passes 12/12 tests (node --test test/decision-calibration.test.ts test/calibrated-decisions.test.ts), zero failures/skips/cancellations/todo. Independent reverted behaviors each fail as recorded above."
+  "2026-10-18T05:42:16.993Z",codex-agent,"Round 1 final verification: env HOME=\"$(mktemp -d)\" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check and the same isolation with bun run release:check both pass 188/188 tests, zero failures/skips/cancellations/todo. Native coverage: 100 percent lines/branches/functions across all 15 authored sources; c8: 100 percent statements/branches/functions/lines. Thresholds unchanged, duplication zero, production audit zero findings. The final shared HTTP helper removes test duplication; the final snapshot behavioral revert was repeated (exit 1), then byte-identical fixed restoration rebuilt and passed. All original PM history bytes remain unchanged. Implementation complete; releasing claims without closing items, then pushing and replying to the three threads before waiting for CI."
+  "2026-10-18T05:43:03.895Z",codex-agent,"Final strict health: clean-home CI identity passes pm health --strict-exit --require-merge-drivers, including integrity and history_drift. Ambient host health separately reports extension_host_pm_cli_version_skew for a globally discovered pm-github extension (requires 2026.10.17; repo pin is 2026.10.13). This is environment-specific: the clean-home check loads no global extension and passes. Dependency pins and global configuration remain unchanged. Advisory stale-item and pending-queue findings are not approval or release evidence."
 files[12]{path,scope}:
   .agents/pm/settings.json,project
   calibration/public-report-v1.json,project
@@ -36,7 +42,7 @@ files[12]{path,scope}:
   test/fixtures/evaluation.json,project
   test/tracker-evaluation.test.ts,project
   tracker-evaluation.ts,project
-tests[4]:
+tests[5]:
   - command: node --test test/decision-calibration.test.ts test/tracker-evaluation.test.ts
     scope: project
     provenance:
@@ -66,6 +72,14 @@ tests[4]:
       created_at: "2026-10-18T03:34:45.843Z"
       source_kind: local_mutation
       source_ref: feat/eval-and-calibrate
-docs[1]{path,scope}:
+  - command: node --test test/decision-calibration.test.ts test/calibrated-decisions.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-18T05:29:05.794Z"
+      source_kind: local_mutation
+      source_ref: feat/eval-and-calibrate
+docs[2]{path,scope}:
+  docs/threshold-calibration.md,project
   README.md,project
 body: ""

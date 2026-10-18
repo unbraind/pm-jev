@@ -114,7 +114,7 @@ export function buildExamples(corpus: TrackerCorpus, task: EvaluationTask): { ex
     const target = duplicateTarget(item);
     // Only explicitly labelled duplicate items supply dedupe ground truth.
     if (target === undefined) continue;
-    const candidates = rankDedupeCandidates(items.filter(/** Simulate screening before the duplicate existed. */ candidate => candidate.id !== item.id), item.title, 8);
+    const candidates = rankDedupeCandidates(items.filter(/** Simulate screening before the duplicate existed, excluding ambiguous sibling labels. */ candidate => candidate.id !== item.id && (candidate.id === target || duplicateTarget(candidate) !== target)), item.title, 8);
     if (!candidates.some(/** Report retrieval failure separately rather than fabricating a negative label. */ candidate => candidate.id === target)) { retrieval_misses++; continue; }
     const request = buildDedupeRequest(item.title, item.body ?? item.description, candidates);
     examples.push(example(corpus, request.state, request.questions, { duplicate_of: target }));

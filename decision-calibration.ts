@@ -105,7 +105,7 @@ export function reliability(rows: readonly Observation[]): Reliability {
   });
   return { count: rows.length, accuracy: rows.length === 0 ? null : correct / rows.length,
     ece: rows.length === 0 ? null : bins.reduce(/** Weight absolute reliability gaps by population. */ (sum, bin) => sum + bin.count * Math.abs((bin.confidence ?? 0) - (bin.accuracy ?? 0)), 0) / rows.length,
-    nll: rows.length === 0 ? null : rows.reduce(/** Clip zero only for a finite log-loss diagnostic. */ (sum, row) => sum - Math.log(Math.max(1e-15, row.probabilities[row.label])), 0) / rows.length,
+    nll: rows.length === 0 ? null : rows.reduce(/** Clip zero only for a finite log-loss diagnostic. */ (sum, row) => sum - Math.log(Math.max(1e-15, row.probabilities[row.label] ?? 0)), 0) / rows.length,
     bins, classes: labels.map(/** Report null precision/recall when the denominator has no evidence. */ label => {
       const support = rows.filter(/** Count ground truth class membership. */ row => row.label === label).length;
       const predicted = predictions.filter(/** Count predicted class membership. */ p => p.top[0] === label);
@@ -119,7 +119,7 @@ export function fitTemperature(rows: readonly Observation[]): number {
   let loss = Infinity;
   for (let index = 0; index <= 200; index++) {
     const candidate = Math.exp(Math.log(20) * (index - 100) / 100);
-    const nll = rows.reduce(/** Evaluate only the calibration split. */ (sum, row) => sum - Math.log(Math.max(1e-15, scaleProbabilities(row.probabilities, candidate)[row.label])), 0);
+    const nll = rows.reduce(/** Evaluate only the calibration split. */ (sum, row) => sum - Math.log(Math.max(1e-15, scaleProbabilities(row.probabilities, candidate)[row.label] ?? 0)), 0);
     if (nll < loss) { loss = nll; best = candidate; }
   }
   return best;

@@ -921,15 +921,16 @@ async function runTriageCommand(ctx) {
     const threshold = probabilityOption(ctx.options, "minConfidence", ["min_confidence"], boundary.config.minConfidence);
     const settings = await readSettings(boundary.pmRoot);
     const questions = buildTriageQuestions(settings);
+    const classification = buildClassificationQuestions(settings);
     const apply = readBooleanOption(ctx.options, "apply") === true;
     const rawType = readStringOption(ctx.options, "type");
     const type = resolveTypeName(rawType, resolveItemTypeRegistry(settings));
     if (ctx.options.type !== undefined && type === undefined)
         throw createPmCliExpectedError("--type must name a configured item type.", { context: { code: "jev_triage_type" } });
     if (open)
-        return runBacklogTriage(ctx, boundary, questions, threshold, limit, started, type);
+        return runBacklogTriage(ctx, boundary, questions, classification, threshold, limit, started, type);
     const item = await loadTriageSource(boundary, id.trim());
-    return decideTriage(boundary, item, questions, threshold, apply);
+    return decideTriage(boundary, item, questions, classification, threshold, apply);
 }
 /** Require a positive bounded item count instead of silently repairing a CLI typo. */
 function batchLimit(options) {
@@ -978,9 +979,7 @@ function guardProposalMutation(ctx, command, hash) {
     }
 }
 /** Infer one item, authorize each field independently, and atomically append a stable receipt. */
-async function decideTriage(boundary, item, questions, threshold, apply, signal, deadline = Date.now() + boundary.config.totalDeadlineMs) {
-    const settings = await readSettings(boundary.pmRoot);
-    const classification = buildClassificationQuestions(settings);
+async function decideTriage(boundary, item, questions, classification, threshold, apply, signal, deadline = Date.now() + boundary.config.totalDeadlineMs) {
     const calibratedType = boundary.calibration?.record.channels.type?.question_sha256.includes(questionFingerprint("type", classification.type)) === true;
     const boundQuestions = calibratedType ? { ...questions, type: classification.type } : withCurrentType(questions, item.type);
     const typeQuestionHash = triageTypeQuestionHash(questions);
@@ -1124,7 +1123,7 @@ function hasTriageReceipt(item, questions, threshold) {
     });
 }
 /** Infer a bounded host-selected backlog with shared client, questions, and one abort deadline. */
-async function runBacklogTriage(ctx, boundary, questions, threshold, limit, started, type) {
+async function runBacklogTriage(ctx, boundary, questions, classification, threshold, limit, started, type) {
     const { deadline, signal } = decisionDeadline(boundary.config, started);
     const selected = await selectOpenSources(boundary, limit, type);
     const counts = { changed: 0, would_change: 0, skipped: 0, failed: 0 };
@@ -1142,7 +1141,7 @@ async function runBacklogTriage(ctx, boundary, questions, threshold, limit, star
             }
             else {
                 const apply = readBooleanOption(ctx.options, "apply") === true;
-                const result = await decideTriage(boundary, item, questions, threshold, apply, signal, deadline);
+                const result = await decideTriage(boundary, item, questions, classification, threshold, apply, signal, deadline);
                 const p = result.proposals;
                 const fit = result.calibration;
                 const typeThreshold = fit?.type === null || fit?.type === undefined ? threshold : fit.type.threshold ?? Infinity;

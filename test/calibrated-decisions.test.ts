@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
 import { createExtensionCommandSdk, readSettings } from "@unbrained/pm-cli/sdk";
 import { activeCalibration, calibrateObservations, evidenceHash, questionFingerprint } from "../decision-calibration.ts";
@@ -29,11 +31,12 @@ async function backlog(fixture: Fixture, task: "triage" | "link", options: Recor
   return fixture.harness.runCommand({ command: `jev ${task}`, pmRoot: fixture.pmRoot, options: { open: true, limit: "1", ...options }, global: { quiet: true } });
 }
 /** Serve an immutable model tag and exact-schema probability distributions. */
-function serve(server: Server, weights: Record<string, number>, digest = "c".repeat(64), replaceAfterInference = false) {
+function serve(server: Server, weights: Record<string, number>, digest = "c".repeat(64), replaceAfterInference = false, onInference?: (questions: Questions) => void) {
   let inferred = false;
   server.setReply((request, response, body) => {
     if (request.url === "/api/tags") { response.end(JSON.stringify({ models: [{ name: "tev1:4b", digest: replaceAfterInference && inferred ? "d".repeat(64) : digest }] })); return; }
     const questions = (body as { questions: Questions }).questions;
+    onInference?.(questions);
     const result = answers(questions);
     for (const [name, question] of Object.entries(questions)) {
       if (question.type === "noul") continue;
@@ -100,6 +103,35 @@ test("unqualified calibration blocks triage type and priority even under an expl
     assert.ok(result.calibration);
     const stream = await backlog(fixture, "triage", { apply: true, minConfidence: "0" });
     assert.equal((stream.result as { result: { changed: number } }).result.changed, 0);
+  });
+});
+
+test("backlog triage reuses one settings-derived classification snapshot per command", async () => {
+  await scenario(async (fixture, server) => {
+    await fixture.pm.create({ title: "Session failure one", type: "Task" });
+    await fixture.pm.create({ title: "Session failure two", type: "Task" });
+    await install(fixture, "triage", buildClassificationQuestions(await readSettings(fixture.pmRoot)));
+    const typesPath = join(fixture.pmRoot, "schema/types.json");
+    const initial = readFileSync(typesPath, "utf8");
+    await fixture.pm.schemaAddType("Knowledge", { description: "Documented reference facts", folder: "knowledge" });
+    const edited = readFileSync(typesPath, "utf8");
+    writeFileSync(typesPath, initial);
+    const wire: Questions[] = [];
+    serve(server, {}, "c".repeat(64), false, questions => {
+      wire.push(questions);
+      // A concurrent schema edit must take effect on the next command, not partway through this batch.
+      writeFileSync(typesPath, edited);
+    });
+    await backlog(fixture, "triage", { limit: "2" });
+    assert.equal(wire.length, 2);
+    assert.deepEqual(wire[1], wire[0]);
+    assert.ok(!JSON.stringify(wire).includes("__keep_current__"));
+    assert.ok(!JSON.stringify(wire).includes("Knowledge"));
+    wire.length = 0;
+    await backlog(fixture, "triage", { limit: "2" });
+    assert.equal(wire.length, 2);
+    assert.ok(JSON.stringify(wire).includes("Knowledge"));
+    assert.ok(JSON.stringify(wire).includes("__keep_current__"));
   });
 });
 

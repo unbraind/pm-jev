@@ -66,6 +66,18 @@ test("temperature minimizes calibration loss without reading validation labels a
   assert.equal(receipt.data.length, 2);
 });
 
+test("absent ground-truth labels have finite clamped loss and do not disable temperature fitting", () => {
+  const good = observations(1);
+  const missing = { ...good[0], label: "Unrepresented" };
+  const zero = { ...missing, probabilities: { ...missing.probabilities, Unrepresented: 0 } };
+  assert.equal(reliability([missing]).nll, -Math.log(1e-15));
+  assert.equal(reliability([missing]).nll, reliability([zero]).nll);
+  const temperature = fitTemperature([...good, missing]);
+  assert.ok(temperature < 1);
+  assert.equal(temperature, fitTemperature([...good, zero]));
+  assert.ok(Number.isFinite(reliability(scaledRows([...good, missing], temperature)).nll));
+});
+
 test("channel application requires compatible semantics and refuses unqualified thresholds", () => {
   const q = { type: "choice" };
   const record = calibrateObservations("link", "local", "c".repeat(64), [...observations(40, "public/a"), ...observations(40, "public/b")], "0", 0.9);
