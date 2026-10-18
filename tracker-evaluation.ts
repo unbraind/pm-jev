@@ -101,6 +101,8 @@ export function buildExamples(corpus: TrackerCorpus, task: EvaluationTask): { ex
         const kinds = [...existingLinkKinds(graph, source.id, target.id)].filter(/** Retain only ontology kinds the production command can propose. */ kind => kind in criteria).sort();
         // Multi-labelled pairs cannot be honestly evaluated as one categorical choice.
         if (kinds.length > 1) continue;
+        // Unsupported kinds and reverse edges without an inverse are still connected pairs.
+        if (kinds.length === 0 && connected.has(target.id)) continue;
         const row = example(corpus, { source: semanticState(source), candidates: { candidate_0: semanticState(target) } }, { candidate_0: question }, { candidate_0: kinds[0] ?? "none" });
         if (kinds.length === 1) positives.push(row);
         else negatives.push(row);

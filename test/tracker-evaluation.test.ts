@@ -75,6 +75,29 @@ test("link labels respect inverse and undirected edges; dedupe labels require ex
   } finally { fixture.dispose(); }
 });
 
+for (const kind of ["implements", "discovered_from"]) {
+  test(`link negatives exclude connected pairs without a supported kind: ${kind}`, async () => {
+    const fixture = await syntheticCorpus();
+    try {
+      await fixture.pm.update("demo-task", { clearDeps: true });
+      await fixture.pm.update("demo-task", { dep: [`id=demo-bug,kind=${kind}`] });
+      fixture.commit();
+      const corpus = await readPublicCorpus(fixture.pmRoot, publicInspection) as TrackerCorpus;
+      const before = trackerSnapshot(fixture.pmRoot);
+      const connected = { ...corpus, items: corpus.items.filter(row => ["demo-bug", "demo-task"].includes(row.id)) };
+      const rows = buildExamples(connected, "link").examples;
+      assert.deepEqual(rows.map(row => row.labels.candidate_0), [kind]);
+      const withControl = { ...corpus, items: corpus.items.filter(row => row.id !== "demo-copy") };
+      const negatives = buildExamples(withControl, "link").examples.filter(row => row.labels.candidate_0 === "none");
+      assert.ok(negatives.length > 0);
+      assert.ok(negatives.every(row => JSON.stringify(row.state).includes("Export board as CSV")));
+      assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+    } finally {
+      fixture.dispose();
+    }
+  });
+}
+
 test("visibility and source guards refuse forbidden inputs before SDK tracker reads", async () => {
   const fixture = await syntheticCorpus();
   try {

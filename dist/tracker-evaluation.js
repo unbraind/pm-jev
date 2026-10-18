@@ -95,6 +95,9 @@ export function buildExamples(corpus, task) {
                 // Multi-labelled pairs cannot be honestly evaluated as one categorical choice.
                 if (kinds.length > 1)
                     continue;
+                // Unsupported kinds and reverse edges without an inverse are still connected pairs.
+                if (kinds.length === 0 && connected.has(target.id))
+                    continue;
                 const row = example(corpus, { source: semanticState(source), candidates: { candidate_0: semanticState(target) } }, { candidate_0: question }, { candidate_0: kinds[0] ?? "none" });
                 if (kinds.length === 1)
                     positives.push(row);
