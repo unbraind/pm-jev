@@ -2,13 +2,18 @@ id: pm-jev-3ntg
 title: Propose typed relationship edges with the local decision model
 description: "Add bounded typed relationship proposals, guarded SDK dependency application, streaming backlog mode, real-tracker regression proofs and local model acceptance."
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-15T18:02:27.335Z"
 updated_at: "2026-10-18T04:17:28.696Z"
+closed_at: "2026-10-17T08:04:18.028Z"
+completed_at: "2026-10-15T19:32:00.000Z"
 author: codex-agent
 parent: pm-jev-0w3q
+resolution: "Delivered by https://github.com/unbraind/pm-jev/pull/19 (merge f4e20dda612c, head 13c74014fb0b)"
+expected_result: "Delivered by the linked pull request, merged after its head check gate passed."
+actual_result: "Merged at 2026-10-15T19:32:00Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[13]{created_at,author,text}:
   "2026-10-15T18:02:43.124Z",codex-agent,"Design: reuse certified complete reads and deterministic dedupe ranking; resolve relationship kinds and graph directions through the pinned host SDK. Ask one typed choice per candidate in one bounded request. Guard source revisions inside the host item lock and submit dependency additions plus one redacted receipt in one update. Default dry runs remain observational; hierarchy writes require explicit opt-in. Real tracker tests, independent behavioural mutants, and disposable local tev1:4b acceptance precede unchanged release gates."
   "2026-10-15T18:08:52.714Z",codex-agent,"Implementation uses the host dependency flag format id=<id>,kind=<kind> in the same update as one receipt. SDK inspection confirms eleven canonical supported kinds and no duplicate kind. First real-tracker regressions cover inverse and symmetric existing edges, scalar parents, hierarchy opt-in, thresholds, abstention, corrupt complete reads and lock guard expiry. Host gap: pinned SDK list/get reads write disposable runtime metadata caches and context usage; no public per-call suppression exists. Dry-run proofs compare every authoritative item, history, schema and settings file, excluding only host runtime files. No protected host source or dependency pins changed."
@@ -40,4 +45,5 @@ tests[5]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/fixtures.test.ts,project,codex-agent,"2026-10-15T19:02:00.261Z",local_mutation,feat/link-proposals
 docs[1]{path,scope}:
   docs/link-proposals.md,project
+close_reason: "{\"pr\":19,\"url\":\"https://github.com/unbraind/pm-jev/pull/19\",\"merge_commit_sha\":\"f4e20dda612cf2a60c3bd1c05e1875454134114b\",\"head_sha\":\"13c74014fb0b1bd63709e662b6a5d7f90de5ce42\",\"merged_at\":\"2026-10-15T19:32:00Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""

@@ -2,13 +2,18 @@ id: pm-jev-2mg8
 title: Calibrate triage type proposals for projects with many item types
 description: "Measured 2026-10-14 on a copy of the pm-jev tracker with the local tev1:4b model: triage proposed type Decision at p=0.30 for an item that is an Issue. The apply threshold of 0.8 kept it from being written, so it did no harm, but the proposal is wrong and wastes reviewer attention. Projects with many registered types (built-in plus custom types such as Decision, Knowledge, Run or Generation) dilute the label set, and the prompt does not tell the model what each type means. Triage should present each candidate type with its definition, prefer keeping the current type unless the evidence is strong, abstain when the top two labels are close, and report a measured per-type precision against a labelled dataset."
 type: Issue
-status: in_progress
+status: closed
 priority: 1
 tags[3]: calibration,decisions,triage
 created_at: "2026-10-14T19:42:55.763Z"
 updated_at: "2026-10-18T04:17:24.869Z"
+closed_at: "2026-10-17T08:04:17.809Z"
+completed_at: "2026-10-14T23:52:13.000Z"
 author: claude-hub
 acceptance_criteria: Triage presents every candidate type with a one-line definition drawn from the project's type registry; a keep-current-type option exists and is chosen when evidence is weak; triage abstains with an explicit reason when the margin between the top two labels is below a documented threshold; a labelled dataset that covers at least eight types including custom ones reports per-type precision and abstention rate with the real tev1 model; no type change below the apply threshold is ever written
+resolution: "Delivered by https://github.com/unbraind/pm-jev/pull/17 (merge 4c50b195c5ed, head 126ca7164424)"
+expected_result: Triage presents every candidate type with a one-line definition drawn from the project's type registry; a keep-current-type option exists and is chosen when evidence is weak; triage abstains with an explicit reason when the margin between the top two labels is below a documented threshold; a labelled dataset that covers at least eight types including custom ones reports per-type precision and abstention rate with the real tev1 model; no type change below the apply threshold is ever written
+actual_result: "Merged at 2026-10-14T23:52:13Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[17]{created_at,author,text}:
   "2026-10-14T19:48:02.474Z",codex-agent,"Claimed and inspected the existing triage catalog, source guards, compact output, calibration harness and pinned SDK registry. Plan: explicit keep-current candidate bound per item, registry descriptions with folder metadata fallback, probability floor independent of apply flags, measured top-two margin abstention, and a balanced eight-type synthetic scratch-tracker comparison with held-out evaluation. No custom project labels will be hardcoded into production routing."
   "2026-10-14T19:56:39.864Z",codex-agent,"Implemented registry definitions, one-line custom folder fallback, item-bound keep-current candidate, code-owned probability ranking and explicit nullable type abstention. Independently restored the former no-abstention behavior: focused margin regression exited 1; independently restored the former no-keep behavior: focused keep-current regression exited 1. Restored source byte-for-byte and the two focused regressions pass. The real tev1 comparison is still running; no empirical cutoff has been installed yet."
@@ -57,4 +62,5 @@ docs[3]{path,scope}:
   docs/batch-triage.md,project
   docs/threshold-calibration.md,project
   README.md,project
+close_reason: "{\"pr\":17,\"url\":\"https://github.com/unbraind/pm-jev/pull/17\",\"merge_commit_sha\":\"4c50b195c5ed4e2de28c5a9f1708241df97a006b\",\"head_sha\":\"126ca71644241b552e4c6498e10e6833c3195cc3\",\"merged_at\":\"2026-10-14T23:52:13Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""
