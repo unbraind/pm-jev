@@ -2,14 +2,19 @@ id: pm-jev-82ip
 title: Evaluate decisions against public tracker ground truth
 description: "Deterministic SDK-only public tracker evaluation for triage, typed links and known duplicates, with provenance, reliability and coverage metrics."
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags[3]: added,calibration,eval
 created_at: "2026-10-18T03:02:20.523Z"
-updated_at: "2026-10-18T06:51:48.326Z"
+updated_at: "2026-10-18T08:24:35.652Z"
+closed_at: "2026-10-18T08:24:35.645Z"
+completed_at: "2026-10-18T06:59:58.000Z"
 author: codex-agent
 acceptance_criteria: "Public committed tracker snapshots are read through certified complete SDK queries without source writes; hidden triage labels, typed edges/non-edge controls and explicit duplicate ground truth are sampled deterministically; TOON and JSON report accuracy, class precision/recall, ten-bin ECE, threshold curves, latency, tokens and per-example provenance; synthetic regressions and unchanged npm/Bun gates pass."
 parent: pm-jev-0w3q
+resolution: "Delivered by https://github.com/unbraind/pm-jev/pull/24 (merge b479dd093e30, head 366d42c8b549)"
+expected_result: "Public committed tracker snapshots are read through certified complete SDK queries without source writes; hidden triage labels, typed edges/non-edge controls and explicit duplicate ground truth are sampled deterministically; TOON and JSON report accuracy, class precision/recall, ten-bin ECE, threshold curves, latency, tokens and per-example provenance; synthetic regressions and unchanged npm/Bun gates pass."
+actual_result: "Merged at 2026-10-18T06:59:58Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[17]{created_at,author,text}:
   "2026-10-18T03:03:21.067Z",codex-agent,"Plan: read only committed public fleet tracker snapshots through certified complete SDK reads. Deterministic repository-separated sampling; temperature scaling fit on calibration repositories only; validate precision with a one-sided Wilson bound before qualifying any threshold. Serial local-only requests, at most 150 calls, no release."
   "2026-10-18T03:12:07.781Z",codex-agent,"Implemented content-free evaluation receipts, committed public snapshots with no source writes, label-hidden triage, typed-edge labels and deterministic non-edge controls. Temperature fits use separate repository identities and proposal precision excludes none predictions. A serial niced 140-call live comparison is running across six verified public repositories. Existing focused legacy regressions are running alongside new real-temp-tracker tests."
@@ -89,4 +94,5 @@ tests[6]:
 docs[2]{path,scope}:
   "https://github.com/unbraind/pm-jev/pull/24#discussion_r4305962883",project
   README.md,project
+close_reason: "{\"pr\":24,\"url\":\"https://github.com/unbraind/pm-jev/pull/24\",\"merge_commit_sha\":\"b479dd093e30ed56116951701c63cf5fde2c3c52\",\"head_sha\":\"366d42c8b5490cbe368140cafec6c4476bb8f20d\",\"merged_at\":\"2026-10-18T06:59:58Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""
