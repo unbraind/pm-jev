@@ -22,7 +22,8 @@
     "docs/link-proposals.md",
     "docs/threshold-calibration.md",
     "calibration/type-dataset-v1.json",
-    "calibration/type-report-v1.json"
+    "calibration/type-report-v1.json",
+    "calibration/public-report-v1.json"
   ],
   "scripts": {
     "build": "tsc",

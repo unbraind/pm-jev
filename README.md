@@ -167,6 +167,125 @@ question names, answer types, exact option keys, finite probabilities, normalize
 distributions (2% rounding tolerance), score range, matching legend, model and usage.
 Malformed output is rejected before any item update.
 
+## How good are the decisions?
+
+`pm jev eval` measures local decisions against the labels in committed public
+fleet trackers. `pm jev calibrate` fits one temperature per task/model/question
+channel on calibration repositories, then validates on different repositories.
+Triage hides both the stored type and priority, including the keep-current hint;
+only title, description and distinct body text enter inference. Types use the
+tracker's actual definitions. Link labels come from SDK-canonical dependency
+edges and their inverse directions, plus deterministic sampled non-edges.
+Unrecorded relationships are **closed-world controls**, so their labels can be
+incomplete. Multi-kind pairs are excluded from this categorical benchmark.
+Dedupe uses explicit `duplicate_of`, type-option links or duplicate closure
+resolutions with a target; missing-target controls remove that known duplicate
+group. Retrieval failures are counted and prevent dedupe qualification.
+
+The evaluator verifies public visibility with `gh repo view`, archives the exact
+commit, and performs certified complete SDK reads in disposable snapshots.
+Original trackers are never written. Receipts contain public repository names,
+commit and tracker digests, example/question hashes and validated distributions;
+they omit tracker text and local paths. Private repositories are skipped. Sources
+must be `unbraind/pm-*` clones in a directory named `fleet`; the host CLI and
+companion trackers are refused. Hosted data and external model endpoints are
+outside this command's boundary.
+
+Use at least two repositories with relevant ground truth. Run from the project
+that should receive the calibration; every `--from` is a read-only source:
+
+```sh
+nice -n 15 pm jev eval --task triage \
+  --from fleet/pm-alpha/.agents/pm --from fleet/pm-beta/.agents/pm \
+  --model tev1:4b --sample 40 --seed 20261018 --json
+nice -n 15 pm jev calibrate --task link \
+  --from fleet/pm-alpha/.agents/pm --from fleet/pm-beta/.agents/pm \
+  --model tev1:4b --sample 100 --seed 20261018 --target-precision 0.9
+```
+
+Repeat `--from` or supply additional tracker roots after its first value. Output
+is TOON by default and full-precision JSON with `--json`. Sampling is seeded,
+without replacement and balanced across repositories; changing the data commit
+changes its identity. Evaluation defaults to 40 requests and calibration to 100; the hard cap is 150 per
+invocation, requests are serial and evaluator retries are disabled. Keep a shared
+budget across invocations. Reports include accuracy, per-class precision/recall,
+ten equal-width reliability bins, expected calibration error (ECE), NLL,
+coverage/precision at decile thresholds, actual request latency and token totals.
+A batched triage request yields two labelled observations; tokens are counted
+once per request in the report totals.
+
+Temperature scaling applies `softmax(log(p) / T)` with zero mass preserved,
+minimizing calibration NLL on a fixed log-spaced grid from 0.05 to 20. It preserves
+the winning label. This small-data choice follows
+[Guo et al.](https://proceedings.mlr.press/v70/guo17a.html); isotonic fitting would
+add flexibility without enough independent evidence here. A seed partitions
+whole repositories, never individual items. Reproduce an older receipt with source
+clones checked out at its recorded commits. The lowest candidate threshold whose
+**one-sided 95% Wilson precision lower bound** reaches the target is frozen on
+calibration data, then must pass that bound on held-out data. Confident `none`
+answers cannot establish proposal precision. Sparse evidence leaves the threshold
+`null`; no lower target is substituted. These bounds describe this benchmark,
+not a guarantee for future projects or correlated items.
+
+Calibration receipts are merged through the SDK's audited settings lock into
+`jev.calibrations`, keyed by task and exact model tag, preserving other settings.
+They pin the installed model digest and compatible question definitions. Matching
+triage/link/dedupe decisions show calibrated probabilities, thresholds and a
+receipt hash, alongside raw probability evidence. Unqualified channels authorize
+no calibrated changes; a CLI threshold cannot bypass that refusal. An explicit
+`--min-confidence` can raise a qualified threshold, but cannot lower it. Changed model
+digests or question definitions use the legacy policy. With no matching receipt,
+the existing 0.8 default, keep-current rule and margin abstention remain in force.
+Calibrated triage removes the keep-current hint, retains margin abstention and
+uses each channel's fitted threshold. Calibrated links evaluate one source/target
+pair at a time to match the benchmark context; legacy links retain batching.
+Calibrated backlog triage revisits receipts so a previous policy cannot hide a
+new decision. Calibration never enables `--apply` by itself.
+
+Measured 2026-10-18 on six verified public repositories (`pm-jev`, `pm-csv`,
+`pm-graph`, `pm-vcs`, `pm-presets`, `pm-starter`). The machine-readable receipt
+is [calibration/public-report-v1.json](calibration/public-report-v1.json).
+
+| Task / model | Held-out n | Accuracy (raw = calibrated) | Raw ECE | Calibrated ECE | Raw 0.8 → calibrated gate |
+|---|---:|---:|---:|---:|---:|
+| Triage type / tev1:4b | 30 | 40.0% | 0.191 | 0.215 | 3 → 0 |
+| Triage priority / tev1:4b | 30 | 53.3% | 0.133 | 0.118 | 0 → 0 |
+| Link kind / tev1:4b | 21 | 47.6% | 0.096 | 0.151 | 0 → 0 |
+| Triage type / tev1:0.8b | 21 | 4.8% | 0.519 | 0.093 | 0 → 0 |
+| Triage priority / tev1:0.8b | 21 | 33.3% | 0.380 | 0.112 | 5 → 0 |
+
+No channel qualifies at target precision 0.9: every saved threshold is null, so
+zero proposals are authorized by calibration. These models are not good enough
+for automated application under this policy on the measured workload. Type and
+link calibration worsen held-out ECE; the smaller model's improved ECE comes from
+reducing confidence, not improving its very low accuracy. Link and small-model
+folds contain 19 calibration and 21 validation decisions, too few to establish
+the requested uncertainty bound even with perfect accepted predictions. Their
+reliability numbers are exploratory. The 4b triage folds contain 30 items each.
+
+Gate counts are held-out confidence decisions before current-value, existing-edge,
+hierarchy and margin guards; they compare the same benchmark prompt at raw 0.8
+with the qualified calibrated policy. Source trackers were never modified.
+Across all observed cases, raw 0.8 counts are retained separately in the receipt.
+On the identical 40 triage examples, raw type accuracy is 50.0% for 4b versus
+12.5% for 0.8b; raw priority accuracy is 60.0% versus 30.0%.
+
+| Run | Successful requests | Mean request latency | Input / output tokens |
+|---|---:|---:|---:|
+| triage / tev1:4b | 60 | 15.34 s | 67758 / 180 |
+| link / tev1:4b | 40 | 8.96 s | 23247 / 40 |
+| triage / tev1:0.8b | 40 | 44.82 s | 45530 / 120 |
+
+The niced serial run made 140 successful requests and one timed-out model-load
+attempt: **141 of the 150-call budget**. The failed attempt was counted from the
+service access log before restarting its cohort. Latency reflects runtime
+placement and shared workload, not a general model speed ranking. The receipt
+records all source commits, data/model digests, full distributions and class
+metrics. No known duplicate targets were present in these six live source
+trackers; dedupe ground-truth and calibration paths are covered by the committed
+synthetic fixture. Partial failure receipts remain tracked in pm-jev-w1zj.
+
+
 ## Configuration and privacy
 
 Configuration belongs in the project's pm-owned settings document, resolved with
@@ -306,12 +425,12 @@ and uses npm OIDC. Git credentials are provided only to push steps; protected re
 metadata must land on main with the verified tree before publishing. A second release
 on the same Vienna calendar day is refused.
 
-This v0 has bounded synthetic plausibility evidence, not production calibration.
+This package has bounded synthetic and public-tracker evidence; the measurements above define its calibration scope.
 The [vendor's model limitations](https://docs.typesafe.ai/model-jaggedness/jev-1.13)
 include literal interpretation, adversarial state, option-order effects, and weak math,
 dates/counting and multi-hop reasoning. Gate thresholds need workload-specific evaluation;
-false positives and false negatives remain possible. Rust/OpenAPI parity, hosted acceptance,
-and production threshold calibration remain deferred tracker issues.
+false positives and false negatives remain possible. Rust/OpenAPI parity and hosted
+acceptance remain deferred tracker issues.
 The opt-in [synthetic calibration harness](docs/threshold-calibration.md) generates
 versioned noul and type-classification corpora and measures local Ollama reliability curves with
 `npm run calibration`; tests require no Ollama. Its model-specific recommendations

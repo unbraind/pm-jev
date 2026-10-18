@@ -20,7 +20,9 @@
 // bodies are never logged.
 import { APIConnectionError, APIError, APITimeoutError, APIUserAbortError, TypeSafeClient, } from "@typesafe-ai/sdk";
 import { createHash } from "node:crypto";
-import { DEPENDENCY_KIND_VALUES, createPmCliExpectedError, getSettingsPath, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
+import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.js";
+import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked, readOpaqueJevSettings } from "./decision-calibration.js";
+import { DEPENDENCY_KIND_VALUES, createPmCliExpectedError, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
 import { RelationshipGraph, resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk/graph";
 import { defineCommand, defineExtension } from "@unbrained/pm-cli/sdk/authoring";
 /** Re-export the structural expected-error predicate for package consumers. */
@@ -117,22 +119,7 @@ function keepAliveSetting(value) {
  * @returns The raw `jev` settings section, or an empty object when absent.
  */
 async function readJevSettingsSection(pmRoot) {
-    const raw = await readFileIfExists(getSettingsPath(pmRoot));
-    if (raw === null)
-        return {};
-    let parsed;
-    try {
-        parsed = JSON.parse(raw);
-    }
-    catch {
-        return {};
-    }
-    if (typeof parsed !== "object" || parsed === null)
-        return {};
-    const jev = parsed.jev;
-    if (typeof jev !== "object" || jev === null)
-        return {};
-    return jev;
+    return await readOpaqueJevSettings(pmRoot);
 }
 /**
  * Coerce a settings value into a finite number inside `[low, high]`.
@@ -290,7 +277,7 @@ export async function resolveJevEndpoint(pmRoot, env) {
  * @param env - Environment to read `TYPESAFE_API_KEY` from for hosted calls.
  * @returns A configured client bound to the selected provider.
  */
-export function createJevClient(resolved, env) {
+export function createJevClient(resolved, env, maxRetries = 2) {
     const config = requireCallableEndpoint(resolved);
     const apiKey = config.provider === "ollama" ? OLLAMA_API_KEY : stringSetting(env.TYPESAFE_API_KEY);
     return new TypeSafeClient({
@@ -298,7 +285,7 @@ export function createJevClient(resolved, env) {
         baseURL: config.baseUrl,
         defaultModel: config.model,
         timeout: config.timeoutMs,
-        retry: { maxRetries: 2 },
+        retry: { maxRetries },
         logLevel: "off",
         /** Refuse redirects so a local endpoint cannot forward private state externally. */
         fetch: (input, init) => fetch(input, { ...init, redirect: "error" }),
@@ -686,12 +673,17 @@ function requireNoulCriteria(name, criteria) {
  * @returns The workspace handle used by command implementations.
  * @throws {PmCliExpectedError} Configuration is unusable or externally blocked.
  */
-async function openDecisionBoundary(ctx) {
+async function openDecisionBoundary(ctx, task) {
     const resolved = await resolveJevEndpoint(ctx.pm_root, process.env);
     const config = requireCallableEndpoint(resolved);
     const decision = createJevClient(resolved, process.env);
     const pm = ctx.sdk?.client ?? new PmClient({ pmRoot: ctx.pm_root, cwd: ctx.source_workspace_root, author: ctx.global.author });
-    return { pm, pmRoot: ctx.pm_root, decision, config };
+    return { pm, pmRoot: ctx.pm_root, decision, config, explicitConfidence: readStringOption(ctx.options, "minConfidence", ["min_confidence"]) !== undefined, calibration: task === undefined ? undefined : await activeCalibration(ctx.pm_root, task, config) };
+}
+/** Refuse applying a fit if a mutable local model tag changed after inference began. */
+async function verifyCalibrationModel(boundary) {
+    if (boundary.calibration !== undefined && await modelDigest(boundary.config.baseUrl, boundary.config.model, boundary.config.timeoutMs) !== boundary.calibration.record.model_digest)
+        throw createPmCliExpectedError("Model digest changed during calibrated inference; retry with a fresh calibration");
 }
 /**
  * Read a bounded probability option with a default.
@@ -820,6 +812,28 @@ export function buildTriageQuestions(settings) {
         },
     };
 }
+/** Build label-hidden type/priority questions used by evaluation and calibrated triage. */
+export function buildClassificationQuestions(settings) {
+    const questions = buildTriageQuestions(settings);
+    const criteria = { ...questions.type.criteria };
+    delete criteria[KEEP_CURRENT_TYPE];
+    return { type: { type: "choice", instructions: "Classify the actual work using the type definitions. Judge only the semantic evidence.", criteria }, priority: questions.priority };
+}
+/** Build the exact compact production relationship ontology for one candidate. */
+export function buildLinkQuestion(candidate) {
+    const kinds = linkKinds(resolveWorkspaceRelationshipKindRegistry());
+    return { type: "choice", instructions: `Which relationship holds FROM source TO ${candidate}? Choose none without explicit evidence; shared topic alone is not a dependency.`,
+        criteria: Object.fromEntries([...kinds.map(/** Describe direction using the actual SDK ontology. */ /** Describe direction using the actual SDK ontology. */ kind => [kind.kind, `${kind.kind}: ${[kind.direction, kind.precedence, kind.hierarchyDirection, kind.temporalOrder].filter(/** Omit inapplicable ontology attributes. */ /** Omit inapplicable ontology attributes. */ value => value !== undefined).join("; ").replaceAll("_", " ")}`]), ["none", "No supported relationship is justified"]]) };
+}
+/** Build the shared duplicate-screening request without source routing labels. */
+export function buildDedupeRequest(title, body, candidates) {
+    const criteria = {};
+    for (const candidate of candidates)
+        criteria[candidate.id] = `${truncateStateText(candidate.title)} (type ${candidate.type}, status ${candidate.status}, title similarity ${candidate.score})`;
+    criteria.none = "The proposed item is not a duplicate of any candidate";
+    const questions = { duplicate_of: { type: "choice", instructions: "A new pm item is about to be created. Does it duplicate one of the candidate items listed in the state? Choose the candidate id it duplicates, or none.", criteria } };
+    return { state: { proposed: { title: truncateStateText(title), body: truncateStateText(body) }, candidates: candidates.map(/** Bound candidate text without changing deterministic ranks. */ /** Bound candidate text without changing deterministic ranks. */ candidate => ({ ...candidate, title: truncateStateText(candidate.title) })) }, questions };
+}
 /** Bind the non-mutating candidate to the current type without adding routing fields to evidence. */
 export function withCurrentType(questions, current) {
     const question = questions.type;
@@ -837,12 +851,12 @@ function triageTypeQuestionHash(questions) {
     })).digest("hex");
 }
 /** Resolve a validated label distribution in code: ambiguity abstains, weak changes retain the current type. */
-export function resolveTriageType(answer, current, definitions, marginThreshold = TYPE_MARGIN_THRESHOLD) {
+export function resolveTriageType(answer, current, definitions, marginThreshold = TYPE_MARGIN_THRESHOLD, changeProbability = TYPE_CHANGE_PROBABILITY) {
     const ranked = Object.entries(answer.probabilities).sort(/** Preserve registry order for tied labels. */ ([, a], [, b]) => b - a);
     const [selected, top] = ranked[0];
     const margin = top - ranked[1][1];
     const abstained = margin < marginThreshold;
-    const kept = !abstained && (selected === KEEP_CURRENT_TYPE || top < TYPE_CHANGE_PROBABILITY);
+    const kept = !abstained && (selected === KEEP_CURRENT_TYPE || top < changeProbability);
     const label = kept ? KEEP_CURRENT_TYPE : selected;
     return { kind: "choice", value: abstained ? null : kept ? current : selected,
         selected_label: label, probability: answer.probabilities[kept ? current : selected] ?? 0, probabilities: answer.probabilities, confidence: answer.confidence,
@@ -903,7 +917,7 @@ async function runTriageCommand(ctx) {
         });
     }
     const limit = batchLimit(ctx.options);
-    const boundary = await openDecisionBoundary(ctx);
+    const boundary = await openDecisionBoundary(ctx, "triage");
     const threshold = probabilityOption(ctx.options, "minConfidence", ["min_confidence"], boundary.config.minConfidence);
     const settings = await readSettings(boundary.pmRoot);
     const questions = buildTriageQuestions(settings);
@@ -965,13 +979,20 @@ function guardProposalMutation(ctx, command, hash) {
 }
 /** Infer one item, authorize each field independently, and atomically append a stable receipt. */
 async function decideTriage(boundary, item, questions, threshold, apply, signal, deadline = Date.now() + boundary.config.totalDeadlineMs) {
-    const boundQuestions = withCurrentType(questions, item.type);
+    const settings = await readSettings(boundary.pmRoot);
+    const classification = buildClassificationQuestions(settings);
+    const calibratedType = boundary.calibration?.record.channels.type?.question_sha256.includes(questionFingerprint("type", classification.type)) === true;
+    const boundQuestions = calibratedType ? { ...questions, type: classification.type } : withCurrentType(questions, item.type);
     const typeQuestionHash = triageTypeQuestionHash(questions);
     const result = await runDecision(boundary.decision, boundary.config, projectTriageState(item), boundQuestions, signal);
-    const typeAnswer = result.answers.type;
-    const scoreAnswer = result.answers.priority;
+    const rawType = result.answers.type;
+    const rawPriority = result.answers.priority;
+    const typeFit = calibratedAnswer(boundary.calibration, "type", boundQuestions.type, rawType.probabilities, threshold, boundary.explicitConfidence ? threshold : 0);
+    const priorityFit = calibratedAnswer(boundary.calibration, "priority", boundQuestions.priority, rawPriority.probabilities, threshold, boundary.explicitConfidence ? threshold : 0);
+    const typeAnswer = { ...rawType, probabilities: typeFit.probabilities };
+    const scoreAnswer = { ...rawPriority, probabilities: priorityFit.probabilities };
     const proposals = {
-        type: resolveTriageType(typeAnswer, item.type, boundQuestions.type.criteria),
+        type: resolveTriageType(typeAnswer, item.type, boundQuestions.type.criteria, TYPE_MARGIN_THRESHOLD, typeFit.calibration === null ? TYPE_CHANGE_PROBABILITY : 0),
         priority: {
             kind: "score",
             level: winningLevel(scoreAnswer.probabilities, PRIORITY_RUBRIC.length),
@@ -984,21 +1005,24 @@ async function decideTriage(boundary, item, questions, threshold, apply, signal,
     };
     const written = [];
     const changes = {};
-    if (proposals.type.value !== null && proposals.type.probability >= threshold && proposals.type.value !== item.type) {
+    if (proposals.type.value !== null && proposals.type.probability >= typeFit.threshold && proposals.type.value !== item.type) {
         changes.type = proposals.type.value;
         written.push(`type=${proposals.type.value}`);
     }
     const levelProbability = proposals.priority.probabilities[String(proposals.priority.level)];
-    if (levelProbability >= threshold && proposals.priority.level !== item.priority) {
+    if (levelProbability >= priorityFit.threshold && proposals.priority.level !== item.priority) {
         changes.priority = proposals.priority.level;
         written.push(`priority=${proposals.priority.level}`);
     }
+    await verifyCalibrationModel(boundary);
     if (!sameTriageSource(item, await loadTriageSource(boundary, item.id))) {
         throw createPmCliExpectedError("Item changed during triage; retry against the current source.", { context: { code: "jev_stale_inference" } });
     }
     signal?.throwIfAborted();
+    const typeThresholdLabel = typeFit.calibration === null ? String(threshold) : String(typeFit.calibration.threshold ?? "unqualified");
+    const priorityThresholdLabel = priorityFit.calibration === null ? String(threshold) : String(priorityFit.calibration.threshold ?? "unqualified");
     if (apply) {
-        await boundary.pm.update(item.id, { ...changes, comment: [formatTriageReceipt(result.model, proposals, threshold, written, item, deadline, typeQuestionHash)], message: "pm-jev triage proposals and receipt" });
+        await boundary.pm.update(item.id, { ...changes, comment: [formatTriageReceipt(result.model, proposals, threshold, written, item, deadline, typeQuestionHash) + (boundary.calibration === undefined ? "" : ` calibration_sha256=${boundary.calibration.receipt_sha256}, type_threshold=${typeThresholdLabel}, priority_threshold=${priorityThresholdLabel}.`)], message: "pm-jev triage proposals and receipt" });
     }
     return {
         item: item.id,
@@ -1007,6 +1031,7 @@ async function decideTriage(boundary, item, questions, threshold, apply, signal,
         usage: result.usage,
         catalog_version: TRIAGE_CATALOG_VERSION,
         type_question_sha256: typeQuestionHash,
+        ...(boundary.calibration === undefined ? {} : { calibration: { type: typeFit.calibration, priority: priorityFit.calibration, raw_type_probabilities: rawType.probabilities, raw_priority_probabilities: rawPriority.probabilities } }),
         applied: apply ? written : [],
     };
 }
@@ -1087,7 +1112,7 @@ function finishBacklog(ctx, command, selected, counts, started) {
 function hasTriageReceipt(item, questions, threshold) {
     const marker = `, catalog=${TRIAGE_CATALOG_VERSION}, source_sha256=${triageSourceHash(item)}, type_question_sha256=${triageTypeQuestionHash(questions)},`;
     return item.comments.some(/** Ignore stale evidence, externally changed types and lower requested thresholds. */ /** Ignore stale evidence, externally changed types and lower requested thresholds. */ comment => {
-        if (!comment.text.startsWith("pm-jev triage receipt: model=") || !comment.text.includes(marker) ||
+        if (!comment.text.startsWith("pm-jev triage receipt: model=") || comment.text.includes(" calibration_sha256=") || !comment.text.includes(marker) ||
             !comment.text.includes(`, expected_type=${JSON.stringify(item.type)},`))
             return false;
         const recorded = /, apply_threshold=([^,]*),/.exec(comment.text)?.[1].trim() ?? "";
@@ -1104,7 +1129,7 @@ async function runBacklogTriage(ctx, boundary, questions, threshold, limit, star
     const selected = await selectOpenSources(boundary, limit, type);
     const counts = { changed: 0, would_change: 0, skipped: 0, failed: 0 };
     const empty = { type: null, type_probability: null, priority: null, priority_probability: null, needs_human: null, sensitive: null, reason: null, abstained: false };
-    streamTriageHeader(ctx, "items", selected.items.length, ["item", "outcome", ...Object.keys(empty)]);
+    streamTriageHeader(ctx, "items", selected.items.length, ["item", "outcome", ...Object.keys(empty), ...(boundary.calibration === undefined ? [] : ["calibration"])]);
     for (const entry of selected.items) {
         const id = entry.id;
         let row;
@@ -1112,19 +1137,22 @@ async function runBacklogTriage(ctx, boundary, questions, threshold, limit, star
             signal.throwIfAborted();
             const item = await loadTriageSource(boundary, id);
             signal.throwIfAborted();
-            if (readBooleanOption(ctx.options, "refresh") !== true && hasTriageReceipt(item, questions, threshold)) {
+            if (boundary.calibration === undefined && readBooleanOption(ctx.options, "refresh") !== true && hasTriageReceipt(item, questions, threshold)) {
                 row = { item: id, outcome: "skipped", ...empty, reason: "prior_receipt" };
             }
             else {
                 const apply = readBooleanOption(ctx.options, "apply") === true;
                 const result = await decideTriage(boundary, item, questions, threshold, apply, signal, deadline);
                 const p = result.proposals;
-                const wouldChange = (p.type.value !== null && p.type.probability >= threshold && p.type.value !== item.type) ||
-                    (p.priority.probabilities[String(p.priority.level)] >= threshold && p.priority.level !== item.priority);
+                const fit = result.calibration;
+                const typeThreshold = fit?.type === null || fit?.type === undefined ? threshold : fit.type.threshold ?? Infinity;
+                const priorityThreshold = fit?.priority === null || fit?.priority === undefined ? threshold : fit.priority.threshold ?? Infinity;
+                const wouldChange = (p.type.value !== null && p.type.probability >= typeThreshold && p.type.value !== item.type) ||
+                    (p.priority.probabilities[String(p.priority.level)] >= priorityThreshold && p.priority.level !== item.priority);
                 row = { item: id, outcome: wouldChange ? apply ? "changed" : "would_change" : "skipped",
                     type: p.type.value, type_probability: p.type.abstained ? null : p.type.probability, priority: p.priority.level,
                     priority_probability: p.priority.probabilities[String(p.priority.level)], needs_human: p.needs_human.probability,
-                    sensitive: p.sensitive.probability, reason: p.type.reason ?? (wouldChange ? null : "no_qualifying_change"), abstained: p.type.abstained };
+                    sensitive: p.sensitive.probability, ...(result.calibration === undefined ? {} : { calibration: result.calibration }), reason: p.type.reason ?? (wouldChange ? null : "no_qualifying_change"), abstained: p.type.abstained };
             }
         }
         catch (error) {
@@ -1182,7 +1210,7 @@ async function runDedupeCommand(ctx) {
     }
     const body = readStringOption(ctx.options, "body") ?? "";
     const limit = Math.trunc(numberSetting(readStringOption(ctx.options, "limit"), DEFAULT_DEDUPE_LIMIT, 1, 32));
-    const boundary = await openDecisionBoundary(ctx);
+    const boundary = await openDecisionBoundary(ctx, "dedupe");
     const candidates = rankDedupeCandidates((await boundary.pm.listAllComplete()).items, title, limit);
     if (candidates.length === 0) {
         return {
@@ -1196,23 +1224,17 @@ async function runDedupeCommand(ctx) {
             catalog_version: DEDUPE_CATALOG_VERSION,
         };
     }
-    const criteria = {};
-    for (const candidate of candidates) {
-        criteria[candidate.id] = `${truncateStateText(candidate.title)} (type ${candidate.type}, status ${candidate.status}, title similarity ${candidate.score})`;
-    }
-    criteria.none = "The proposed item is not a duplicate of any candidate";
-    const result = await runDecision(boundary.decision, boundary.config, { proposed: { title: truncateStateText(title), body: truncateStateText(body) }, candidates: candidates.map(/** Bound candidate text without changing deterministic ranks. */ /** Bound candidate text without changing deterministic ranks. */ candidate => ({ ...candidate, title: truncateStateText(candidate.title) })) }, {
-        duplicate_of: {
-            type: "choice",
-            instructions: "A new pm item is about to be created. Does it duplicate one of the candidate items listed in the state? Choose the candidate id it duplicates, or none.",
-            criteria,
-        },
-    });
+    const request = buildDedupeRequest(title, body, candidates);
+    const result = await runDecision(boundary.decision, boundary.config, request.state, request.questions);
+    await verifyCalibrationModel(boundary);
     const answer = result.answers.duplicate_of;
+    const fit = calibratedAnswer(boundary.calibration, "duplicate_of", request.questions.duplicate_of, answer.probabilities, boundary.config.minConfidence);
+    const selected = fit.calibration === null ? answer.choice : ranked(fit.probabilities)[0][0];
     return {
-        duplicate_of: answer.choice === "none" ? null : answer.choice,
-        probability: answer.probabilities[answer.choice],
-        probabilities: answer.probabilities,
+        duplicate_of: selected === "none" ? null : selected,
+        probability: fit.probabilities[selected],
+        probabilities: fit.probabilities,
+        ...(fit.calibration === null ? {} : { calibration: { ...fit.calibration, raw_probability: answer.probabilities[selected], qualifies: selected !== "none" && fit.probabilities[selected] >= fit.threshold } }),
         confidence: answer.confidence,
         candidates,
         model: result.model,
@@ -1254,7 +1276,7 @@ function linkKinds(registry) {
     return registry.list().filter(/** Do not invent labels the host cannot persist. */ /** Do not invent labels the host cannot persist. */ definition => supported.has(definition.kind));
 }
 /** Find canonical existing edges including reverse inverse kinds, symmetric edges and scalar parents. */
-function existingLinkKinds(graph, source, target) {
+export function existingLinkKinds(graph, source, target) {
     const kinds = new Set();
     for (const edge of graph.incidentEdges(source)) {
         if (edge.source === source && edge.target === target)
@@ -1269,6 +1291,23 @@ function existingLinkKinds(graph, source, target) {
     }
     return kinds;
 }
+/** Match the calibrated pairwise evaluation context while preserving legacy batch inference when no fit exists. */
+async function inferLinkCandidates(boundary, source, targets, state, questions, signal) {
+    const fit = boundary.calibration?.record.channels.candidate_0;
+    if (fit === undefined || !fit.question_sha256.includes(questionFingerprint("candidate_0", buildLinkQuestion("candidate_0"))))
+        return runDecision(boundary.decision, boundary.config, state, questions, signal);
+    const answers = {};
+    const usage = { input_tokens: 0, output_tokens: 0 };
+    let model = boundary.config.model;
+    for (const [index, target] of targets.entries()) {
+        const result = await runDecision(boundary.decision, boundary.config, { source: projectTriageState(source), candidates: { candidate_0: projectTriageState(target) } }, { candidate_0: buildLinkQuestion("candidate_0") }, signal);
+        answers[`candidate_${index}`] = result.answers.candidate_0;
+        usage.input_tokens += result.usage.input_tokens;
+        usage.output_tokens += result.usage.output_tokens;
+        model = result.model;
+    }
+    return { answers, usage, model };
+}
 /** Ask one typed question per ranked candidate in a single request, then authorize in code. */
 async function decideLinks(boundary, id, limit, threshold, apply, allowParent, signal, deadline) {
     signal.throwIfAborted();
@@ -1276,35 +1315,36 @@ async function decideLinks(boundary, id, limit, threshold, apply, allowParent, s
     const corpus = (await boundary.pm.listAllComplete({ includeBody: true })).items;
     const candidates = rankDedupeCandidates(corpus.filter(/** Never rank the source itself. */ /** Never rank the source itself. */ item => item.id !== source.id), source.title, limit);
     const registry = resolveWorkspaceRelationshipKindRegistry();
-    const kinds = linkKinds(registry);
     const graph = RelationshipGraph.fromItems(corpus, registry);
     const questions = {};
     const targets = [];
     for (const [index, candidate] of candidates.entries()) {
         const target = corpus.find(/** Use the same certified snapshot for inference and existing-edge checks. */ /** Use the same certified snapshot for inference and existing-edge checks. */ item => item.id === candidate.id);
         targets.push(target);
-        questions[`candidate_${index}`] = { type: "choice", instructions: `Which relationship holds FROM source TO candidate_${index}? Choose none without explicit evidence; shared topic alone is not a dependency.`,
-            criteria: Object.fromEntries([...kinds.map(/** Describe direction using the actual SDK ontology. */ /** Describe direction using the actual SDK ontology. */ kind => [kind.kind, `${kind.kind}: ${[kind.direction, kind.precedence, kind.hierarchyDirection, kind.temporalOrder].filter(/** Omit inapplicable ontology attributes. */ /** Omit inapplicable ontology attributes. */ value => value !== undefined).join("; ").replaceAll("_", " ")}`]), ["none", "No supported relationship is justified"]]) };
+        questions[`candidate_${index}`] = buildLinkQuestion(`candidate_${index}`);
     }
     const state = { source: projectTriageState(source), candidates: Object.fromEntries(targets.map(/** Send only bounded content, without ids or tracker annotations. */ (target, index) => [`candidate_${index}`, projectTriageState(target)])) };
     if (Buffer.byteLength(JSON.stringify({ model: boundary.config.model, state, questions, keep_alive: boundary.config.keepAlive })) > 64 * 1024) {
         throw createPmCliExpectedError("Relationship request exceeds 64 KiB; reduce --limit.", { context: { code: "jev_link_state_limit" } });
     }
     const result = candidates.length === 0 ? { model: boundary.config.model, answers: {}, usage: { input_tokens: 0, output_tokens: 0 } } :
-        await runDecision(boundary.decision, boundary.config, state, questions, signal);
+        await inferLinkCandidates(boundary, source, targets, state, questions, signal);
     const proposals = candidates.map(/** Rank probabilities rather than trusting the model's chosen label or confidence. */ (candidate, index) => {
         const answer = result.answers[`candidate_${index}`];
-        const ranked = Object.entries(answer.probabilities).sort(/** Keep registry order on ties. */ ([, a], [, b]) => b - a);
-        const [selected, probability] = ranked[0];
-        const margin = probability - ranked[1][1];
+        const fit = calibratedAnswer(boundary.calibration, `candidate_${index}`, questions[`candidate_${index}`], answer.probabilities, threshold, boundary.explicitConfidence ? threshold : 0);
+        const ordered = ranked(fit.probabilities);
+        const [selected, probability] = ordered[0];
+        const margin = probability - ordered[1][1];
         const abstained = margin < TYPE_MARGIN_THRESHOLD;
         const existing = existingLinkKinds(graph, source.id, candidate.id).has(selected);
         const parentRefused = registry.resolve(selected)?.hierarchy === true && !allowParent;
         return { candidate: candidate.id, score: candidate.score, kind: abstained || existing || selected === "none" ? null : selected, selected_kind: selected,
-            probability, probabilities: answer.probabilities, abstained, existing, margin,
+            probability, probabilities: fit.probabilities, abstained, existing, margin,
+            ...(fit.calibration === null ? {} : { calibration: fit.calibration, raw_probability: ranked(answer.probabilities)[0][1] }),
             reason: abstained ? "top_two_margin_below_threshold" : existing ? "existing_edge" : parentRefused ? "parent_requires_allow_parent" : selected === "none" ? "none" : null };
     });
-    const qualifying = proposals.filter(/** Only new, unambiguous, permitted edges can clear the apply threshold. */ /** Only new, unambiguous, permitted edges can clear the apply threshold. */ proposal => proposal.kind !== null && proposal.probability >= threshold && proposal.reason === null)
+    await verifyCalibrationModel(boundary);
+    const qualifying = proposals.filter(/** Only new, unambiguous, permitted edges can clear the apply threshold. */ /** Only new, unambiguous, permitted edges can clear the apply threshold. */ proposal => proposal.kind !== null && proposal.probability >= (proposal.calibration === undefined ? threshold : proposal.calibration.threshold ?? Infinity) && proposal.reason === null)
         .map(/** Use the exact host --dep spelling. */ /** Use the exact host --dep spelling. */ proposal => `id=${proposal.candidate},kind=${proposal.kind}`);
     for (const item of [source, ...targets]) {
         if (linkInputHash(item) !== linkInputHash(await loadLinkSource(boundary, item.id))) {
@@ -1313,11 +1353,11 @@ async function decideLinks(boundary, id, limit, threshold, apply, allowParent, s
     }
     signal.throwIfAborted();
     if (apply) {
-        const receipt = `pm-jev link receipt: model=${result.model}, catalog=${LINK_CATALOG_VERSION}, input_sha256=${linkInputHash(source)}, deadline_ms=${deadline}, threshold=${threshold}, proposals=${JSON.stringify(proposals.map(/** Round all label probabilities without copying private item content. */ /** Round all label probabilities without copying private item content. */ proposal => ({ candidate: proposal.candidate, kind: proposal.kind, probabilities: Object.fromEntries(Object.entries(proposal.probabilities).map(/** Round receipt probabilities to two decimals. */ ([kind, probability]) => [kind, roundProbability(probability)])), reason: proposal.reason })))}, applied=${JSON.stringify(qualifying)}.`;
+        const receipt = `pm-jev link receipt: model=${result.model}, catalog=${LINK_CATALOG_VERSION}, input_sha256=${linkInputHash(source)}, deadline_ms=${deadline}, threshold=${threshold},${boundary.calibration === undefined ? "" : ` calibration_sha256=${boundary.calibration.receipt_sha256},`} proposals=${JSON.stringify(proposals.map(/** Round all label probabilities without copying private item content. */ /** Round all label probabilities without copying private item content. */ proposal => ({ candidate: proposal.candidate, kind: proposal.kind, probabilities: Object.fromEntries(Object.entries(proposal.probabilities).map(/** Round receipt probabilities to two decimals. */ ([kind, probability]) => [kind, roundProbability(probability)])), reason: proposal.reason })))}, applied=${JSON.stringify(qualifying)}.`;
         await boundary.pm.update(source.id, { dep: qualifying, comment: [receipt], message: "pm-jev relationship proposals and receipt" });
     }
     return { item: source.id, outcome: proposals.some(/** Count only actual proposed edges. */ /** Count only actual proposed edges. */ proposal => proposal.kind !== null) ? "proposals" : "none", proposals,
-        applied: apply ? qualifying : [], qualifying, model: result.model, catalog_version: LINK_CATALOG_VERSION, usage: result.usage };
+        applied: apply ? qualifying : [], qualifying, ...(boundary.calibration === undefined ? {} : { calibration: { receipt_sha256: boundary.calibration.receipt_sha256 } }), model: result.model, catalog_version: LINK_CATALOG_VERSION, usage: result.usage };
 }
 /** Dispatch single-item or streamed bounded backlog relationship proposals with one total deadline. */
 async function runLinkCommand(ctx) {
@@ -1328,7 +1368,7 @@ async function runLinkCommand(ctx) {
         throw createPmCliExpectedError("Use jev link <id> [--limit N] or jev link --open [--limit N].", { context: { code: "jev_link_arguments" } });
     }
     const limit = linkLimit(ctx.options);
-    const boundary = await openDecisionBoundary(ctx);
+    const boundary = await openDecisionBoundary(ctx, "link");
     const threshold = probabilityOption(ctx.options, "minConfidence", ["min_confidence"], boundary.config.minConfidence);
     const apply = readBooleanOption(ctx.options, "apply") === true;
     const allowParent = readBooleanOption(ctx.options, "allowParent", ["allow_parent"]) === true;
@@ -1344,7 +1384,7 @@ async function runLinkCommand(ctx) {
         try {
             const result = await decideLinks(boundary, item, 8, threshold, apply, allowParent, signal, deadline);
             row = { item, outcome: result.qualifying.length > 0 ? apply ? "changed" : "would_change" : "skipped", edges: result.qualifying.length, reason: null,
-                proposals: result.proposals.map(/** Stream each policy outcome without source text or complete distributions. */ /** Stream each policy outcome without source text or complete distributions. */ proposal => ({ candidate: proposal.candidate, kind: proposal.kind, probability: proposal.probability, abstained: proposal.abstained, existing: proposal.existing, reason: proposal.reason })) };
+                proposals: result.proposals.map(/** Stream each policy outcome without source text or complete distributions. */ /** Stream each policy outcome without source text or complete distributions. */ proposal => ({ candidate: proposal.candidate, kind: proposal.kind, probability: proposal.probability, abstained: proposal.abstained, existing: proposal.existing, reason: proposal.reason, ...(proposal.calibration === undefined ? {} : { calibration: proposal.calibration }) })) };
         }
         catch (error) {
             const mapped = translateDecisionError(error, boundary.config);
@@ -1692,6 +1732,15 @@ const GATE_FLAGS = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api) {
+    for (const calibrate of [false, true])
+        api.registerCommand(defineCommand({
+            name: calibrate ? "jev calibrate" : "jev eval",
+            description: calibrate ? "Fit local probabilities on public calibration repositories and validate on held-out repositories" : "Measure local typed decisions against committed public tracker labels",
+            arguments: [{ name: "sources", variadic: true, required: false, description: "Additional public fleet tracker roots" }],
+            flags: [...EVALUATION_FLAGS, ...(calibrate ? [{ long: "--target-precision", value_name: "p", value_type: "string", description: "Required one-sided 95% precision lower bound (default 0.9)" }] : [])],
+            /** Keep full precision for reliability evidence in both host output formats. */
+            run: (ctx) => runEvaluationCommand(ctx, calibrate),
+        }));
     api.registerCommand(defineCommand({
         name: "jev link",
         description: "Propose typed relationship edges between ranked pm items",

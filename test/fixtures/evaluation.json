@@ -1,0 +1,6 @@
+[
+  { "id": "demo-bug", "type": "Issue", "title": "Login crashes when session expires", "description": "Expired sessions crash login instead of returning an error", "priority": "1" },
+  { "id": "demo-task", "type": "Task", "title": "Add session expiry column", "description": "Migrate the database before login expiry validation ships", "priority": "2", "dep": ["id=demo-bug,kind=blocks"] },
+  { "id": "demo-copy", "type": "Issue", "title": "Login crashes when session expires", "description": "Expired sessions crash login", "priority": "1", "status": "closed", "closeReason": "duplicate of demo-bug" },
+  { "id": "demo-feature", "type": "Feature", "title": "Export board as CSV", "description": "Let users download the current board", "priority": "3" }
+]

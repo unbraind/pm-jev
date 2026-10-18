@@ -1,0 +1,72 @@
+id: pm-jev-hx9w
+title: Fit and validate repository-separated decision calibration
+description: "Temperature scaling with repository-held-out validation, precision-qualified thresholds, SDK settings receipts and calibrated decision integration."
+type: Feature
+status: in_progress
+priority: 2
+tags[2]: added,calibration
+created_at: "2026-10-18T03:02:22.167Z"
+updated_at: "2026-10-18T04:17:20.040Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: "Temperature and threshold selection use calibration repositories only and validate on distinct repositories; SDK-locked settings preserve unrelated keys and pin task/model/data/question identities; compatible decisions use calibrated probabilities, enforce qualification and stricter explicit thresholds, retain legacy behavior without a fit, and report receipts; bounded public-data acceptance and measured README results are committed."
+parent: pm-jev-0w3q
+dependencies[3]{id,kind,created_at,author,source_kind,author_source}:
+  pm-jev-2mg8,related,"2026-10-18T03:03:33.416Z",codex-agent,"cli:update:dep",detected
+  pm-jev-3ntg,related,"2026-10-18T03:03:33.416Z",codex-agent,"cli:update:dep",detected
+  pm-jev-82ip,blocked_by,"2026-10-18T03:03:33.416Z",codex-agent,"cli:update:dep",detected
+comments[7]{created_at,author,text}:
+  "2026-10-18T03:03:27.426Z",codex-agent,"Plan: read only committed public fleet tracker snapshots through certified complete SDK reads. Deterministic repository-separated sampling; temperature scaling fit on calibration repositories only; validate precision with a one-sided Wilson bound before qualifying any threshold. Serial local-only requests, at most 150 calls, no release."
+  "2026-10-18T03:13:10.936Z",codex-agent,"Implemented content-free evaluation receipts, committed public snapshots with no source writes, label-hidden triage, typed-edge labels and deterministic non-edge controls. Temperature fits use separate repository identities and proposal precision excludes none predictions. A serial niced 140-call live comparison is running across six verified public repositories. Existing focused legacy regressions are running alongside new real-temp-tracker tests."
+  "2026-10-18T03:20:14.848Z",codex-agent,"Persistence regression found that normalized SDK settings callbacks omit opaque package sections: a later task receipt could replace earlier calibrations. Fixed by reading the opaque Jev section through the SDK while holding the audited mutation lock, then merging the task/model key. Regression verifies both prior calibrations and unrelated Jev settings survive. Calibrated link inference now uses the same pairwise state as evaluation; legacy batching remains unchanged. Source checks, lint, docstrings and zero-duplication checks have passed; full coverage measurement is running."
+  "2026-10-18T03:33:54.353Z",codex-agent,"Independent behavioural revert proofs: (1) restoring only decideTriage from origin/main makes node --test --test-name-pattern=\"calibrated triage uses\" test/calibrated-decisions.test.ts fail 0/1 at the calibrated-probability assertion. (2) removing only the calibration-repository filter in calibrateObservations makes node --test --test-name-pattern=\"temperature minimizes\" test/decision-calibration.test.ts fail 0/1: held-out label changes move temperature from 0.05 to 20. (3) replacing only the locked opaque settings read in runEvaluationCommand with normalized current.jev makes node --test --test-name-pattern=\"calibrate persists\" test/evaluation-command.test.ts fail 0/1 because the existing keep_alive setting disappears. All mutants exited 1 with assertion failures, no timeouts; all three source files restored byte-for-byte. Tests import TypeScript directly, so no rebuild is needed for these proofs. Corrected focused suite previously passed 14/14; final added identity/retrieval cases are rerunning."
+  "2026-10-18T03:50:54.521Z",codex-agent,"Corrected focused suite passes 16/16. All three new modules measured 100 percent statements, branches, functions and lines in the dedicated coverage run. Final policy regressions cover unqualified streaming, changed schemas, missing channels, removal of calibration, model replacement during inference and stricter explicit confidence flags. Calibration defaults to 100 requests (evaluation 40), because a 40-case split cannot reach the 0.9 one-sided precision bound even if perfect. No live target or standard was lowered. SDK operation IDs are invocation-scoped so reapplying an intentionally removed calibration is not mistaken for replay. Compatibility inspection confirms the declared host floor exports both repeatable flags and audited settings mutation; dependency pins and release policy remain unchanged. The first full npm gate passed 184 tests but failed coverage during edits; the first Bun gate exposed a synthetic operation-ID replay bug and missing streaming branches. Those are corrected; neither failed gate is counted as a pass. Final isolated full gates follow."
+  "2026-10-18T04:09:21.099Z",codex-agent,"Final isolated release gates pass through the pinned pm runner: npm run release:check and bun run release:check each run 185/185 tests, zero failures/skips/cancellations/todos. Native Node and c8 both report 100 percent lines, branches, functions and statements across all 15 authored sources. Duplication is zero, production audit reports zero findings, changelog checks pass and publication attestation remains valid. The earlier native function gap was a threshold-sort comparator never exercised by uniform synthetic probabilities; mixed-confidence cases now verify selection of the highest-coverage qualifying threshold. Strict tracker health passes with required merge drivers and valid workspace history. Test-result tracking is disabled by existing project policy; these comments retain the sanitized receipts without changing that policy. The release-enable variable is absent and workflow defaults remain disabled. Follow-up pm-jev-w1zj records partial receipts and explicit call counts after endpoint interruption; no incomplete calibration is saved."
+  "2026-10-18T04:17:06.187Z",codex-agent,"Bounded live receipt complete: 140 successful serial niced systemOne requests plus one verified failed small-model load attempt, total 141/150. Six public committed tracker snapshots, no source writes. Held-out 4b triage type: n=30, accuracy 40.0%, ECE 0.191 to 0.215; priority: 53.3%, ECE 0.133 to 0.118. Held-out 4b link: n=21, accuracy 47.6%, ECE 0.096 to 0.151. Held-out 0.8b triage type: n=21, accuracy 4.8%, ECE 0.519 to 0.093; priority: 33.3%, ECE 0.380 to 0.112. Every channel threshold remains null at target precision 0.9; calibration authorizes zero proposals. Raw 0.8 confidence gates before other mutation guards accept 3, 0, 0, 0 and 5 held-out decisions respectively. Link/small-model folds are too small for the uncertainty bound even if perfect. On identical 40-item inputs, 4b versus 0.8b raw type accuracy is 50.0% versus 12.5%, priority 60.0% versus 30.0%. Full class metrics, ten-bin reliability, curves, source/model/data digests, request latency and tokens are in calibration/public-report-v1.json. Audited SDK settings contain all three model/task receipts; no target was lowered. Packed Node and native Bun CLI smoke checks pass four scenarios: repeated source flags, JSON eval, variadic calibration with actual SDK persistence, and default TOON. Synthetic models and public-visibility doubles were used for install checks. The pinned linked focused command passes 16/16 tests. Release remains disabled; source and gate code are stable."
+files[12]{path,scope}:
+  .agents/pm/settings.json,project
+  calibration/public-report-v1.json,project
+  decision-calibration.ts,project
+  evaluation-command.ts,project
+  index.ts,project
+  test/calibrated-decisions.test.ts,project
+  test/decision-calibration.test.ts,project
+  test/evaluation-command.test.ts,project
+  test/evaluation-fixtures.ts,project
+  test/fixtures/evaluation.json,project
+  test/tracker-evaluation.test.ts,project
+  tracker-evaluation.ts,project
+tests[4]:
+  - command: node --test test/decision-calibration.test.ts test/tracker-evaluation.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-18T03:12:55.933Z"
+      source_kind: local_mutation
+      source_ref: feat/eval-and-calibrate
+  - command: "npm run release:check"
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-18T03:12:55.933Z"
+      source_kind: local_mutation
+      source_ref: feat/eval-and-calibrate
+  - command: "bun run release:check"
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-18T03:12:55.933Z"
+      source_kind: local_mutation
+      source_ref: feat/eval-and-calibrate
+  - command: node --test test/decision-calibration.test.ts test/tracker-evaluation.test.ts test/evaluation-command.test.ts test/calibrated-decisions.test.ts
+    scope: project
+    timeout_seconds: 600
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-18T03:34:45.843Z"
+      source_kind: local_mutation
+      source_ref: feat/eval-and-calibrate
+docs[1]{path,scope}:
+  README.md,project
+body: ""
