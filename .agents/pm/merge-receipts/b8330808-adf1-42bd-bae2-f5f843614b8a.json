@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "b8330808-adf1-42bd-bae2-f5f843614b8a",
+  "item_path": ".agents/pm/features/pm-jev-3ntg.toon",
+  "item_id": "pm-jev-3ntg",
+  "requested_preference": "ours",
+  "requested_preference_applied": false,
+  "conflict_resolution": "latest_document_update",
+  "fields_from_theirs": [
+    "actual_result",
+    "close_reason",
+    "closed_at",
+    "completed_at",
+    "expected_result",
+    "resolution",
+    "status"
+  ],
+  "union_fields": [],
+  "merged_field_hashes": {
+    "actual_result": "60d19d6e09abce889c6b577f0546a0c60b3a194ae0d94a919d08d85305bd7cca",
+    "close_reason": "8082e8f238780c7ff073e93e81e4d5ea10c7ca5c4a9562411f473ca57db0b488",
+    "closed_at": "96c720f4abf3612af0739741622949c294683648301bbf76e1e757ad08245296",
+    "completed_at": "6f269c275bec37316d0a575a0f48cadbe4fd7a72e5237b8ff6f75d810e0189b2",
+    "expected_result": "0062c435a5ff2b4f7c1b016e5eed68f3e279c6c27d73384d325da472d4b57a64",
+    "resolution": "5f0b6d5790acb8e38da71e3e804d7415d3f7447a9c66a55d4165b29966fd5139",
+    "status": "e5e67a803409586c54cee3f18f070017df2159c846604afbe3c7a7b600a341d9"
+  },
+  "decisions": [],
+  "operation": {
+    "kind": "merge",
+    "original_head": "9ac0d185a90998bf40f15cc2648e0086941c8073",
+    "original_blob": "625fc308fff6ab9d3ff3b9cb91603be2a1ed049b"
+  },
+  "state": "reconciled",
+  "created_at": "2026-10-18T05:50:58.503Z",
+  "value_availability": "hash_only",
+  "value_policy": "bounded_non_sensitive_scalars_v1",
+  "reconciled_at": "2026-10-18T06:29:17.349Z"
+}

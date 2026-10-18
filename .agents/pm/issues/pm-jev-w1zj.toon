@@ -1,0 +1,16 @@
+id: pm-jev-w1zj
+title: Preserve partial evaluation receipts and call counts on interruption
+description: "An endpoint timeout stops evaluation safely before configuration persistence, but completed observations and the attempted-call count are not returned. A bounded run then needs an external access log to reconstruct its spent budget. Follow-up: emit a redacted partial receipt and explicit attempted/completed counts on failure or interruption, without fitting or saving from incomplete evidence."
+type: Issue
+status: open
+priority: 2
+tags[3]: deferred,eval,reliability
+created_at: "2026-10-18T03:58:44.531Z"
+updated_at: "2026-10-18T04:17:34.563Z"
+author: codex-agent
+acceptance_criteria: "A synthetic two-request run failing on the second request reports two attempts and one completed example, preserves hashes and validated observations, makes no configuration write and does not retry; the failure receipt excludes source text and local paths."
+parent: pm-jev-0w3q
+dependencies[2]{id,kind,created_at,author,source_kind,author_source}:
+  pm-jev-82ip,related,"2026-10-18T04:17:34.007Z",codex-agent,"cli:update:dep",detected
+  pm-jev-hx9w,related,"2026-10-18T04:17:34.007Z",codex-agent,"cli:update:dep",detected
+body: ""

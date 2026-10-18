@@ -1,0 +1,13 @@
+id: pm-jev-i3wg
+title: PR 24 immutable history integration needs an approved merge procedure
+description: "CodeRabbit discussion_r4305962880 remains valid at cbd9093. Four events in history streams pm-jev-2mg8 and pm-jev-3ntg have altered before_hash and record_hash values, with original events nested in reanchor_evidence. Fresh clone strict health passes after receipt reference reconciliation, but health does not attest immutable history preservation. Existing history must not be rewritten or repaired by this review worker. The orchestrator must provide an approved immutable-history integration procedure before this review finding can be marked fixed."
+type: Issue
+status: open
+priority: 1
+tags[3]: deferred,history,integration
+created_at: "2026-10-18T06:37:50.900Z"
+updated_at: "2026-10-18T06:37:50.900Z"
+author: codex-agent
+acceptance_criteria: Preserve original branch event hashes through an approved immutable merge procedure; verify fresh clone strict health; obtain independent review without rewriting existing history in this review round.
+parent: pm-jev-0w3q
+body: ""

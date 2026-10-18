@@ -1,6 +1,8 @@
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import type { Questions, SystemOneResult, ChoiceResponse } from "@typesafe-ai/sdk";
+import type { CalibrationUse } from "./decision-calibration.ts";
 import { createPmCliExpectedError, isPmCliExpectedError } from "@unbrained/pm-cli/sdk";
+import { RelationshipGraph } from "@unbrained/pm-cli/sdk/graph";
 import type { ExtensionApi } from "@unbrained/pm-cli/sdk/authoring";
 import type { ItemMetadata, PmSettings } from "@unbrained/pm-cli/sdk";
 /** Re-export the structural expected-error predicate for package consumers. */
@@ -90,7 +92,7 @@ export declare function resolveJevEndpoint(pmRoot: string, env: Record<string, s
  * @param env - Environment to read `TYPESAFE_API_KEY` from for hosted calls.
  * @returns A configured client bound to the selected provider.
  */
-export declare function createJevClient(resolved: ResolvedJevEndpoint, env: Record<string, string | undefined>): TypeSafeClient;
+export declare function createJevClient(resolved: ResolvedJevEndpoint, env: Record<string, string | undefined>, maxRetries?: number): TypeSafeClient;
 /**
  * Enforce the hosted privacy gate: refuse external transfer unless the caller
  * explicitly opted in via `jev.allow_external=true` AND provided an API key.
@@ -257,6 +259,13 @@ export interface TriageDecision {
     readonly type_question_sha256: string;
     /** Fields written when --apply was passed; empty otherwise. */
     readonly applied: readonly string[];
+    /** Active calibration identity and channel qualification; omitted under the legacy policy. */
+    readonly calibration?: {
+        readonly type: CalibrationUse | null;
+        readonly priority: CalibrationUse | null;
+        readonly raw_type_probabilities: Record<string, number>;
+        readonly raw_priority_probabilities: Record<string, number>;
+    };
 }
 /**
  * Build the batched triage question catalog for one tracker.
@@ -269,10 +278,31 @@ export interface TriageDecision {
  * @returns The typed question map for the triage batch.
  */
 export declare function buildTriageQuestions(settings: PmSettings): Questions;
+/** Build label-hidden type/priority questions used by evaluation and calibrated triage. */
+export declare function buildClassificationQuestions(settings: PmSettings): Questions;
+/** Build the exact compact production relationship ontology for one candidate. */
+export declare function buildLinkQuestion(candidate: string): Questions[string];
+/** Build the shared duplicate-screening request without source routing labels. */
+export declare function buildDedupeRequest(title: string, body: string, candidates: readonly DedupeCandidate[]): {
+    state: {
+        proposed: {
+            title: string;
+            body: string;
+        };
+        candidates: {
+            title: string;
+            id: string;
+            type: string;
+            status: string;
+            score: number;
+        }[];
+    };
+    questions: Questions;
+};
 /** Bind the non-mutating candidate to the current type without adding routing fields to evidence. */
 export declare function withCurrentType(questions: Questions, current: string): Questions;
 /** Resolve a validated label distribution in code: ambiguity abstains, weak changes retain the current type. */
-export declare function resolveTriageType(answer: ChoiceResponse, current: string, definitions: Record<string, string>, marginThreshold?: number): TriageProposals["type"];
+export declare function resolveTriageType(answer: ChoiceResponse, current: string, definitions: Record<string, string>, marginThreshold?: number, changeProbability?: number): TriageProposals["type"];
 /** One compact batch row, intentionally excluding source text and answer distributions. */
 export interface BacklogTriageRow {
     readonly item: string;
@@ -286,6 +316,8 @@ export interface BacklogTriageRow {
     readonly sensitive: number | null;
     readonly reason: string | null;
     readonly abstained: boolean;
+    /** Active channel fit and thresholds when calibration is in use. */
+    readonly calibration?: TriageDecision["calibration"];
 }
 /** Constant-size terminal receipt retained by host hooks and embedding callers. */
 export interface BacklogTriageSummary {
@@ -333,6 +365,11 @@ export interface DedupeDecision {
     };
     /** Versioned question catalog that produced the decision. */
     readonly catalog_version: string;
+    /** Active calibration identity and channel qualification; omitted under the legacy policy. */
+    readonly calibration?: CalibrationUse & {
+        readonly raw_probability: number;
+        readonly qualifies: boolean;
+    };
 }
 /**
  * Rank tracker items against a proposed title deterministically, in code.
@@ -361,6 +398,10 @@ export interface LinkProposal {
     readonly reason: string | null;
     readonly existing: boolean;
     readonly margin: number;
+    /** Exact threshold and calibration evidence when a compatible saved fit exists. */
+    readonly calibration?: CalibrationUse;
+    /** Uncalibrated winner probability retained for comparison. */
+    readonly raw_probability?: number;
 }
 /** One item decision with redacted evidence and the exact authorized edge additions. */
 export interface LinkDecision {
@@ -372,7 +413,13 @@ export interface LinkDecision {
     readonly model: string;
     readonly catalog_version: string;
     readonly usage: SystemOneResult<Questions>["usage"];
+    /** Active calibration identity and channel qualification; omitted under the legacy policy. */
+    readonly calibration?: {
+        readonly receipt_sha256: string;
+    };
 }
+/** Find canonical existing edges including reverse inverse kinds, symmetric edges and scalar parents. */
+export declare function existingLinkKinds(graph: RelationshipGraph, source: string, target: string): Set<string>;
 /** Answer for one caller-defined question, shape-checked by question type. */
 export type AskAnswer = {
     readonly kind: "noul";

@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "9bef0dc5-9a95-441e-94ec-96e2ceb92c84",
+  "item_path": ".agents/pm/issues/pm-jev-2mg8.toon",
+  "item_id": "pm-jev-2mg8",
+  "requested_preference": "ours",
+  "requested_preference_applied": false,
+  "conflict_resolution": "latest_document_update",
+  "fields_from_theirs": [
+    "actual_result",
+    "close_reason",
+    "closed_at",
+    "completed_at",
+    "expected_result",
+    "resolution",
+    "status"
+  ],
+  "union_fields": [],
+  "merged_field_hashes": {
+    "actual_result": "4f6c71c6ec85973e9e8382bbaca92ad60df7068731c452b45756d2ef8d002772",
+    "close_reason": "5fa9ea082239b69db6177939f4a2d1974077c51dd2d46a02f9f7acc15679b435",
+    "closed_at": "62a11211e21ba397ba90e27d7051269ff1ab7784f9fdaa23c9b613cd1da71c95",
+    "completed_at": "95e62ad91219c1fe84d1aa56bda5327744d7a1c3de6cd0902e6f90d164ca6edb",
+    "expected_result": "20dca898f31d31531ed938211851aca5728a54db1988ad4e5ac03e9fbf699a47",
+    "resolution": "311a27f4481b219ef45e3dfb4b9be8903b1cdceb9c21eb339ff2e20253598cb4",
+    "status": "e5e67a803409586c54cee3f18f070017df2159c846604afbe3c7a7b600a341d9"
+  },
+  "decisions": [],
+  "operation": {
+    "kind": "merge",
+    "original_head": "9ac0d185a90998bf40f15cc2648e0086941c8073",
+    "original_blob": "c0cc8e25d4b7219bf8b89447faa3bc4d654ff661"
+  },
+  "state": "reconciled",
+  "created_at": "2026-10-18T05:50:48.717Z",
+  "value_availability": "hash_only",
+  "value_policy": "bounded_non_sensitive_scalars_v1",
+  "reconciled_at": "2026-10-18T06:29:17.338Z"
+}
