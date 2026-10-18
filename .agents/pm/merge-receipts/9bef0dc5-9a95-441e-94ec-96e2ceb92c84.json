@@ -31,8 +31,9 @@
     "original_head": "9ac0d185a90998bf40f15cc2648e0086941c8073",
     "original_blob": "c0cc8e25d4b7219bf8b89447faa3bc4d654ff661"
   },
-  "state": "pending",
+  "state": "reconciled",
   "created_at": "2026-10-18T05:50:48.717Z",
   "value_availability": "hash_only",
-  "value_policy": "bounded_non_sensitive_scalars_v1"
+  "value_policy": "bounded_non_sensitive_scalars_v1",
+  "reconciled_at": "2026-10-18T06:29:17.338Z"
 }
