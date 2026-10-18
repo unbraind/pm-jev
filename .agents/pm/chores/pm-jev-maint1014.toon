@@ -2,12 +2,17 @@ id: pm-jev-maint1014
 title: Enable the gated GitHub issue sync and drop the braces chain
 description: Enable the SHA-pinned fail-closed issue sync caller and remove fast-glob by adopting published pm-ops 2026.10.14. Keep existing thresholds and verify isolated npm and Bun release gates. This combined maintenance chore implements the dependency remediation tracked by pm-jev-2rp1 and leaves those items open for verification.
 type: Chore
-status: in_progress
+status: closed
 priority: 1
 tags[1]: changed
 created_at: "2026-10-14T09:54:14.621Z"
-updated_at: "2026-10-15T13:40:16.562Z"
+updated_at: "2026-10-17T08:04:17.669Z"
+closed_at: "2026-10-17T08:04:17.663Z"
+completed_at: "2026-10-15T15:41:29.000Z"
 author: codex-agent
+resolution: "Delivered by https://github.com/unbraind/pm-jev/pull/16 (merge de5884b8abe3, head 2f5ac37043e7)"
+expected_result: "Delivered by the linked pull request, merged after its head check gate passed."
+actual_result: "Merged at 2026-10-15T15:41:29Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[7]{created_at,author,text}:
   "2026-10-14T09:54:31.644Z",codex-agent,"Plan: author this package own thin caller, pin workflow SHA and pm-github to 2026.10.13, and verify isolated npm/Bun release gates without changing thresholds. Remove fast-glob and any jscpd4 alias; pin pm-ops 2026.10.14. Published changelog reviewed: attestation alias/function rejection, read-only pack prepare, release repair and Windows proof support. Duplication now uses Node glob with jscpd 5. No workflow dispatch, bot requests, merges, or source function changes."
   "2026-10-14T09:56:27.909Z",codex-agent,"Audit before: full 4 vulnerabilities (4 high), production 0. After: full 0, production 0; npm ls braces is empty. The caller runs at 17 3 * * * UTC. It validates access, previews the complete plan, imports with --gate, verifies repeat-import idempotency and privacy, then checks strict health before commit/push/PR. SHA pin matches published pm-github 2026.10.13. Actionlint skipped: binary missing and offline npx registry metadata unavailable. GitHub Actions PR-creation setting verified enabled. Direct fast-glob import found in the documentation scanner; native glob replacement and regression proof will follow."
@@ -31,4 +36,5 @@ tests[2]{command,scope,timeout_seconds,pm_context_mode,provenance{author,created
   "env -u PM_PATH -u PM_AUTHOR HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 bun run release:check",project,3600,tracker,codex-agent,"2026-10-14T09:57:34.133Z",local_mutation,chore/gated-issue-sync-and-braces-free-gates
 docs[1]{path,scope}:
   CHANGELOG.md,project
+close_reason: "{\"pr\":16,\"url\":\"https://github.com/unbraind/pm-jev/pull/16\",\"merge_commit_sha\":\"de5884b8abe3d60a247c7f140c4613719a7f5bcd\",\"head_sha\":\"2f5ac37043e7af855b7a729a2c513ababe27a959\",\"merged_at\":\"2026-10-15T15:41:29Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""
