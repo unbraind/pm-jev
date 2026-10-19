@@ -302,7 +302,7 @@ node --test test/dedupe-evaluation.test.ts
 ```
 
 Delivery checks: `npm run release:check` and `bun run release:check` both pass
-231/231 tests with disposable HOME and global/system Git configuration disabled.
+232/232 tests with disposable HOME and global/system Git configuration disabled.
 All four measured coverage dimensions are 100%, and duplication is zero at the
 unchanged thresholds. The pm-linked release selection passes 2/2 commands. The
 focused tracker/replay suite passes 23/23 tests; the separate artifact receipt

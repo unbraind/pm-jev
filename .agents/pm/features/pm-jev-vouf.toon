@@ -6,10 +6,12 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T15:15:26.929Z"
-updated_at: "2026-10-19T20:54:52.455Z"
+updated_at: "2026-10-19T22:58:28.489Z"
+assignee: pi-agent
+claim_principal: pi-agent
 author: codex-agent
 parent: pm-jev-0w3q
-comments[22]{created_at,author,text}:
+comments[26]{created_at,author,text}:
   "2026-10-19T15:15:41.354Z",codex-agent,"Plan: preserve pre-create title screening; add bounded pair scanning over certified complete SDK reads, sequential noul verification, a symmetric abstain band, and explicit apply/close authorization with receipts. Evaluate public tracker-copy duplicate closures versus lexical hard controls, using disjoint duplicate groups and a maximum of 200 pairs per local model arm. Canonical checkouts and external data remain read-only."
   "2026-10-19T15:23:37.144Z",codex-agent,"Implemented real-SDK pair scans and mutation guards. Focused pair regressions pass, including abstention, confidence authorization, explicit close gating, receipt history, read-only scans and model-unavailable refusal. Public evaluation inventory: 29 verified public copies; 2 skipped before tracker reads. Strict resolvable labels yield 35 positives (31 historical consolidation receipts plus 4 standard closures), paired with 70 lexical controls. Duplicate-group hashing separates dev and held-out items; retrieval misses count as false negatives. Calls run sequentially under nice."
   "2026-10-19T15:27:55.026Z",codex-agent,"Independent behavioral revert proofs: disabling only the positive probability cutoff makes the real-tracker apply regression fail (duplicate versus abstain); forcing closure without checking the extra close flag makes it fail (closed versus open). Source restored byte-for-byte; the same focused test passes 1/1. Command: node --test --test-name-pattern=\"pair apply writes only above threshold\" test/dedupe.test.ts. Threshold selection is dev-F1 with a 0.8 model floor; this is an operating-point calibration, not a 95% precision guarantee. Lexical controls are closed-world labels and may contain unrecorded duplicates."
@@ -32,21 +34,29 @@ comments[22]{created_at,author,text}:
   "2026-10-19T20:42:45.064Z",codex-agent,"Independent round 3 revert proofs: restoring only the prior runPairDedupe confidence handling leaves the new real-tracker test unchanged and fails 1/1 with the erroneous pair-confidence rejection for an omitted flag. Restoring the prior README leaves the linked documentation regression unchanged and fails with stale 217/217 delivery text. Both files restored byte-for-byte; the focused confidence test and linked documentation check pass. Full source verification follows with unchanged thresholds. PM file linking requires repeated --add flags for separate bare paths; the comma-bearing shorthand was rejected and corrected without changing tracker data."
   "2026-10-19T20:54:06.079Z",codex-agent,"Round 3 final unchanged-source gates pass through the PM-linked runner: 2/2 selected release commands, each under disposable HOME with global/system Git identity disabled and an 1800-second timeout. npm run release:check and bun run release:check each pass 231/231 tests, zero failures/skips/cancellations/todos. Focused tracker tests pass 23/23; the separate artifact receipt suite passes 5/5 (combined 28/28). Linked documentation assertion passes 1/1. Both independent reverts fail as recorded above. Coverage remains 100% in all four dimensions across 18 runtime/script TypeScript sources: 4986/4986 statements and lines, 1954/1954 branches, 193/193 functions. Duplication is zero across 51 sources, production audit is clean, changelog and publication-attestation checks pass. Calibration measurements and dependency pins are unchanged. No new PM CLI/SDK defect was found. Existing limitations remain: no joint source/target lock and partial evaluation receipts tracked separately in pm-jev-w1zj."
   "2026-10-19T20:54:49.918Z",codex-agent,"Fresh git clone --no-local of implementation commit 28ab04d passes pm health --strict-exit --json with the pinned dependencies, required merge drivers and isolated HOME/Git identity. All four commit identity/privacy tests pass; tracked clone files remain unchanged. Health retains only the two existing stale in-progress advisories. Releasing the claim for orchestrator verification; this item remains in_progress. No review thread replies, resolutions, bot mentions, merge or release were performed."
-files[7]{path,scope}:
+  "2026-10-19T21:47:21.433Z",pi-agent,"PR 30 review round: two review threads remain open (README delivery-check counts, dedupe --title help text). Verifying both against the current code and gate output."
+  "2026-10-19T22:04:03.028Z",pi-agent,"PR 30 review round: fixed the dedupe --title help finding (index.ts). The flag description no longer claims --title is required; it now says 'Pre-create screening: title of the item about to be created; omit to scan existing pairs', and the dedupe help examples gained a pair-scan example ('pm jev dedupe --limit-pairs 20') while keeping both title-screening examples. Revert proof: restoring the old '(required)' description and dropping the pair-scan example makes the new registration-contract test fail with 'The input did not match the regular expression /Pre-create screening/'; the fixed tree passes it."
+  "2026-10-19T22:04:13.387Z",pi-agent,"PR 30 review round: README delivery-check counts re-verified against the current gate output. Full suite now runs 232/232 tests (231 before this round plus the new help-contract regression), focused tracker/replay suite still 23/23, separate artifact receipt suite 5/5, pm-linked release selection 2/2. README updated from 231/231 to 232/232; the other counts were already exact. Regression: the documentation assertion command now asserts 232/232 in README and fails if the text drifts."
+  "2026-10-19T22:58:28.489Z",pi-agent,"PR 30 review round gates: full release gate passes on both runners at unchanged thresholds. npm run release:check exit 0 and bun run release:check exit 0, each with disposable HOME and global/system Git configuration disabled: 232/232 tests, coverage 100% lines/branches/functions, duplication zero, pm-linked release selection unchanged, changelog check clean, release attestation verified. pm health strict exit fails only on a pre-existing global pm-github extension host version skew in this environment; history_drift is clean and no merge receipts are pending (no merge was needed this round: the branch head already contains origin/main)."
+files[8]{path,scope}:
   calibration/dedupe-report-v1.json,project
   decision-calibration.ts,project
   dedupe-evaluation.ts,project
   dedupe.ts,project
   index.ts,project
+  test/agent-ux.test.ts,project
   test/dedupe-evaluation.test.ts,project
   test/dedupe.test.ts,project
-tests[6]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[9]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   nice -n 15 node --test test/dedupe.test.ts test/dedupe-evaluation.test.ts,project,codex-agent,"2026-10-19T15:31:33.074Z",local_mutation,feat/jev-dedupe
   "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 npm run release:check",project,codex-agent,"2026-10-19T15:34:41.051Z",local_mutation,feat/jev-dedupe
   "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 bun run release:check",project,codex-agent,"2026-10-19T15:34:43.957Z",local_mutation,feat/jev-dedupe
   node --test test/dedupe-evaluation.test.ts,project,codex-agent,"2026-10-19T16:50:36.874Z",local_mutation,feat/jev-dedupe
   node --test test/dedupe.test.ts,project,codex-agent,"2026-10-19T18:56:22.625Z",local_mutation,feat/jev-dedupe
   "node --input-type=module -e 'import assert from \"node:assert/strict\"; import { readFileSync } from \"node:fs\"; const text = readFileSync(\"README.md\", \"utf8\"); assert.match(text, /231\\/231 tests with disposable HOME/); assert.match(text, /focused tracker\\/replay suite passes 23\\/23 tests; the separate artifact receipt\\nsuite passes 5\\/5/); assert.match(text, /pm-linked release selection passes 2\\/2 commands/);'",project,codex-agent,"2026-10-19T20:42:06.749Z",local_mutation,feat/jev-dedupe
+  "node --input-type=module -e 'import assert from \"node:assert/strict\"; import { readFileSync } from \"node:fs\"; const text = readFileSync(\"README.md\", \"utf8\"); assert.match(text, /232\\/232 tests with disposable HOME/); assert.match(text, /focused tracker\\/replay suite passes 23\\/23 tests; the separate artifact receipt\\nsuite passes 5\\/5/); assert.match(text, /pm-linked release selection passes 2\\/2 commands/);'",project,pi-agent,"2026-10-19T22:04:18.611Z",local_mutation,feat/jev-dedupe
+  "node --test --test-name-pattern \"dedupe help presents --title as optional screening with a pair-scan example\" test/agent-ux.test.ts",project,pi-agent,"2026-10-19T22:04:25.285Z",local_mutation,feat/jev-dedupe
+  nice -n 15 node --test test/*.test.ts,project,pi-agent,"2026-10-19T22:04:29.430Z",local_mutation,feat/jev-dedupe
 docs[1]{path,scope}:
   README.md,project
 body: ""

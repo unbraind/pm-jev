@@ -1702,7 +1702,7 @@ const DEDUPE_FLAGS = [
     { long: "--min-confidence", value_name: "p", value_type: "string", description: "Raise the measured model cutoff and symmetric abstention band (minimum floor 0.8)" },
     { long: "--apply", value_type: "boolean", description: "Link qualifying newer duplicates with a receipt" },
     { long: "--close", value_type: "boolean", description: "Also close linked duplicates; requires --apply" },
-    { long: "--title", value_name: "text", value_type: "string", description: "Title of the item about to be created (required)" },
+    { long: "--title", value_name: "text", value_type: "string", description: "Pre-create screening: title of the item about to be created; omit to scan existing pairs" },
     { long: "--body", value_name: "text", value_type: "string", description: "Optional proposed body text for context" },
     { long: "--limit", value_name: "n", value_type: "string", description: "Maximum candidates ranked into the choice (default 8, max 32)" },
 ];
@@ -1780,7 +1780,7 @@ function registerCommands(api) {
         intent: "Verify duplicate work in a bounded tracker scan or screen a title before creation",
         flags: DEDUPE_FLAGS,
         failure_hints: ["Ranking is deterministic in code; only the confirmation needs the decision endpoint (pm jev doctor)"],
-        examples: ['pm jev dedupe --title "Fix login crash"', 'pm jev dedupe --title "Fix login crash" --body "Steps: ..." --limit 12'],
+        examples: ['pm jev dedupe --title "Fix login crash"', 'pm jev dedupe --title "Fix login crash" --body "Steps: ..." --limit 12', 'pm jev dedupe --limit-pairs 20'],
         /** Dispatch the registered command with the host-resolved tracker and flags. */
         run: (ctx) => ctx.options.title === undefined ? runPairDedupe(ctx) : decisionOutput(ctx, runDedupeCommand),
     }));
