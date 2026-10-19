@@ -302,19 +302,22 @@ node --test test/dedupe-evaluation.test.ts
 ```
 
 Delivery checks: `npm run release:check` and `bun run release:check` both pass
-217/217 tests with disposable HOME and global/system Git configuration disabled.
+231/231 tests with disposable HOME and global/system Git configuration disabled.
 All four measured coverage dimensions are 100%, and duplication is zero at the
-unchanged thresholds. The pm-linked runner passes 3/3 commands, including the
-14-test focused tracker/replay suite. Independently disabling the positive cutoff
+unchanged thresholds. The pm-linked release selection passes 2/2 commands. The
+focused tracker/replay suite passes 23/23 tests; the separate artifact receipt
+suite passes 5/5. Independently disabling the positive cutoff
 changes tracker bytes below threshold and fails the apply regression; forcing
 closure without the close flag fails with `closed` versus `open`. Restored source
 passes. The packed CLI's 20-row public pm-github-copy dogfood leaves authoritative
 tracker bytes unchanged; its first ten verdicts are included in the PR.
-A fresh `git clone --no-local` of implementation commit `e360669` passes strict
+A fresh `git clone --no-local` of the review candidate passes strict
 health with required merge drivers and all four commit-identity tests, using the
 pinned installed dependencies and isolated HOME/Git configuration. The delivery
-receipt adds only documentation and append-only tracker evidence; implementation
-source and measured artifacts retain the tested bytes.
+receipt includes the configured-confidence regression and append-only tracker
+evidence; measured calibration artifacts retain their original bytes. Pair scans
+clamp a shared confidence setting below 0.5 while retaining the calibrated safety
+floor; explicitly supplied pair confidence flags must still be between 0.5 and 1.
 
 ## How good are the decisions?
 

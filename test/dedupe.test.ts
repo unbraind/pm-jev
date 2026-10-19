@@ -135,6 +135,49 @@ test("pair scan rejects invalid flags and refuses unavailable models with a reme
   });
 });
 
+test("pair scans clamp low configured confidence while preserving floors and explicit flag validation", async () => {
+  await scenario(async (fixture, server) => {
+    const pair = await seed(fixture);
+    const path = getSettingsPath(fixture.pmRoot);
+    const settings = JSON.parse(readFileSync(path, "utf8"));
+    for (const min_confidence of [0, 0.3]) {
+      settings.jev = { min_confidence };
+      writeFileSync(path, JSON.stringify(settings));
+      const before = trackerSnapshot(fixture.pmRoot);
+      probability(server, 0.79);
+      assert.equal((await scan(fixture))[0].decision, "abstain");
+      assert.equal((await scan(fixture, { apply: true }))[0].decision, "abstain");
+      assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+      for (const minConfidence of ["0.3", "1.1", "bad"]) await assert.rejects(scan(fixture, { minConfidence }), /--min-confidence must be between 0.5 and 1/);
+    }
+    probability(server, 0.8);
+    assert.equal((await scan(fixture, { apply: true }))[0].reason, "linked_with_receipt");
+    const linked = (await fixture.pm.get(pair.a.id, { full: true })).item;
+    assert.equal(linked.status, "open");
+    assert.match(linked.comments![0].text, /probability=0.8, threshold=0.8,/);
+    settings.jev = { min_confidence: 0.95 };
+    writeFileSync(path, JSON.stringify(settings));
+    const before = trackerSnapshot(fixture.pmRoot);
+    probability(server, 0.9);
+    assert.equal((await scan(fixture, { apply: true }))[0].decision, "abstain");
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+    assert.equal((await scan(fixture, { min_confidence: "0.5" }))[0].decision, "duplicate");
+    settings.jev = { min_confidence: 0.3 };
+    writeFileSync(path, JSON.stringify(settings));
+    const calibratedBefore = trackerSnapshot(fixture.pmRoot);
+    process.env.PM_JEV_MODEL = "tev1:0.8b";
+    const measured = PAIR_CALIBRATION["tev1:0.8b"];
+    server.setReply((request, response, body) => {
+      if (request.url === "/api/tags") { response.end(JSON.stringify({ models: [{ name: "tev1:0.8b", digest: measured.digest }] })); return; }
+      const result = answers((body as { questions: Questions }).questions);
+      result.answers.same_work = { type: "noul", noul: 0.8 };
+      response.end(JSON.stringify(result));
+    });
+    assert.equal((await scan(fixture, { apply: true }))[0].decision, "abstain");
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), calibratedBefore);
+  });
+});
+
 test("pair apply refuses concurrent changes and avoids duplicate chains in a batch", async () => {
   await scenario(async (fixture, server) => {
     const pair = await seed(fixture);

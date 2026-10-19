@@ -134,8 +134,9 @@ export async function runPairDedupe(ctx: CommandHandlerContext): Promise<PairVer
   if (ctx.args.length > 0 || ctx.options.body !== undefined || ctx.options.limit !== undefined) throw createPmCliExpectedError("Use --limit-pairs for tracker scanning, or --title with the pre-create screening flags.");
   const resolved = await resolveJevEndpoint(ctx.pm_root, process.env);
   const config = requireCallableEndpoint(resolved);
-  const requested = Number(readStringOption(ctx.options, "minConfidence", ["min_confidence"]) ?? config.minConfidence);
-  if (!Number.isFinite(requested) || requested < 0.5 || requested > 1) throw createPmCliExpectedError("--min-confidence must be between 0.5 and 1 for pair decisions.");
+  const rawConfidence = readStringOption(ctx.options, "minConfidence", ["min_confidence"]);
+  const requested = rawConfidence === undefined ? Math.max(0.5, config.minConfidence) : Number(rawConfidence);
+  if (rawConfidence !== undefined && (!Number.isFinite(requested) || requested < 0.5 || requested > 1)) throw createPmCliExpectedError("--min-confidence must be between 0.5 and 1 for pair decisions.");
   const calibration = config.provider === "ollama" ? PAIR_CALIBRATION[config.model] : undefined;
   const threshold = Math.max(requested, calibration?.threshold ?? 0.8);
   const pm = ctx.sdk?.client ?? new PmClient({ pmRoot: ctx.pm_root, cwd: ctx.source_workspace_root, author: ctx.global.author });
