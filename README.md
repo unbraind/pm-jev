@@ -295,6 +295,11 @@ changes tracker bytes below threshold and fails the apply regression; forcing
 closure without the close flag fails with `closed` versus `open`. Restored source
 passes. The packed CLI's 20-row public pm-github-copy dogfood leaves authoritative
 tracker bytes unchanged; its first ten verdicts are included in the PR.
+A fresh `git clone --no-local` of implementation commit `e360669` passes strict
+health with required merge drivers and all four commit-identity tests, using the
+pinned installed dependencies and isolated HOME/Git configuration. The delivery
+receipt adds only documentation and append-only tracker evidence; implementation
+source and measured artifacts retain the tested bytes.
 
 ## How good are the decisions?
 
