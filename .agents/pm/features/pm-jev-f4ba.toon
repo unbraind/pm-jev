@@ -1,0 +1,62 @@
+id: pm-jev-f4ba
+title: Retrieve same-tracker labelled exemplars for evaluation and calibration
+description: "Deterministic lexical (BM25) same-tracker exemplar retrieval for eval and calibrate, optional local embedding similarity, budgeted typed exemplar context, majority-class and kNN baselines beside the model arms, and exemplar-aware calibrated channel identity."
+type: Feature
+status: in_progress
+priority: 2
+tags[3]: calibration,eval,"pkg:pm-jev"
+created_at: "2026-10-19T00:18:41.220Z"
+updated_at: "2026-10-19T03:03:43.798Z"
+author: pi-agent
+parent: pm-jev-0w3q
+comments[11]{created_at,author,text}:
+  "2026-10-19T00:18:59.044Z",pi-agent,"Starting retrieval-augmented evaluation: in-process BM25 over title/body with leakage guards (target, future items, evaluation sample excluded), budgeted typed exemplar context (--exemplar-tokens, default 1200), optional local qwen3-embedding:0.6b similarity falling back to lexical, majority-class and kNN-vote baselines beside the with/without-exemplar model arms, and the exemplar setting folded into the calibrated channel identity. No production triage/link decision path changes; the 0.9 precision gate is untouched."
+  "2026-10-19T01:03:50.810Z",pi-agent,"Implementation and regressions complete: new in-process BM25 exemplar ranking over title/body (deterministic ties by item ids), leakage guards excluding the target, items created after it and evaluation-sample items, optional local qwen3-embedding:0.6b similarity with whole-corpus batching and per-corpus lexical fallback, four-characters-per-token budgeted typed exemplar context, majority-class and kNN-vote baselines beside the with/without-exemplar model arms, and the exemplar setting folded into the calibrated channel key (legacy task/model keys unchanged). Independent behavioural revert proofs, each with only the named function reverted and the source restored byte-for-byte afterwards: (1) eligibleExemplars returned the unfiltered pool -> node --test --test-name-pattern='exemplar eligibility refuses' test/exemplar-retrieval.test.ts fails 0/1; (2) exemplarContext ignored the budget -> 'exemplar context truncates' fails 0/1; (3) similarityOrder lost the id tie-break -> 'bm25 ranking is similarity-ordered' fails 0/1; (4) calibrationKey dropped the exemplar setting -> 'persisted exemplar settings validate' fails 0/1 and 'exemplar calibration identity separates' fails 0/1. All mutants exited 1; no timeouts. Full suite now runs 200/200 tests with unchanged 100 percent statements/branches/functions/lines and zero duplication."
+  "2026-10-19T02:13:54.365Z",codex-agent,"codex-agent took over the interrupted pi-agent work. Reviewed the existing diff and kept the retrieval/evaluation implementation. Completing prompt headroom enforcement, exact context receipts and calibration identity validation before the seeded local four-arm measurement, behavioural revert proofs, unchanged npm/Bun gates and PR CI. Release remains disabled."
+  "2026-10-19T02:19:14.293Z",codex-agent,"Review retained the interrupted implementation and fixed three gaps: JSON array delimiters now count against the exemplar budget; prompt headroom also uses measured plain-request input usage; receipts distinguish retrieved units from budgeted units actually sent and hash the exact context. Calibration lookup now rejects a valid but mismatched persisted exemplar setting. Real temporary-tracker regressions cover escaped text truncation, exhausted headroom, leakage refusal and content-free receipts. Verified the historical source archive digests and the exact 40 triage example hashes against the existing public receipt; settings remain k=4 and 1200 estimated tokens without evaluation-driven tuning."
+  "2026-10-19T02:23:57.161Z",codex-agent,"Behavioural revert proofs repeated independently on the resumed implementation. Each run changed only the named function behaviour and restored the source byte-for-byte afterwards: eligibleExemplars without leakage filtering -> node --test --test-name-pattern='exemplar evaluation wires' test/evaluation-command.test.ts; exemplarContext without truncation -> node --test --test-name-pattern='real tracker exemplar context' test/evaluation-command.test.ts; similarityOrder without id tie-break -> node --test --test-name-pattern='bm25 ranking is similarity-ordered' test/exemplar-retrieval.test.ts; exemplarBudget without the headroom clamp -> the real tracker context regression; readCalibration without the exact saved-setting comparison -> node --test --test-name-pattern='exemplar calibration identity separates' test/evaluation-command.test.ts; runEvaluationCommand emitting context text instead of its digest -> the real tracker context regression. All six failed with assertion errors and exit 1; none timed out. The restored normal npm release gate passed 202/202 tests, 100 percent statements/branches/functions/lines and zero duplication; final isolated npm/Bun runs follow."
+  "2026-10-19T02:27:08.769Z",codex-agent,"Found a leftover background evaluation from the interrupted agent using the older evaluator without the prompt clamp. Terminated that duplicate read-only process after verifying its exact command; source trackers and services were untouched. Its incomplete cohorts are excluded from the canonical comparison. An earlier incomplete link cohort had 53 successful responses followed by one HTTP 400 at excessive prompt length, confirming why headroom clamping was necessary. Historical incomplete triage call totals are unavailable; the existing partial-receipt limitation is tracked by pm-jev-w1zj. The resumed run retains the fixed default retrieval setting and exact historical examples."
+  "2026-10-19T02:31:14.079Z",codex-agent,"Final identity-isolated gates passed through pm test pm-jev-f4ba --run --progress --timeout 1800: the linked focused regressions passed, and both env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check and the equivalent bun run release:check passed. Each full suite passed 202/202 tests with zero skips/failures, 16 source files, 100 percent statements/branches/functions/lines, zero duplication, 494 documented declarations and zero production audit findings. Runtime result tracking is disabled by the existing tracker policy, so this comment records the observed results; that policy was not changed. A global pm-github host-version mismatch affects the non-isolated health invocation; package-scoped health passes with an empty global extension scope. The pinned pm CLI/SDK remains unchanged."
+  "2026-10-19T02:42:27.069Z",codex-agent,"Clarification of the excluded earlier cohort: its 53 successful HTTP responses comprise 52 System One model POSTs plus one inventory GET. The model-only count is therefore 52 successful calls and one prompt-length refusal (53 attempts). The incomplete earlier triage model-call total remains unavailable. Only the complete resumed cohorts will supply the comparison metrics and reported cohort request total."
+  "2026-10-19T02:53:09.385Z",codex-agent,"Complete resumed triage cohort: local tev1:4b, seed 20261018, sample 40, k=4, requested exemplar budget 1200, identical historical source archives/example hashes. Type accuracy / ECE: majority 35.0% / 0.6500000000000000; kNN 45.0% / 0.1645833333333334; plain model 50.0% / 0.1289355135892542; exemplar model 47.5% / 0.2531809288279711. Priority accuracy / ECE: majority 57.5% / 0.4250000000000000; kNN 55.0% / 0.1625000000000000; plain model 60.0% / 0.1255807762835390; exemplar model 42.5% / 0.2496073295197622. All arms answered 40/40. Exemplars hurt both triage accuracies and ECE; kNN alone beats the exemplar model on priority. The run made 79 successful model requests, with one empty budgeted-context arm reusing the validated plain answer. All 40 budgets were clamped to prompt headroom; mean retrieved count 3.825. Link measurement now runs serially with the same settings."
+  "2026-10-19T03:03:40.969Z",codex-agent,"Completed four-arm measurement, local tev1:4b, seed 20261018, sample 40, fixed lexical k=4 and requested 1200 tokens. Link kind accuracy / ECE: majority 35.294117647058826% / 0.6470588235294117 (12/34); kNN 29.411764705882354% / 0.5882352941176471 (10/34); plain model 40.0% / 0.1095933423023699 (16/40); exemplar model 32.5% / 0.1546364205833196 (13/40). Six link baseline abstentions are explicit. Together with the prior triage comment, exemplars lower all three accuracies and worsen all three ECEs; kNN beats the exemplar model on priority. Full-precision four-arm metrics, per-class precision/recall, coverage curves and receipts are in calibration/exemplar-report-v1.json and the README table. Both cohorts match the historical archive digests and exact first 40 example hashes; an independent baseline calculation matches every baseline result. The complete resumed cohorts made 153 successful model calls (79 triage, 74 link), zero failed responses and seven reused validated plain answers. This total excludes incomplete earlier cohorts. All six fitted model channels have null thresholds at the unchanged 0.9 precision gate; folds are 19 calibration / 21 validation, too small to establish that bound even if perfect."
+  "2026-10-19T03:03:42.431Z",codex-agent,"Additional real prompt-clamp proof without extra model calls: the previously refused link example sha256 76818baeced35920347870f684e3e20afb6c9182dd803b17a44104c42217109a was matched uniquely to the same public tracker snapshot and seeded sample. Its earlier 9152-byte augmented request returned HTTP 400. The resumed request uses an effective 406-token estimate budget and two budgeted exemplars, returns HTTP 200 with 1589 input tokens, and passes the same validated response contract. The report stores both context digests and statuses without text. Proxy model-only request counts match all 74 link calls. Release remains disabled; no merge, tag, publish or source-tracker writes occurred."
+files[8]{path,scope}:
+  decision-calibration.ts,project
+  evaluation-command.ts,project
+  exemplar-retrieval.ts,project
+  package.json,project
+  test/decision-calibration.test.ts,project
+  test/evaluation-command.test.ts,project
+  test/exemplar-retrieval.test.ts,project
+  tracker-evaluation.ts,project
+tests[3]:
+  - command: node --test test/exemplar-retrieval.test.ts test/evaluation-command.test.ts test/decision-calibration.test.ts test/tracker-evaluation.test.ts
+    scope: project
+    provenance:
+      author: pi-agent
+      created_at: "2026-10-19T01:04:26.711Z"
+      source_kind: local_mutation
+      source_ref: feat/retrieval-exemplars
+  - command: "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check"
+    scope: project
+    timeout_seconds: 1800
+    pm_context_mode: tracker
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T02:24:00.014Z"
+      source_kind: local_mutation
+      source_ref: feat/retrieval-exemplars
+  - command: "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 bun run release:check"
+    scope: project
+    timeout_seconds: 1800
+    pm_context_mode: tracker
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T02:24:00.014Z"
+      source_kind: local_mutation
+      source_ref: feat/retrieval-exemplars
+docs[2]{path,scope}:
+  calibration/exemplar-report-v1.json,project
+  README.md,project
+body: ""

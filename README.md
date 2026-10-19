@@ -197,17 +197,63 @@ that should receive the calibration; every `--from` is a read-only source:
 ```sh
 nice -n 15 pm jev eval --task triage \
   --from fleet/pm-alpha/.agents/pm --from fleet/pm-beta/.agents/pm \
-  --model tev1:4b --sample 40 --seed 20261018 --json
+  --model tev1:4b --sample 40 --seed 20261018 --retrieval lexical --json
 nice -n 15 pm jev calibrate --task link \
   --from fleet/pm-alpha/.agents/pm --from fleet/pm-beta/.agents/pm \
   --model tev1:4b --sample 100 --seed 20261018 --target-precision 0.9
 ```
 
+### Same-tracker exemplars
+
+`--retrieval lexical|embedding` turns on retrieval-augmented evaluation for
+triage and link tasks: for every sampled target the evaluator retrieves k
+labelled exemplars (`--exemplars`, default 4, maximum 8) from the target's own
+tracker, composes each exemplar's title/body excerpt plus its label into typed
+prompt context under a token budget (`--exemplar-tokens`, default 1200, a
+four-characters-per-token estimate including JSON array overhead), and asks the same validated
+questions with and without that context. The effective budget is clamped to
+the prompt headroom left by the base request, because the local System One
+endpoint refuses prompts above 2050 tokens and never truncates input; targets
+whose base request leaves no headroom reuse the plain-model answer and are
+counted. Headroom uses the larger of the base request estimate and observed
+plain-request input usage, with a tokenizer safety reserve. Malformed responses
+are still rejected before anything is measured. Exemplars never include the target item,
+any item created after it, or any item in the current evaluation sample, and
+they come only from the target's own repository, so calibration and validation
+repositories never share context. Lexical ranking is deterministic in-process
+BM25 over title and body with stable item-id tie-breaks. `--retrieval embedding`
+uses the local `qwen3-embedding:0.6b` model when it is installed (one batched
+request per repository); a missing model or failed batch falls back to lexical
+and the report records the fallback.
+
+An exemplar run reports four arms for every channel: the majority class of the
+target's eligible same-tracker pool, a kNN vote over the retrieved exemplars
+(no model), the model without exemplars (exactly the legacy prompt), and the
+model with exemplars. All four carry accuracy, per-class precision/recall,
+ten-bin ECE and the decile coverage/precision curve. Retrieval coverage,
+reused baseline calls (targets whose eligible pool is empty get the plain-model
+answer for the exemplar arm) and mean retrieved count are reported, and every
+exemplar observation records retrieved ids/digests, the ids/digests that actually
+fit the prompt, the effective budget, and a hash of the exact truncated context.
+Receipts contain no exemplar text. Baseline accuracy and reliability use the
+answered population; `abstained` exposes targets without eligible evidence.
+Exemplars apply to `pm jev eval` and `pm jev calibrate`
+only; the production triage/link/dedupe commands are unchanged.
+
+The exemplar setting is part of the calibrated channel identity: `pm jev
+calibrate --retrieval …` persists its receipt under a task/model/exemplar
+settings key, so an exemplar-fit receipt never authorizes exemplar-free
+production decisions, legacy receipts keep their historical task/model keys,
+and both can coexist. Autonomous action still requires the unchanged one-sided
+95% precision lower bound at the target; nothing about exemplars loosens it.
+
 Repeat `--from` or supply additional tracker roots after its first value. Output
 is TOON by default and full-precision JSON with `--json`. Sampling is seeded,
 without replacement and balanced across repositories; changing the data commit
-changes its identity. Evaluation defaults to 40 requests and calibration to 100; the hard cap is 150 per
-invocation, requests are serial and evaluator retries are disabled. Keep a shared
+changes its identity. Evaluation defaults to 40 sampled examples and calibration
+to 100; the hard cap is 150 examples per invocation. Exemplar runs can make two
+requests per example (plain and augmented); requests are serial and evaluator
+retries are disabled. Keep a shared
 budget across invocations. Reports include accuracy, per-class precision/recall,
 ten equal-width reliability bins, expected calibration error (ECE), NLL,
 coverage/precision at decile thresholds, actual request latency and token totals.
@@ -285,6 +331,72 @@ metrics. No known duplicate targets were present in these six live source
 trackers; dedupe ground-truth and calibration paths are covered by the committed
 synthetic fixture. Partial failure receipts remain tracked in pm-jev-w1zj.
 
+
+### Four-arm retrieval comparison (2026-10-19)
+
+Fresh local Ollama runs on the same six historical source commits and the exact
+first 40 seeded examples per task (seed 20261018), verified by archive digests
+and example hashes. Retrieval used the fixed defaults k=4 and a requested
+1200-token estimate budget; neither was tuned on evaluation outcomes. The
+legacy table above uses held-out subsets; this comparison uses all 40 targets.
+Full-precision distributions, per-class precision/recall, ECE bins, coverage
+curves, model/data digests and calibration receipts are in
+[calibration/exemplar-report-v1.json](calibration/exemplar-report-v1.json).
+
+| Task | Arm | Answered | Accuracy (correct / answered) | ECE | Empirical coverage@90% |
+|---|---|---:|---:|---:|---:|
+| Triage type | Majority class | 40/40 | 35.0% (14/40) | 0.650000 | 0.0% |
+| Triage type | kNN vote | 40/40 | 45.0% (18/40) | 0.164583 | 0.0% |
+| Triage type | Model without exemplars | 40/40 | 50.0% (20/40) | 0.128936 | 5.0% |
+| Triage type | Model with exemplars | 40/40 | 47.5% (19/40) | 0.253181 | 0.0% |
+| Triage priority | Majority class | 40/40 | 57.5% (23/40) | 0.425000 | 0.0% |
+| Triage priority | kNN vote | 40/40 | 55.0% (22/40) | 0.162500 | 0.0% |
+| Triage priority | Model without exemplars | 40/40 | 60.0% (24/40) | 0.125581 | 10.0% |
+| Triage priority | Model with exemplars | 40/40 | 42.5% (17/40) | 0.249607 | 5.0% |
+| Link kind | Majority class | 34/40 | 35.3% (12/34) | 0.647059 | 0.0% |
+| Link kind | kNN vote | 34/40 | 29.4% (10/34) | 0.588235 | 0.0% |
+| Link kind | Model without exemplars | 40/40 | 40.0% (16/40) | 0.109593 | 10.0% |
+| Link kind | Model with exemplars | 40/40 | 32.5% (13/40) | 0.154636 | 5.0% |
+
+Exemplars **did not help**: all three accuracies fell and all three ECEs worsened.
+kNN alone beats the exemplar model on priority (55.0% versus 42.5%), although
+the plain model is stronger still (60.0%). The link baselines abstain on six
+targets without eligible context; their accuracy and ECE are conditional on the
+34 answered targets. Empirical coverage@90% is the greatest coverage over all
+40 targets at the reported fixed decile thresholds with observed precision at
+least 0.9. It is descriptive, and does not establish autonomous qualification.
+
+Every fitted model channel remains unqualified: all six plain/exemplar
+thresholds are null under the unchanged one-sided 95% precision lower bound of
+0.9. These 40-example repository splits have 19 calibration and 21 validation
+decisions per channel; even perfect folds this small cannot establish that
+bound. The comparison is exploratory and enables no autonomous actions.
+
+The complete cohorts made **153 successful model requests** (79 triage and 74
+link), with seven validated plain answers reused when no budgeted exemplar
+context was available. Triage clamped all 40 requested budgets; link clamped
+35. The receipt distinguishes retrieved exemplars from the units actually sent.
+The same link example that previously failed with an excessive 9,152-byte
+request now succeeds with a 406-token estimate budget, two context exemplars
+and 1,589 observed input tokens; its before/after hashes and statuses are
+recorded without text. Earlier incomplete cohorts are excluded: one link run
+had 52 successful model calls and one prompt-length refusal, and the earlier
+triage call total is unavailable (pm-jev-w1zj). The 153 count covers only the two
+complete resumed cohorts.
+
+To repeat the comparison on these public trackers, keep their recorded commits
+and run each task serially:
+
+```sh
+for task in triage link; do
+  nice -n 15 pm jev eval --task "$task" \
+    --from fleet/pm-jev/.agents/pm --from fleet/pm-csv/.agents/pm \
+    --from fleet/pm-graph/.agents/pm --from fleet/pm-vcs/.agents/pm \
+    --from fleet/pm-presets/.agents/pm --from fleet/pm-starter/.agents/pm \
+    --model tev1:4b --sample 40 --seed 20261018 \
+    --retrieval lexical --exemplars 4 --exemplar-tokens 1200 --json
+done
+```
 
 ## Configuration and privacy
 

@@ -6,6 +6,32 @@ export const EVALUATION_VERSION = "pm-jev-eval/1";
 export function evidenceHash(value) {
     return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
+/**
+ * Stable settings key of one calibrated channel identity.
+ *
+ * The exemplar setting is part of the calibrated channel identity: an
+ * exemplar-augmented fit never silently authorizes exemplar-free decisions,
+ * and legacy receipts keep their historical task/model key.
+ *
+ * @param task - Ground-truth decision task of the channel.
+ * @param model - Exact decision model tag.
+ * @param exemplars - Exemplar retrieval setting, or undefined without exemplars.
+ * @returns The settings key under which this channel's receipt is stored.
+ */
+export function calibrationKey(task, model, exemplars) {
+    return exemplars === undefined ? evidenceHash([task, model])
+        : evidenceHash([task, model, "exemplars", exemplars.retrieval, exemplars.count, exemplars.token_budget, exemplars.embedding_model ?? null]);
+}
+/** Validate the persisted shape of an exemplar setting without trusting it. */
+export function validExemplarSetting(value) {
+    if (typeof value !== "object" || value === null)
+        return false;
+    const setting = value;
+    return (setting.retrieval === "lexical" || setting.retrieval === "embedding") &&
+        Number.isInteger(setting.count) && setting.count >= 1 && setting.count <= 8 &&
+        Number.isInteger(setting.token_budget) && setting.token_budget >= 1 && setting.token_budget <= 65536 &&
+        (setting.retrieval === "lexical" ? setting.embedding_model === undefined : typeof setting.embedding_model === "string" && setting.embedding_model !== "");
+}
 /** Fingerprint fixed decision semantics while treating duplicate candidate identities as exchangeable evidence. */
 export function questionFingerprint(channel, question) {
     const q = question;
@@ -87,7 +113,7 @@ export function repositorySplit(repositories, seed) {
     return { calibration: ordered.slice(0, cut).sort(), validation: ordered.slice(cut).sort() };
 }
 /** Fit channels and freeze candidate thresholds before inspecting validation outcomes. */
-export function calibrateObservations(task, model, digest, rows, seed, target) {
+export function calibrateObservations(task, model, digest, rows, seed, target, exemplars) {
     const split = repositorySplit(rows.map(/** Partition all channels from a repository together. */ /** Partition all channels from a repository together. */ row => row.repository), seed);
     const channels = {};
     for (const channel of [...new Set(rows.map(/** Fit type and priority separately. */ /** Fit type and priority separately. */ row => row.channel))].sort()) {
@@ -109,6 +135,7 @@ export function calibrateObservations(task, model, digest, rows, seed, target) {
     }
     const data = [...new Map(rows.map(/** Collapse provenance once per repository snapshot. */ /** Collapse provenance once per repository snapshot. */ row => [row.repository, { repository: row.repository, commit: row.commit, data_sha256: row.data_sha256 }])).values()].sort(/** Keep receipt encoding independent of read order. */ (a, b) => a.repository.localeCompare(b.repository));
     return { version: EVALUATION_VERSION, method: "temperature_scaling_nll_grid", task, model, model_digest: digest, target_precision: target, seed,
+        ...(exemplars === undefined ? {} : { exemplars }),
         calibration_repositories: split.calibration, validation_repositories: split.validation, data, observations_sha256: evidenceHash(rows), channels };
 }
 /** Read package-private settings through the SDK; normalized host settings intentionally omit them. */
@@ -127,10 +154,17 @@ export async function readOpaqueJevSettings(pmRoot) {
     return typeof section === "object" && section !== null ? section : {};
 }
 /** Read and validate the task/model calibration without exposing other project settings. */
-export async function readCalibration(pmRoot, task, model) {
+export async function readCalibration(pmRoot, task, model, exemplars) {
     const section = await readOpaqueJevSettings(pmRoot);
-    const record = section.calibrations?.[evidenceHash([task, model])];
+    const record = section.calibrations?.[calibrationKey(task, model, exemplars)];
     if (record?.version !== EVALUATION_VERSION || record.task !== task || record.model !== model)
+        return undefined;
+    // The exemplar setting is channel identity: a receipt fitted under one setting never applies to another.
+    if ((exemplars === undefined) !== (record.exemplars === undefined))
+        return undefined;
+    if (record.exemplars !== undefined && !validExemplarSetting(record.exemplars))
+        throw new Error("Saved calibration is invalid; rerun jev calibrate");
+    if (calibrationKey(task, model, record.exemplars) !== calibrationKey(task, model, exemplars))
         return undefined;
     if (typeof record.channels !== "object" || record.channels === null || !/^[a-f0-9]{64}$/.test(record.model_digest) ||
         Object.values(record.channels).some(/** Malformed persisted arithmetic must never authorize writes. */ /** Malformed persisted arithmetic must never authorize writes. */ fit => !fit || !Number.isFinite(fit.temperature) || fit.temperature < 0.05 || fit.temperature > 20 ||
@@ -151,8 +185,8 @@ export async function modelDigest(baseUrl, model, timeoutMs) {
     return digest;
 }
 /** Activate a saved record only for the exact local digest; aliases and replacements do not silently reuse it. */
-export async function activeCalibration(pmRoot, task, config) {
-    const record = await readCalibration(pmRoot, task, config.model);
+export async function activeCalibration(pmRoot, task, config, exemplars) {
+    const record = await readCalibration(pmRoot, task, config.model, exemplars);
     if (record === undefined || config.provider !== "ollama")
         return undefined;
     if (await modelDigest(config.baseUrl, config.model, config.timeoutMs) !== record.model_digest)
