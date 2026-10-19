@@ -21,6 +21,7 @@
 import { APIConnectionError, APIError, APITimeoutError, APIUserAbortError, TypeSafeClient, } from "@typesafe-ai/sdk";
 import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.js";
+import { runPairDedupe, guardDedupeMutation } from "./dedupe.js";
 import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked, readOpaqueJevSettings } from "./decision-calibration.js";
 import { DEPENDENCY_KIND_VALUES, createPmCliExpectedError, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
 import { RelationshipGraph, resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk/graph";
@@ -1201,6 +1202,8 @@ export function rankDedupeCandidates(items, title, limit) {
  * @throws {PmCliExpectedError} Configuration, transport, or validation failure.
  */
 async function runDedupeCommand(ctx) {
+    if (["status", "type", "limitPairs", "limit_pairs", "minConfidence", "min_confidence", "apply", "close"].some(/** Refuse flags whose write semantics apply only to pair scanning. */ /** Refuse flags whose write semantics apply only to pair scanning. */ key => ctx.options[key] !== undefined))
+        throw createPmCliExpectedError("Tracker scan flags cannot be combined with --title; omit --title to scan existing pairs.");
     const title = readStringOption(ctx.options, "title");
     if (title === undefined || title.trim().length === 0) {
         throw createPmCliExpectedError('jev dedupe needs --title "<text>" for the item about to be created.', {
@@ -1693,6 +1696,12 @@ const TRIAGE_FLAGS = [
 /** Flags for the dedupe command. */
 const DEDUPE_FLAGS = [
     FULL_FLAG,
+    { long: "--status", value_name: "open|all", value_type: "string", description: "Scan existing items (default open); --title selects pre-create screening" },
+    { long: "--type", value_name: "t", value_type: "string", description: "Scan only this item type" },
+    { long: "--limit-pairs", value_name: "N", value_type: "string", description: "Maximum sequential pair decisions (default 20, maximum 200)" },
+    { long: "--min-confidence", value_name: "p", value_type: "string", description: "Raise the measured model cutoff and symmetric abstention band (minimum floor 0.8)" },
+    { long: "--apply", value_type: "boolean", description: "Link qualifying newer duplicates with a receipt" },
+    { long: "--close", value_type: "boolean", description: "Also close linked duplicates; requires --apply" },
     { long: "--title", value_name: "text", value_type: "string", description: "Title of the item about to be created (required)" },
     { long: "--body", value_name: "text", value_type: "string", description: "Optional proposed body text for context" },
     { long: "--limit", value_name: "n", value_type: "string", description: "Maximum candidates ranked into the choice (default 8, max 32)" },
@@ -1767,13 +1776,13 @@ function registerCommands(api) {
     }));
     api.registerCommand(defineCommand({
         name: "jev dedupe",
-        description: "Screen a proposed item title for duplicates before pm create, with one model-confirmed choice",
-        intent: "Let agents run this before pm create to avoid filing duplicate work",
+        description: "Detect existing duplicate pairs with abstaining typed decisions, or screen a title before creation",
+        intent: "Verify duplicate work in a bounded tracker scan or screen a title before creation",
         flags: DEDUPE_FLAGS,
         failure_hints: ["Ranking is deterministic in code; only the confirmation needs the decision endpoint (pm jev doctor)"],
         examples: ['pm jev dedupe --title "Fix login crash"', 'pm jev dedupe --title "Fix login crash" --body "Steps: ..." --limit 12'],
         /** Dispatch the registered command with the host-resolved tracker and flags. */
-        run: (ctx) => decisionOutput(ctx, runDedupeCommand),
+        run: (ctx) => ctx.options.title === undefined ? runPairDedupe(ctx) : decisionOutput(ctx, runDedupeCommand),
     }));
     api.registerCommand(defineCommand({
         name: "jev ask",
@@ -1827,6 +1836,7 @@ export default defineExtension({
     activate(api) {
         api.hooks.beforeMutation(guardTriageMutation);
         api.hooks.beforeMutation(guardLinkMutation);
+        api.hooks.beforeMutation(guardDedupeMutation);
         registerCommands(api);
     },
 });

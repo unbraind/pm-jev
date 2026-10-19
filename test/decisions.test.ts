@@ -124,7 +124,7 @@ test("ask, dedupe, gate and discovery dispatch on a real temporary tracker", asy
     assert.equal((await run("gate", { noul: "contains a defect", text: "a defect", threshold: "0" })).exitCode, undefined);
     assert.equal((await run("models")).handled, true);
     assert.equal((await run("doctor")).result && ((await run("doctor")).result as { status: string }).status, "ok");
-    for (const [command, options, args] of [["triage", {}, []], ["ask", {}, []], ["ask", {}, [id]], ["ask", { questions: `${fixture.cwd}/missing.json` }, [id]], ["dedupe", {}, []], ["gate", {}, []], ["gate", { noul: "test" }, []], ["gate", { noul: "test", item: id, text: "both" }, []], ["gate", { noul: "test", text: "test", threshold: "2" }, []]] as [string, Record<string, unknown>, string[]][]) {
+    for (const [command, options, args] of [["triage", {}, []], ["ask", {}, []], ["ask", {}, [id]], ["ask", { questions: `${fixture.cwd}/missing.json` }, [id]], ["dedupe", { title: "" }, []], ["gate", {}, []], ["gate", { noul: "test" }, []], ["gate", { noul: "test", item: id, text: "both" }, []], ["gate", { noul: "test", text: "test", threshold: "2" }, []]] as [string, Record<string, unknown>, string[]][]) {
       await assert.rejects(run(command, options, args));
     }
     writeFileSync(qpath, "{broken"); await assert.rejects(run("ask", { questions: qpath }, [id]));

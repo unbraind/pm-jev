@@ -24,7 +24,8 @@
     "calibration/type-dataset-v1.json",
     "calibration/type-report-v1.json",
     "calibration/public-report-v1.json",
-    "calibration/exemplar-report-v1.json"
+    "calibration/exemplar-report-v1.json",
+    "calibration/dedupe-report-v1.json"
   ],
   "scripts": {
     "build": "tsc",

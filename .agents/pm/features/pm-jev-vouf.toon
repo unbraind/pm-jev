@@ -1,0 +1,32 @@
+id: pm-jev-vouf
+title: Detect existing duplicate items with calibrated pair decisions
+description: "Add bounded title and body lexical candidates, sequential typed pair verification, abstention and explicit SDK apply/close receipts. Measure lexical and local model arms on public duplicate closures with held-out labels."
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-19T15:15:26.929Z"
+updated_at: "2026-10-19T15:44:37.325Z"
+author: codex-agent
+parent: pm-jev-0w3q
+comments[6]{created_at,author,text}:
+  "2026-10-19T15:15:41.354Z",codex-agent,"Plan: preserve pre-create title screening; add bounded pair scanning over certified complete SDK reads, sequential noul verification, a symmetric abstain band, and explicit apply/close authorization with receipts. Evaluate public tracker-copy duplicate closures versus lexical hard controls, using disjoint duplicate groups and a maximum of 200 pairs per local model arm. Canonical checkouts and external data remain read-only."
+  "2026-10-19T15:23:37.144Z",codex-agent,"Implemented real-SDK pair scans and mutation guards. Focused pair regressions pass, including abstention, confidence authorization, explicit close gating, receipt history, read-only scans and model-unavailable refusal. Public evaluation inventory: 29 verified public copies; 2 skipped before tracker reads. Strict resolvable labels yield 35 positives (31 historical consolidation receipts plus 4 standard closures), paired with 70 lexical controls. Duplicate-group hashing separates dev and held-out items; retrieval misses count as false negatives. Calls run sequentially under nice."
+  "2026-10-19T15:27:55.026Z",codex-agent,"Independent behavioral revert proofs: disabling only the positive probability cutoff makes the real-tracker apply regression fail (duplicate versus abstain); forcing closure without checking the extra close flag makes it fail (closed versus open). Source restored byte-for-byte; the same focused test passes 1/1. Command: node --test --test-name-pattern=\"pair apply writes only above threshold\" test/dedupe.test.ts. Threshold selection is dev-F1 with a 0.8 model floor; this is an operating-point calibration, not a 95% precision guarantee. Lexical controls are closed-world labels and may contain unrecorded duplicates."
+  "2026-10-19T15:37:27.170Z",codex-agent,"Real-label held-out evaluation: 24 pairs (8 positives,16 lexical controls), dev 81 (27/54); 35 real positive closures overall, 8 retrieval misses overall and 1 held out. Lexical: precision 30.4%, recall 87.5%, F1 45.2%, abstain 0%, 62.0 ms/pair. tev1:0.8b: precision 46.2%, recall 75.0%, F1 57.1%, abstain 41.7%, 892.5 ms/pair. tev1:4b: precision/recall/F1 62.5%, abstain 16.7%, 5571.7 ms/pair. Wilson intervals and F1 envelope are in README and calibration/dedupe-report-v1.json. Total elapsed 810.5 s; 107 sequential calls/model including an excluded identical-text control and a counted replacement repetition after postprocessing failure. Cutoffs use dev-F1, 0.8 model floor, three positive predictions and one true positive. Controls remain closed-world labels; small correlated samples and weak precision preclude a readiness claim."
+  "2026-10-19T15:42:22.242Z",codex-agent,"Packed CLI dogfood: pm --json jev dedupe --status open returned 20 rows on the copied public pm-github tracker using real tev1:4b. Authoritative tracker byte hashes were identical before and after. The final candidate implementation reproduces every packed-run pair after the exact-text fallback correction; all 105 benchmark pairs/scores also remain identical. The PR will include the first ten complete verdict rows. SDK/UX observations: the pinned SDK provides related but no duplicate-of mutation kind, and update plus closure emits separate history events. Normal-home health sees an existing global pm-github host-version skew; isolated CI identity is used for package gates."
+  "2026-10-19T15:44:35.427Z",codex-agent,"Final linked runner passed 3/3 commands: the focused real-tracker and artifact replay suite, npm release:check and bun release:check. Both release gates used disposable HOME with global/system Git configuration disabled and unchanged coverage/duplication thresholds. All coverage dimensions are 100%; duplication is zero. Strict health passes with merge drivers under isolated HOME; normal HOME still reports the unrelated global extension host-version skew. No items were closed; claim will be released for orchestrator verification."
+files[6]{path,scope}:
+  calibration/dedupe-report-v1.json,project
+  dedupe-evaluation.ts,project
+  dedupe.ts,project
+  index.ts,project
+  test/dedupe-evaluation.test.ts,project
+  test/dedupe.test.ts,project
+tests[3]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  nice -n 15 node --test test/dedupe.test.ts test/dedupe-evaluation.test.ts,project,codex-agent,"2026-10-19T15:31:33.074Z",local_mutation,feat/jev-dedupe
+  "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 npm run release:check",project,codex-agent,"2026-10-19T15:34:41.051Z",local_mutation,feat/jev-dedupe
+  "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 bun run release:check",project,codex-agent,"2026-10-19T15:34:43.957Z",local_mutation,feat/jev-dedupe
+docs[1]{path,scope}:
+  README.md,project
+body: ""

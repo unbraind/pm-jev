@@ -5,6 +5,7 @@
 ### Added
 
 - Compact decision output for agent context budgets ([pm-jev-qriu](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-qriu.toon))
+- Detect existing duplicate items with calibrated pair decisions ([pm-jev-vouf](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-vouf.toon))
 - Retrieve same-tracker labelled exemplars for evaluation and calibration ([pm-jev-f4ba](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-f4ba.toon))
 - Evaluate decisions against public tracker ground truth ([pm-jev-82ip](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-82ip.toon))
 - Fit and validate repository-separated decision calibration ([pm-jev-hx9w](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-hx9w.toon))
