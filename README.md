@@ -182,8 +182,9 @@ Candidate generation uses Unicode-normalized title, description and body charact
 trigrams with Dice overlap, an inverted index, and eight neighbors per item. In
 large trackers it removes trigrams occurring in more than max(64, 2% of items)
 documents before scoring. These corpus-frequency stopgrams keep common boilerplate
-from dominating work; an exact-text fallback preserves identical-item groups even
-when all their trigrams are common. The global score order is stable; `--limit-pairs` defaults to
+from dominating work; a normalized-text fallback preserves identical semantic
+groups, including punctuation variants, even when all their trigrams are common.
+The global score order is stable; `--limit-pairs` defaults to
 20 and accepts 1–200. No lexical issue-code heuristic promotes UTF-8 to a near-exact
 match. Model input is limited to each title's first 320 characters and 1600
 characters of distinct description/body; closure labels, ids and annotations are
@@ -199,7 +200,8 @@ The real-label dev split fits cutoffs 0.8340513300400778 for `tev1:0.8b` and
 0.8 for `tev1:4b`. The effective cutoff is the greater of its
 operating point and the requested/configured min-confidence. Other models retain
 the existing 0.8 floor without a measured pair calibration. Measured local models
-must match their recorded digest both before and after inference. These cutoffs
+must match their recorded digest both before and after inference; both digest
+reads share the invocation deadline, including in preview. These cutoffs
 maximize dev F1 subject to the floor, at least three positive predictions and one
 true positive; they are not a high-precision qualification.
 
@@ -210,8 +212,14 @@ mutation kind. Closing additionally requires `--close`; the reason is exactly
 write. Evidence is re-read before apply and the source receipt is checked under the
 item lock. A canonical item and a modified source are protected from becoming
 duplicate chains within that batch. The SDK records link/comment updates and
-closure as separate history events; there is no cross-item transaction or rollback
-promise. The canonical target is rechecked before the update but is not locked
+closure as separate history events. The link guard retains its exact post-link
+revision for the live close attempt; the close lock checks that revision and the
+receipt deadline even though closure adds no comment. A changed item, expired
+deadline or historical receipt receives `jev_stale_inference` for that directed
+duplicate closure; the item stays open
+and its prior link and receipt remain. Retry the scan to obtain fresh evidence; a later ordinary closure remains available.
+There is no cross-item transaction or rollback promise. The canonical target is
+rechecked before the update but is not locked
 together with the source. Repeated invocations can append another receipt.
 
 ### Real duplicate-label measurement (2026-10-19)

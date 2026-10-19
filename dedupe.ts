@@ -4,7 +4,7 @@ import { certifyCompleteListResult } from "@unbrained/pm-cli/sdk/runtime";
 import type { ItemMetadata, GetResult } from "@unbrained/pm-cli/sdk";
 import type { CommandHandlerContext, BeforeMutationHookContext, BeforeMutationHookDecision } from "@unbrained/pm-cli/sdk/authoring";
 import type { Questions, NoulResponse } from "@typesafe-ai/sdk";
-import { createJevClient, resolveJevEndpoint, requireCallableEndpoint, runDecision } from "./index.ts";
+import { createJevClient, resolveJevEndpoint, requireCallableEndpoint, runDecision, translateDecisionError } from "./index.ts";
 import { modelDigest } from "./decision-calibration.ts";
 
 /** Complete SDK item evidence retained locally for ranking and revision checks. */
@@ -21,9 +21,13 @@ export const PAIR_CALIBRATION: Readonly<Record<string, { threshold: number; dige
   "tev1:4b": { threshold: 0.8, digest: "9b5bb969e46c4b776826d6f2d401e22893205693f172653af6254897255025b8" },
 };
 
+/** Normalize semantic evidence consistently for trigrams and fallback identities. */
+function semanticText(item: PairItem): string {
+  return `${item.title}\n${item.description}\n${item.body ?? ""}`.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
 /** Unicode-aware character trigrams over semantic text, without issue-code shortcuts. */
 function grams(item: PairItem): Set<string> {
-  const text = `${item.title}\n${item.description}\n${item.body ?? ""}`.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const text = semanticText(item);
   return new Set(Array.from({ length: Math.max(0, text.length - 2) }, /** Extract overlapping character trigrams. */ (_, i) => text.slice(i, i + 3)));
 }
 /** Stable unordered pair identity used for de-duplication and labelled controls. */
@@ -37,7 +41,7 @@ export function orderedPair(a: PairItem, b: PairItem, score: number): DuplicateP
 /** Bounded top-K per item via an inverted trigram index; retain at most limit global pairs. */
 export function candidatePairs(items: readonly PairItem[], limit: number, topK = 8): DuplicatePair[] {
   const documents = items.map(grams);
-  const identities = items.map(/** Preserve exact semantic equality when corpus stopgrams remove every trigram. */ item => createHash("sha256").update(JSON.stringify([item.title, item.description, item.body ?? ""])).digest("hex"));
+  const identities = items.map(/** Preserve exact semantic equality when corpus stopgrams remove every trigram. */ item => createHash("sha256").update(semanticText(item)).digest("hex"));
   const identical = new Map<string, number[]>();
   const index = new Map<string, number[]>();
   for (const [i, document] of documents.entries()) {
@@ -81,14 +85,34 @@ export function pairVerdict(pair: DuplicatePair, probability: number, threshold:
 function pairRevision(item: PairItem): string {
   return createHash("sha256").update(JSON.stringify([item.id, item.title, item.description, item.body, item.type, item.status, item.created_at, item.updated_at, item.dependencies])).digest("hex");
 }
+/** One live command's locked post-link state; historical receipts cannot authorize later closes. */
+const pendingClosures = new Map<string, { receipt: string; deadline: number; revision: string }>();
+/** Fingerprint the complete canonical document, independent of metadata key ordering. */
+function closeRevision(document: NonNullable<BeforeMutationHookContext["before"]>): string {
+  return createHash("sha256").update(JSON.stringify([Object.entries(document.metadata).sort(/** Order top-level metadata keys across canonical reads. */ ([a], [b]) => a.localeCompare(b)), document.body])).digest("hex");
+}
 /** Reject an expired or stale duplicate receipt under the SDK's item mutation lock. */
 export function guardDedupeMutation(ctx: BeforeMutationHookContext): BeforeMutationHookDecision | void {
   const previous = ctx.before, next = ctx.after;
   if (previous === null || next === null) return;
+  const key = JSON.stringify([ctx.pm_root, previous.metadata.id]);
   const additions = next.metadata.comments?.slice(previous.metadata.comments?.length ?? 0) ?? [];
+  const refusal = { allow: false as const, code: "jev_stale_inference", message: "Duplicate evidence changed or expired.", remediation: "Retry jev dedupe against current items." };
   for (const { text } of additions) {
     const guard = /^pm-jev dedupe pair receipt: input_sha256=([a-f0-9]{64}), deadline_ms=(\d+),/.exec(text);
-    if (guard !== null && (guard[1] !== pairRevision({ ...previous.metadata, body: previous.body } as PairItem) || Date.now() >= Number(guard[2]))) return { allow: false, code: "jev_stale_inference", message: "Duplicate evidence changed or expired.", remediation: "Retry jev dedupe against current items." };
+    if (guard !== null) {
+      if (guard[1] !== pairRevision({ ...previous.metadata, body: previous.body } as PairItem) || Date.now() >= Number(guard[2])) return refusal;
+      if (text.endsWith("close=true.")) pendingClosures.set(key, { receipt: text, deadline: Number(guard[2]), revision: closeRevision(next) });
+    }
+  }
+  if (ctx.operation === "close") {
+    const duplicateReason = /^duplicate of (.+)$/.exec(String(next.metadata.close_reason));
+    const receipt = duplicateReason === null ? undefined : [...(previous.metadata.comments ?? [])].reverse().find(/** Match the most recent receipt authorizing this directed duplicate closure. */ ({ text }) => text.startsWith("pm-jev dedupe pair receipt:") && text.endsWith("close=true.") && text.includes(`, canonical=${duplicateReason[1]},`));
+    const pending = pendingClosures.get(key);
+    pendingClosures.delete(key);
+    if (pending !== undefined || receipt !== undefined) {
+      if (pending === undefined || pending.receipt !== receipt?.text || pending.revision !== closeRevision(previous) || Date.now() >= pending.deadline) return refusal;
+    }
   }
 }
 /** Validate a strict bound so a typo cannot silently start an unbounded model run. */
@@ -124,7 +148,11 @@ export async function runPairDedupe(ctx: CommandHandlerContext): Promise<PairVer
   const signal = AbortSignal.timeout(config.totalDeadlineMs);
   /** Refuse a mutable model tag whose weights differ from this operating-point measurement. */
   const verifyModel = async (): Promise<void> => {
-    if (calibration !== undefined && await modelDigest(config.baseUrl, config.model, config.timeoutMs) !== calibration.digest) throw createPmCliExpectedError("Pair calibration model digest changed; repeat the duplicate-label benchmark before applying its threshold.");
+    try {
+      signal.throwIfAborted();
+      if (calibration !== undefined && await modelDigest(config.baseUrl, config.model, signal) !== calibration.digest) throw createPmCliExpectedError("Pair calibration model digest changed; repeat the duplicate-label benchmark before applying its threshold.");
+      signal.throwIfAborted();
+    } catch (error) { throw translateDecisionError(error, config); }
   };
   await verifyModel();
   const rows: PairVerdict[] = [];
@@ -148,7 +176,9 @@ export async function runPairDedupe(ctx: CommandHandlerContext): Promise<PairVer
     }
     signal.throwIfAborted();
     const receipt = `pm-jev dedupe pair receipt: input_sha256=${pairRevision(pair.a)}, deadline_ms=${deadline}, model=${config.model}, catalog=pm-jev-pair/1, canonical=${row.b}, probability=${row.probability}, threshold=${threshold}, relation=${kind}, close=${close}.`;
-    await pm.update(row.a, { dep: [`id=${row.b},kind=${kind}`], ...(close ? { status: "closed", closeReason: `duplicate of ${row.b}` } : {}), comment: [receipt], message: "pm-jev verified duplicate and receipt" });
+    try {
+      await pm.update(row.a, { dep: [`id=${row.b},kind=${kind}`], ...(close ? { status: "closed", closeReason: `duplicate of ${row.b}` } : {}), comment: [receipt], message: "pm-jev verified duplicate and receipt" });
+    } finally { pendingClosures.delete(JSON.stringify([ctx.pm_root, row.a])); }
     changed.add(row.a);
     canonicals.add(row.b);
     row.reason = close ? "linked_and_closed_with_receipt" : "linked_with_receipt";

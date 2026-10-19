@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 import type { BeforeMutationHookContext } from "@unbrained/pm-cli/sdk/authoring";
 import type { Questions } from "@typesafe-ai/sdk";
 import { candidatePairs, orderedPair, pairKey, pairState, pairVerdict, runPairDedupe, PAIR_CALIBRATION } from "../dedupe.ts";
 import type { PairItem, PairVerdict } from "../dedupe.ts";
 import { answers, scenario as modelScenario, trackerSnapshot, hostedFixture } from "./fixtures.ts";
-import { getSettingsPath } from "@unbrained/pm-cli/sdk";
+import { getSettingsPath, PmClient, createExtensionCommandSdk } from "@unbrained/pm-cli/sdk";
 
 type Fixture = Parameters<Parameters<typeof modelScenario>[0]>[0];
 type Server = Parameters<Parameters<typeof modelScenario>[0]>[1];
@@ -233,5 +234,118 @@ test("hosted pair scanning reuses the existing explicit provider privacy boundar
     const restore = hostedFixture(server);
     try { assert.equal((await scan(fixture)).length, 1); }
     finally { restore(); if (oldKey === undefined) delete process.env.TYPESAFE_API_KEY; else process.env.TYPESAFE_API_KEY = oldKey; }
+  });
+});
+
+/** Load the production guard through the real SDK extension lifecycle. */
+function guardedClient(fixture: Fixture): PmClient {
+  const directory = join(fixture.pmRoot, "extensions", "synthetic-dedupe-guard");
+  mkdirSync(directory, { recursive: true });
+  writeFileSync(join(directory, "manifest.json"), JSON.stringify({ name: "synthetic-dedupe-guard", version: "1.0.0", entry: "index.mjs", capabilities: ["hooks"] }));
+  writeFileSync(join(directory, "index.mjs"), `import { guardDedupeMutation } from ${JSON.stringify(new URL("../dedupe.ts", import.meta.url).href)}; export default { activate(api) { api.hooks.beforeMutation(guardDedupeMutation); } };`);
+  return new PmClient({ cwd: fixture.cwd, pmRoot: fixture.pmRoot, author: "fixture" });
+}
+
+test("stopgram fallback preserves normalized punctuation variants with bounded stable retrieval", async () => {
+  await scenario(async fixture => {
+    const pair = await seed(fixture);
+    const items = Array.from({ length: 70 }, (_, i) => ({ ...pair.a, id: `variant-${i.toString().padStart(2, "0")}`, title: `Common session policy${"!?".repeat(i)}`, description: "", body: "" }));
+    const pairs = candidatePairs(items, 20);
+    assert.equal(pairs.length, 20);
+    assert.ok(pairs.every(row => row.score === 1));
+    assert.deepEqual(pairs, candidatePairs([...items].reverse(), 20));
+  });
+});
+
+for (const change of ["none", "body", "comment", "removed receipt", "expired", "historical", "different canonical"] as const) {
+  test(`separate close lock checks live receipt and source on a real tracker: ${change}`, async t => {
+    await scenario(async fixture => {
+      const pair = await seed(fixture);
+      const pm = guardedClient(fixture);
+      const original = pair.a;
+      const input = createHash("sha256").update(JSON.stringify([original.id, original.title, original.description, original.body, original.type, original.status, original.created_at, original.updated_at, original.dependencies])).digest("hex");
+      const deadline = Date.now() + 5000;
+      const receipt = `pm-jev dedupe pair receipt: input_sha256=${input}, deadline_ms=${deadline}, canonical=${pair.b.id}, close=true.`;
+      await pm.update(original.id, { dep: [`id=${pair.b.id},kind=related`], comment: [receipt] });
+      const linked = (await fixture.pm.get(original.id, { full: true })).item;
+      assert.equal(linked.comments?.[0].text, receipt);
+      assert.equal(linked.dependencies?.[0].id, pair.b.id);
+      // A separate real SDK client edits after the link commit and before the close lock.
+      if (change === "body") await fixture.pm.update(original.id, { body: "Concurrent requested work revision" });
+      if (change === "comment") await fixture.pm.comments(original.id, { add: "Concurrent evidence" });
+      if (change === "removed receipt") await fixture.pm.update(original.id, { clearComments: true });
+      // Deterministic clock advancement expires the actual persisted receipt without a slow sleep.
+      const clock = change === "expired" ? t.mock.method(Date, "now", () => deadline) : undefined;
+      const close = () => pm.update(original.id, { status: "closed", closeReason: `duplicate of ${change === "different canonical" ? "another-canonical" : pair.b.id}` });
+      try {
+        if (change === "none" || change === "historical") await close();
+        else await assert.rejects(close(), { code: "jev_stale_inference" });
+      } finally { clock?.mock.restore(); }
+      if (change === "historical") {
+        await fixture.pm.update(original.id, { status: "open" });
+        await assert.rejects(close(), { code: "jev_stale_inference" });
+      }
+      const after = (await fixture.pm.get(original.id, { full: true })).item;
+      assert.equal(after.status, change === "none" ? "closed" : "open");
+      assert.deepEqual(after.dependencies, linked.dependencies);
+      if (change === "removed receipt") assert.equal(after.comments?.length ?? 0, 0);
+      else assert.deepEqual(after.comments?.[0], linked.comments?.[0]);
+      if (change === "body") assert.equal(after.body, "Concurrent requested work revision");
+      if (change === "historical") {
+        await pm.update(original.id, { status: "closed", closeReason: "Completed independently of the duplicate proposal" });
+        assert.equal((await fixture.pm.get(original.id)).item.status, "closed");
+      }
+    });
+  });
+}
+
+test("pair command closes unchanged evidence through the active real SDK guard", async () => {
+  await scenario(async fixture => {
+    const pair = await seed(fixture);
+    const pm = guardedClient(fixture);
+    const rows = await runPairDedupe({ pm_root: fixture.pmRoot, source_workspace_root: fixture.cwd, args: [], options: { apply: true, close: true }, global: { author: "fixture" }, command: "jev dedupe", sdk: createExtensionCommandSdk(fixture.pmRoot, pm, "fixture", "jev dedupe") });
+    assert.equal(rows[0].reason, "linked_and_closed_with_receipt");
+    assert.equal((await fixture.pm.get(pair.a.id)).item.status, "closed");
+  });
+});
+
+for (const delayedRead of [1, 2]) {
+  test(`pair preview digest read ${delayedRead} shares the total run deadline`, async () => {
+    await scenario(async (fixture, server) => {
+      await seed(fixture);
+      process.env.PM_JEV_MODEL = "tev1:0.8b";
+      const path = getSettingsPath(fixture.pmRoot);
+      const settings = JSON.parse(readFileSync(path, "utf8"));
+      settings.jev = { total_deadline_ms: 1000, timeout_ms: 5000 };
+      writeFileSync(path, JSON.stringify(settings));
+      let tags = 0;
+      let delayedClosed: Promise<boolean> | undefined;
+      server.setReply((request, response, body) => {
+        if (request.url === "/api/tags") {
+          const payload = JSON.stringify({ models: [{ name: "tev1:0.8b", digest: PAIR_CALIBRATION["tev1:0.8b"].digest }] });
+          if (++tags === delayedRead) {
+            const timer = setTimeout(() => response.end(payload), 1200);
+            delayedClosed = new Promise(resolve => { response.once("close", () => { clearTimeout(timer); resolve(!response.writableEnded); }); });
+          } else response.end(payload);
+        } else response.end(JSON.stringify(answers((body as { questions: Questions }).questions)));
+      });
+      const before = trackerSnapshot(fixture.pmRoot);
+      await assert.rejects(scan(fixture), /timeout|abort|deadline/i);
+      assert.equal(await delayedClosed, true, "shared abort must cancel the delayed digest response before it completes");
+      assert.equal(tags, delayedRead);
+      assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+    });
+  });
+}
+
+
+test("pair guard permits unrelated closes with absent or ordinary comments", async () => {
+  await scenario(async fixture => {
+    const pm = guardedClient(fixture);
+    for (const comment of [[], ["Ordinary lifecycle evidence"]]) {
+      const item = (await pm.create({ type: "Task", title: "Unrelated completed work", comment })).item;
+      await pm.update(item.id, { status: "closed", closeReason: "Work completed" });
+      assert.equal((await fixture.pm.get(item.id)).item.status, "closed");
+    }
   });
 });

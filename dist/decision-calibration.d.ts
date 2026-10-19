@@ -143,8 +143,8 @@ export declare function calibrateObservations(task: EvaluationTask, model: strin
 export declare function readOpaqueJevSettings(pmRoot: string): Promise<Record<string, unknown>>;
 /** Read and validate the task/model calibration without exposing other project settings. */
 export declare function readCalibration(pmRoot: string, task: EvaluationTask, model: string, exemplars?: ExemplarSetting): Promise<CalibrationReceipt | undefined>;
-/** Read the immutable local model identity with no prompts or hosted credentials. */
-export declare function modelDigest(baseUrl: string, model: string, timeoutMs: number): Promise<string>;
+/** Read the immutable local model identity under a timeout or a shared run signal, without prompts or hosted credentials. */
+export declare function modelDigest(baseUrl: string, model: string, timeout: number | AbortSignal): Promise<string>;
 /** Calibrated channel with enough identity metadata for user-facing decisions and receipts. */
 export interface ActiveCalibration {
     record: CalibrationReceipt;
