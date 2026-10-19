@@ -43,6 +43,6 @@ export declare function pairState(pair: DuplicatePair): {
 export declare function pairVerdict(pair: DuplicatePair, probability: number, threshold: number): PairVerdict;
 /** Reject an expired or stale duplicate receipt under the SDK's item mutation lock. */
 export declare function guardDedupeMutation(ctx: BeforeMutationHookContext): BeforeMutationHookDecision | void;
-/** Scan complete tracker copies sequentially, then optionally persist approved links and closures. */
+/** Scan complete tracker copies sequentially, then optionally persist approved links and closures; stale pair evidence becomes a skipped row instead of aborting the batch after earlier writes. */
 export declare function runPairDedupe(ctx: CommandHandlerContext): Promise<PairVerdict[]>;
 //# sourceMappingURL=dedupe.d.ts.map

@@ -220,7 +220,10 @@ duplicate closure; the item stays open
 and its prior link and receipt remain. Retry the scan to obtain fresh evidence; a later ordinary closure remains available.
 There is no cross-item transaction or rollback promise. The canonical target is
 rechecked before the update but is not locked
-together with the source. Repeated invocations can append another receipt.
+together with the source. Stale evidence at the pre-write check or mutation lock
+is returned as `skipped_stale_evidence`; the batch preserves earlier writes and
+continues to later pairs. Other mutation errors still propagate. Repeated
+invocations can append another receipt.
 
 ### Real duplicate-label measurement (2026-10-19)
 
@@ -302,10 +305,10 @@ node --test test/dedupe-evaluation.test.ts
 ```
 
 Delivery checks: `npm run release:check` and `bun run release:check` both pass
-232/232 tests with disposable HOME and global/system Git configuration disabled.
+235/235 tests with disposable HOME and global/system Git configuration disabled.
 All four measured coverage dimensions are 100%, and duplication is zero at the
 unchanged thresholds. The pm-linked release selection passes 2/2 commands. The
-focused tracker/replay suite passes 23/23 tests; the separate artifact receipt
+focused tracker/replay suite passes 26/26 tests; the separate artifact receipt
 suite passes 5/5. Independently disabling the positive cutoff
 changes tracker bytes below threshold and fails the apply regression; forcing
 closure without the close flag fails with `closed` versus `open`. Restored source

@@ -178,14 +178,17 @@ test("pair scans clamp low configured confidence while preserving floors and exp
   });
 });
 
-test("pair apply refuses concurrent changes and avoids duplicate chains in a batch", async () => {
+test("pair apply skips changed evidence and avoids duplicate chains in a batch", async () => {
   await scenario(async (fixture, server) => {
     const pair = await seed(fixture);
     server.setReply(async (_, response, body) => {
       await fixture.pm.update(pair.b.id, { body: "Changed requested work" });
       response.end(JSON.stringify(answers((body as { questions: Questions }).questions)));
     });
-    await assert.rejects(scan(fixture, { apply: true }), /evidence changed/);
+    const stale = await scan(fixture, { apply: true });
+    assert.equal(stale.length, 1);
+    assert.equal(stale[0].decision, "duplicate");
+    assert.equal(stale[0].reason, "skipped_stale_evidence");
     assert.equal((await fixture.pm.get(pair.a.id, { full: true })).item.comments?.length ?? 0, 0);
     probability(server, 0.9);
     await fixture.pm.create({ type: "Task", title: "Repair expired sessions", body: pair.a.body });
@@ -194,6 +197,70 @@ test("pair apply refuses concurrent changes and avoids duplicate chains in a bat
     assert.ok(rows.some(row => row.reason === "same_work_above_threshold"));
   });
 });
+
+test("pair apply preserves earlier writes and continues past stale pairs", async () => {
+  await scenario(async (fixture, server) => {
+    const twinIds: string[] = [];
+    for (const [group, title, body] of [["a", "Anchor audit", "prune stale anchor rows nightly"], ["c", "Zulu sweep", "erase leaked zulu tokens weekly"], ["e", "Quux flux", "blueprints quux flux"]]) {
+      await fixture.pm.create({ id: `batch-${group}-original`, type: "Task", title, body });
+      twinIds.push((await fixture.pm.create({ id: `batch-${group}-twin`, type: "Task", title, body })).item.id);
+    }
+    let calls = 0;
+    server.setReply(async (_, response, body) => {
+      if (++calls === 1) await fixture.pm.update(twinIds[1], { body: "concurrent requested work revision" });
+      response.end(JSON.stringify(answers((body as { questions: Questions }).questions)));
+    });
+    const rows = await scan(fixture, { apply: true, close: true, limitPairs: "3" });
+    assert.deepEqual(rows.map(row => row.reason), ["linked_and_closed_with_receipt", "skipped_stale_evidence", "linked_and_closed_with_receipt"]);
+    assert.ok([rows[1].a, rows[1].b].includes(twinIds[1]));
+    for (const row of [rows[0], rows[2]]) {
+      const linked = (await fixture.pm.get(row.a, { full: true })).item;
+      assert.equal(linked.status, "closed");
+      assert.ok(linked.dependencies?.some(dep => dep.id === row.b && dep.kind === "related"));
+      assert.equal(linked.comments?.length, 1);
+      assert.match(linked.comments![0].text, /pm-jev dedupe pair receipt:.*canonical=/);
+    }
+    for (const id of [rows[1].a, rows[1].b]) {
+      const skipped = (await fixture.pm.get(id, { full: true })).item;
+      assert.equal(skipped.status, "open");
+      assert.equal(skipped.comments?.length ?? 0, 0);
+      assert.equal(skipped.dependencies, undefined);
+    }
+  });
+});
+
+for (const failure of ["stale", "invalid status"] as const) {
+  test(`pair apply handles real SDK mutation failures: ${failure}`, async () => {
+    await scenario(async fixture => {
+      const pair = await seed(fixture);
+      const pm = guardedClient(fixture);
+      const racing = new Proxy(pm, {
+        /** Inject a concurrent edit or invalid input, then execute the real SDK mutation. */
+        get(target, property, receiver) {
+          if (property !== "update") return Reflect.get(target, property, receiver);
+          return async (id: string, options: Record<string, unknown>) => {
+            if (failure === "stale") await fixture.pm.update(id, { body: "Concurrent requested work revision" });
+            return target.update(id, { ...options, ...(failure === "invalid status" ? { status: "invalid-status" } : {}) });
+          };
+        },
+      });
+      const run = () => runPairDedupe({ pm_root: fixture.pmRoot, source_workspace_root: fixture.cwd, args: [], options: { apply: true }, global: { author: "fixture" }, command: "jev dedupe", sdk: createExtensionCommandSdk(fixture.pmRoot, racing, "fixture", "jev dedupe") });
+      if (failure === "invalid status") await assert.rejects(run(), /status/i);
+      else {
+        const rows = await run();
+        assert.equal(rows.length, 1);
+        assert.equal(rows[0].decision, "duplicate");
+        assert.equal(rows[0].reason, "skipped_stale_evidence");
+      }
+      const after = (await fixture.pm.get(pair.a.id, { full: true })).item;
+      assert.equal(after.status, "open");
+      assert.equal(after.comments?.length ?? 0, 0);
+      assert.equal(after.body, failure === "stale" ? "Concurrent requested work revision" : pair.a.body);
+      assert.equal(after.dependencies, undefined);
+      assert.equal((await fixture.pm.get(pair.b.id, { full: true })).item.dependencies, undefined);
+    });
+  });
+}
 
 test("pair source lock guard rejects stale or expired receipts", async () => {
   await scenario(async fixture => {

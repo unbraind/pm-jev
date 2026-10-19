@@ -14,8 +14,8 @@ test("duplicate benchmark reads real SDK items and separates whole duplicate gro
     for (let r = 0; r < 2; r++) {
       const ids: string[] = [];
       for (let i = 0; i < 10; i++) {
-        const original = (await fixture.pm.create({ type: "Task", title: `Validate session policy ${r} ${i}`, description: "Check session expiry and reject old sessions" })).item;
-        const duplicate = (await fixture.pm.create({ type: "Task", title: original.title })).item;
+        const original = (await fixture.pm.create({ id: `seed-${evidenceHash(["benchmark-original", r, i]).slice(0, 12)}`, type: "Task", title: `Validate session policy ${r} ${i}`, description: "Check session expiry and reject old sessions" })).item;
+        const duplicate = (await fixture.pm.create({ id: `seed-${evidenceHash(["benchmark-duplicate", r, i]).slice(0, 12)}`, type: "Task", title: original.title })).item;
         await fixture.pm.update(duplicate.id, { status: "closed", closeReason: i % 2 === 0 ? `Duplicate of ${original.id}` : `Superseded by canonical item ${original.id} during governance duplicate-consolidation; retained evidence.` });
         ids.push(original.id, duplicate.id);
       }
@@ -48,8 +48,13 @@ test("duplicate benchmark reads real SDK items and separates whole duplicate gro
     ] as PairItem[];
     const twins = Array.from({ length: 20 }, (_, i) => `identical-control-${i}`).filter(id => evidenceHash(["dedupe-20261019", corpora[0].repository, id])[0] < "8").slice(0, 2).map(id => ({ ...item, id, title: "Identical uncontrolled work", body: "exact semantic evidence" }));
     const enriched = { ...corpora[0], items: [...corpora[0].items, corpora[0].items.find(row => row.status === "closed")!, ...bad, ...twins] };
-    const accepted = labelledPairs([enriched, corpora[1]], 30).filter(row => row.label);
+    const enrichedRows = labelledPairs([enriched, corpora[1]], 30);
+    const accepted = enrichedRows.filter(row => row.label);
     assert.ok(!accepted.some(row => [row.pair.a.id, row.pair.b.id].some(id => ["bad-self", "bad-missing", "bad-cycle", "bad-loop", "bad-active"].includes(id))));
+    assert.equal(twins.length, 2);
+    assert.ok(enrichedRows.some(row => row.label && row.repository === enriched.repository && row.split === "dev"));
+    const twinIds = new Set(twins.map(twin => twin.id));
+    assert.ok(!enrichedRows.some(row => !row.label && twinIds.has(row.pair.a.id) && twinIds.has(row.pair.b.id)));
     assert.throws(() => labelledPairs([]), /Insufficient/);
     assert.throws(() => labelledPairs([{ ...corpora[0], items: [item, { ...item, id: "other", status: "closed", close_reason: `Duplicate of ${item.id}` }] }]), /Insufficient/);
   });

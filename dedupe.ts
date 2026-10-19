@@ -122,7 +122,7 @@ function pairLimit(options: Record<string, unknown>): number {
   if (!/^\d+$/.test(raw) || !Number.isSafeInteger(limit) || limit < 1 || limit > 200) throw createPmCliExpectedError("--limit-pairs must be an integer from 1 to 200.");
   return limit;
 }
-/** Scan complete tracker copies sequentially, then optionally persist approved links and closures. */
+/** Scan complete tracker copies sequentially, then optionally persist approved links and closures; stale pair evidence becomes a skipped row instead of aborting the batch after earlier writes. */
 export async function runPairDedupe(ctx: CommandHandlerContext): Promise<PairVerdict[]> {
   const limit = pairLimit(ctx.options);
   const status = readStringOption(ctx.options, "status") ?? "open";
@@ -171,14 +171,21 @@ export async function runPairDedupe(ctx: CommandHandlerContext): Promise<PairVer
   for (const [i, row] of rows.entries()) {
     if (row.decision !== "duplicate" || changed.has(row.a) || changed.has(row.b) || canonicals.has(row.a)) continue;
     const pair = pairs[i];
+    let stale = false;
     for (const original of [pair.a, pair.b]) {
       const current = ((await pm.get(original.id, { full: true, outputBudget: "unbounded", outputLimit: "unbounded" })) as GetResult).item;
-      if (pairRevision(current as PairItem) !== pairRevision(original)) throw createPmCliExpectedError("Duplicate evidence changed; retry jev dedupe against current items.");
+      if (pairRevision(current as PairItem) !== pairRevision(original)) { stale = true; break; }
     }
+    if (stale) { row.reason = "skipped_stale_evidence"; continue; }
     signal.throwIfAborted();
     const receipt = `pm-jev dedupe pair receipt: input_sha256=${pairRevision(pair.a)}, deadline_ms=${deadline}, model=${config.model}, catalog=pm-jev-pair/1, canonical=${row.b}, probability=${row.probability}, threshold=${threshold}, relation=${kind}, close=${close}.`;
     try {
       await pm.update(row.a, { dep: [`id=${row.b},kind=${kind}`], ...(close ? { status: "closed", closeReason: `duplicate of ${row.b}` } : {}), comment: [receipt], message: "pm-jev verified duplicate and receipt" });
+    } catch (error) {
+      // The item lock still refuses the stale write; report it per row like the re-read check instead of aborting after earlier writes.
+      if ((error as { code?: string }).code !== "jev_stale_inference") throw error;
+      row.reason = "skipped_stale_evidence";
+      continue;
     } finally { pendingClosures.delete(JSON.stringify([ctx.pm_root, row.a])); }
     changed.add(row.a);
     canonicals.add(row.b);
