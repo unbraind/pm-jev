@@ -201,8 +201,9 @@ export function majorityLabel(pool, channel) {
 /**
  * kNN vote over retrieved exemplars for one channel.
  *
- * Probabilities are vote shares in first-occurrence order of the retrieved
- * labels, so equal shares keep nearest-exemplar priority in later ranking.
+ * Probabilities are uniform vote shares. The evaluation baseline rebuilds the
+ * distribution in question-schema order, which breaks equal-share ties.
+ * Integer-like keys, including priority levels, enumerate numerically ascending.
  *
  * @param retrieved - The top-k retrieved exemplar units.
  * @param channel - Question channel whose labels are voted.

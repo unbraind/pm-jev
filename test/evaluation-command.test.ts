@@ -174,6 +174,33 @@ test("evaluation validation rejects bad flags, hosted providers, private-only da
   } finally { origin.dispose(); }
 });
 
+test("retrieval option aliases share prerequisite guards and token-budget validation", async () => {
+  const origin = await exemplarCorpus();
+  try {
+    await scenario(async (fixture, server) => {
+      serve(server);
+      const valid = { task: "triage", from: origin.pmRoot, sample: "1", seed: "fixed" };
+      const aliases = ["exemplarTokens", "exemplar_tokens", "exemplar-tokens"];
+      for (const calibrate of [false, true]) {
+        for (const key of ["exemplars", ...aliases]) for (const value of ["1", "", 0, null]) {
+          await assert.rejects(runEvaluationCommand(context(fixture, { ...valid, [key]: value }), calibrate, source), /require --retrieval/);
+        }
+        for (const key of aliases) for (const value of ["0", "1.5", "65537"]) {
+          await assert.rejects(runEvaluationCommand(context(fixture, { ...valid, retrieval: "lexical", [key]: value }), calibrate, source), /--exemplar-tokens must be an integer/);
+        }
+      }
+      assert.equal(server.requests.length, 0);
+      for (const key of aliases) {
+        const report = await runEvaluationCommand(context(fixture, { ...valid, retrieval: "lexical", exemplars: "2", [key]: "1" }), false, source) as ExemplarReport;
+        assert.equal(report.retrieval.count, 2);
+        assert.equal(report.retrieval.token_budget, 1);
+        assert.equal(report.model_calls, 1);
+        assert.equal(report.retrieval.reused_baseline_calls, 1);
+      }
+    });
+  } finally { origin.dispose(); }
+});
+
 /** Type of the four-arm exemplar evaluation report returned by the evaluator. */
 interface ExemplarReport {
   model_calls: number;
@@ -195,6 +222,17 @@ async function exemplarCorpus(name = "pm-alpha") {
   ]) await origin.pm.create(row);
   origin.commit();
   return origin;
+}
+
+/** Pick a two-target seeded sample with eligible context despite snapshot metadata. */
+function contextSampleSeed(units: ReturnType<typeof buildUnits>["units"]): string {
+  const seed = Array.from({ length: 100 }, (_, index) => String(index)).find(value => {
+    const sampled = deterministicSample(units.map(unit => ({ ...unit.example, unit })), 2, value).map(row => row.unit);
+    const excluded = new Set(sampled.flatMap(unit => unit.ids));
+    return sampled.some(unit => eligibleExemplars(unit, units, excluded).length > 0);
+  });
+  assert.notEqual(seed, undefined);
+  return seed!;
 }
 
 /** Content-free retrieval identity of one exemplar observation. */
@@ -223,7 +261,7 @@ test("exemplar evaluation wires budgeted same-tracker exemplars and reports four
       serve(server);
       const corpus = await source(origin.pmRoot) as TrackerCorpus;
       const units = buildUnits(corpus, "triage").units;
-      const options = { task: "triage", from: origin.pmRoot, sample: "2", seed: "fixed", retrieval: "lexical" };
+      const options = { task: "triage", from: origin.pmRoot, sample: "2", seed: contextSampleSeed(units), retrieval: "lexical" };
       const baselineRequests = server.requests.length;
       const result = await runEvaluationCommand(context(fixture, options), false, source) as ExemplarReport;
       const afterFirst = server.requests.length;
@@ -242,7 +280,9 @@ test("exemplar evaluation wires budgeted same-tracker exemplars and reports four
       for (const row of result.exemplar_observations) {
         const target = units.find(/** Match the row to its target unit. */ unit => unit.example.example_sha256 === row.example_sha256)!;
         const item = corpus.items.find(/** Resolve the target item's creation timestamp. */ entry => entry.id === target.ids[0])!;
-        assert.deepEqual(row.exemplar_ids.map(/** One digest per retrieved exemplar unit. */ (id, index) => row.exemplar_digests[index] !== undefined && id !== "" ? id : null).filter(Boolean).length, row.exemplar_ids.length);
+        assert.equal(row.exemplar_ids.length, row.exemplar_digests.length);
+        assert.equal(row.context_exemplar_ids!.length, row.context_exemplar_digests!.length);
+        assert.ok(row.exemplar_ids.every(/** Every retrieved unit has a nonempty identity. */ id => id !== ""));
         for (const [index, joined] of row.exemplar_ids.entries()) {
           const ids = joined.split("+");
           const exemplar = units.find(/** Resolve the retrieved exemplar unit by digest. */ unit => unit.example_sha256 === row.exemplar_digests[index]);

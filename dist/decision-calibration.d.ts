@@ -112,7 +112,7 @@ export declare function calibrationKey(task: EvaluationTask, model: string, exem
 export declare function validExemplarSetting(value: unknown): value is ExemplarSetting;
 /** Fingerprint fixed decision semantics while treating duplicate candidate identities as exchangeable evidence. */
 export declare function questionFingerprint(channel: string, question: unknown): string;
-/** Stable descending probability ranking, preserving schema order on ties. */
+/** Stable probability ranking; ties preserve key enumeration order (integer-like keys ascend numerically). */
 export declare function ranked(probabilities: Record<string, number>): [string, number][];
 /** Temperature scaling on log probabilities; zero mass remains zero. */
 export declare function scaleProbabilities(probabilities: Record<string, number>, temperature: number): Record<string, number>;

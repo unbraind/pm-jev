@@ -106,9 +106,9 @@ export function questionFingerprint(channel: string, question: unknown): string 
   return evidenceHash(JSON.parse(channel.startsWith("candidate_") ? encoded.replaceAll(/candidate_\d+/g, "candidate_0") : encoded));
 }
 
-/** Stable descending probability ranking, preserving schema order on ties. */
+/** Stable probability ranking; ties preserve key enumeration order (integer-like keys ascend numerically). */
 export function ranked(probabilities: Record<string, number>): [string, number][] {
-  return Object.entries(probabilities).sort(/** Preserve model schema order on equal probabilities. */ ([, a], [, b]) => b - a);
+  return Object.entries(probabilities).sort(/** Preserve key enumeration order on equal probabilities. */ ([, a], [, b]) => b - a);
 }
 /** Temperature scaling on log probabilities; zero mass remains zero. */
 export function scaleProbabilities(probabilities: Record<string, number>, temperature: number): Record<string, number> {

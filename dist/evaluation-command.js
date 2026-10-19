@@ -15,6 +15,8 @@ export const EVALUATION_FLAGS = [
     { long: "--exemplars", value_name: "N", value_type: "string", description: "Retrieved exemplar count k, default 4, maximum 8 (requires --retrieval)" },
     { long: "--exemplar-tokens", value_name: "N", value_type: "string", description: "Exemplar context token budget, default 1200 (requires --retrieval)" },
 ];
+/** Alternate host-parser spellings shared by token-budget reads and presence guards. */
+const EXEMPLAR_TOKEN_ALIASES = ["exemplar_tokens", "exemplar-tokens"];
 /** Validate a bounded positive integer before accessing sources or the model. */
 function sampleOption(raw, fallback) {
     const value = Number(raw ?? fallback);
@@ -26,7 +28,7 @@ function sampleOption(raw, fallback) {
 function exemplarSetting(options, task) {
     const retrieval = readStringOption(options, "retrieval");
     if (retrieval === undefined) {
-        if (options.exemplars !== undefined || options.exemplarTokens !== undefined)
+        if (["exemplars", "exemplarTokens", ...EXEMPLAR_TOKEN_ALIASES].some(/** Refuse every supplied spelling before source reads or inference. */ /** Refuse every supplied spelling before source reads or inference. */ key => options[key] !== undefined))
             throw createPmCliExpectedError("--exemplars and --exemplar-tokens require --retrieval");
         return undefined;
     }
@@ -37,7 +39,7 @@ function exemplarSetting(options, task) {
     const count = Number(readStringOption(options, "exemplars") ?? 4);
     if (!Number.isInteger(count) || count < 1 || count > 8)
         throw createPmCliExpectedError("--exemplars must be an integer from 1 to 8");
-    const tokenBudget = Number(readStringOption(options, "exemplarTokens", ["exemplar_tokens"]) ?? 1200);
+    const tokenBudget = Number(readStringOption(options, "exemplarTokens", EXEMPLAR_TOKEN_ALIASES) ?? 1200);
     if (!Number.isInteger(tokenBudget) || tokenBudget < 1 || tokenBudget > 65536)
         throw createPmCliExpectedError("--exemplar-tokens must be an integer from 1 to 65536");
     return retrieval === "embedding" ? { retrieval, count, token_budget: tokenBudget, embedding_model: EMBEDDING_MODEL } : { retrieval, count, token_budget: tokenBudget };

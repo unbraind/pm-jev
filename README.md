@@ -229,10 +229,13 @@ and the report records the fallback.
 An exemplar run reports four arms for every channel: the majority class of the
 target's eligible same-tracker pool, a kNN vote over the retrieved exemplars
 (no model), the model without exemplars (exactly the legacy prompt), and the
-model with exemplars. All four carry accuracy, per-class precision/recall,
+model with exemplars. kNN uses uniform vote shares; equal shares follow question
+schema order, with integer-like labels (including priorities) ordered numerically
+ascending. All four carry accuracy, per-class precision/recall,
 ten-bin ECE and the decile coverage/precision curve. Retrieval coverage,
-reused baseline calls (targets whose eligible pool is empty get the plain-model
-answer for the exemplar arm) and mean retrieved count are reported, and every
+reused baseline calls (targets with an empty eligible pool or whose first ranked
+exemplar cannot fit the clamped budget get the plain-model answer for the exemplar
+arm) and mean retrieved count are reported, and every
 exemplar observation records retrieved ids/digests, the ids/digests that actually
 fit the prompt, the effective budget, and a hash of the exact truncated context.
 Receipts contain no exemplar text. Baseline accuracy and reliability use the
