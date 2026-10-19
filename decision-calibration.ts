@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { getSettingsPath, readFileIfExists } from "@unbrained/pm-cli/sdk";
+import type { ExemplarSetting } from "./exemplar-retrieval.ts";
 
 /** Versioned contract shared by evaluation, persisted calibration and live decisions. */
 export const EVALUATION_VERSION = "pm-jev-eval/1";
@@ -18,6 +19,18 @@ export interface Observation {
   latency_ms: number;
   input_tokens: number;
   output_tokens: number;
+  /** Item ids of the retrieved exemplars, joined per unit; present only for exemplar arms. */
+  exemplar_ids?: readonly string[];
+  /** Content digests of the retrieved exemplar units; present only for exemplar arms. */
+  exemplar_digests?: readonly string[];
+  /** Budgeted units actually sent; retrieved units can exceed the prompt budget. */
+  context_exemplar_ids?: readonly string[];
+  /** Digests of the budgeted units actually sent. */
+  context_exemplar_digests?: readonly string[];
+  /** Hash of the exact budgeted context, including truncation, without its text. */
+  context_sha256?: string;
+  /** Effective token estimate budget after prompt headroom clamping. */
+  effective_exemplar_tokens?: number;
 }
 /** Accuracy and reliability over the exact reported population. */
 export interface Reliability {
@@ -48,6 +61,8 @@ export interface CalibrationReceipt {
   model_digest: string;
   target_precision: number;
   seed: string;
+  /** Exemplar retrieval setting this receipt was fitted under; absent for exemplar-free fits. */
+  exemplars?: ExemplarSetting;
   calibration_repositories: string[];
   validation_repositories: string[];
   data: { repository: string; commit: string; data_sha256: string }[];
@@ -58,6 +73,31 @@ export interface CalibrationReceipt {
 export function evidenceHash(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
+/**
+ * Stable settings key of one calibrated channel identity.
+ *
+ * The exemplar setting is part of the calibrated channel identity: an
+ * exemplar-augmented fit never silently authorizes exemplar-free decisions,
+ * and legacy receipts keep their historical task/model key.
+ *
+ * @param task - Ground-truth decision task of the channel.
+ * @param model - Exact decision model tag.
+ * @param exemplars - Exemplar retrieval setting, or undefined without exemplars.
+ * @returns The settings key under which this channel's receipt is stored.
+ */
+export function calibrationKey(task: EvaluationTask, model: string, exemplars?: ExemplarSetting): string {
+  return exemplars === undefined ? evidenceHash([task, model])
+    : evidenceHash([task, model, "exemplars", exemplars.retrieval, exemplars.count, exemplars.token_budget, exemplars.embedding_model ?? null]);
+}
+/** Validate the persisted shape of an exemplar setting without trusting it. */
+export function validExemplarSetting(value: unknown): value is ExemplarSetting {
+  if (typeof value !== "object" || value === null) return false;
+  const setting = value as Record<string, unknown>;
+  return (setting.retrieval === "lexical" || setting.retrieval === "embedding") &&
+    Number.isInteger(setting.count) && (setting.count as number) >= 1 && (setting.count as number) <= 8 &&
+    Number.isInteger(setting.token_budget) && (setting.token_budget as number) >= 1 && (setting.token_budget as number) <= 65536 &&
+    (setting.retrieval === "lexical" ? setting.embedding_model === undefined : typeof setting.embedding_model === "string" && setting.embedding_model !== "");
+}
 /** Fingerprint fixed decision semantics while treating duplicate candidate identities as exchangeable evidence. */
 export function questionFingerprint(channel: string, question: unknown): string {
   const q = question as { type: string; instructions: string; criteria: Record<string, unknown> };
@@ -66,9 +106,9 @@ export function questionFingerprint(channel: string, question: unknown): string 
   return evidenceHash(JSON.parse(channel.startsWith("candidate_") ? encoded.replaceAll(/candidate_\d+/g, "candidate_0") : encoded));
 }
 
-/** Stable descending probability ranking, preserving schema order on ties. */
+/** Stable probability ranking; ties preserve key enumeration order (integer-like keys ascend numerically). */
 export function ranked(probabilities: Record<string, number>): [string, number][] {
-  return Object.entries(probabilities).sort(/** Preserve model schema order on equal probabilities. */ ([, a], [, b]) => b - a);
+  return Object.entries(probabilities).sort(/** Preserve key enumeration order on equal probabilities. */ ([, a], [, b]) => b - a);
 }
 /** Temperature scaling on log probabilities; zero mass remains zero. */
 export function scaleProbabilities(probabilities: Record<string, number>, temperature: number): Record<string, number> {
@@ -135,7 +175,7 @@ export function repositorySplit(repositories: readonly string[], seed: string): 
   return { calibration: ordered.slice(0, cut).sort(), validation: ordered.slice(cut).sort() };
 }
 /** Fit channels and freeze candidate thresholds before inspecting validation outcomes. */
-export function calibrateObservations(task: EvaluationTask, model: string, digest: string, rows: readonly Observation[], seed: string, target: number): CalibrationReceipt {
+export function calibrateObservations(task: EvaluationTask, model: string, digest: string, rows: readonly Observation[], seed: string, target: number, exemplars?: ExemplarSetting): CalibrationReceipt {
   const split = repositorySplit(rows.map(/** Partition all channels from a repository together. */ row => row.repository), seed);
   const channels: Record<string, ChannelCalibration> = {};
   for (const channel of [...new Set(rows.map(/** Fit type and priority separately. */ row => row.channel))].sort()) {
@@ -157,6 +197,7 @@ export function calibrateObservations(task: EvaluationTask, model: string, diges
   }
   const data = [...new Map(rows.map(/** Collapse provenance once per repository snapshot. */ row => [row.repository, { repository: row.repository, commit: row.commit, data_sha256: row.data_sha256 }])).values()].sort(/** Keep receipt encoding independent of read order. */ (a, b) => a.repository.localeCompare(b.repository));
   return { version: EVALUATION_VERSION, method: "temperature_scaling_nll_grid", task, model, model_digest: digest, target_precision: target, seed,
+    ...(exemplars === undefined ? {} : { exemplars }),
     calibration_repositories: split.calibration, validation_repositories: split.validation, data, observations_sha256: evidenceHash(rows), channels };
 }
 /** Read package-private settings through the SDK; normalized host settings intentionally omit them. */
@@ -170,10 +211,14 @@ export async function readOpaqueJevSettings(pmRoot: string): Promise<Record<stri
 }
 
 /** Read and validate the task/model calibration without exposing other project settings. */
-export async function readCalibration(pmRoot: string, task: EvaluationTask, model: string): Promise<CalibrationReceipt | undefined> {
+export async function readCalibration(pmRoot: string, task: EvaluationTask, model: string, exemplars?: ExemplarSetting): Promise<CalibrationReceipt | undefined> {
   const section = await readOpaqueJevSettings(pmRoot);
-  const record = (section.calibrations as Record<string, CalibrationReceipt> | undefined)?.[evidenceHash([task, model])];
+  const record = (section.calibrations as Record<string, CalibrationReceipt> | undefined)?.[calibrationKey(task, model, exemplars)];
   if (record?.version !== EVALUATION_VERSION || record.task !== task || record.model !== model) return undefined;
+  // The exemplar setting is channel identity: a receipt fitted under one setting never applies to another.
+  if ((exemplars === undefined) !== (record.exemplars === undefined)) return undefined;
+  if (record.exemplars !== undefined && !validExemplarSetting(record.exemplars)) throw new Error("Saved calibration is invalid; rerun jev calibrate");
+  if (calibrationKey(task, model, record.exemplars) !== calibrationKey(task, model, exemplars)) return undefined;
   if (typeof record.channels !== "object" || record.channels === null || !/^[a-f0-9]{64}$/.test(record.model_digest) ||
       Object.values(record.channels).some(/** Malformed persisted arithmetic must never authorize writes. */ fit => !fit || !Number.isFinite(fit.temperature) || fit.temperature < 0.05 || fit.temperature > 20 ||
         (fit.threshold !== null && (!Number.isFinite(fit.threshold) || fit.threshold < 0 || fit.threshold > 1)) ||
@@ -196,8 +241,8 @@ export interface ActiveCalibration {
   receipt_sha256: string;
 }
 /** Activate a saved record only for the exact local digest; aliases and replacements do not silently reuse it. */
-export async function activeCalibration(pmRoot: string, task: EvaluationTask, config: { provider: string; baseUrl: string; model: string; timeoutMs: number }): Promise<ActiveCalibration | undefined> {
-  const record = await readCalibration(pmRoot, task, config.model);
+export async function activeCalibration(pmRoot: string, task: EvaluationTask, config: { provider: string; baseUrl: string; model: string; timeoutMs: number }, exemplars?: ExemplarSetting): Promise<ActiveCalibration | undefined> {
+  const record = await readCalibration(pmRoot, task, config.model, exemplars);
   if (record === undefined || config.provider !== "ollama") return undefined;
   if (await modelDigest(config.baseUrl, config.model, config.timeoutMs) !== record.model_digest) return undefined;
   return { record, receipt_sha256: evidenceHash(record) };

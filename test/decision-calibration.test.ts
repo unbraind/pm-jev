@@ -3,7 +3,7 @@ import test from "node:test";
 import { join } from "node:path";
 import { writeFileSync } from "node:fs";
 import { getSettingsPath } from "@unbrained/pm-cli/sdk";
-import { activeCalibration, atThreshold, calibrateObservations, calibratedAnswer, EVALUATION_VERSION, evidenceHash, fitTemperature, modelDigest, precisionLower, questionFingerprint, ranked, readCalibration, reliability, repositorySplit, scaledRows, scaleProbabilities } from "../decision-calibration.ts";
+import { activeCalibration, atThreshold, calibrationKey, calibrateObservations, calibratedAnswer, EVALUATION_VERSION, evidenceHash, fitTemperature, modelDigest, precisionLower, questionFingerprint, ranked, readCalibration, reliability, repositorySplit, scaledRows, scaleProbabilities, validExemplarSetting } from "../decision-calibration.ts";
 import type { Observation } from "../decision-calibration.ts";
 import { scenario } from "./fixtures.ts";
 
@@ -96,6 +96,22 @@ test("channel application requires compatible semantics and refuses unqualified 
   fit.question_sha256 = [questionFingerprint("candidate_7", { instructions: "candidate_7" })];
   assert.ok(calibratedAnswer(active, "candidate_1", { instructions: "candidate_1" }, { yes: 0.65, no: 0.35 }, 0.8).calibration);
   assert.equal(questionFingerprint("duplicate_of", { type: "choice", instructions: "same", criteria: { id1: "A", none: "None" } }), questionFingerprint("duplicate_of", { type: "choice", instructions: "same", criteria: { id2: "B", none: "None" } }));
+});
+
+test("persisted exemplar settings validate every identity component before activation", () => {
+  const setting = { retrieval: "lexical", count: 4, token_budget: 1200 } as const;
+  assert.equal(validExemplarSetting(setting), true);
+  assert.equal(validExemplarSetting({ retrieval: "embedding", count: 4, token_budget: 1200, embedding_model: "qwen3-embedding:0.6b" }), true);
+  for (const invalid of [null, 7, "setting", { retrieval: "vector", count: 4, token_budget: 1200 },
+    { retrieval: "embedding", count: 4, token_budget: 1200 }, { retrieval: "embedding", count: 4, token_budget: 1200, embedding_model: "" },
+    { retrieval: "embedding", count: 4, token_budget: 1200, embedding_model: 7 },
+    { retrieval: "lexical", count: 1.5, token_budget: 1200 }, { retrieval: "lexical", count: 0, token_budget: 1200 }, { retrieval: "lexical", count: 9, token_budget: 1200 },
+    { retrieval: "lexical", count: 4, token_budget: 1.5 }, { retrieval: "lexical", count: 4, token_budget: 0 }, { retrieval: "lexical", count: 4, token_budget: 65537 },
+    { retrieval: "lexical", count: 4, token_budget: 1200, embedding_model: "unexpected" }]) assert.equal(validExemplarSetting(invalid), false);
+  assert.equal(calibrationKey("link", "local"), evidenceHash(["link", "local"]));
+  assert.notEqual(calibrationKey("link", "local", setting), evidenceHash(["link", "local"]));
+  assert.notEqual(calibrationKey("link", "local", setting), calibrationKey("link", "local", { ...setting, count: 2 }));
+  assert.notEqual(calibrationKey("link", "local", setting), calibrationKey("link", "local", { ...setting, retrieval: "embedding", embedding_model: "qwen3-embedding:0.6b" }));
 });
 
 test("saved model identity is exact and digest discovery refuses missing, malformed or changed models", async () => {

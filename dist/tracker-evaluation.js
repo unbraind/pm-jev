@@ -70,19 +70,49 @@ function example(corpus, state, questions, labels) {
 }
 /** Build labels from tracker types/priorities, canonical edges and explicit duplicate resolutions. */
 export function buildExamples(corpus, task) {
+    const built = buildUnits(corpus, task);
+    return { examples: built.units.map(/** The hashed benchmark example of each labelled unit. */ /** The hashed benchmark example of each labelled unit. */ unit => unit.example), retrieval_misses: built.retrieval_misses };
+}
+/** Primary and supporting exemplar text of one projected triage state. */
+function triageText(state) {
+    return { title: state.title, body: [state.description, state.body].filter(/** Keep only the semantic text the model itself sees. */ Boolean).join("\n") };
+}
+/** Primary and supporting exemplar text of one projected source/candidate pair. */
+function pairText(source, candidate) {
+    return { title: `${source.title} → ${candidate.title}`,
+        body: [source.description, source.body, candidate.description, candidate.body].filter(/** Keep only the semantic text the model itself sees. */ Boolean).join("\n") };
+}
+/** Construct labelled units with identical example hashes to the legacy builder. */
+export function buildUnits(corpus, task) {
     const items = [...corpus.items].sort(/** Make SDK enumeration order irrelevant. */ (a, b) => a.id.localeCompare(b.id));
     if (task === "triage") {
         const questions = buildClassificationQuestions(corpus.settings);
-        return { examples: items.map(/** Ground truth is excluded from the semantic state and question wording. */ /** Ground truth is excluded from the semantic state and question wording. */ item => example(corpus, semanticState(item), questions, { type: item.type, priority: String(item.priority) })), retrieval_misses: 0 };
+        return { units: items.map(/** Ground truth is excluded from the semantic state and question wording. */ /** Ground truth is excluded from the semantic state and question wording. */ item => {
+                const state = semanticState(item);
+                const labels = { type: item.type, priority: String(item.priority) };
+                const exampleRow = example(corpus, state, questions, labels);
+                const text = triageText(state);
+                return { example: exampleRow, example_sha256: exampleRow.example_sha256, questions, state, labels,
+                    ids: [item.id], created_at: item.created_at, title: text.title, body: text.body };
+            }), retrieval_misses: 0 };
     }
-    const examples = [];
     if (task === "link") {
         const graph = RelationshipGraph.fromItems(items, resolveWorkspaceRelationshipKindRegistry());
         const question = buildLinkQuestion("candidate_0");
         const criteria = question.criteria;
-        // Explicit edges supply positives; missing edges are closed-world negatives, not proof of semantic independence.
+        const units = [];
         const positives = [];
         const negatives = [];
+        /** Construct one labelled source/candidate pair unit with its hashed example. */
+        const pair = (source, target, kind) => {
+            const sourceState = semanticState(source);
+            const candidateState = semanticState(target);
+            const labels = { candidate_0: kind };
+            const exampleRow = example(corpus, { source: sourceState, candidates: { candidate_0: candidateState } }, { candidate_0: question }, labels);
+            const text = pairText(sourceState, candidateState);
+            return { example: exampleRow, example_sha256: exampleRow.example_sha256, questions: { candidate_0: question }, state: exampleRow.state, labels,
+                ids: [source.id, target.id], created_at: source.created_at < target.created_at ? target.created_at : source.created_at, title: text.title, body: text.body };
+        };
         for (const source of items) {
             const connected = new Set(graph.incidentEdges(source.id).flatMap(/** Enumerate only existing neighbors rather than every item pair. */ /** Enumerate only existing neighbors rather than every item pair. */ edge => [edge.source, edge.target]));
             const targets = items.filter(/** Existing edges provide positive labels. */ /** Existing edges provide positive labels. */ target => target.id !== source.id && connected.has(target.id));
@@ -98,16 +128,18 @@ export function buildExamples(corpus, task) {
                 // Unsupported kinds and reverse edges without an inverse are still connected pairs.
                 if (kinds.length === 0 && connected.has(target.id))
                     continue;
-                const row = example(corpus, { source: semanticState(source), candidates: { candidate_0: semanticState(target) } }, { candidate_0: question }, { candidate_0: kinds[0] ?? "none" });
+                const unit = pair(source, target, kinds[0] ?? "none");
                 if (kinds.length === 1)
-                    positives.push(row);
+                    positives.push(unit);
                 else
-                    negatives.push(row);
+                    negatives.push(unit);
             }
         }
-        const sampled = deterministicSample(negatives, Math.max(positives.length, 1), "non-edges-v1");
-        return { examples: [...positives, ...sampled], retrieval_misses: 0 };
+        const sampled = deterministicSample(negatives.map(/** Wrap each unit so sampling identity stays byte-identical without copying. */ /** Wrap each unit so sampling identity stays byte-identical without copying. */ unit => ({ example_sha256: unit.example.example_sha256, repository: unit.example.repository, unit })), Math.max(positives.length, 1), "non-edges-v1")
+            .map(/** Unwrap the sampled units, preserving object identity. */ /** Unwrap the sampled units, preserving object identity. */ wrapper => wrapper.unit);
+        return { units: [...positives, ...sampled], retrieval_misses: 0 };
     }
+    const units = [];
     let retrieval_misses = 0;
     for (const item of items) {
         const target = duplicateTarget(item);
@@ -120,15 +152,20 @@ export function buildExamples(corpus, task) {
             continue;
         }
         const request = buildDedupeRequest(item.title, item.body ?? item.description, candidates);
-        examples.push(example(corpus, request.state, request.questions, { duplicate_of: target }));
+        const labels = { duplicate_of: target };
+        const positive = example(corpus, request.state, request.questions, labels);
+        units.push({ example: positive, example_sha256: positive.example_sha256, questions: request.questions, state: request.state, labels,
+            ids: [item.id], created_at: item.created_at, title: item.title, body: [item.description, item.body].filter(/** Keep the semantic text the model itself sees. */ Boolean).join("\n") });
         const remaining = items.filter(/** Remove the known duplicate group to create an explicit missing-target control. */ /** Remove the known duplicate group to create an explicit missing-target control. */ candidate => candidate.id !== item.id && candidate.id !== target && duplicateTarget(candidate) !== target);
         const negativeCandidates = rankDedupeCandidates(remaining, item.title, 8);
         if (negativeCandidates.length > 0) {
             const negative = buildDedupeRequest(item.title, item.body ?? item.description, negativeCandidates);
-            examples.push(example(corpus, negative.state, negative.questions, { duplicate_of: "none" }));
+            const negativeExample = example(corpus, negative.state, negative.questions, { duplicate_of: "none" });
+            units.push({ example: negativeExample, example_sha256: negativeExample.example_sha256, questions: negative.questions, state: negative.state, labels: { duplicate_of: "none" },
+                ids: [item.id], created_at: item.created_at, title: item.title, body: [item.description, item.body].filter(/** Keep the semantic text the model itself sees. */ Boolean).join("\n") });
         }
     }
-    return { examples, retrieval_misses };
+    return { units, retrieval_misses };
 }
 /** Stable seeded hash sampling without replacement, balanced across repositories by round-robin. */
 export function deterministicSample(examples, count, seed) {
