@@ -50,7 +50,8 @@ export function labelledPairs(corpora, positivesPerSplit = 30) {
             known.add(key);
             const other = byId.get(target);
             const score = scores.get(key) ?? 0;
-            positives.push({ repository: corpus.repository, pair: orderedPair(item, other, score), label: true, retrieved: retrieved.has(key), split: splitOf(item.id) });
+            const pair = orderedPair(item, other, score);
+            positives.push({ pair_id: `${corpus.repository}:${pair.a.id}:${pair.b.id}`, repository: corpus.repository, pair, label: true, retrieved: retrieved.has(key), split: splitOf(item.id) });
         }
         for (const pair of ranked) {
             const a = canonical(pair.a.id, targets, ids);
@@ -60,7 +61,7 @@ export function labelledPairs(corpora, positivesPerSplit = 30) {
             const state = pairState(pair);
             if (evidenceHash(state.A) === evidenceHash(state.B))
                 continue;
-            controls.push({ repository: corpus.repository, pair, label: false, retrieved: true, split: splitOf(a) });
+            controls.push({ pair_id: `${corpus.repository}:${pair.a.id}:${pair.b.id}`, repository: corpus.repository, pair, label: false, retrieved: true, split: splitOf(a) });
         }
     }
     const selected = [];

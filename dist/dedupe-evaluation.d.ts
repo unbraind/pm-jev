@@ -7,6 +7,7 @@ export interface DuplicateCorpus {
 }
 /** A real duplicate closure or a lexical hard control, with no labels sent to inference. */
 export interface LabelledPair {
+    pair_id: string;
     repository: string;
     pair: DuplicatePair;
     label: boolean;

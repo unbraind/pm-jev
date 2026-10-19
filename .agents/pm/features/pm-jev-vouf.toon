@@ -6,10 +6,10 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T15:15:26.929Z"
-updated_at: "2026-10-19T15:47:13.762Z"
+updated_at: "2026-10-19T17:03:39.782Z"
 author: codex-agent
 parent: pm-jev-0w3q
-comments[8]{created_at,author,text}:
+comments[12]{created_at,author,text}:
   "2026-10-19T15:15:41.354Z",codex-agent,"Plan: preserve pre-create title screening; add bounded pair scanning over certified complete SDK reads, sequential noul verification, a symmetric abstain band, and explicit apply/close authorization with receipts. Evaluate public tracker-copy duplicate closures versus lexical hard controls, using disjoint duplicate groups and a maximum of 200 pairs per local model arm. Canonical checkouts and external data remain read-only."
   "2026-10-19T15:23:37.144Z",codex-agent,"Implemented real-SDK pair scans and mutation guards. Focused pair regressions pass, including abstention, confidence authorization, explicit close gating, receipt history, read-only scans and model-unavailable refusal. Public evaluation inventory: 29 verified public copies; 2 skipped before tracker reads. Strict resolvable labels yield 35 positives (31 historical consolidation receipts plus 4 standard closures), paired with 70 lexical controls. Duplicate-group hashing separates dev and held-out items; retrieval misses count as false negatives. Calls run sequentially under nice."
   "2026-10-19T15:27:55.026Z",codex-agent,"Independent behavioral revert proofs: disabling only the positive probability cutoff makes the real-tracker apply regression fail (duplicate versus abstain); forcing closure without checking the extra close flag makes it fail (closed versus open). Source restored byte-for-byte; the same focused test passes 1/1. Command: node --test --test-name-pattern=\"pair apply writes only above threshold\" test/dedupe.test.ts. Threshold selection is dev-F1 with a 0.8 model floor; this is an operating-point calibration, not a 95% precision guarantee. Lexical controls are closed-world labels and may contain unrecorded duplicates."
@@ -18,6 +18,10 @@ comments[8]{created_at,author,text}:
   "2026-10-19T15:44:35.427Z",codex-agent,"Final linked runner passed 3/3 commands: the focused real-tracker and artifact replay suite, npm release:check and bun release:check. Both release gates used disposable HOME with global/system Git configuration disabled and unchanged coverage/duplication thresholds. All coverage dimensions are 100%; duplication is zero. Strict health passes with merge drivers under isolated HOME; normal HOME still reports the unrelated global extension host-version skew. No items were closed; claim will be released for orchestrator verification."
   "2026-10-19T15:46:19.699Z",codex-agent,Fresh git clone --no-local verification of implementation commit e360669 passes strict health with required merge drivers and all four commit-identity tests. The clone uses the pinned installed dependencies and isolated HOME/Git identity; authoritative tracked files remain unchanged. Implementation source and measured artifacts are identical to the npm/Bun gate inputs. Claim is released and the item remains in_progress for orchestrator review.
   "2026-10-19T15:47:13.762Z",codex-agent,"Opened PR https://github.com/unbraind/pm-jev/pull/30 with the full real-label evaluation, independent revert proofs, npm/Bun gate counts and the first ten read-only pm-github verdict rows. No merge or release is part of this task. The remaining delivery receipt changes documentation and this append-only tracker evidence only."
+  "2026-10-19T16:48:30.161Z",codex-agent,"PR 30 round 1: reviewed the latest review body; one pair-alignment finding and no outside-diff findings. Plan: persist repository:a:b identity in samples and model observations, assert exact sample order before split assignment, and reject a metric-preserving cross-split swap. Preserve existing inference scores and provenance; no model calls. Reuse this feature item for review evidence."
+  "2026-10-19T16:50:52.731Z",codex-agent,"Round 1 implemented: labelledPairs now emits stable repository:a:b ids; original evaluation/progress and finalization drivers persist them. Backfilled all 105 sample rows and each retained model observation from trusted script order, plus excluded-observation identity from the original sample receipt. No inference rerun. Structural comparison after removing only added identity fields proves every existing report value unchanged. Replay asserts length, exact ids, labels and retrieval metadata before splitting. Metric-preserving cross-split swaps (0.8b indices 2/81; 4b indices 0/83) retain thresholds and all dev/held-out metrics but are rejected. Independent revert proofs: reverting only labelledPairs causes the benchmark identity regression to fail; removing only identity checks causes the swap regression to fail with Missing expected exception. Restored focused suite passes 5/5."
+  "2026-10-19T16:52:38.999Z",codex-agent,Initial npm/Bun gates identified four duplicated test lines in metric replay at the unchanged zero-duplication threshold. Extracted a shared metric assertion so normal replay and swap regression exercise identical metric checks. No threshold changes. Rerunning both complete gates and focused tests.
+  "2026-10-19T17:03:36.990Z",codex-agent,"Round 1 final verification: pm-linked runner passes 4/4 commands (timeout 1800 seconds). Focused tracker/replay suite passes 15/15; isolated-identity npm run release:check and bun run release:check each pass 218/218 tests; focused receipt suite passes 5/5. Both release gates retain 100% statements, branches, functions and lines (4955/4955 statements and lines; 1921/1921 branches; 191/191 functions), zero duplication across 51 sources, and no production audit findings. Source and all pre-existing measurements remain unchanged after the passing gates. Accepted limitation: historical observation alignment is trusted from the producing script order, explicitly documented in README and the PR; inference was not rerun. No additional outside-diff findings or new PM CLI/SDK defects were found. Releasing the claim and leaving this item in_progress for orchestrator verification."
 files[6]{path,scope}:
   calibration/dedupe-report-v1.json,project
   dedupe-evaluation.ts,project
@@ -25,10 +29,11 @@ files[6]{path,scope}:
   index.ts,project
   test/dedupe-evaluation.test.ts,project
   test/dedupe.test.ts,project
-tests[3]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[4]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   nice -n 15 node --test test/dedupe.test.ts test/dedupe-evaluation.test.ts,project,codex-agent,"2026-10-19T15:31:33.074Z",local_mutation,feat/jev-dedupe
   "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 npm run release:check",project,codex-agent,"2026-10-19T15:34:41.051Z",local_mutation,feat/jev-dedupe
   "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 bun run release:check",project,codex-agent,"2026-10-19T15:34:43.957Z",local_mutation,feat/jev-dedupe
+  node --test test/dedupe-evaluation.test.ts,project,codex-agent,"2026-10-19T16:50:36.874Z",local_mutation,feat/jev-dedupe
 docs[1]{path,scope}:
   README.md,project
 body: ""

@@ -6,7 +6,7 @@ import { evidenceHash } from "./decision-calibration.ts";
 /** Public, complete tracker-copy evidence accepted by the label builder. */
 export interface DuplicateCorpus { repository: string; commit: string; items: PairItem[] }
 /** A real duplicate closure or a lexical hard control, with no labels sent to inference. */
-export interface LabelledPair { repository: string; pair: DuplicatePair; label: boolean; retrieved: boolean; split: "dev" | "heldout" }
+export interface LabelledPair { pair_id: string; repository: string; pair: DuplicatePair; label: boolean; retrieved: boolean; split: "dev" | "heldout" }
 /** Benchmark observation retains scores and probabilities without copied tracker text. */
 export interface PairObservation { label: boolean; probability: number; retrieved: boolean }
 
@@ -55,7 +55,8 @@ export function labelledPairs(corpora: readonly DuplicateCorpus[], positivesPerS
       known.add(key);
       const other = byId.get(target) as PairItem;
       const score = scores.get(key) ?? 0;
-      positives.push({ repository: corpus.repository, pair: orderedPair(item, other, score), label: true, retrieved: retrieved.has(key), split: splitOf(item.id) });
+      const pair = orderedPair(item, other, score);
+      positives.push({ pair_id: `${corpus.repository}:${pair.a.id}:${pair.b.id}`, repository: corpus.repository, pair, label: true, retrieved: retrieved.has(key), split: splitOf(item.id) });
     }
     for (const pair of ranked) {
       const a = canonical(pair.a.id, targets, ids);
@@ -63,7 +64,7 @@ export function labelledPairs(corpora: readonly DuplicateCorpus[], positivesPerS
       if (a === null || b === null || a === b || splitOf(a) !== splitOf(b)) continue;
       const state = pairState(pair);
       if (evidenceHash(state.A) === evidenceHash(state.B)) continue;
-      controls.push({ repository: corpus.repository, pair, label: false, retrieved: true, split: splitOf(a) });
+      controls.push({ pair_id: `${corpus.repository}:${pair.a.id}:${pair.b.id}`, repository: corpus.repository, pair, label: false, retrieved: true, split: splitOf(a) });
     }
   }
   const selected: LabelledPair[] = [];

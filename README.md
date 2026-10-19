@@ -280,7 +280,14 @@ recreates the split and controls; for each row run `runDecision` with `pairState
 and `PAIR_QUESTIONS` from `dedupe.ts`, using the existing local client. Verify model
 digests before/after, keep calls sequential and fit only dev observations with
 `fitDuplicateThreshold`. `duplicateMetrics` scores held-out observations, including
-retrieval misses. The committed artifact replays without inference:
+retrieval misses. Persist `pair_id: "repository:a:b"` on every serialized sample
+and scored model observation before writing evaluation progress or the final report.
+The receipt's pair ids were added from its existing sample order without rerunning
+inference: the same evaluation script produced observations in that order, and
+this alignment is trusted for the backfill. Replay verifies every stored id against
+the sample's repository and item ids before splitting; regressions reject cross-split
+swaps even when thresholds and all metrics remain unchanged.
+The committed artifact replays without inference:
 
 ```sh
 node --test test/dedupe-evaluation.test.ts

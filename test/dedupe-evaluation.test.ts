@@ -23,6 +23,10 @@ test("duplicate benchmark reads real SDK items and separates whole duplicate gro
     }
     const rows = labelledPairs(corpora, 3);
     assert.equal(rows.length, 18);
+    assert.equal(new Set(rows.map(row => row.pair_id)).size, rows.length);
+    for (const row of rows) {
+      assert.equal(row.pair_id, `${row.repository}:${row.pair.a.id}:${row.pair.b.id}`);
+    }
     for (const split of ["dev", "heldout"]) {
       const partition = rows.filter(row => row.split === split);
       assert.equal(partition.filter(row => row.label).length, 3);
@@ -86,11 +90,38 @@ test("threshold fitting uses dev evidence only and refuses unsupported model sel
   assert.equal(fitDuplicateThreshold([], false), Infinity);
 });
 
+type Row = { pair_id: string; repository: string; a: string; b: string; label: boolean; retrieved: boolean; lexical: number; split: string };
+type Observation = { pair_id: string; label: boolean; probability: number; retrieved: boolean };
+type Arm = { arm: string; threshold: number | null; model_digest?: string; model_calls?: number; unretained_postprocessing_calls?: number; observations?: Observation[]; excluded?: { repository: string; a: string; b: string; observation: Observation }[]; dev: ReturnType<typeof duplicateMetrics>; heldout: ReturnType<typeof duplicateMetrics> };
+
+/** Load the persisted inference receipt without making model requests. */
+function readReport(): { samples: Row[]; arms: Arm[]; question_sha256: string } {
+  return JSON.parse(readFileSync(new URL("../calibration/dedupe-report-v1.json", import.meta.url), "utf8"));
+}
+
+/** Verify pair identity and metadata before assigning observations to splits by index. */
+function assertObservationOrder(samples: Row[], observations: Observation[]): void {
+  assert.equal(observations.length, samples.length);
+  for (const [i, sample] of samples.entries()) {
+    assert.equal(sample.pair_id, `${sample.repository}:${sample.a}:${sample.b}`);
+    assert.equal(observations[i].pair_id, sample.pair_id, `pair identity at index ${i}`);
+    assert.equal(observations[i].label, sample.label);
+    assert.equal(observations[i].retrieved, sample.retrieved);
+  }
+}
+
+/** Refit and compare all recorded metrics independently of pair-order validation. */
+function assertOperatingPoint(samples: Row[], observations: Observation[], arm: Arm, lexical: boolean): void {
+  const dev = observations.filter((_, i) => samples[i].split === "dev");
+  const heldout = observations.filter((_, i) => samples[i].split === "heldout");
+  const threshold = fitDuplicateThreshold(dev, lexical);
+  assert.equal(Number.isFinite(threshold) ? threshold : null, arm.threshold);
+  assert.deepEqual(duplicateMetrics(dev, threshold, lexical), arm.dev);
+  assert.deepEqual(duplicateMetrics(heldout, threshold, lexical), arm.heldout);
+}
+
 test("real duplicate-label receipt replays every operating point and held-out metric", () => {
-  type Row = { repository: string; a: string; b: string; label: boolean; retrieved: boolean; lexical: number; split: string };
-  type Observation = { label: boolean; probability: number; retrieved: boolean };
-  type Arm = { arm: string; threshold: number | null; model_digest?: string; model_calls?: number; unretained_postprocessing_calls?: number; observations?: Observation[]; excluded?: { observation: Observation }[]; dev: ReturnType<typeof duplicateMetrics>; heldout: ReturnType<typeof duplicateMetrics> };
-  const report = JSON.parse(readFileSync(new URL("../calibration/dedupe-report-v1.json", import.meta.url), "utf8")) as { samples: Row[]; arms: Arm[]; question_sha256: string };
+  const report = readReport();
   assert.equal(report.question_sha256, evidenceHash(PAIR_QUESTIONS));
   assert.equal(report.samples.length, 105);
   assert.equal(report.samples.filter(row => row.label).length, 35);
@@ -104,18 +135,33 @@ test("real duplicate-label receipt replays every operating point and held-out me
   }
   for (const arm of report.arms) {
     const lexical = arm.arm === "lexical";
-    const observations = lexical ? report.samples.map(row => ({ label: row.label, probability: row.lexical, retrieved: row.retrieved })) : arm.observations!;
-    const dev = observations.filter((_, i) => report.samples[i].split === "dev");
-    const heldout = observations.filter((_, i) => report.samples[i].split === "heldout");
-    const threshold = fitDuplicateThreshold(dev, lexical);
-    assert.equal(Number.isFinite(threshold) ? threshold : null, arm.threshold);
-    assert.deepEqual(duplicateMetrics(dev, threshold, lexical), arm.dev);
-    assert.deepEqual(duplicateMetrics(heldout, threshold, lexical), arm.heldout);
+    const observations = lexical ? report.samples.map(row => ({ pair_id: row.pair_id, label: row.label, probability: row.lexical, retrieved: row.retrieved })) : arm.observations!;
+    assertObservationOrder(report.samples, observations);
+    assertOperatingPoint(report.samples, observations, arm, lexical);
     if (!lexical) {
       assert.equal(arm.model_digest, PAIR_CALIBRATION[arm.arm].digest);
       assert.equal(arm.threshold, PAIR_CALIBRATION[arm.arm].threshold);
       assert.equal(arm.model_calls, observations.length + arm.excluded!.length + arm.unretained_postprocessing_calls!);
       assert.ok(arm.model_calls! <= 200);
+      for (const excluded of arm.excluded!) {
+        assert.equal(excluded.observation.pair_id, `${excluded.repository}:${excluded.a}:${excluded.b}`);
+      }
     }
+  }
+});
+
+test("receipt rejects metric-preserving observation swaps across dev and held-out splits", () => {
+  const report = readReport();
+  for (const [name, devIndex, heldoutIndex] of [["tev1:0.8b", 2, 81], ["tev1:4b", 0, 83]] as const) {
+    const arm = report.arms.find(row => row.arm === name)!;
+    const observations = [...arm.observations!];
+    assert.equal(report.samples[devIndex].split, "dev");
+    assert.equal(report.samples[heldoutIndex].split, "heldout");
+    assert.equal(observations[devIndex].label, observations[heldoutIndex].label);
+    assert.equal(observations[devIndex].retrieved, observations[heldoutIndex].retrieved);
+    assert.notEqual(observations[devIndex].probability, observations[heldoutIndex].probability);
+    [observations[devIndex], observations[heldoutIndex]] = [observations[heldoutIndex], observations[devIndex]];
+    assertOperatingPoint(report.samples, observations, arm, false);
+    assert.throws(() => assertObservationOrder(report.samples, observations), /pair identity at index/);
   }
 });
