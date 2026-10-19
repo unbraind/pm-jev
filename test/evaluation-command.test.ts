@@ -282,6 +282,10 @@ test("exemplar evaluation wires budgeted same-tracker exemplars and reports four
         const item = corpus.items.find(/** Resolve the target item's creation timestamp. */ entry => entry.id === target.ids[0])!;
         assert.equal(row.exemplar_ids.length, row.exemplar_digests.length);
         assert.equal(row.context_exemplar_ids!.length, row.context_exemplar_digests!.length);
+        for (const [index, joined] of row.context_exemplar_ids!.entries()) {
+          const contextUnit = units.find(/** Resolve the prompt-context exemplar unit by digest. */ unit => unit.example_sha256 === row.context_exemplar_digests![index]);
+          assert.deepEqual(joined.split("+"), contextUnit!.ids);
+        }
         assert.ok(row.exemplar_ids.every(/** Every retrieved unit has a nonempty identity. */ id => id !== ""));
         for (const [index, joined] of row.exemplar_ids.entries()) {
           const ids = joined.split("+");
