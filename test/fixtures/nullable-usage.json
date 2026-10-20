@@ -1,0 +1,5 @@
+{
+  "model": "tev1:4b",
+  "answers": { "decision": { "type": "noul", "noul": 0.9 } },
+  "usage": { "input_tokens": null, "output_tokens": null }
+}

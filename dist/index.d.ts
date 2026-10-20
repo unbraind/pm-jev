@@ -1,3 +1,4 @@
+import type { TokenUsage } from "./token-usage.ts";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import type { Questions, SystemOneResult, ChoiceResponse } from "@typesafe-ai/sdk";
 import type { CalibrationUse } from "./decision-calibration.ts";
@@ -249,10 +250,7 @@ export interface TriageDecision {
     /** Resolved model revision reported by the endpoint. */
     readonly model: string;
     /** Token usage reported by the endpoint. */
-    readonly usage: {
-        readonly input_tokens: number;
-        readonly output_tokens: number;
-    };
+    readonly usage: TokenUsage;
     /** Versioned question catalog that produced the proposals. */
     readonly catalog_version: string;
     /** Stable identity of the effective type question and decision policy. */
@@ -359,10 +357,7 @@ export interface DedupeDecision {
     /** Resolved model revision reported by the endpoint. */
     readonly model: string;
     /** Token usage reported by the endpoint. */
-    readonly usage: {
-        readonly input_tokens: number;
-        readonly output_tokens: number;
-    };
+    readonly usage: TokenUsage;
     /** Versioned question catalog that produced the decision. */
     readonly catalog_version: string;
     /** Active calibration identity and channel qualification; omitted under the legacy policy. */
@@ -444,10 +439,7 @@ export interface AskDecision {
     /** Resolved model revision reported by the endpoint. */
     readonly model: string;
     /** Token usage reported by the endpoint. */
-    readonly usage: {
-        readonly input_tokens: number;
-        readonly output_tokens: number;
-    };
+    readonly usage: TokenUsage;
 }
 /** Gate command receipt: the calibrated verdict agents and CI branch on. */
 export interface GateDecision {
@@ -470,10 +462,7 @@ export interface GateDecision {
     /** Resolved model revision reported by the endpoint. */
     readonly model: string;
     /** Token usage reported by the endpoint. */
-    readonly usage: {
-        readonly input_tokens: number;
-        readonly output_tokens: number;
-    };
+    readonly usage: TokenUsage;
 }
 /** One decision model advertised by the configured endpoint. */
 export interface DecisionModel {

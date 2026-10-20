@@ -1,3 +1,4 @@
+import { TokenUsageTotals } from "./token-usage.ts";
 import type { ChoiceResponse } from "@typesafe-ai/sdk";
 /** One labelled sample with controlled correct or misrouted current type. */
 export interface TypeSample {
@@ -70,10 +71,7 @@ export declare function calibrateTypes(baseUrl: string, model: string, targetPre
     resolvedModels: string[];
     recordedAt: string;
     durationMs: number;
-    usage: {
-        inputTokens: number;
-        outputTokens: number;
-    };
+    usage: TokenUsageTotals;
     registeredTypes: string[];
     definitions: Record<string, string>;
     fit: {

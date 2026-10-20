@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { createExtensionCommandSdk, getSettingsPath, readFileIfExists } from "@unbrained/pm-cli/sdk";
 import { channelLabels, runEvaluationCommand } from "../evaluation-command.ts";
 import type { CommandHandlerContext } from "@unbrained/pm-cli/sdk/authoring";
@@ -22,12 +22,13 @@ function context(fixture: Parameters<Parameters<typeof scenario>[0]>[0], options
 /** Supply a verified synthetic public corpus through the real SDK snapshot reader. */
 async function source(from: string) { return readPublicCorpus(from, publicInspection); }
 /** Serve exact local model identities and schema-valid deterministic decisions over real HTTP. */
-function serve(server: Parameters<Parameters<typeof scenario>[0]>[1], changed = false, inputTokens = 50) {
+function serve(server: Parameters<Parameters<typeof scenario>[0]>[1], changed = false, inputTokens: number | null = 50, outputTokens: number | null = 4) {
   let tags = 0;
   server.setReply((request, response, body) => {
     if (request.url === "/api/tags") { tags++; response.end(JSON.stringify({ models: [{ name: "tev1:4b", digest: (changed && tags > 1 ? "d" : "c").repeat(64) }] })); return; }
     const result = answers((body as { questions: Questions }).questions);
     result.usage.input_tokens = inputTokens;
+    result.usage.output_tokens = outputTokens;
     response.end(JSON.stringify(result));
   });
 }
@@ -485,4 +486,30 @@ test("exemplar calibration identity separates exemplar-fit receipts from legacy 
       assert.equal(await readCalibration(fixture.pmRoot, "triage", "tev1:4b", setting), undefined);
     });
   } finally { alpha.dispose(); beta.dispose(); }
+});
+
+
+test("evaluation retains unknown usage per observation, total and mean across real calls", async () => {
+  const origin = await syntheticCorpus();
+  const fixtureResponse = JSON.parse(readFileSync("test/fixtures/nullable-usage.json", "utf8"));
+  try {
+    await scenario(async (fixture, server) => {
+      for (const [input, output] of [[null, null], [null, 4], [50, null]] as const) {
+        serve(server, false, input, output);
+        const report = await runEvaluationCommand(context(fixture, { task: "triage", from: origin.pmRoot, sample: "2", retrieval: "lexical" }), false, source) as {
+          model_calls: number; tokens: { input: number | null; output: number | null; mean_input: number | null; mean_output: number | null; unknown_calls: number; unknown_input_calls: number; unknown_output_calls: number };
+          observations: Observation[]; exemplar_observations: Observation[];
+        };
+        assert.ok(report.model_calls >= 2);
+        assert.deepEqual(report.tokens, { input: input === null ? null : input * report.model_calls, output: output === null ? null : output * report.model_calls,
+          mean_input: input, mean_output: output, unknown_calls: report.model_calls,
+          unknown_input_calls: input === null ? report.model_calls : 0, unknown_output_calls: output === null ? report.model_calls : 0 });
+        for (const row of [...report.observations, ...report.exemplar_observations]) {
+          assert.equal(row.input_tokens, input);
+          assert.equal(row.output_tokens, output);
+        }
+        if (input === null && output === null) assert.deepEqual({ input_tokens: input, output_tokens: output }, fixtureResponse.usage);
+      }
+    });
+  } finally { origin.dispose(); }
 });

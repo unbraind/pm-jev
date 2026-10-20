@@ -1,3 +1,4 @@
+import { TokenUsageTotals } from "./token-usage.ts";
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -80,7 +81,7 @@ export async function calibrateTypes(baseUrl: string, model: string, targetPreci
   const pm = new PmClient({ cwd: scratch, pmRoot, noExtensions: true, author: "calibration" });
   const observations: TypeObservation[] = [];
   const started = Date.now();
-  let inputTokens = 0, outputTokens = 0;
+  const usage = new TokenUsageTotals();
   const resolvedModels = new Set<string>();
   try {
     await pm.init("synthetic", { defaults: true, agentGuidance: "skip" });
@@ -97,7 +98,7 @@ export async function calibrateTypes(baseUrl: string, model: string, targetPreci
       const after = await runDecision(client, config, state, withCurrentType(questions, sample.current));
       observations.push({ ...sample, before: before.answers.type as ChoiceResponse, after: after.answers.type as ChoiceResponse });
       for (const result of [before, after]) {
-        inputTokens += result.usage.input_tokens; outputTokens += result.usage.output_tokens; resolvedModels.add(result.model);
+        usage.add(result.usage); resolvedModels.add(result.model);
       }
     }
     if (await localModel(config) !== digest) throw new Error("Local model changed during type calibration");
@@ -108,7 +109,7 @@ export async function calibrateTypes(baseUrl: string, model: string, targetPreci
       policy: { keepCurrentLabel: KEEP_CURRENT_TYPE, typeChangeProbability: TYPE_CHANGE_PROBABILITY, marginComparison: "strictly below" }, family: "type_classification", dataset,
       datasetSha256: createHash("sha256").update(JSON.stringify(dataset)).digest("hex"), model, modelDigest: digest,
       resolvedModels: [...resolvedModels], recordedAt: new Date().toISOString(), durationMs: Date.now() - started,
-      usage: { inputTokens, outputTokens }, registeredTypes: registry.types, definitions, fit,
+      usage, registeredTypes: registry.types, definitions, fit,
       before: typeMetrics(evaluation, "before", null), newPrompt: typeMetrics(evaluation, "after", null),
       after: typeMetrics(evaluation, "after", fit.threshold), observations };
   } finally { rmSync(scratch, { recursive: true, force: true }); }

@@ -14,8 +14,8 @@ export interface Observation {
     label: string;
     probabilities: Record<string, number>;
     latency_ms: number;
-    input_tokens: number;
-    output_tokens: number;
+    input_tokens: number | null;
+    output_tokens: number | null;
     /** Item ids of the retrieved exemplars, joined per unit; present only for exemplar arms. */
     exemplar_ids?: readonly string[];
     /** Content digests of the retrieved exemplar units; present only for exemplar arms. */

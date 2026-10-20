@@ -32,6 +32,7 @@ test("SDK retries rate and overload responses at most twice, under a total deadl
     let attempts = 0;
     server.setReply((_, response) => { if (++attempts === 1) { response.statusCode = 429; response.setHeader("retry-after-ms", "1"); response.end(); } else response.end(JSON.stringify(answers(questions))); });
     assert.equal((await runDecision(client, resolved.config, "synthetic", questions)).model, "tev1:4b");
+    for (const state of [null, undefined]) await assert.rejects(runDecision(client, resolved.config, state, questions), /non-null/);
     server.setReply((_, response) => { response.statusCode = 529; response.setHeader("retry-after-ms", "1000"); response.end(); });
     const start = Date.now();
     await assert.rejects(runDecision(client, { ...resolved.config, totalDeadlineMs: 40 }, "synthetic", questions), /total deadline/);

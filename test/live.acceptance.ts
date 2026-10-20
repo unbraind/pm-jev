@@ -37,7 +37,7 @@ test("real local tev1: triage, dedupe, ask and gate on synthetic state", { timeo
     assert.ok(triage.proposals.priority.level <= 2);
     assert.equal(triage.applied.length, 0);
     assert.equal(triage.model, "tev1:4b");
-    assert.ok(triage.usage.input_tokens > 0);
+    assert.ok(triage.usage.input_tokens === null || triage.usage.input_tokens > 0);
     assert.equal((await fixture.pm.get(id)).item.type, "Feature");
     const dedupe = await run("dedupe", { title: created.item.title, body: "Same login crash for every user" }) as DedupeDecision;
     assert.equal(dedupe.duplicate_of, id);
