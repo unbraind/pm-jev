@@ -12,7 +12,7 @@ import type { TriageItemState } from "./index.ts";
 import { evidenceHash } from "./decision-calibration.ts";
 import type { EvaluationTask } from "./decision-calibration.ts";
 import type { ExemplarUnit } from "./exemplar-retrieval.ts";
-import { ghInspectionFailure, LOCAL_SOURCE_GUIDANCE } from "./source-diagnostics.ts";
+import { ghInspectionFailure, LOCAL_SOURCE_GUIDANCE, sourceFailureDetail } from "./source-diagnostics.ts";
 import { assertPublicProvenance } from "./source-provenance.ts";
 import type { LocalProvenance } from "./source-provenance.ts";
 
@@ -38,8 +38,8 @@ export interface EvaluationExample extends LocalProvenance {
 export function inspectSource(command: string, args: string[], cwd: string, input?: Buffer): Buffer {
   try { return execFileSync(command, args, { cwd, input, timeout: 60_000, maxBuffer: 64 * 1024 * 1024, stdio: ["pipe", "pipe", "pipe"] }); }
   catch (error) {
-    if (command !== "gh") throw createPmCliExpectedError(`Public tracker inspection failed (${command}). Verified public snapshots require git and archive tools. Install the failing tool and retry. ${LOCAL_SOURCE_GUIDANCE}`);
     const failure = error as NodeJS.ErrnoException & { status?: number | null; stderr?: Buffer };
+    if (command !== "gh") throw createPmCliExpectedError(`Public tracker inspection failed. ${sourceFailureDetail([command, ...args].join(" "), failure.code, failure.status, failure.stderr?.toString() ?? "")}. ${LOCAL_SOURCE_GUIDANCE}`);
     throw ghInspectionFailure(args[2] ?? "requested repository", failure.code, failure.status, failure.stderr?.toString() ?? "");
   }
 }

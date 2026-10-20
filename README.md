@@ -370,11 +370,19 @@ line with credentials, URLs and local identities redacted.
 
 | Failure | Recovery |
 | --- | --- |
-| gh missing | Install GitHub CLI and add `gh` to PATH. |
+| gh missing (`ENOENT`) | Install GitHub CLI and add `gh` to PATH. |
+| Permission/launch failure (`EACCES`/`EPERM`) | Check executable permissions and retry. |
 | Not authenticated | Run `gh auth login`, or replace an invalid `GH_TOKEN`/`GITHUB_TOKEN`. |
 | Repository not found/private | Check its name and public visibility; private sources require the local opt-in. |
 | Rate-limited | Check `gh api rate_limit` and wait for reset. |
 | Network | Restore DNS, proxy, TLS and firewall access to `api.github.com`. |
+
+Git, tar and gh diagnostics distinguish missing tools from launch failures. A
+command that exits unsuccessfully reports its command, exit status and redacted
+first stderr line (or `(empty)`). Empty git repositories, missing remotes and
+invalid archives therefore report the command failure. Exit 127 or stderr saying
+“not found” alone does not establish that a tool is missing. Launch errors without
+an error code use a generic start-failure detail.
 
 Each diagnostic also names `--local-unverified --from <tracker>` for private
 local evaluation. This is an explicit change of provenance, not a way to qualify

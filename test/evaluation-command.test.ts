@@ -46,7 +46,7 @@ test("eval and calibrate expose actionable gh errors before inference", async ()
       serve(server);
       process.env.PATH = `${bin}:${previous}`;
       for (const [stderr, expected] of [
-        ["gh: command not found", "gh missing"],
+        ["gh: command not found", "unrecognized gh failure"],
         ["not authenticated; run gh auth login", "not authenticated"],
         ["HTTP 404: repository not found", "repository not found/private"],
         ["HTTP 429: rate limit exceeded", "rate-limited"],

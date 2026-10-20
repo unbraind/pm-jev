@@ -7,7 +7,7 @@ import { certifyCompleteListResult } from "@unbrained/pm-cli/sdk/runtime";
 import { RelationshipGraph, resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk/graph";
 import { buildClassificationQuestions, buildLinkQuestion, buildDedupeRequest, projectTriageState, rankDedupeCandidates, existingLinkKinds } from "./index.js";
 import { evidenceHash } from "./decision-calibration.js";
-import { ghInspectionFailure, LOCAL_SOURCE_GUIDANCE } from "./source-diagnostics.js";
+import { ghInspectionFailure, LOCAL_SOURCE_GUIDANCE, sourceFailureDetail } from "./source-diagnostics.js";
 import { assertPublicProvenance } from "./source-provenance.js";
 /** Run bounded external inspection tools without a shell or credential-bearing output. */
 export function inspectSource(command, args, cwd, input) {
@@ -15,9 +15,9 @@ export function inspectSource(command, args, cwd, input) {
         return execFileSync(command, args, { cwd, input, timeout: 60_000, maxBuffer: 64 * 1024 * 1024, stdio: ["pipe", "pipe", "pipe"] });
     }
     catch (error) {
-        if (command !== "gh")
-            throw createPmCliExpectedError(`Public tracker inspection failed (${command}). Verified public snapshots require git and archive tools. Install the failing tool and retry. ${LOCAL_SOURCE_GUIDANCE}`);
         const failure = error;
+        if (command !== "gh")
+            throw createPmCliExpectedError(`Public tracker inspection failed. ${sourceFailureDetail([command, ...args].join(" "), failure.code, failure.status, failure.stderr?.toString() ?? "")}. ${LOCAL_SOURCE_GUIDANCE}`);
         throw ghInspectionFailure(args[2] ?? "requested repository", failure.code, failure.status, failure.stderr?.toString() ?? "");
     }
 }

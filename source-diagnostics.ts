@@ -16,13 +16,24 @@ export function redactedSourceLine(text: string): string {
     .replace(/[\x00-\x1f\x7f]/g, "")
     .slice(0, 500);
 }
+/** Redact a tool invocation and distinguish launch errors from command exits. */
+export function sourceFailureDetail(command: string, code: string | undefined, status: number | null | undefined, stderr: string): string {
+  const name = redactedSourceLine(command);
+  if (code === "ENOENT") return `${name} not installed (ENOENT). Install the tool and add it to PATH`;
+  if (code === "EACCES" || code === "EPERM") return `${name} could not start: permission denied (${code}). Check executable permissions`;
+  if (typeof status === "number") return `${name} exited with status ${status}. stderr: ${redactedSourceLine(stderr) || "(empty)"}`;
+  return `${name} could not start (${redactedSourceLine(code ?? "no launch details available")})`;
+}
 /** Classify gh subprocess failures and retain only a redacted first stderr line. */
 export function ghInspectionFailure(repository: string, code: string | undefined, status: number | null | undefined, stderr: string): Error {
   let kind: string;
   let fix: string;
-  if (code === "ENOENT" || status === 127 || /(?:gh: command not found|executable.*not found)/i.test(stderr)) {
+  if (code === "ENOENT") {
     kind = "gh missing";
     fix = "Install GitHub CLI (gh) and add it to PATH";
+  } else if (code === "EACCES" || code === "EPERM") {
+    kind = "permission/launch failure";
+    fix = "Check permissions for the GitHub CLI executable and retry";
   } else if (/not (?:logged|authenticated)|gh auth login|authentication (?:required|failed)|requires authentication|bad credentials|HTTP 401/i.test(stderr)) {
     kind = "not authenticated";
     fix = "Run gh auth login (or replace an invalid GH_TOKEN/GITHUB_TOKEN) and retry with an account that can read the public repository";
@@ -39,5 +50,5 @@ export function ghInspectionFailure(repository: string, code: string | undefined
     kind = "unrecognized gh failure";
     fix = "Run gh repo view for the named repository and resolve the reported error";
   }
-  return createPmCliExpectedError(`Public tracker inspection failed for ${redactedSourceLine(repository)} (gh: ${kind}). ${fix}. ${LOCAL_SOURCE_GUIDANCE} gh stderr: ${redactedSourceLine(stderr) || "(empty)"}`);
+  return createPmCliExpectedError(`Public tracker inspection failed for ${redactedSourceLine(repository)} (gh: ${kind}). ${fix}. ${sourceFailureDetail("gh", code, status, stderr)}. ${LOCAL_SOURCE_GUIDANCE} gh stderr: ${redactedSourceLine(stderr) || "(empty)"}`);
 }
