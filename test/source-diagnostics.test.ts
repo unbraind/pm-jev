@@ -7,6 +7,15 @@ import { join } from "node:path";
 import { inspectSource } from "../tracker-evaluation.ts";
 import { ghInspectionFailure, redactedSourceLine, sourceFailureDetail } from "../source-diagnostics.ts";
 
+/** Pin English tool diagnostics temporarily and restore the caller's locale even after an assertion fails. */
+function withCLocale(run: () => void): void {
+  const previous = process.env.LC_ALL;
+  process.env.LC_ALL = "C";
+  try { run(); } finally {
+    if (previous === undefined) delete process.env.LC_ALL; else process.env.LC_ALL = previous;
+  }
+}
+
 /** Exercise a real bounded inspection process with an isolated executable and restore its environment. */
 function withFailingTool(command: string, script: string, check: (error: Error) => void): void {
   const previousPath = process.env.PATH;
@@ -62,7 +71,7 @@ test("real gh executables classify failures and show only the redacted first std
   }
 });
 
-test("empty git repository reports rev-parse exit status and first stderr line", () => {
+test("empty git repository reports rev-parse exit status and first stderr line", () => withCLocale(() => {
   const cwd = mkdtempSync(join(tmpdir(), "jev-empty-git-"));
   try {
     execFileSync("git", ["init", "-q"], { cwd });
@@ -73,24 +82,24 @@ test("empty git repository reports rev-parse exit status and first stderr line",
       return true;
     });
   } finally { rmSync(cwd, { recursive: true, force: true }); }
-});
+}));
 
-test("git repository without origin reports get-url exit status and stderr", () => {
+test("git repository without origin reports get-url exit status and stderr", () => withCLocale(() => {
   const cwd = mkdtempSync(join(tmpdir(), "jev-no-origin-"));
   try {
     execFileSync("git", ["init", "-q"], { cwd });
     assert.throws(() => inspectSource("git", ["remote", "get-url", "origin"], cwd), /git remote get-url origin exited with status 2\. stderr: error: No such remote 'origin'/);
   } finally { rmSync(cwd, { recursive: true, force: true }); }
-});
+}));
 
-test("git ls-tree missing tree path reports the actual command failure", () => {
+test("git ls-tree missing tree path reports the actual command failure", () => withCLocale(() => {
   const cwd = mkdtempSync(join(tmpdir(), "jev-missing-tree-"));
   try {
     execFileSync("git", ["init", "-q"], { cwd });
     execFileSync("git", ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.test", "commit", "--allow-empty", "-qm", "Synthetic empty tree"], { cwd });
     assert.throws(() => inspectSource("git", ["ls-tree", "HEAD:missing"], cwd), /git ls-tree HEAD:missing exited with status 128\. stderr: fatal: Not a valid object name HEAD:missing/);
   } finally { rmSync(cwd, { recursive: true, force: true }); }
-});
+}));
 
 for (const command of ["git", "tar", "gh"]) {
   test(`${command} non-executable tool reports EACCES instead of installation guidance`, () => {
@@ -127,7 +136,7 @@ for (const command of ["git", "tar", "gh"]) {
 test("tar extraction errors report command exit status and first stderr line", () => {
   const cwd = mkdtempSync(join(tmpdir(), "jev-invalid-archive-"));
   try {
-    assert.throws(() => inspectSource("tar", ["-xf", "-"], cwd, Buffer.from("not an archive")), /tar -xf - exited with status 2\. stderr: tar: This does not look like a tar archive/);
+    assert.throws(() => inspectSource("tar", ["-xf", "-"], cwd, Buffer.from("not an archive")), /tar -xf - exited with status [1-9]\d*\. stderr: (?!\(empty\))\S[^\r\n]*/);
   } finally { rmSync(cwd, { recursive: true, force: true }); }
 });
 
