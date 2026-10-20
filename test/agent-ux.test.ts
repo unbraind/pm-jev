@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import test from "node:test";
 import { answers, scenario } from "./fixtures.ts";
+import { activateExtensionForTest } from "@unbrained/pm-cli/sdk/testing";
+import extension from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
 
 /** Fields inspected on compact/full receipts without weakening test type checks. */
@@ -138,4 +140,18 @@ test("compact all four commands while JSON and full retain precision and every o
     assert.equal((small.result as OutputReceipt).answers.n.omitted_options, 0);
     assert.deepEqual(Object.keys((small.result as OutputReceipt).answers.n.probabilities), ["first", "second"]);
   });
+});
+
+/** Dedupe help guidance must match the dispatcher: --title is optional screening, and pair scanning has an example. */
+test("dedupe help presents --title as optional screening with a pair-scan example", async () => {
+  const activation = await activateExtensionForTest(extension, { capabilities: ["commands", "schema", "hooks"] });
+  const command = activation.registrations.commands.find(registered => registered.command === "jev dedupe");
+  assert.ok(command, "jev dedupe command is registered");
+  const title = activation.registrations.flags.find(registered => registered.target_command === "jev dedupe")?.flags.find(flag => flag.long === "--title");
+  assert.ok(title, "--title flag is registered");
+  assert.match(title.description ?? "", /Pre-create screening/);
+  assert.match(title.description ?? "", /omit to scan existing pairs/);
+  assert.doesNotMatch(title.description ?? "", /required/);
+  assert.ok(command.examples.some(example => example.includes("--limit-pairs")), "a pair-scan example is listed");
+  assert.ok(command.examples.some(example => example.includes("--title")), "the title screening example is retained");
 });

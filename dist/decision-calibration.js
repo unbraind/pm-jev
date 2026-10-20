@@ -173,9 +173,9 @@ export async function readCalibration(pmRoot, task, model, exemplars) {
         throw new Error("Saved calibration is invalid; rerun jev calibrate");
     return record;
 }
-/** Read the immutable local model identity with no prompts or hosted credentials. */
-export async function modelDigest(baseUrl, model, timeoutMs) {
-    const response = await fetch(`${baseUrl}/api/tags`, { redirect: "error", signal: AbortSignal.timeout(timeoutMs) });
+/** Read the immutable local model identity under a timeout or a shared run signal, without prompts or hosted credentials. */
+export async function modelDigest(baseUrl, model, timeout) {
+    const response = await fetch(`${baseUrl}/api/tags`, { redirect: "error", signal: typeof timeout === "number" ? AbortSignal.timeout(timeout) : timeout });
     if (!response.ok)
         throw new Error("Cannot verify local model digest");
     const payload = await response.json();

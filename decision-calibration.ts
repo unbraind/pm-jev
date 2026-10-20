@@ -226,9 +226,9 @@ export async function readCalibration(pmRoot: string, task: EvaluationTask, mode
   return record;
 }
 
-/** Read the immutable local model identity with no prompts or hosted credentials. */
-export async function modelDigest(baseUrl: string, model: string, timeoutMs: number): Promise<string> {
-  const response = await fetch(`${baseUrl}/api/tags`, { redirect: "error", signal: AbortSignal.timeout(timeoutMs) });
+/** Read the immutable local model identity under a timeout or a shared run signal, without prompts or hosted credentials. */
+export async function modelDigest(baseUrl: string, model: string, timeout: number | AbortSignal): Promise<string> {
+  const response = await fetch(`${baseUrl}/api/tags`, { redirect: "error", signal: typeof timeout === "number" ? AbortSignal.timeout(timeout) : timeout });
   if (!response.ok) throw new Error("Cannot verify local model digest");
   const payload = await response.json() as { models: { name: string; digest: string }[] };
   const digest = payload.models.find(/** Match an exact installed model tag. */ entry => entry.name === model)?.digest;
