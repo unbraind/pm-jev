@@ -1,13 +1,15 @@
 import { createHash } from "node:crypto";
 import { getSettingsPath, readFileIfExists } from "@unbrained/pm-cli/sdk";
 import type { ExemplarSetting } from "./exemplar-retrieval.ts";
+import { assertPublicProvenance } from "./source-provenance.ts";
+import type { LocalProvenance } from "./source-provenance.ts";
 
 /** Versioned contract shared by evaluation, persisted calibration and live decisions. */
 export const EVALUATION_VERSION = "pm-jev-eval/1";
 /** Supported ground-truth decision tasks. */
 export type EvaluationTask = "triage" | "link" | "dedupe";
 /** One labelled model answer, with content-free reproducibility evidence. */
-export interface Observation {
+export interface Observation extends LocalProvenance {
   repository: string;
   commit: string;
   data_sha256: string;
@@ -53,7 +55,7 @@ export interface ChannelCalibration {
   validation_at_threshold: ReturnType<typeof atThreshold> | null;
 }
 /** Auditable, content-free project settings record for one task/model digest. */
-export interface CalibrationReceipt {
+export interface CalibrationReceipt extends LocalProvenance {
   version: string;
   method: "temperature_scaling_nll_grid";
   task: EvaluationTask;
@@ -65,7 +67,7 @@ export interface CalibrationReceipt {
   exemplars?: ExemplarSetting;
   calibration_repositories: string[];
   validation_repositories: string[];
-  data: { repository: string; commit: string; data_sha256: string }[];
+  data: (LocalProvenance & { repository: string; commit: string; data_sha256: string })[];
   observations_sha256: string;
   channels: Record<string, ChannelCalibration>;
 }
@@ -175,7 +177,8 @@ export function repositorySplit(repositories: readonly string[], seed: string): 
   return { calibration: ordered.slice(0, cut).sort(), validation: ordered.slice(cut).sort() };
 }
 /** Fit channels and freeze candidate thresholds before inspecting validation outcomes. */
-export function calibrateObservations(task: EvaluationTask, model: string, digest: string, rows: readonly Observation[], seed: string, target: number, exemplars?: ExemplarSetting): CalibrationReceipt {
+export function calibrateObservations(task: EvaluationTask, model: string, digest: string, rows: readonly Observation[], seed: string, target: number, exemplars?: ExemplarSetting, localUnverified = false): CalibrationReceipt {
+  if (!localUnverified) assertPublicProvenance(rows);
   const split = repositorySplit(rows.map(/** Partition all channels from a repository together. */ row => row.repository), seed);
   const channels: Record<string, ChannelCalibration> = {};
   for (const channel of [...new Set(rows.map(/** Fit type and priority separately. */ row => row.channel))].sort()) {
@@ -195,8 +198,8 @@ export function calibrateObservations(task: EvaluationTask, model: string, diges
       question_sha256: [...new Set(cal.map(/** Restrict reuse to question schemas observed during fitting. */ row => row.question_sha256))].sort(),
       calibration: { raw: reliability(cal), calibrated: reliability(calibrated) }, validation: { raw: reliability(val), calibrated: reliability(validation) }, validation_at_threshold: checked };
   }
-  const data = [...new Map(rows.map(/** Collapse provenance once per repository snapshot. */ row => [row.repository, { repository: row.repository, commit: row.commit, data_sha256: row.data_sha256 }])).values()].sort(/** Keep receipt encoding independent of read order. */ (a, b) => a.repository.localeCompare(b.repository));
-  return { version: EVALUATION_VERSION, method: "temperature_scaling_nll_grid", task, model, model_digest: digest, target_precision: target, seed,
+  const data = [...new Map(rows.map(/** Collapse provenance once per repository snapshot. */ row => [row.repository, { ...(row.provenance === undefined ? {} : { provenance: row.provenance }), repository: row.repository, commit: row.commit, data_sha256: row.data_sha256 }])).values()].sort(/** Keep receipt encoding independent of read order. */ (a, b) => a.repository.localeCompare(b.repository));
+  return { ...(localUnverified ? { provenance: "local-unverified" as const } : {}), version: EVALUATION_VERSION, method: "temperature_scaling_nll_grid", task, model, model_digest: digest, target_precision: target, seed,
     ...(exemplars === undefined ? {} : { exemplars }),
     calibration_repositories: split.calibration, validation_repositories: split.validation, data, observations_sha256: evidenceHash(rows), channels };
 }

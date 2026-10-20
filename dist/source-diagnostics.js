@@ -1,0 +1,72 @@
+import { createPmCliExpectedError } from "@unbrained/pm-cli/sdk";
+/** Explicit recovery path for private trackers; never an automatic public-source fallback. */
+export const LOCAL_SOURCE_GUIDANCE = "For private local evaluation, pass --local-unverified --from <tracker>.";
+/** Remove credential material, endpoint details and local identities from one diagnostic line. */
+export function redactedSourceLine(text) {
+    return text.split(/\r?\n/, 1)[0]
+        .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
+        .replace(/https?:\/\/\S+/gi, "[redacted-url]")
+        .replace(/\b(?:Bearer|Basic)\s+\S+/gi, "[redacted-authorization]")
+        .replace(/\b(?:github_pat_|gh[pousr]_)[A-Za-z0-9_]+/g, "[redacted-token]")
+        .replace(/\b(?:[A-Z_]*(?:TOKEN|PASSWORD|SECRET|API_KEY)|token|password|secret|api_key)\s*[=:]\s*\S+/gi, "[redacted-credential]")
+        .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted-email]")
+        .replace(/(?:[A-Z]:\\|\/(?:home|Users|tmp|private|var|run|mnt|opt)\/)[^\s"']+/gi, "[redacted-path]")
+        .replace(/[\x00-\x1f\x7f]/g, "")
+        .slice(0, 500);
+}
+/** Redact a tool invocation and distinguish launch errors, runtime limits, signals and command exits. */
+export function sourceFailureDetail(command, code, status, stderr, signal) {
+    const name = redactedSourceLine(command);
+    if (code === "ENOENT")
+        return `${name} not installed (ENOENT). Install the tool and add it to PATH`;
+    if (code === "EACCES" || code === "EPERM")
+        return `${name} could not start: permission denied (${code}). Check executable permissions`;
+    if (code === "ETIMEDOUT")
+        return `${name} timed out and was terminated (ETIMEDOUT). Check the inspection time limit`;
+    if (code === "ENOBUFS")
+        return `${name} output exceeded the inspection buffer and was terminated (ENOBUFS). Check the inspection output limit`;
+    if (signal)
+        return `${name} was terminated by ${redactedSourceLine(signal)}`;
+    if (typeof status === "number")
+        return `${name} exited with status ${status}. stderr: ${redactedSourceLine(stderr) || "(empty)"}`;
+    return `${name} could not start (${redactedSourceLine(code ?? "no launch details available")})`;
+}
+/** Classify gh subprocess failures and retain only a redacted first stderr line. */
+export function ghInspectionFailure(repository, code, status, stderr, signal) {
+    let kind;
+    let fix;
+    if (code === "ENOENT") {
+        kind = "gh missing";
+        fix = "Install GitHub CLI (gh) and add it to PATH";
+    }
+    else if (code === "EACCES" || code === "EPERM") {
+        kind = "permission/launch failure";
+        fix = "Check permissions for the GitHub CLI executable and retry";
+    }
+    else if (code === "ETIMEDOUT" || code === "ENOBUFS" || signal) {
+        kind = "runtime failure";
+        fix = "Check the inspection time/output limits or termination signal before retrying";
+    }
+    else if (/not (?:logged|authenticated)|gh auth login|authentication (?:required|failed)|requires authentication|bad credentials|HTTP 401/i.test(stderr)) {
+        kind = "not authenticated";
+        fix = "Run gh auth login (or replace an invalid GH_TOKEN/GITHUB_TOKEN) and retry with an account that can read the public repository";
+    }
+    else if (/rate.limit|HTTP 429|API rate limit exceeded/i.test(stderr)) {
+        kind = "rate-limited";
+        fix = "Wait for the GitHub rate limit to reset; check gh api rate_limit";
+    }
+    else if (/could not resolve to a repository|repository.*(?:not found|private)|HTTP 404/i.test(stderr)) {
+        kind = "repository not found/private";
+        fix = "Check the repository name and public visibility; private repositories are ineligible";
+    }
+    else if (/network|connect|timed? ?out|timeout|resolve host|TLS|certificate|ENETUNREACH|EAI_AGAIN/i.test(stderr)) {
+        kind = "network";
+        fix = "Restore access to api.github.com (DNS, proxy, TLS and firewall) and retry";
+    }
+    else {
+        kind = "unrecognized gh failure";
+        fix = "Run gh repo view for the named repository and resolve the reported error";
+    }
+    return createPmCliExpectedError(`Public tracker inspection failed for ${redactedSourceLine(repository)} (gh: ${kind}). ${fix}. ${sourceFailureDetail("gh", code, status, stderr, signal)}. ${LOCAL_SOURCE_GUIDANCE} gh stderr: ${redactedSourceLine(stderr) || "(empty)"}`);
+}
+//# sourceMappingURL=source-diagnostics.js.map

@@ -5,6 +5,7 @@ import { basename, dirname, join } from "node:path";
 import { calibrate, datasetBytes, generateDataset, readDataset } from "../calibration.ts";
 import { calibrateTypes } from "../type-calibration.ts";
 import { isMainInvocation } from "./main-invocation.ts";
+import { assertPublicProvenance } from "../source-provenance.ts";
 
 /** Parsed command values let defaults be tested without connecting to Ollama. */
 export type CalibrationCommand =
@@ -36,6 +37,7 @@ export async function main(args: readonly string[]): Promise<void> {
   const contents = command.mode === "generate"
     ? datasetBytes(generateDataset(command.seed))
     : `${JSON.stringify(command.mode === "types" ? await calibrateTypes(command.baseUrl, command.model, command.target) : await calibrate(readDataset(readFileSync("calibration/dataset-v1.json", "utf8")), command.baseUrl, command.model, command.target), null, 2)}\n`;
+  assertPublicProvenance(JSON.parse(contents));
   /** Exclusive same-directory file permits one atomic rename of a flushed complete result. */
   const temporary = join(dirname(command.output), `.${basename(command.output)}.${randomUUID()}.tmp`);
   try {

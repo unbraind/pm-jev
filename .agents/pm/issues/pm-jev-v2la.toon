@@ -1,0 +1,11 @@
+id: pm-jev-v2la
+title: Align managed GitHub extension SDK with the pinned host for strict health
+description: "Strict health reports extension_host_pm_cli_version_skew: the package pins pm-cli 2026.10.15 while its managed pm-github installation uses pm-cli 2026.10.20. Check managed-extension provisioning and CI behavior without changing this diagnostics patch or rewriting tracker history. Two stale in-progress items are separately advisory. Related packaging work: pm-jev-0q58."
+type: Issue
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-20T10:25:11.881Z"
+updated_at: "2026-10-20T10:25:11.881Z"
+author: codex-agent
+body: ""

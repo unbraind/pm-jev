@@ -1,10 +1,11 @@
 import type { ExemplarSetting } from "./exemplar-retrieval.ts";
+import type { LocalProvenance } from "./source-provenance.ts";
 /** Versioned contract shared by evaluation, persisted calibration and live decisions. */
 export declare const EVALUATION_VERSION = "pm-jev-eval/1";
 /** Supported ground-truth decision tasks. */
 export type EvaluationTask = "triage" | "link" | "dedupe";
 /** One labelled model answer, with content-free reproducibility evidence. */
-export interface Observation {
+export interface Observation extends LocalProvenance {
     repository: string;
     commit: string;
     data_sha256: string;
@@ -73,7 +74,7 @@ export interface ChannelCalibration {
     validation_at_threshold: ReturnType<typeof atThreshold> | null;
 }
 /** Auditable, content-free project settings record for one task/model digest. */
-export interface CalibrationReceipt {
+export interface CalibrationReceipt extends LocalProvenance {
     version: string;
     method: "temperature_scaling_nll_grid";
     task: EvaluationTask;
@@ -85,11 +86,11 @@ export interface CalibrationReceipt {
     exemplars?: ExemplarSetting;
     calibration_repositories: string[];
     validation_repositories: string[];
-    data: {
+    data: (LocalProvenance & {
         repository: string;
         commit: string;
         data_sha256: string;
-    }[];
+    })[];
     observations_sha256: string;
     channels: Record<string, ChannelCalibration>;
 }
@@ -138,7 +139,7 @@ export declare function repositorySplit(repositories: readonly string[], seed: s
     validation: string[];
 };
 /** Fit channels and freeze candidate thresholds before inspecting validation outcomes. */
-export declare function calibrateObservations(task: EvaluationTask, model: string, digest: string, rows: readonly Observation[], seed: string, target: number, exemplars?: ExemplarSetting): CalibrationReceipt;
+export declare function calibrateObservations(task: EvaluationTask, model: string, digest: string, rows: readonly Observation[], seed: string, target: number, exemplars?: ExemplarSetting, localUnverified?: boolean): CalibrationReceipt;
 /** Read package-private settings through the SDK; normalized host settings intentionally omit them. */
 export declare function readOpaqueJevSettings(pmRoot: string): Promise<Record<string, unknown>>;
 /** Read and validate the task/model calibration without exposing other project settings. */

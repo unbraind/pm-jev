@@ -3,8 +3,9 @@ import type { Questions } from "@typesafe-ai/sdk";
 import type { TriageItemState } from "./index.ts";
 import type { EvaluationTask } from "./decision-calibration.ts";
 import type { ExemplarUnit } from "./exemplar-retrieval.ts";
-/** Immutable committed public tracker snapshot projected through the host SDK. */
-export interface TrackerCorpus {
+import type { LocalProvenance } from "./source-provenance.ts";
+/** Certified tracker projection; direct local sources carry an explicit unverified trust marker. */
+export interface TrackerCorpus extends LocalProvenance {
     repository: string;
     commit: string;
     data_sha256: string;
@@ -14,7 +15,7 @@ export interface TrackerCorpus {
     })[];
 }
 /** A labelled request; only state and questions cross the model boundary. */
-export interface EvaluationExample {
+export interface EvaluationExample extends LocalProvenance {
     repository: string;
     commit: string;
     data_sha256: string;
@@ -27,6 +28,8 @@ export interface EvaluationExample {
 export declare function inspectSource(command: string, args: string[], cwd: string, input?: Buffer): Buffer;
 /** Verify a fleet clone's public identity before touching tracker contents; private repos are skipped. */
 export declare function readPublicCorpus(from: string, inspect?: typeof inspectSource): Promise<TrackerCorpus | null>;
+/** Read an explicitly opted-in local tracker directly; never discover repositories or launch external tools. */
+export declare function readLocalCorpus(from: string): Promise<TrackerCorpus>;
 /** Remove routing fields and bound semantic text identically for evaluation and calibrated inference. */
 export declare function semanticState(item: ItemMetadata & {
     body?: string;

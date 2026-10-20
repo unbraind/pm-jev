@@ -33,7 +33,7 @@
     "test": "npm run build && npm run build:test && node --test test/*.test.ts",
     "test:live": "node --test --test-reporter=spec test/live.acceptance.ts",
     "test:install": "npm run build && node --test --test-reporter=spec test/install.acceptance.ts",
-    "prepack": "npm run build",
+    "prepack": "npm run verify:public-provenance && npm run build",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck",
     "docstring": "node scripts/docstring-gate.ts",
@@ -44,7 +44,7 @@
     "changelog": "pm-changelog --pm-root .agents/pm --mode prepend --output CHANGELOG.md --release-version-from-package --date-from-version --since-previous-tag --until-release-tag --item-url-base https://github.com/unbraind/pm-jev/blob/main/.agents/pm --respect-item-release --status closed,in_progress --pm-bin ./node_modules/.bin/pm --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded",
     "changelog:full": "pm-changelog --pm-root .agents/pm --mode replace --output CHANGELOG.md --all-release-tags --release-version-from-package --date-from-version --item-url-base https://github.com/unbraind/pm-jev/blob/main/.agents/pm --respect-item-release --status closed,in_progress --pm-bin ./node_modules/.bin/pm --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded",
     "changelog:check": "pm-changelog --pm-root .agents/pm --mode replace --output CHANGELOG.md --all-release-tags --release-version-from-package --date-from-version --item-url-base https://github.com/unbraind/pm-jev/blob/main/.agents/pm --respect-item-release --status closed,in_progress --check --pm-bin ./node_modules/.bin/pm --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded",
-    "release:check": "npm run typecheck && npm run lint && npm run duplication && npm run build && npm run docstring && npm run coverage && npm run audit:prod && npm run pack:dry-run && npm run changelog:check && npm run verify:release-publish-attestation",
+    "release:check": "npm run verify:public-provenance && npm run typecheck && npm run lint && npm run duplication && npm run build && npm run docstring && npm run coverage && npm run audit:prod && npm run pack:dry-run && npm run changelog:check && npm run verify:release-publish-attestation",
     "prepublishOnly": "npm run release:check",
     "release:notes": "pm-changelog --pm-root .agents/pm --stdout --since-previous-tag --until-release-tag --release-version-from-package --date-from-version --item-url-base https://github.com/unbraind/pm-jev/blob/main/.agents/pm --respect-item-release --status closed,in_progress --pm-bin ./node_modules/.bin/pm --github-step-summary --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded",
     "prepare": "node scripts/prepare-merge-driver.ts",
@@ -53,7 +53,8 @@
     "verify:release-publish-attestation": "node scripts/verify-release-publish-attestation.ts",
     "calibration:generate": "node scripts/calibrate.ts generate",
     "calibration": "node scripts/calibrate.ts run",
-    "calibration:types": "node scripts/calibrate.ts types"
+    "calibration:types": "node scripts/calibrate.ts types",
+    "verify:public-provenance": "node scripts/verify-public-provenance.ts"
   },
   "dependencies": {
     "@typesafe-ai/sdk": "^0.7.0"

@@ -346,6 +346,62 @@ must be `unbraind/pm-*` clones in a directory named `fleet`; the host CLI and
 companion trackers are refused. Hosted data and external model endpoints are
 outside this command's boundary.
 
+For a private or plain local tracker, explicitly opt in:
+
+```sh
+pm jev eval --task triage --local-unverified --from .agents/pm --sample 10
+pm jev calibrate --task triage --local-unverified \
+  --from project-a/.agents/pm --from project-b/.agents/pm --sample 20
+```
+
+This path reads the selected directories directly through the SDK, including
+uncommitted changes, without invoking git or gh. Every report, observation and
+calibration receipt is marked `provenance: "local-unverified"`; source identities
+are opaque and no commit verification is claimed. Local calibration returns its
+receipt without saving it to committable project settings. Keep these outputs
+private. They cannot enter the public corpus, published calibration artifacts or
+committed fixtures. Public calibration input, artifact generation, release checks
+and package packing reject marked evidence, including nested receipts. The default
+public-source requirements above remain unchanged; no automatic fallback occurs.
+
+When GitHub inspection fails, the error names the repository and failure kind,
+gives the corresponding recovery step below, and includes only gh's first stderr
+line with credentials, URLs and local identities redacted.
+
+| Failure | Recovery |
+| --- | --- |
+| gh missing (`ENOENT`) | Install GitHub CLI and add `gh` to PATH. |
+| Permission/launch failure (`EACCES`/`EPERM`) | Check executable permissions and retry. |
+| Not authenticated | Run `gh auth login`, or replace an invalid `GH_TOKEN`/`GITHUB_TOKEN`. |
+| Repository not found/private | Check its name and public visibility; private sources require the local opt-in. |
+| Rate-limited | Check `gh api rate_limit` and wait for reset. |
+| Network | Restore DNS, proxy, TLS and firewall access to `api.github.com`. |
+
+Git, tar and gh diagnostics distinguish missing tools from launch failures. A
+command that exits unsuccessfully reports its command, exit status and redacted
+first stderr line (or `(empty)`). Empty git repositories, missing remotes and
+invalid archives therefore report the command failure. Exit 127 or stderr saying
+“not found” alone does not establish that a tool is missing. Launch errors without
+an error code use a generic start-failure detail.
+
+Inspection timeouts (`ETIMEDOUT`), output overflows (`ENOBUFS`) and signal kills
+report runtime failures with the relevant limit or termination signal. Inspection
+is bounded to 60 seconds and 64 MiB of output per command.
+
+Public-source diagnostics also name `--local-unverified --from <tracker>` for private
+local evaluation. This is an explicit change of provenance, not a way to qualify
+a source for the public corpus.
+An empty local evaluation reports the lack of eligible ground truth without
+recommending the local flag that is already enabled; neither mode calls the model.
+
+### Without git
+
+Doctor, model discovery, triage, link, dedupe, ask and gate work in plain trackers.
+Evaluation and calibration work there with `--local-unverified` and explicit local
+source directories; they require neither git nor GitHub. Default public-corpus
+sources still require git, GitHub CLI authentication, verified public visibility
+and a committed snapshot. The destination tracker itself need not be a git repo.
+
 Use at least two repositories with relevant ground truth. Run from the project
 that should receive the calibration; every `--from` is a read-only source:
 

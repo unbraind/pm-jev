@@ -1752,7 +1752,7 @@ function registerCommands(api) {
         api.registerCommand(defineCommand({
             name: calibrate ? "jev calibrate" : "jev eval",
             description: calibrate ? "Fit local probabilities on public calibration repositories and validate on held-out repositories" : "Measure local typed decisions against committed public tracker labels",
-            arguments: [{ name: "sources", variadic: true, required: false, description: "Additional public fleet tracker roots" }],
+            arguments: [{ name: "sources", variadic: true, required: false, description: "Additional tracker roots; verified public snapshots by default" }],
             flags: [...EVALUATION_FLAGS, ...(calibrate ? [{ long: "--target-precision", value_name: "p", value_type: "string", description: "Required one-sided 95% precision lower bound (default 0.9)" }] : [])],
             /** Keep full precision for reliability evidence in both host output formats. */
             run: (ctx) => runEvaluationCommand(ctx, calibrate),

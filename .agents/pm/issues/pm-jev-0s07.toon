@@ -1,0 +1,103 @@
+id: pm-jev-0s07
+title: Name evaluation source failures and support local tracker reads without GitHub
+description: "Classify gh source-inspection failures with redacted first-line diagnostics and exact recovery steps; exercise eval and calibrate against eligible local trackers without gh or git, preserve label eligibility and isolated public-source guards. Related implementation: pm-jev-82ip, pm-jev-hx9w, pm-jev-f4ba."
+type: Issue
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-20T09:59:36.702Z"
+updated_at: "2026-10-20T13:26:58.449Z"
+author: codex-agent
+comments[22]{created_at,author,text}:
+  "2026-10-20T09:59:48.900Z",codex-agent,"Inspected source loading: every accepted --from currently runs git and gh before the SDK read. Implementing named gh failures with recovery guidance and fake-executable regression coverage. Local-source eligibility clarification is pending because the current public-origin and visibility verification requires those tools."
+  "2026-10-20T10:01:22.633Z",codex-agent,"Diagnostic regressions pass (2 tests). Behavioral revert of inspectSource alone makes the fake-gh regression fail (1 pass, 1 fail), with the original opaque Public tracker inspection failed (gh) message; restored implementation passes. Typecheck, lint, zero-duplication and docstring checks pass."
+  "2026-10-20T10:06:45.128Z",codex-agent,"The host command harness now surfaces expected actionable gh diagnostics for both eval and calibrate before model calls. Focused linked test command passes 3/3, and diagnostic module line/branch/function coverage is 100%. Local reads remain pending the eligibility decision: accepting arbitrary --from directories conflicts with existing public clone verification. No source eligibility checks have been changed."
+  "2026-10-20T10:10:20.241Z",codex-agent,"Awaiting source-eligibility clarification before changing local reads: --from currently accepts only committed public fleet clones, and enforcing origin/visibility/commit needs git and GitHub. A direct local-tracker mode would change that trust rule; a trusted snapshot format would need an explicit contract. Diagnostics and 3 focused tests are implemented; inspectSource-only revert fails as required. Full isolated npm release check is running; no no-tool success proof, commit or PR has been completed."
+  "2026-10-20T10:12:53.961Z",codex-agent,"Orchestrator resolved eligibility: keep default verified public snapshots, add explicit --local-unverified for direct SDK-only tracker reads, mark all local evidence and receipts, and refuse public artifact publication. Implementing source and persistence boundaries plus no-tool and behavioral-revert regressions."
+  "2026-10-20T10:20:36.630Z",codex-agent,"Implemented --local-unverified via direct certified SDK reads with opaque local identities. Reports, all observation arms, receipt and data entries are marked; local calibration returns its receipt without writing project settings. Default public source verification remains intact. Public input, artifact generation, release/prepack and fixture checks reject nested local evidence. Focused checks passed 7/7. Reverting runEvaluationCommand alone fails the no-gh/no-git regression; reverting assertPublicProvenance alone fails the publication/fixture regression. Both fixes restored; earlier inspectSource-only revert proof also failed as required."
+  "2026-10-20T10:25:20.154Z",codex-agent,Separate strict health inspection found managed pm-github SDK 2026.10.20 versus pinned host 2026.10.15. This is outside the source-diagnostics change; dependency pins and extension configuration remain unchanged. A dedicated follow-up records the observed gate failure. Both release checks remain required and are evaluated separately from strict tracker health.
+  "2026-10-20T10:31:56.140Z",codex-agent,"Full isolated npm release gate passed through linked test 3: 244 tests passed, zero failed; coverage is 5145/5145 lines and statements, 202/202 functions, 2064/2064 branches (100% in every measured dimension); all 22 required source files reported. Typecheck, lint, zero duplication, docstrings, production audit (0 vulnerabilities), pack dry-run, changelog and publish-attestation passed at unchanged thresholds. Bun linked release gate is now running against the same source. Strict-health follow-up is pm-jev-v2la."
+  "2026-10-20T10:42:16.269Z",codex-agent,"Full isolated Bun release gate also passed through linked test 4: 244/244 tests, zero failures; 5145/5145 lines and statements, 202/202 functions, 2064/2064 branches (100%); all 22 required source files reported. Both full release checks passed at unchanged thresholds, with zero duplication and zero production vulnerabilities. No functional source changes followed the npm pass. No-gh/no-git local evaluation/calibration and public artifact/fixture refusal tests pass; independent inspection, local opt-in and provenance-guard reverts each fail their regression. Default public eligibility remains intact. Ready for PR review; strict health remains separately affected by pm-jev-v2la. No merge or release."
+  "2026-10-20T10:43:04.184Z",codex-agent,"Coverage-count correction to the preceding Bun result: Bun measured 2065/2065 branches; npm measured 2064/2064. Both are 100%; the test counts (244/244 per gate), lines/statements (5145/5145), functions (202/202), required source count (22) and all other pass results are unchanged."
+  "2026-10-20T11:16:36.376Z",codex-agent,"Review round 1: distinguish ENOENT, permission/launch failures and nonzero exits in source inspection; preserve command, status and redacted first stderr line. Audit gh classification and every process site changed by PR 34. Latest CodeRabbit review has one inline finding and no Outside diff range findings. Add real git/tool regressions, prove behavioral revert failures, rebuild dist and run both unchanged release gates with isolated git identity."
+  "2026-10-20T11:19:13.159Z",codex-agent,"Implemented shared launch/exit details for git, tar and gh. Only ENOENT advises installation; EACCES and EPERM report permission/launch failures; absent code/status reports a generic start failure; exits preserve command, numeric status and redacted first stderr line or empty marker. Self-review found only inspectSource as the PR process-launch site; gh exit-127/text-based missing-tool conflation is fixed. Revert proof: restored only inspectSource and ghInspectionFailure to the prior head, keeping all tests; node --test test/source-diagnostics.test.ts failed 13/14 (including empty repo, missing origin, ls-tree path, tar, EACCES and ENOENT). Restored implementation: 14/14 pass, also passed through pm test --run --only-last --progress. Typecheck, lint and zero-duplication checks pass. No Outside diff range findings in latest CodeRabbit review."
+  "2026-10-20T11:27:23.778Z",codex-agent,"Full review-round npm release gate passed with isolated HOME and disabled global/system Git config: 256/256 tests, zero failures/skips/cancelled/todo; 5156/5156 lines and statements, 203/203 functions, 2081/2081 branches (100%); 22 required source files reported. Typecheck, lint, zero duplication, docstrings, production audit (0 vulnerabilities), pack dry-run, changelog and publish attestation passed at unchanged thresholds. Bun gate is running on identical code/build inputs. PM validate passed with existing advisories and no history drift; strict health remains blocked by the existing managed GitHub extension/host skew tracked in pm-jev-v2la. Linked test evidence tracking is disabled by project policy, so measured results are preserved in comments."
+  "2026-10-20T11:35:21.498Z",codex-agent,"Full review-round Bun release gate passed: 256/256 tests; zero failed, skipped, cancelled or todo. Both isolated npm run release:check and bun run release:check measured 5156/5156 lines and statements, 203/203 functions and 2081/2081 branches (100%), all 22 required sources; unchanged thresholds, zero duplication and zero production vulnerabilities. All 108 recorded source/test/build/package input hashes match across both gates. Rebuilt dist is included. Production and test process sites were reviewed: inspectSource is the sole production launch site changed by the PR; gh classification is corrected and test setup launches do not relabel failures. Requested review thread remains unresolved; no replies or mentions were sent. Existing health skew remains separately tracked in pm-jev-v2la. Releasing claim for orchestrator verification; item stays in progress."
+  "2026-10-20T12:09:36.323Z",codex-agent,"PR #34 review round: fetched all review threads and all comments (pagination complete). Two unresolved valid findings: PRRT_kwDOU8IMzs6uUMS9 (public-only recovery hint on empty labels) and PRRT_kwDOU8IMzs6uUMTF (runtime timeout, output limit and signal failures misreported as launch failures). Latest CodeRabbit review has no Outside diff range findings. Remote head 569a93f includes current main; no merge needed. Plan: cover both modes and both eval/calibrate, preserve child signals through git/tar/gh diagnostics, self-review the full PR diff, record behavioural reverts, and run unchanged npm/Bun release gates with clean git identity."
+  "2026-10-20T12:15:32.161Z",codex-agent,"Review fixes and self-review complete: empty-label errors retain the opt-in hint only for public sources; local source-argument validation now requests local trackers. git/tar/gh runtime timeouts, output-limit failures and signals retain their actual cause, and gh runtime metadata takes priority over partial stderr. Real-process regressions exercise SIGTERM for all three tools and the 64 MiB ENOBUFS bound for git and gh; plain tracker empty triage and unlabelled dedupe cases cover eval and calibrate with no tools or model calls. Full evaluation/diagnostic suite passed 33/33; PM-linked focused run passed 9/9. Duplication fixture consolidated: 0 duplicate lines, threshold unchanged at 0%."
+  "2026-10-20T12:15:45.237Z",codex-agent,"Behavioural revert proofs against 569a93f, tests unchanged and fixes restored after each experiment: revert only the empty-label hint guard => focused empty-local test 0/1 passed (1 failed); revert only the local source-argument guidance => 0/1 passed (1 failed). Revert only sourceFailureDetail => diagnostics 13/20 passed (7 failed); revert only ghInspectionFailure => 17/20 passed (3 failed); revert only inspectSource => 17/20 passed (3 failed, all real signal forwarding cases). Commands: node --test --test-reporter=tap --test-name-pattern=\"empty local labels\" test/evaluation-command.test.ts; node --test --test-reporter=tap test/source-diagnostics.test.ts. Runtime-detail and gh reverts also fail timeout classification. No SDK mocks, source functions tested directly, no dist rebuild needed for these proofs."
+  "2026-10-20T12:16:03.464Z",codex-agent,"Additional CI-equivalent health preflight: npx pm health --strict-exit --require-merge-drivers --json fails solely on extension_host_pm_cli_version_skew: pinned host 2026.10.15 versus managed pm-github SDK 2026.10.20. Existing follow-up pm-jev-v2la already owns this problem; no duplicate created, pins/configuration unchanged. Tracker integrity/history drift checks pass. This pre-existing health blocker is separate from package release gates."
+  "2026-10-20T12:33:37.749Z",codex-agent,"Final review-round gates: npm run release:check and bun run release:check both exit 0 with isolated HOME, GIT_CONFIG_GLOBAL=/dev/null and GIT_CONFIG_NOSYSTEM=1. Each passed 263/263 tests, zero failures/cancellations/skips/todo. Each has 100% lines/statements (5162/5162), functions (203/203), branches (2093/2093), with all 22 required sources reported; docstrings cover 584 declarations. Lint, 0% duplication, production audit (0 vulnerabilities), pack dry-run, public-provenance, changelog and release-publish-attestation all pass. Committed dist rebuilt; all 140 recorded tracked source/test/build/package input hashes match across both gates. Existing strict-health version-skew blocker remains with pm-jev-v2la; no new CLI/SDK defect observed. Both unresolved review findings valid and fixed; no Outside diff range findings, no refusals, no thread replies/resolutions, no merge/release. Releasing claim for orchestrator verification; item remains in progress."
+  "2026-10-20T13:12:33.912Z",codex-agent,"PR 34 review round: pulled remote head 0c151f5; branch contains current main, no merge needed. Fetched all review threads and every comment with complete pagination. One unresolved valid thread PRRT_kwDOU8IMzs6uVf5F: Git diagnostic tests inherit locale and tar assertion requires GNU wording/status. Latest CodeRabbit review has no Outside diff range findings. Plan: isolate English Git assertions with temporary C locale, accept nonzero tar failures with nonempty first stderr, audit full PR for the same assumptions, prove behavioral reverts, and run unchanged isolated npm/Bun release gates."
+  "2026-10-20T13:13:30.640Z",codex-agent,"Verified and fixed PRRT_kwDOU8IMzs6uVf5F. Three real Git tests now run inside withCLocale, which restores the prior LC_ALL in finally. Tar assertion accepts only positive exit statuses and nonempty stderr, without implementation-specific text. Behavioral revert proof: LC_ALL=de_AT.utf8 LANGUAGE=de node --test --test-name-pattern=\"empty git|without origin|missing tree path\" test/source-diagnostics.test.ts passes 3/3; replacing only withCLocale body with run() fails 3/3 on real translated Git diagnostics. With a temporary PATH entry mapping tar to the installed real bsdtar, node --test --test-name-pattern=\"tar extraction errors\" test/source-diagnostics.test.ts passes 1/1; restoring only the old GNU-specific assertion fails 1/1 (bsdtar emits status 1 and different stderr). Fixed code restored after both experiments. Full PR diff audited for locale/tool-specific diagnostics; no further instances found. No refusals or Outside diff range findings."
+  "2026-10-20T13:26:55.494Z",codex-agent,"Review round complete for PRRT_kwDOU8IMzs6uVf5F: isolated npm run release:check and bun run release:check both pass, each 263/263 tests, zero failures/cancellations/skips/todo. Each measures 100% lines/statements (5162/5162), functions (203/203), branches (2093/2093), all 22 required sources; 584 documented declarations, 0% duplication and zero production vulnerabilities. All other release checks pass, including typecheck, lint, pack dry-run, provenance, changelog and publish-attestation. No retries or timeouts. All 109 tracked source/test/build/package hashes match across both gates; dist rebuilt without tracked drift. PM-linked German-locale diagnostic suite passes 20/20; independent helper and GNU-assertion reverts fail 3/3 and 1/1 respectively, then restored code passes. Strict health remains blocked solely by the existing extension/host version skew tracked in pm-jev-v2la; integrity/history checks pass and validate exits 0 with existing advisories. No new CLI/SDK bugs encountered. No refusals, additional same-class findings or Outside diff range findings; no thread replies/resolutions, merge or release. Releasing claim for orchestrator verification; item stays in progress."
+files[14]{path,scope}:
+  calibration.ts,project
+  decision-calibration.ts,project
+  evaluation-command.ts,project
+  index.ts,project
+  package.json,project
+  README.md,project
+  scripts/calibrate.ts,project
+  scripts/verify-public-provenance.ts,project
+  source-diagnostics.ts,project
+  source-provenance.ts,project
+  test/evaluation-command.test.ts,project
+  test/source-diagnostics.test.ts,project
+  test/source-provenance.test.ts,project
+  tracker-evaluation.ts,project
+tests[7]:
+  - command: "node --test --test-name-pattern=\"expose actionable gh|real gh executables|diagnostics redact\" test/source-diagnostics.test.ts test/evaluation-command.test.ts"
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-20T10:06:02.066Z"
+      source_kind: local_mutation
+      source_ref: fix/eval-source-diagnostics
+  - command: "node --test --test-name-pattern=\"local-unverified|provenance|smuggle|actionable gh|real gh|diagnostics redact\" test/evaluation-command.test.ts test/source-diagnostics.test.ts test/source-provenance.test.ts"
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-20T10:21:45.373Z"
+      source_kind: local_mutation
+      source_ref: fix/eval-source-diagnostics
+  - command: "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check"
+    scope: project
+    timeout_seconds: 3600
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-20T10:22:39.583Z"
+      source_kind: local_mutation
+      source_ref: fix/eval-source-diagnostics
+  - command: "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 bun run release:check"
+    scope: project
+    timeout_seconds: 3600
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-20T10:22:46.124Z"
+      source_kind: local_mutation
+      source_ref: fix/eval-source-diagnostics
+  - command: node --test test/source-diagnostics.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-20T11:18:07.147Z"
+      source_kind: local_mutation
+      source_ref: fix/eval-source-diagnostics
+  - command: "node --test --test-name-pattern=\"empty local labels|evaluation validation|runtime diagnostics|signal termination|output overflow|diagnostics redact\" test/source-diagnostics.test.ts test/evaluation-command.test.ts"
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-20T12:12:43.126Z"
+      source_kind: local_mutation
+      source_ref: fix/eval-source-diagnostics
+  - command: LC_ALL=de_AT.utf8 LANGUAGE=de node --test test/source-diagnostics.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-20T13:13:37.088Z"
+      source_kind: local_mutation
+      source_ref: fix/eval-source-diagnostics
+docs[1]{path,scope}:
+  README.md,project
+body: ""
