@@ -7,6 +7,24 @@ import { join } from "node:path";
 import { inspectSource } from "../tracker-evaluation.ts";
 import { ghInspectionFailure, redactedSourceLine, sourceFailureDetail } from "../source-diagnostics.ts";
 
+/** Exercise a real bounded inspection process with an isolated executable and restore its environment. */
+function withFailingTool(command: string, script: string, check: (error: Error) => void): void {
+  const previousPath = process.env.PATH;
+  const directory = mkdtempSync(join(tmpdir(), "jev-runtime-"));
+  try {
+    writeFileSync(join(directory, command), script, { mode: 0o755 });
+    process.env.PATH = directory;
+    assert.throws(() => inspectSource(command, [], directory), error => {
+      assert.ok(error instanceof Error);
+      check(error);
+      return true;
+    });
+  } finally {
+    if (previousPath === undefined) delete process.env.PATH; else process.env.PATH = previousPath;
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
 test("real gh executables classify failures and show only the redacted first stderr line", () => {
   const bin = mkdtempSync(join(tmpdir(), "jev-gh-failures-"));
   const previous = process.env.PATH;
@@ -140,6 +158,42 @@ test("diagnostics redact local identities and terminal controls and classify tim
   const posixPath = ["", "home", "synthetic", "file"].join("/");
   const windowsPath = ["C:", "Users", "synthetic", "file"].join("\\");
   assert.equal(redactedSourceLine(`\x1b[31mHTTP 401\x1b[0m ${posixPath} ${windowsPath} person@example.test\t\nsecret second line`), "HTTP 401 [redacted-path] [redacted-path] [redacted-email]");
-  assert.match(ghInspectionFailure("unbraind/pm-alpha", "ETIMEDOUT", null, "").message, /gh: network/);
+  assert.match(ghInspectionFailure("unbraind/pm-alpha", "ETIMEDOUT", null, "").message, /gh: runtime failure.*gh timed out and was terminated/);
   assert.equal(redactedSourceLine("x".repeat(600)).length, 500);
 });
+
+test("runtime diagnostics distinguish time and output limits from signals and launch failures", () => {
+  for (const [code, expected] of [
+    ["ETIMEDOUT", /timed out and was terminated \(ETIMEDOUT\).*time limit/],
+    ["ENOBUFS", /output exceeded the inspection buffer.*\(ENOBUFS\).*output limit/],
+  ] as const) {
+    const detail = sourceFailureDetail("git archive HEAD", code, null, "", "SIGTERM");
+    assert.match(detail, expected);
+    assert.doesNotMatch(detail, /could not start|[Ii]nstall/);
+    // Partial stderr from a terminated command must not override the known runtime failure.
+    const error = ghInspectionFailure("unbraind/pm-alpha", code, null, "gh auth login token=synthetic-secret", "SIGTERM");
+    assert.match(error.message, /gh: runtime failure/);
+    assert.match(error.message, expected);
+    assert.doesNotMatch(error.message, /could not start|not authenticated|synthetic-secret/);
+  }
+  assert.equal(sourceFailureDetail("tar", undefined, null, "", "SIGKILL"), "tar was terminated by SIGKILL");
+  assert.equal(sourceFailureDetail("tar", undefined, null, "", "token=synthetic-secret"), "tar was terminated by [redacted-credential]");
+});
+
+for (const command of ["git", "tar", "gh"]) {
+  test(`real ${command} signal termination survives the inspection boundary`, () => {
+    withFailingTool(command, "#!/bin/sh\nkill -TERM $$\n", error => {
+      assert.match(error.message, new RegExp(`${command} was terminated by SIGTERM`));
+      assert.doesNotMatch(error.message, /could not start|[Ii]nstall/);
+    });
+  });
+}
+
+for (const command of ["git", "gh"]) {
+  test(`real ${command} output overflow reports the inspection buffer limit`, () => {
+    withFailingTool(command, `#!${process.execPath}\nprocess.stdout.write(Buffer.alloc(65 * 1024 * 1024));\n`, error => {
+      assert.match(error.message, new RegExp(`${command} output exceeded the inspection buffer.*ENOBUFS`));
+      assert.doesNotMatch(error.message, /could not start|[Ii]nstall/);
+    });
+  });
+}

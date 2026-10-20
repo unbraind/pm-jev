@@ -384,9 +384,15 @@ invalid archives therefore report the command failure. Exit 127 or stderr saying
 “not found” alone does not establish that a tool is missing. Launch errors without
 an error code use a generic start-failure detail.
 
-Each diagnostic also names `--local-unverified --from <tracker>` for private
+Inspection timeouts (`ETIMEDOUT`), output overflows (`ENOBUFS`) and signal kills
+report runtime failures with the relevant limit or termination signal. Inspection
+is bounded to 60 seconds and 64 MiB of output per command.
+
+Public-source diagnostics also name `--local-unverified --from <tracker>` for private
 local evaluation. This is an explicit change of provenance, not a way to qualify
 a source for the public corpus.
+An empty local evaluation reports the lack of eligible ground truth without
+recommending the local flag that is already enabled; neither mode calls the model.
 
 ### Without git
 

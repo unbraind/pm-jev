@@ -17,8 +17,8 @@ export function inspectSource(command, args, cwd, input) {
     catch (error) {
         const failure = error;
         if (command !== "gh")
-            throw createPmCliExpectedError(`Public tracker inspection failed. ${sourceFailureDetail([command, ...args].join(" "), failure.code, failure.status, failure.stderr?.toString() ?? "")}. ${LOCAL_SOURCE_GUIDANCE}`);
-        throw ghInspectionFailure(args[2] ?? "requested repository", failure.code, failure.status, failure.stderr?.toString() ?? "");
+            throw createPmCliExpectedError(`Public tracker inspection failed. ${sourceFailureDetail([command, ...args].join(" "), failure.code, failure.status, failure.stderr?.toString() ?? "", failure.signal)}. ${LOCAL_SOURCE_GUIDANCE}`);
+        throw ghInspectionFailure(args[2] ?? "requested repository", failure.code, failure.status, failure.stderr?.toString() ?? "", failure.signal);
     }
 }
 /** Verify a fleet clone's public identity before touching tracker contents; private repos are skipped. */

@@ -14,19 +14,25 @@ export function redactedSourceLine(text) {
         .replace(/[\x00-\x1f\x7f]/g, "")
         .slice(0, 500);
 }
-/** Redact a tool invocation and distinguish launch errors from command exits. */
-export function sourceFailureDetail(command, code, status, stderr) {
+/** Redact a tool invocation and distinguish launch errors, runtime limits, signals and command exits. */
+export function sourceFailureDetail(command, code, status, stderr, signal) {
     const name = redactedSourceLine(command);
     if (code === "ENOENT")
         return `${name} not installed (ENOENT). Install the tool and add it to PATH`;
     if (code === "EACCES" || code === "EPERM")
         return `${name} could not start: permission denied (${code}). Check executable permissions`;
+    if (code === "ETIMEDOUT")
+        return `${name} timed out and was terminated (ETIMEDOUT). Check the inspection time limit`;
+    if (code === "ENOBUFS")
+        return `${name} output exceeded the inspection buffer and was terminated (ENOBUFS). Check the inspection output limit`;
+    if (signal)
+        return `${name} was terminated by ${redactedSourceLine(signal)}`;
     if (typeof status === "number")
         return `${name} exited with status ${status}. stderr: ${redactedSourceLine(stderr) || "(empty)"}`;
     return `${name} could not start (${redactedSourceLine(code ?? "no launch details available")})`;
 }
 /** Classify gh subprocess failures and retain only a redacted first stderr line. */
-export function ghInspectionFailure(repository, code, status, stderr) {
+export function ghInspectionFailure(repository, code, status, stderr, signal) {
     let kind;
     let fix;
     if (code === "ENOENT") {
@@ -36,6 +42,10 @@ export function ghInspectionFailure(repository, code, status, stderr) {
     else if (code === "EACCES" || code === "EPERM") {
         kind = "permission/launch failure";
         fix = "Check permissions for the GitHub CLI executable and retry";
+    }
+    else if (code === "ETIMEDOUT" || code === "ENOBUFS" || signal) {
+        kind = "runtime failure";
+        fix = "Check the inspection time/output limits or termination signal before retrying";
     }
     else if (/not (?:logged|authenticated)|gh auth login|authentication (?:required|failed)|requires authentication|bad credentials|HTTP 401/i.test(stderr)) {
         kind = "not authenticated";
@@ -49,7 +59,7 @@ export function ghInspectionFailure(repository, code, status, stderr) {
         kind = "repository not found/private";
         fix = "Check the repository name and public visibility; private repositories are ineligible";
     }
-    else if (/network|connect|timed? ?out|timeout|resolve host|TLS|certificate|ENETUNREACH|EAI_AGAIN/i.test(stderr) || code === "ETIMEDOUT") {
+    else if (/network|connect|timed? ?out|timeout|resolve host|TLS|certificate|ENETUNREACH|EAI_AGAIN/i.test(stderr)) {
         kind = "network";
         fix = "Restore access to api.github.com (DNS, proxy, TLS and firewall) and retry";
     }
@@ -57,6 +67,6 @@ export function ghInspectionFailure(repository, code, status, stderr) {
         kind = "unrecognized gh failure";
         fix = "Run gh repo view for the named repository and resolve the reported error";
     }
-    return createPmCliExpectedError(`Public tracker inspection failed for ${redactedSourceLine(repository)} (gh: ${kind}). ${fix}. ${sourceFailureDetail("gh", code, status, stderr)}. ${LOCAL_SOURCE_GUIDANCE} gh stderr: ${redactedSourceLine(stderr) || "(empty)"}`);
+    return createPmCliExpectedError(`Public tracker inspection failed for ${redactedSourceLine(repository)} (gh: ${kind}). ${fix}. ${sourceFailureDetail("gh", code, status, stderr, signal)}. ${LOCAL_SOURCE_GUIDANCE} gh stderr: ${redactedSourceLine(stderr) || "(empty)"}`);
 }
 //# sourceMappingURL=source-diagnostics.js.map

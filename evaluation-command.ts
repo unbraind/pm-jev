@@ -101,15 +101,15 @@ function rankExemplars(unit: LabelledUnit, corpusUnits: readonly LabelledUnit[],
 export async function runEvaluationCommand(ctx: CommandHandlerContext, calibrate: boolean, readCorpus = readPublicCorpus): Promise<unknown> {
   const task = readStringOption(ctx.options, "task");
   if (task !== "triage" && task !== "link" && task !== "dedupe") throw createPmCliExpectedError("--task must be triage, link or dedupe");
+  const localUnverified = readBooleanOption(ctx.options, "localUnverified", ["local_unverified", "local-unverified"]) === true;
   const rawFrom = ctx.options.from;
   const from = [...(Array.isArray(rawFrom) ? rawFrom : typeof rawFrom === "string" ? [rawFrom] : []), ...ctx.args];
-  if (from.length === 0 || !from.every(/** Refuse parser shapes that cannot be tracker paths. */ entry => typeof entry === "string" && entry.trim() !== "")) throw createPmCliExpectedError("Provide --from <tracker> for each public fleet repository");
+  if (from.length === 0 || !from.every(/** Refuse parser shapes that cannot be tracker paths. */ entry => typeof entry === "string" && entry.trim() !== "")) throw createPmCliExpectedError(`Provide --from <tracker> for each ${localUnverified ? "local tracker" : "public fleet repository"}`);
   const sample = sampleOption(readStringOption(ctx.options, "sample"), calibrate ? 100 : 40);
   const seed = readStringOption(ctx.options, "seed") ?? "0";
   const target = Number(readStringOption(ctx.options, "targetPrecision", ["target_precision"]) ?? 0.9);
   if (!Number.isFinite(target) || target <= 0 || target > 1) throw createPmCliExpectedError("--target-precision must be in (0,1]");
   const exemplars = exemplarSetting(ctx.options, task);
-  const localUnverified = readBooleanOption(ctx.options, "localUnverified", ["local_unverified", "local-unverified"]) === true;
   if (calibrate && ctx.sdk === undefined) throw createPmCliExpectedError("Calibration persistence requires the host command SDK");
   const resolved = await resolveJevEndpoint(ctx.pm_root, process.env);
   const config = { ...requireCallableEndpoint(resolved), model: readStringOption(ctx.options, "model") ?? resolved.config.model };
@@ -126,7 +126,7 @@ export async function runEvaluationCommand(ctx: CommandHandlerContext, calibrate
   const units = built.flatMap(/** Gather all eligible labelled units. */ result => result.units);
   const sampled = deterministicSample(units.map(/** Wrap each unit so sampling identity stays byte-identical without copying. */ unit => ({ example_sha256: unit.example.example_sha256, repository: unit.example.repository, unit })), sample, seed)
     .map(/** Unwrap the sampled units, preserving object identity for embedding lookups. */ wrapper => wrapper.unit);
-  if (sampled.length === 0) throw createPmCliExpectedError(`No eligible ground-truth examples; no model calls made. ${LOCAL_SOURCE_GUIDANCE}`);
+  if (sampled.length === 0) throw createPmCliExpectedError(`No eligible ground-truth examples; no model calls made.${localUnverified ? "" : ` ${LOCAL_SOURCE_GUIDANCE}`}`);
   const split = repositorySplit(sampled.map(/** Require independent repositories before fitting. */ row => row.example.repository), seed);
   if (calibrate && split.validation.length === 0) throw createPmCliExpectedError("Calibration needs at least two repositories with sampled labels");
   const digest = await modelDigest(config.baseUrl, config.model, config.timeoutMs);

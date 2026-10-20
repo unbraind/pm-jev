@@ -127,6 +127,38 @@ test("local-unverified eval and calibrate read git and plain trackers with neith
   }
 });
 
+test("empty local labels omit the public recovery hint for eval and calibrate without git or model calls", async () => {
+  const origin = await project();
+  const emptyPath = mkdtempSync(join(tmpdir(), "jev-empty-local-"));
+  const previous = process.env.PATH;
+  try {
+    await scenario(async (fixture, server) => {
+      process.env.PATH = emptyPath;
+      for (const calibrate of [false, true]) {
+        await assert.rejects(runEvaluationCommand(context(fixture, { task: "triage", localUnverified: true }), calibrate), /Provide --from <tracker> for each local tracker$/);
+      }
+      for (const task of ["triage", "dedupe"]) {
+        // An empty tracker has no triage truth; a populated tracker can still lack duplicate labels.
+        if (task === "dedupe") await origin.pm.create({ type: "Issue", title: "Synthetic unlabelled duplicate candidate", priority: "2" });
+        const before = trackerSnapshot(origin.pmRoot);
+        for (const calibrate of [false, true]) {
+          await assert.rejects(runEvaluationCommand(context(fixture, { task, from: origin.pmRoot, localUnverified: true }), calibrate), error => {
+            assert.ok(error instanceof Error);
+            assert.equal(error.message, "No eligible ground-truth examples; no model calls made.");
+            return true;
+          });
+        }
+        assert.deepEqual(trackerSnapshot(origin.pmRoot), before);
+      }
+      assert.equal(server.requests.length, 0);
+    });
+  } finally {
+    if (previous === undefined) delete process.env.PATH; else process.env.PATH = previous;
+    origin.dispose();
+    rmSync(emptyPath, { recursive: true, force: true });
+  }
+});
+
 test("eval reports exact schemas and full provenance without modifying source trackers or destination config", async () => {
   const origin = await syntheticCorpus();
   try {
@@ -246,9 +278,9 @@ test("evaluation validation rejects bad flags, hosted providers, private-only da
       await assert.rejects(runEvaluationCommand(context(fixture, valid), true, source), /at least two repositories/);
       await assert.rejects(runEvaluationCommand(context(fixture, { ...valid, task: "dedupe" }), false, async () => null), /No eligible/);
       const empty = await source(origin.pmRoot);
-      await assert.rejects(runEvaluationCommand(context(fixture, { task: "triage", from: origin.pmRoot }), false, async () => ({ ...empty!, items: [] })), /No eligible/);
+      await assert.rejects(runEvaluationCommand(context(fixture, { task: "triage", from: origin.pmRoot }), false, async () => ({ ...empty!, items: [] })), /No eligible.*--local-unverified --from <tracker>/);
       await assert.rejects(runEvaluationCommand(context(fixture, valid), false, async () => ({ ...empty!, items: [] })), /No eligible/);
-      await assert.rejects(runEvaluationCommand(context(fixture, { task: "triage", from: origin.pmRoot }), true, async () => ({ ...empty!, items: [] })), /No eligible/);
+      await assert.rejects(runEvaluationCommand(context(fixture, { task: "triage", from: origin.pmRoot }), true, async () => ({ ...empty!, items: [] })), /No eligible.*--local-unverified --from <tracker>/);
       assert.equal(server.requests.length, 0);
       const cfg = context(fixture, valid).sdk!;
       await cfg.mutateWorkspaceSettings({ operationId: "hosted-evaluation-refusal", mutate: current => ({ ...current, jev: { provider: "ollama", allow_external: true } }) });
