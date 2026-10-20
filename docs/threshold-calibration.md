@@ -320,3 +320,17 @@ rerun after this correction and pass, including both 141-test release gates and
 both live-model tests. Strict tracker health passes with the same disposable HOME;
 the normal environment reports an unrelated extension/host compatibility mismatch.
 No dependency pin, extension configuration or telemetry setting was changed.
+
+
+Bare noul questions use their key as the proposition when instructions are absent.
+Local Ollama requests use uncompressed JSON; hosted requests retain the SDK compression default.
+
+Token usage may be unavailable from the endpoint. Decision and evaluation
+observations retain `null` for an unreported count. Calibration `usage` totals
+and evaluation `tokens` totals (including means) remain `null` for each
+incomplete dimension. Calibration reports expose `unknownCalls`,
+`unknownInputCalls`, and `unknownOutputCalls`; evaluation reports expose
+`unknown_calls`, `unknown_input_calls`, and `unknown_output_calls`. These count
+actual model calls, excluding reused baseline answers. Missing measured input
+usage leaves no verified exemplar headroom, so evaluation reuses the plain
+answer without adding exemplar context.

@@ -1,3 +1,4 @@
+import { TokenUsageTotals } from "./token-usage.js";
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -64,7 +65,7 @@ export async function calibrateTypes(baseUrl, model, targetPrecision = 0.95) {
     const pm = new PmClient({ cwd: scratch, pmRoot, noExtensions: true, author: "calibration" });
     const observations = [];
     const started = Date.now();
-    let inputTokens = 0, outputTokens = 0;
+    const usage = new TokenUsageTotals();
     const resolvedModels = new Set();
     try {
         await pm.init("synthetic", { defaults: true, agentGuidance: "skip" });
@@ -82,8 +83,7 @@ export async function calibrateTypes(baseUrl, model, targetPrecision = 0.95) {
             const after = await runDecision(client, config, state, withCurrentType(questions, sample.current));
             observations.push({ ...sample, before: before.answers.type, after: after.answers.type });
             for (const result of [before, after]) {
-                inputTokens += result.usage.input_tokens;
-                outputTokens += result.usage.output_tokens;
+                usage.add(result.usage);
                 resolvedModels.add(result.model);
             }
         }
@@ -97,7 +97,7 @@ export async function calibrateTypes(baseUrl, model, targetPrecision = 0.95) {
             policy: { keepCurrentLabel: KEEP_CURRENT_TYPE, typeChangeProbability: TYPE_CHANGE_PROBABILITY, marginComparison: "strictly below" }, family: "type_classification", dataset,
             datasetSha256: createHash("sha256").update(JSON.stringify(dataset)).digest("hex"), model, modelDigest: digest,
             resolvedModels: [...resolvedModels], recordedAt: new Date().toISOString(), durationMs: Date.now() - started,
-            usage: { inputTokens, outputTokens }, registeredTypes: registry.types, definitions, fit,
+            usage, registeredTypes: registry.types, definitions, fit,
             before: typeMetrics(evaluation, "before", null), newPrompt: typeMetrics(evaluation, "after", null),
             after: typeMetrics(evaluation, "after", fit.threshold), observations };
     }

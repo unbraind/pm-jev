@@ -1,3 +1,5 @@
+import { TokenUsageTotals } from "./token-usage.ts";
+import type { TokenUsage } from "./token-usage.ts";
 import { createHash } from "node:crypto";
 import type { NoulResponse } from "@typesafe-ai/sdk";
 import { createJevClient, parseQuestionsDocument, runDecision } from "./index.ts";
@@ -83,6 +85,7 @@ export interface Observation extends CalibrationQuestion {
   readonly predicted: boolean;
   readonly confidence: number;
   readonly correct: boolean;
+  readonly usage?: TokenUsage;
 }
 /** One inclusive confidence cutoff and its selective prediction trade-off. */
 export interface ReliabilityPoint {
@@ -209,18 +212,16 @@ export async function calibrate(dataset: CalibrationDataset, baseUrl: string, mo
   const client = createJevClient({ config, hostedBlocked: null }, {});
   const observations: Observation[] = [];
   const resolvedModels = new Set<string>();
-  let inputTokens = 0;
-  let outputTokens = 0;
+  const usage = new TokenUsageTotals();
   const started = Date.now();
   for (const question of corpus.questions) {
     const questions = parseQuestionsDocument({ decision: { type: "noul", instructions: question.instructions } });
     const result = await runDecision(client, config, question.state, questions);
     // runDecision validates the answer against the noul question before returning.
     const answer = result.answers.decision as NoulResponse;
-    observations.push(observe(question, answer.noul));
+    observations.push({ ...observe(question, answer.noul), usage: result.usage });
     resolvedModels.add(result.model);
-    inputTokens += result.usage.input_tokens;
-    outputTokens += result.usage.output_tokens;
+    usage.add(result.usage);
   }
   if (await localModel(config) !== digest) throw new Error("Local model changed during calibration");
   const families = Object.fromEntries(FAMILIES.map(/** Fit and evaluate each failure family independently. */ family => [family, familyMetrics(observations.filter(/** Select only this failure family. */ row => row.family === family), targetPrecision, minAccepted)]));
@@ -229,7 +230,7 @@ export async function calibrate(dataset: CalibrationDataset, baseUrl: string, mo
     datasetSha256: createHash("sha256").update(datasetBytes(corpus)).digest("hex"),
     model: config.model, modelDigest: digest, resolvedModels: [...resolvedModels],
     recordedAt: new Date().toISOString(), durationMs: Date.now() - started,
-    usage: { inputTokens, outputTokens }, targetPrecision, minAccepted,
+    usage, targetPrecision, minAccepted,
     confidenceDefinition: "chosen-label probability at the fixed inclusive 0.5 gate; noul has no SDK confidence field",
     families, pooled: familyMetrics(observations, targetPrecision, minAccepted),
     defaultDecision: "Retain gate_threshold=0.5 and min_confidence=0.8; this small synthetic noul corpus cannot establish production or choice/score calibration.",

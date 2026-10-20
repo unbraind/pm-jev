@@ -1,3 +1,5 @@
+import { TokenUsageTotals } from "./token-usage.ts";
+import type { TokenUsage } from "./token-usage.ts";
 import type { JevConfig } from "./index.ts";
 /** Stable corpus identity; template or label changes require a new version. */
 export declare const DATASET_VERSION = "pm-jev-calibration/1";
@@ -32,6 +34,7 @@ export interface Observation extends CalibrationQuestion {
     readonly predicted: boolean;
     readonly confidence: number;
     readonly correct: boolean;
+    readonly usage?: TokenUsage;
 }
 /** One inclusive confidence cutoff and its selective prediction trade-off. */
 export interface ReliabilityPoint {
@@ -94,10 +97,7 @@ export declare function calibrate(dataset: CalibrationDataset, baseUrl: string, 
     resolvedModels: string[];
     recordedAt: string;
     durationMs: number;
-    usage: {
-        inputTokens: number;
-        outputTokens: number;
-    };
+    usage: TokenUsageTotals;
     targetPrecision: number;
     minAccepted: number;
     confidenceDefinition: string;

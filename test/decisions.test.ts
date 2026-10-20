@@ -72,7 +72,7 @@ test("commands use the real SDK and host harness over HTTP", async () => {
 test("typed question files reject invalid shapes and preserve every primitive", () => {
   const valid = parseQuestionsDocument({ c: { type: "choice", instructions: { text: "route" }, criteria: { bug: null, feature: ["new"] } }, s: { type: "score", criteria: [null, "high"] }, n: { type: "noul", criteria: { true: "yes", false: null } } });
   validateAnswers(valid, answers(valid));
-  assert.equal(parseQuestionsDocument({ n: { type: "noul" } }).n.type, "noul");
+  assert.deepEqual(parseQuestionsDocument({ n: { type: "noul" } }).n, { type: "noul", instructions: "n" });
   assert.equal(parseQuestionsDocument(JSON.parse('{"__proto__":{"type":"noul"}}')).__proto__.type, "noul");
   for (const document of [null, [], {}, { x: null }, { x: [] }, { x: { type: "chat" } }, { x: { type: "noul", instructions: 42 } }, { x: { type: "choice", criteria: [] } }, { x: { type: "choice", criteria: {} } }, { x: { type: "choice", criteria: Object.fromEntries(Array.from({ length: 256 }, (_, i) => [String(i), null])) } }, { x: { type: "score", criteria: [null] } }, { x: { type: "noul", criteria: [] } }, { x: { type: "noul", criteria: 1 } }, { x: { type: "noul", criteria: { true: false } } }]) {
     assert.throws(() => parseQuestionsDocument(document));
@@ -313,4 +313,11 @@ test("hosted typesafe resolution never adopts the ollama provider endpoint", asy
     assert.equal(hosted.config.model, "jev-latest");
     assert.equal(hosted.hostedBlocked, null);
   } finally { fixture.dispose(); }
+});
+
+
+test("answer validation refuses SDK box questions outside the supported decision catalog", () => {
+  const questions: Questions = { region: { type: "box", instructions: "Locate the synthetic shape" } };
+  assert.throws(() => validateAnswers(questions, { model: "tev1:4b", usage: { input_tokens: null, output_tokens: null },
+    answers: { region: { type: "box", box: { top: 0, bottom: 1, left: 0, right: 1 }, confidence: null } } }), /Unsupported question type: box/);
 });

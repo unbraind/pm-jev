@@ -68,7 +68,7 @@ export interface ExemplarEntry {
  * @param measuredBaseTokens - Observed plain-request input usage, when available.
  * @returns The effective exemplar budget, never negative.
  */
-export declare function exemplarBudget(baseRequest: string, requested: number, measuredBaseTokens?: number): number;
+export declare function exemplarBudget(baseRequest: string, requested: number, measuredBaseTokens?: number | null): number;
 /**
  * Deterministic token estimate for budget arithmetic.
  *

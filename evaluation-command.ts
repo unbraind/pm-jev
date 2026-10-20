@@ -1,3 +1,4 @@
+import { TokenUsageTotals } from "./token-usage.ts";
 import { randomUUID } from "node:crypto";
 import { createPmCliExpectedError, readStringOption } from "@unbrained/pm-cli/sdk";
 import type { CommandHandlerContext, FlagDefinition } from "@unbrained/pm-cli/sdk/authoring";
@@ -133,10 +134,7 @@ export async function runEvaluationCommand(ctx: CommandHandlerContext, calibrate
   const exemplarObservations: Observation[] = [];
   const majorityRows: Observation[] = [];
   const knnRows: Observation[] = [];
-  let inputTokens = 0;
-  let outputTokens = 0;
-  let exemplarInputTokens = 0;
-  let exemplarOutputTokens = 0;
+  const usage = new TokenUsageTotals();
   let elapsed = 0;
   let calls = 0;
   let reusedBaseline = 0;
@@ -160,8 +158,7 @@ export async function runEvaluationCommand(ctx: CommandHandlerContext, calibrate
     const latency = performance.now() - started;
     elapsed += latency;
     calls += 1;
-    inputTokens += result.usage.input_tokens;
-    outputTokens += result.usage.output_tokens;
+    usage.add(result.usage);
     for (const [channel, label] of Object.entries(example.labels)) {
       const probabilities = (result.answers[channel] as ChoiceResponse | ScoreResponse).probabilities;
       observations.push({ repository: example.repository, commit: example.commit, data_sha256: example.data_sha256,
@@ -184,8 +181,7 @@ export async function runEvaluationCommand(ctx: CommandHandlerContext, calibrate
       exemplarLatency = performance.now() - exemplarStarted;
       elapsed += exemplarLatency;
       calls += 1;
-      exemplarInputTokens += exemplarResult.usage.input_tokens;
-      exemplarOutputTokens += exemplarResult.usage.output_tokens;
+      usage.add(exemplarResult.usage);
     }
     for (const [channel, label] of Object.entries(example.labels)) {
       exemplarObservations.push({ repository: example.repository, commit: example.commit, data_sha256: example.data_sha256,
@@ -211,8 +207,9 @@ export async function runEvaluationCommand(ctx: CommandHandlerContext, calibrate
     eligible_examples: units.length,
     retrieval_misses: built.reduce(/** Keep failed duplicate retrieval visible. */ (sum, result) => sum + result.retrieval_misses, 0), skipped,
     mean_latency_ms: elapsed / calls,
-    tokens: { input: inputTokens + exemplarInputTokens, output: outputTokens + exemplarOutputTokens,
-      mean_input: (inputTokens + exemplarInputTokens) / calls, mean_output: (outputTokens + exemplarOutputTokens) / calls },
+    tokens: { input: usage.inputTokens, output: usage.outputTokens,
+      mean_input: usage.inputTokens === null ? null : usage.inputTokens / calls, mean_output: usage.outputTokens === null ? null : usage.outputTokens / calls,
+      unknown_calls: usage.unknownCalls, unknown_input_calls: usage.unknownInputCalls, unknown_output_calls: usage.unknownOutputCalls },
     metrics: Object.fromEntries(channels.map(/** Preserve type/priority label spaces rather than mixing them. */ channel => [channel, reliability(observations.filter(/** Select this channel's population. */ row => row.channel === channel))])),
     observations,
     ...(exemplars === undefined ? {} : {

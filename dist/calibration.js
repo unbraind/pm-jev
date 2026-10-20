@@ -1,3 +1,4 @@
+import { TokenUsageTotals } from "./token-usage.js";
 import { createHash } from "node:crypto";
 import { createJevClient, parseQuestionsDocument, runDecision } from "./index.js";
 /** Stable corpus identity; template or label changes require a new version. */
@@ -163,18 +164,16 @@ export async function calibrate(dataset, baseUrl, model, targetPrecision = 0.95,
     const client = createJevClient({ config, hostedBlocked: null }, {});
     const observations = [];
     const resolvedModels = new Set();
-    let inputTokens = 0;
-    let outputTokens = 0;
+    const usage = new TokenUsageTotals();
     const started = Date.now();
     for (const question of corpus.questions) {
         const questions = parseQuestionsDocument({ decision: { type: "noul", instructions: question.instructions } });
         const result = await runDecision(client, config, question.state, questions);
         // runDecision validates the answer against the noul question before returning.
         const answer = result.answers.decision;
-        observations.push(observe(question, answer.noul));
+        observations.push({ ...observe(question, answer.noul), usage: result.usage });
         resolvedModels.add(result.model);
-        inputTokens += result.usage.input_tokens;
-        outputTokens += result.usage.output_tokens;
+        usage.add(result.usage);
     }
     if (await localModel(config) !== digest)
         throw new Error("Local model changed during calibration");
@@ -184,7 +183,7 @@ export async function calibrate(dataset, baseUrl, model, targetPrecision = 0.95,
         datasetSha256: createHash("sha256").update(datasetBytes(corpus)).digest("hex"),
         model: config.model, modelDigest: digest, resolvedModels: [...resolvedModels],
         recordedAt: new Date().toISOString(), durationMs: Date.now() - started,
-        usage: { inputTokens, outputTokens }, targetPrecision, minAccepted,
+        usage, targetPrecision, minAccepted,
         confidenceDefinition: "chosen-label probability at the fixed inclusive 0.5 gate; noul has no SDK confidence field",
         families, pooled: familyMetrics(observations, targetPrecision, minAccepted),
         defaultDecision: "Retain gate_threshold=0.5 and min_confidence=0.8; this small synthetic noul corpus cannot establish production or choice/score calibration.",

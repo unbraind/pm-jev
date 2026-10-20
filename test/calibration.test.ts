@@ -14,7 +14,7 @@ const question = corpus.questions[0];
 const digest = "a".repeat(64);
 
 /** A real HTTP fixture for installed tags and official-SDK noul responses. */
-async function localEndpoint() {
+async function localEndpoint(usage: { input_tokens: number | null; output_tokens: number | null } = { input_tokens: 3, output_tokens: 1 }) {
   const server = await endpoint();
   let calls = 0;
   server.setReply((request, response) => {
@@ -22,7 +22,7 @@ async function localEndpoint() {
       response.end(JSON.stringify({ models: [{ name: "tev1:4b", digest, capabilities: ["decision"] }] }));
     } else {
       const q = corpus.questions[calls++ % corpus.questions.length];
-      response.end(JSON.stringify({ model: "tev1:4b", answers: { decision: { type: "noul", noul: q.expected ? 0.9 : 0.1 } }, usage: { input_tokens: 3, output_tokens: 1 } }));
+      response.end(JSON.stringify({ model: "tev1:4b", answers: { decision: { type: "noul", noul: q.expected ? 0.9 : 0.1 } }, usage }));
     }
   });
   return server;
@@ -128,9 +128,11 @@ test("calibration traverses real HTTP and official SDK, records provenance and m
   try {
     const report = await calibrate(corpus, server.url, "tev1:4b");
     assert.equal(report.observations.length, 64);
+    assert.ok(server.requests.some(request => JSON.stringify(request.body).length > 1024));
+    assert.ok(server.requests.every(request => request.contentEncoding === undefined));
     assert.equal(report.observations.filter(q => q.correct).length, 64);
     assert.equal(report.modelDigest, digest);
-    assert.deepEqual(report.usage, { inputTokens: 192, outputTokens: 64 });
+    assert.deepEqual({ ...report.usage }, { inputTokens: 192, outputTokens: 64, unknownCalls: 0, unknownInputCalls: 0, unknownOutputCalls: 0 });
     assert.equal(report.pooled.confidence.threshold, 0);
     assert.equal(report.pooled.evaluation.precision, 1);
     assert.equal(server.requests.filter(r => r.path === "/v1/systemone").length, 64);
@@ -224,4 +226,15 @@ test("committed local receipt replays against the generated corpus and frozen cu
   assert.deepEqual(report.observations, replay);
   assert.deepEqual(report.pooled, familyMetrics(replay, report.targetPrecision, report.minAccepted));
   for (const family of FAMILIES) assert.deepEqual(report.families[family], familyMetrics(replay.filter(q => q.family === family), report.targetPrecision, report.minAccepted));
+});
+
+
+test("calibration preserves nullable HTTP fixture usage and counts unknown calls", async () => {
+  const fixture = JSON.parse(readFileSync("test/fixtures/nullable-usage.json", "utf8"));
+  const server = await localEndpoint(fixture.usage);
+  try {
+    const report = await calibrate(corpus, server.url, "tev1:4b");
+    assert.deepEqual({ ...report.usage }, { inputTokens: null, outputTokens: null, unknownCalls: 64, unknownInputCalls: 64, unknownOutputCalls: 64 });
+    for (const observation of report.observations) assert.deepEqual(observation.usage, fixture.usage);
+  } finally { await server.close(); }
 });

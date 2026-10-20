@@ -86,7 +86,7 @@ test("type calibration compares old/new over real trackers, freezes fitting, che
     assert.equal(report.fit.threshold, 1);
     assert.equal(report.modelDigest, digest);
     assert.deepEqual(report.resolvedModels, ["tev1:4b"]);
-    assert.deepEqual(report.usage, { inputTokens: 4800, outputTokens: 384 });
+    assert.deepEqual({ ...report.usage }, { inputTokens: 4800, outputTokens: 384, unknownCalls: 0, unknownInputCalls: 0, unknownOutputCalls: 0 });
     assert.equal(server.requests.filter(row => row.path === "/v1/systemone").length, 96);
     assert.equal(parseArgs(["types"]).mode, "types");
     assert.equal(parseArgs(["types"]).output, "calibration/type-report-v1.json");

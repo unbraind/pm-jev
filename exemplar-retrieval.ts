@@ -92,7 +92,8 @@ function similarityOrder(left: { unit: ExemplarUnit; score: number }, right: { u
  * @param measuredBaseTokens - Observed plain-request input usage, when available.
  * @returns The effective exemplar budget, never negative.
  */
-export function exemplarBudget(baseRequest: string, requested: number, measuredBaseTokens = 0): number {
+export function exemplarBudget(baseRequest: string, requested: number, measuredBaseTokens: number | null = 0): number {
+  if (measuredBaseTokens === null) return 0;
   // Reserve the JSON property wrapper as well as the budgeted array itself.
   return Math.max(0, Math.min(requested, Math.floor(PROMPT_TOKEN_LIMIT / PROMPT_TOKEN_SAFETY) - Math.max(estimateTokens(baseRequest), measuredBaseTokens) - 8));
 }

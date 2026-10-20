@@ -1,3 +1,4 @@
+import { zstdDecompressSync } from "node:zlib";
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -25,17 +26,19 @@ export async function project() {
 
 /** Start a real loopback HTTP boundary with replaceable deterministic responses. */
 export async function endpoint() {
-  const requests: { path: string; body: unknown }[] = [];
+  const requests: { path: string; body: unknown; contentEncoding: string | undefined }[] = [];
   let reply = (request: IncomingMessage, response: ServerResponse, body: unknown): void => {
     if (request.url === "/v1/models") { response.end(JSON.stringify({ models: [{ name: "tev1:4b" }] })); return; }
     if (request.url === "/api/tags") { response.end(JSON.stringify({ models: [{ name: "tev1:4b", capabilities: ["decision"] }] })); return; }
     response.end(JSON.stringify(answers((body as { questions: Questions }).questions)));
   };
   const server = createServer(async (request, response) => {
-    let raw = "";
-    for await (const chunk of request) raw += String(chunk);
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) chunks.push(Buffer.from(chunk));
+    const bytes = Buffer.concat(chunks);
+    const raw = (request.headers["content-encoding"] === "zstd" ? zstdDecompressSync(bytes) : bytes).toString("utf8");
     const body: unknown = raw ? JSON.parse(raw) : null;
-    requests.push({ path: request.url ?? "", body });
+    requests.push({ path: request.url ?? "", body, contentEncoding: request.headers["content-encoding"] });
     response.setHeader("Content-Type", "application/json");
     reply(request, response, body);
   });
@@ -50,12 +53,13 @@ export function answers(questions: Questions) {
   const entries: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   for (const [name, question] of Object.entries(questions)) {
     if (question.type === "noul") { entries[name] = { type: "noul", noul: 0.9 }; continue; }
+    if (question.type === "box") throw new Error("Unsupported fixture question: box");
     const labels = question.type === "choice" ? Object.keys(question.criteria) : question.criteria.map((_, index) => String(index));
     const selected = labels.includes("Issue") ? "Issue" : labels[0];
     const probabilities = Object.fromEntries(labels.map(label => [label, label === selected ? 1 : 0]));
     entries[name] = question.type === "choice" ? { type: "choice", choice: selected, probabilities, confidence: 0.9 } : { type: "score", score: 0, probabilities, confidence: 0.9, legend: Object.fromEntries(question.criteria.map((level, index) => [String(index), level])) };
   }
-  return { model: "tev1:4b", answers: entries, usage: { input_tokens: 50, output_tokens: 4 } };
+  return { model: "tev1:4b", answers: entries, usage: { input_tokens: 50 as number | null, output_tokens: 4 as number | null } };
 }
 
 /** Run a scenario with scoped endpoint environment and deterministic cleanup. */

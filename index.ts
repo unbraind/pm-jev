@@ -1,3 +1,5 @@
+import { TokenUsageTotals } from "./token-usage.ts";
+import type { TokenUsage } from "./token-usage.ts";
 // pm-jev — typed, local-first System One decisions for pm items.
 //
 // "Project management = context management": this package turns pm items into
@@ -401,6 +403,8 @@ export function createJevClient(resolved: ResolvedJevEndpoint, env: Record<strin
     timeout: config.timeoutMs,
     retry: { maxRetries },
     logLevel: "off",
+    // Local Ollama compatibility endpoints expect JSON, regardless of SDK compression defaults.
+    compression: config.provider === "ollama" ? false : undefined,
     /** Refuse redirects so a local endpoint cannot forward private state externally. */
     fetch: (input, init) => fetch(input, { ...init, redirect: "error" }),
   });
@@ -579,7 +583,7 @@ export function validateAnswers(questions: Questions, raw: unknown): asserts raw
   if (typeof result.model !== "string" || result.model.trim().length === 0) throw new Error("malformed response: model is missing");
   const usage = requireRecord(result.usage, "usage");
   for (const key of ["input_tokens", "output_tokens"]) {
-    if (!Number.isSafeInteger(usage[key]) || (usage[key] as number) < 0) throw new Error("malformed response: invalid usage");
+    if (usage[key] !== null && (!Number.isSafeInteger(usage[key]) || (usage[key] as number) < 0)) throw new Error("malformed response: invalid usage");
   }
   const answers = requireRecord(result.answers, "answers");
   if (Object.keys(answers).some(/** Reject answers for questions that were never asked. */ name => !Object.hasOwn(questions, name))) throw new Error("malformed response: unexpected answer");
@@ -592,6 +596,7 @@ export function validateAnswers(questions: Questions, raw: unknown): asserts raw
       requireProbability(entry.noul, `${name}.noul`);
       continue;
     }
+    if (question.type === "box") throw new Error("Unsupported question type: box");
     requireProbability(entry.confidence, `${name}.confidence`);
     const labels = question.type === "choice" ? Object.keys(question.criteria) : question.criteria.map(/** Derive score level labels in code. */ (_, index) => String(index));
     requireDistribution(entry.probabilities, labels, `${name}.probabilities`);
@@ -625,7 +630,8 @@ export async function runDecision(
   signal?: AbortSignal,
 ): Promise<SystemOneResult<Questions>> {
   try {
-    const request = { state: state as EntryType, questions, model: config.model,
+    if (state === null || state === undefined) throw new Error("malformed response: decision state must be non-null");
+    const request = { state: state as NonNullable<EntryType>, questions, model: config.model,
       ...(config.provider === "ollama" && config.keepAlive !== undefined ? { keep_alive: config.keepAlive } : {}) };
     const result = await client.systemOne(
       request,
@@ -748,7 +754,9 @@ export function parseQuestionsDocument(raw: unknown): Questions {
       questions[name] = { type: "score", instructions, criteria: rubric as unknown as ScoreCriteria };
     } else {
       const criteria = requireNoulCriteria(name, question.criteria);
-      questions[name] = criteria === null ? { type: "noul", instructions } : { type: "noul", instructions, criteria };
+      // A bare noul key names its proposition; make that existing implicit instruction explicit for the SDK.
+      const proposition = instructions ?? name;
+      questions[name] = criteria === null ? { type: "noul", instructions: proposition } : { type: "noul", instructions: proposition, criteria };
     }
   }
   return questions;
@@ -1030,7 +1038,7 @@ export interface TriageDecision {
   /** Resolved model revision reported by the endpoint. */
   readonly model: string;
   /** Token usage reported by the endpoint. */
-  readonly usage: { readonly input_tokens: number; readonly output_tokens: number };
+  readonly usage: TokenUsage;
   /** Versioned question catalog that produced the proposals. */
   readonly catalog_version: string;
   /** Stable identity of the effective type question and decision policy. */
@@ -1517,7 +1525,7 @@ export interface DedupeDecision {
   /** Resolved model revision reported by the endpoint. */
   readonly model: string;
   /** Token usage reported by the endpoint. */
-  readonly usage: { readonly input_tokens: number; readonly output_tokens: number };
+  readonly usage: TokenUsage;
   /** Versioned question catalog that produced the decision. */
   readonly catalog_version: string;
   /** Active calibration identity and channel qualification; omitted under the legacy policy. */
@@ -1699,18 +1707,17 @@ export function existingLinkKinds(graph: RelationshipGraph, source: string, targ
 async function inferLinkCandidates(boundary: DecisionWorkspace, source: LinkSource, targets: readonly LinkSource[], state: unknown, questions: Questions, signal: AbortSignal): Promise<SystemOneResult<Questions>> {
   const fit = boundary.calibration?.record.channels.candidate_0;
   if (fit === undefined || !fit.question_sha256.includes(questionFingerprint("candidate_0", buildLinkQuestion("candidate_0")))) return runDecision(boundary.decision, boundary.config, state, questions, signal);
-  const answers: Record<string, ChoiceResponse | ScoreResponse | NoulResponse> = {};
-  const usage = { input_tokens: 0, output_tokens: 0 };
+  const answers: Record<string, SystemOneResult<Questions>["answers"][string]> = {};
+  const usage = new TokenUsageTotals();
   let model = boundary.config.model;
   for (const [index, target] of targets.entries()) {
     const result = await runDecision(boundary.decision, boundary.config,
       { source: projectTriageState(source), candidates: { candidate_0: projectTriageState(target) } }, { candidate_0: buildLinkQuestion("candidate_0") }, signal);
     answers[`candidate_${index}`] = result.answers.candidate_0;
-    usage.input_tokens += result.usage.input_tokens;
-    usage.output_tokens += result.usage.output_tokens;
+    usage.add(result.usage);
     model = result.model;
   }
-  return { answers, usage, model };
+  return { answers, usage: { input_tokens: usage.inputTokens, output_tokens: usage.outputTokens }, model };
 }
 
 /** Ask one typed question per ranked candidate in a single request, then authorize in code. */
@@ -1819,7 +1826,7 @@ export interface AskDecision {
   /** Resolved model revision reported by the endpoint. */
   readonly model: string;
   /** Token usage reported by the endpoint. */
-  readonly usage: { readonly input_tokens: number; readonly output_tokens: number };
+  readonly usage: TokenUsage;
 }
 
 /**
@@ -1917,7 +1924,7 @@ export interface GateDecision {
   /** Resolved model revision reported by the endpoint. */
   readonly model: string;
   /** Token usage reported by the endpoint. */
-  readonly usage: { readonly input_tokens: number; readonly output_tokens: number };
+  readonly usage: TokenUsage;
 }
 
 /**

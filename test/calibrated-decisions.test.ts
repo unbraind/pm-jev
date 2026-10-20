@@ -40,7 +40,9 @@ function serve(server: Server, weights: Record<string, number>, digest = "c".rep
     const result = answers(questions);
     for (const [name, question] of Object.entries(questions)) {
       if (question.type === "noul") continue;
-      const labels = question.type === "choice" ? Object.keys(question.criteria) : question.criteria.map((_, index) => String(index));
+      assert.notEqual(question.type, "box");
+      if (question.type === "box") continue;
+    const labels = question.type === "choice" ? Object.keys(question.criteria) : question.criteria.map((_, index) => String(index));
       const probabilities = Object.fromEntries(labels.map(label => [label, weights[label] ?? 0]));
       if (Object.values(probabilities).reduce((sum, p) => sum + p, 0) === 0) continue;
       result.answers[name] = question.type === "choice" ? { type: "choice", choice: labels[0], confidence: 1, probabilities } : { ...result.answers[name] as object, probabilities };
