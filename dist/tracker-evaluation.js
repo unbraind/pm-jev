@@ -2,18 +2,23 @@ import { execFileSync } from "node:child_process";
 import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { listAllComplete, readSettings } from "@unbrained/pm-cli/sdk";
+import { createPmCliExpectedError, getSettingsPath, listAllComplete, readFileIfExists, readSettings } from "@unbrained/pm-cli/sdk";
 import { certifyCompleteListResult } from "@unbrained/pm-cli/sdk/runtime";
 import { RelationshipGraph, resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk/graph";
 import { buildClassificationQuestions, buildLinkQuestion, buildDedupeRequest, projectTriageState, rankDedupeCandidates, existingLinkKinds } from "./index.js";
 import { evidenceHash } from "./decision-calibration.js";
+import { ghInspectionFailure, LOCAL_SOURCE_GUIDANCE } from "./source-diagnostics.js";
+import { assertPublicProvenance } from "./source-provenance.js";
 /** Run bounded external inspection tools without a shell or credential-bearing output. */
 export function inspectSource(command, args, cwd, input) {
     try {
         return execFileSync(command, args, { cwd, input, timeout: 60_000, maxBuffer: 64 * 1024 * 1024, stdio: ["pipe", "pipe", "pipe"] });
     }
-    catch {
-        throw new Error(`Public tracker inspection failed (${command})`);
+    catch (error) {
+        if (command !== "gh")
+            throw createPmCliExpectedError(`Public tracker inspection failed (${command}). Verified public snapshots require git and archive tools. Install the failing tool and retry. ${LOCAL_SOURCE_GUIDANCE}`);
+        const failure = error;
+        throw ghInspectionFailure(args[2] ?? "requested repository", failure.code, failure.status, failure.stderr?.toString() ?? "");
     }
 }
 /** Verify a fleet clone's public identity before touching tracker contents; private repos are skipped. */
@@ -23,16 +28,16 @@ export async function readPublicCorpus(from, inspect = inspectSource) {
     const name = basename(repo);
     if (basename(root) !== "pm" || basename(dirname(root)) !== ".agents" || basename(dirname(repo)) !== "fleet" ||
         !/^pm-[a-z0-9-]+$/.test(name) || ["pm-cli", "pm-cli-companion"].includes(name))
-        throw new Error("Sources must be public package trackers in fleet clones");
+        throw createPmCliExpectedError(`Sources must be public package trackers in fleet clones. ${LOCAL_SOURCE_GUIDANCE} Its results cannot enter public corpora or artifacts.`);
     const origin = inspect("git", ["remote", "get-url", "origin"], repo).toString().trim();
     if (![`https://github.com/unbraind/${name}.git`, `https://github.com/unbraind/${name}`, `git@github.com:unbraind/${name}.git`].includes(origin))
-        throw new Error("Source origin must match its public fleet repository");
+        throw createPmCliExpectedError(`Source origin must match its public fleet repository. ${LOCAL_SOURCE_GUIDANCE}`);
     const repository = `unbraind/${name}`;
     const visibility = JSON.parse(inspect("gh", ["repo", "view", repository, "--json", "visibility"], repo).toString());
     if (visibility.visibility === "PRIVATE")
         return null;
     if (visibility.visibility !== "PUBLIC")
-        throw new Error("Source public visibility could not be verified");
+        throw createPmCliExpectedError(`Source public visibility could not be verified. ${LOCAL_SOURCE_GUIDANCE}`);
     const commit = inspect("git", ["rev-parse", "HEAD"], repo).toString().trim();
     const tree = inspect("git", ["ls-tree", "-r", commit, "--", ".agents/pm"], repo).toString();
     if (!tree || tree.split("\n").some(/** Refuse links before extracting an untrusted tree. */ /** Refuse links before extracting an untrusted tree. */ line => /^(120000|160000) /.test(line)))
@@ -42,12 +47,22 @@ export async function readPublicCorpus(from, inspect = inspectSource) {
     try {
         inspect("tar", ["-xf", "-", "-C", scratch], repo, archive);
         const pmRoot = join(scratch, ".agents/pm");
+        assertPublicProvenance(JSON.parse((await readFileIfExists(getSettingsPath(pmRoot))) ?? "{}"));
         const result = certifyCompleteListResult(await listAllComplete({ includeBody: true }, { pmRoot, cwd: scratch, noExtensions: true }));
         return { repository, commit, data_sha256: evidenceHash(archive.toString("base64")), settings: await readSettings(pmRoot), items: result.items };
     }
     finally {
         await rm(scratch, { recursive: true, force: true });
     }
+}
+/** Read an explicitly opted-in local tracker directly; never discover repositories or launch external tools. */
+export async function readLocalCorpus(from) {
+    const pmRoot = await realpath(from);
+    const result = certifyCompleteListResult(await listAllComplete({ includeBody: true }, { pmRoot, cwd: pmRoot, noExtensions: true }));
+    const settings = await readSettings(pmRoot);
+    const items = result.items.sort(/** Stabilize evidence independently of filesystem enumeration. */ (a, b) => a.id.localeCompare(b.id));
+    return { provenance: "local-unverified", repository: `local-unverified/${evidenceHash(pmRoot)}`, commit: "unverified",
+        data_sha256: evidenceHash({ settings, items }), settings, items };
 }
 /** Remove routing fields and bound semantic text identically for evaluation and calibrated inference. */
 export function semanticState(item) {
@@ -65,7 +80,7 @@ export function duplicateTarget(item) {
 }
 /** Build a content-hashed labelled decision without sending labels or source metadata. */
 function example(corpus, state, questions, labels) {
-    return { repository: corpus.repository, commit: corpus.commit, data_sha256: corpus.data_sha256,
+    return { provenance: corpus.provenance, repository: corpus.repository, commit: corpus.commit, data_sha256: corpus.data_sha256,
         example_sha256: evidenceHash([corpus.repository, corpus.commit, state, questions, labels]), state, questions, labels };
 }
 /** Build labels from tracker types/priorities, canonical edges and explicit duplicate resolutions. */

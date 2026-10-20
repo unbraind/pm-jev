@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { getSettingsPath, readFileIfExists } from "@unbrained/pm-cli/sdk";
+import { assertPublicProvenance } from "./source-provenance.js";
 /** Versioned contract shared by evaluation, persisted calibration and live decisions. */
 export const EVALUATION_VERSION = "pm-jev-eval/1";
 /** Canonical SHA-256 for ordered JSON evidence, never an absolute path. */
@@ -113,7 +114,9 @@ export function repositorySplit(repositories, seed) {
     return { calibration: ordered.slice(0, cut).sort(), validation: ordered.slice(cut).sort() };
 }
 /** Fit channels and freeze candidate thresholds before inspecting validation outcomes. */
-export function calibrateObservations(task, model, digest, rows, seed, target, exemplars) {
+export function calibrateObservations(task, model, digest, rows, seed, target, exemplars, localUnverified = false) {
+    if (!localUnverified)
+        assertPublicProvenance(rows);
     const split = repositorySplit(rows.map(/** Partition all channels from a repository together. */ /** Partition all channels from a repository together. */ row => row.repository), seed);
     const channels = {};
     for (const channel of [...new Set(rows.map(/** Fit type and priority separately. */ /** Fit type and priority separately. */ row => row.channel))].sort()) {
@@ -133,8 +136,8 @@ export function calibrateObservations(task, model, digest, rows, seed, target, e
             question_sha256: [...new Set(cal.map(/** Restrict reuse to question schemas observed during fitting. */ /** Restrict reuse to question schemas observed during fitting. */ row => row.question_sha256))].sort(),
             calibration: { raw: reliability(cal), calibrated: reliability(calibrated) }, validation: { raw: reliability(val), calibrated: reliability(validation) }, validation_at_threshold: checked };
     }
-    const data = [...new Map(rows.map(/** Collapse provenance once per repository snapshot. */ /** Collapse provenance once per repository snapshot. */ row => [row.repository, { repository: row.repository, commit: row.commit, data_sha256: row.data_sha256 }])).values()].sort(/** Keep receipt encoding independent of read order. */ (a, b) => a.repository.localeCompare(b.repository));
-    return { version: EVALUATION_VERSION, method: "temperature_scaling_nll_grid", task, model, model_digest: digest, target_precision: target, seed,
+    const data = [...new Map(rows.map(/** Collapse provenance once per repository snapshot. */ /** Collapse provenance once per repository snapshot. */ row => [row.repository, { ...(row.provenance === undefined ? {} : { provenance: row.provenance }), repository: row.repository, commit: row.commit, data_sha256: row.data_sha256 }])).values()].sort(/** Keep receipt encoding independent of read order. */ (a, b) => a.repository.localeCompare(b.repository));
+    return { ...(localUnverified ? { provenance: "local-unverified" } : {}), version: EVALUATION_VERSION, method: "temperature_scaling_nll_grid", task, model, model_digest: digest, target_precision: target, seed,
         ...(exemplars === undefined ? {} : { exemplars }),
         calibration_repositories: split.calibration, validation_repositories: split.validation, data, observations_sha256: evidenceHash(rows), channels };
 }

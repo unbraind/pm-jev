@@ -1,14 +1,17 @@
 import { TokenUsageTotals } from "./token-usage.js";
 import { randomUUID } from "node:crypto";
-import { createPmCliExpectedError, readStringOption } from "@unbrained/pm-cli/sdk";
-import { buildUnits, deterministicSample, readPublicCorpus } from "./tracker-evaluation.js";
+import { createPmCliExpectedError, readBooleanOption, readStringOption } from "@unbrained/pm-cli/sdk";
+import { buildUnits, deterministicSample, readLocalCorpus, readPublicCorpus } from "./tracker-evaluation.js";
+import { assertPublicProvenance } from "./source-provenance.js";
+import { LOCAL_SOURCE_GUIDANCE } from "./source-diagnostics.js";
 import { calibrationKey, calibrateObservations, evidenceHash, EVALUATION_VERSION, modelDigest, questionFingerprint, readOpaqueJevSettings, reliability, repositorySplit } from "./decision-calibration.js";
 import { bm25Rank, EMBEDDING_MODEL, eligibleExemplars, embedTexts, embeddingAvailable, embeddingRank, exemplarBudget, exemplarContext, knnVote, majorityLabel } from "./exemplar-retrieval.js";
 import { createJevClient, requireCallableEndpoint, resolveJevEndpoint, runDecision } from "./index.js";
 /** Shared evaluator flags; source paths stay outside every emitted receipt. */
 export const EVALUATION_FLAGS = [
     { long: "--task", value_name: "triage|link|dedupe", value_type: "string", required: true, description: "Ground-truth decision task" },
-    { long: "--from", value_name: "tracker", value_type: "string", repeatable: true, required: true, description: "Committed public fleet tracker; repeat for multiple repositories" },
+    { long: "--from", value_name: "tracker", value_type: "string", repeatable: true, required: true, description: "Source tracker; verified public fleet snapshot by default; repeat for multiple sources" },
+    { long: "--local-unverified", value_type: "boolean", description: "Read explicit local tracker directories without git/GitHub; private results cannot be published or committed" },
     { long: "--model", value_name: "model", value_type: "string", description: "Exact installed local model tag" },
     { long: "--sample", value_name: "N", value_type: "string", description: "Sampled labelled examples per invocation (eval default 40, calibrate 100; hard cap 150)" },
     { long: "--seed", value_name: "seed", value_type: "string", description: "Deterministic repository and example sampling seed (default 0)" },
@@ -59,8 +62,13 @@ export function channelLabels(question) {
 }
 /** Convert one baseline prediction into a content-free pseudo-observation. */
 function baselineObservation(example, channel, label, probabilities) {
-    return { repository: example.repository, commit: example.commit, data_sha256: example.data_sha256, example_sha256: example.example_sha256,
+    return { ...exampleEvidence(example),
         question_sha256: questionFingerprint(channel, example.questions[channel]), channel, label, probabilities, latency_ms: 0, input_tokens: 0, output_tokens: 0 };
+}
+/** Carry the same source trust marker and immutable identity into every evaluation arm. */
+function exampleEvidence(example) {
+    return { provenance: example.provenance, repository: example.repository, commit: example.commit,
+        data_sha256: example.data_sha256, example_sha256: example.example_sha256 };
 }
 /** Embed every corpus unit once when the local embedding model is available. */
 async function embeddedCorpora(corpora, built, config) {
@@ -88,7 +96,7 @@ function rankExemplars(unit, corpusUnits, sampled, embedded) {
     const pairs = eligibleExemplars(unit, embedded.units.map(/** Attach each unit's precomputed embedding vector. */ (entry, index) => ({ ...entry, vector: embedded.vectors[index] })), sampled);
     return { eligible: pairs, ranked: embeddingRank(embedded.vectors[embedded.units.indexOf(unit)], pairs) };
 }
-/** Run deterministic public-only evaluation and optionally persist a held-out calibration through the SDK. */
+/** Run public or explicitly opted-in local evaluation; only public calibration enters project settings. */
 export async function runEvaluationCommand(ctx, calibrate, readCorpus = readPublicCorpus) {
     const task = readStringOption(ctx.options, "task");
     if (task !== "triage" && task !== "link" && task !== "dedupe")
@@ -103,6 +111,7 @@ export async function runEvaluationCommand(ctx, calibrate, readCorpus = readPubl
     if (!Number.isFinite(target) || target <= 0 || target > 1)
         throw createPmCliExpectedError("--target-precision must be in (0,1]");
     const exemplars = exemplarSetting(ctx.options, task);
+    const localUnverified = readBooleanOption(ctx.options, "localUnverified", ["local_unverified", "local-unverified"]) === true;
     if (calibrate && ctx.sdk === undefined)
         throw createPmCliExpectedError("Calibration persistence requires the host command SDK");
     const resolved = await resolveJevEndpoint(ctx.pm_root, process.env);
@@ -112,11 +121,13 @@ export async function runEvaluationCommand(ctx, calibrate, readCorpus = readPubl
     const corpora = [];
     const skipped = [];
     for (const source of [...new Set(from)].sort()) {
-        const corpus = await readCorpus(source);
+        const corpus = await (localUnverified ? readLocalCorpus(source) : readCorpus(source));
         if (corpus === null) {
             skipped.push("private_source");
             continue;
         }
+        if (!localUnverified)
+            assertPublicProvenance(corpus);
         if (!corpora.some(/** Avoid duplicate repositories masquerading as separate split identities. */ /** Avoid duplicate repositories masquerading as separate split identities. */ previous => previous.repository === corpus.repository))
             corpora.push(corpus);
     }
@@ -125,7 +136,7 @@ export async function runEvaluationCommand(ctx, calibrate, readCorpus = readPubl
     const sampled = deterministicSample(units.map(/** Wrap each unit so sampling identity stays byte-identical without copying. */ /** Wrap each unit so sampling identity stays byte-identical without copying. */ unit => ({ example_sha256: unit.example.example_sha256, repository: unit.example.repository, unit })), sample, seed)
         .map(/** Unwrap the sampled units, preserving object identity for embedding lookups. */ /** Unwrap the sampled units, preserving object identity for embedding lookups. */ wrapper => wrapper.unit);
     if (sampled.length === 0)
-        throw createPmCliExpectedError("No eligible ground-truth examples; no model calls made");
+        throw createPmCliExpectedError(`No eligible ground-truth examples; no model calls made. ${LOCAL_SOURCE_GUIDANCE}`);
     const split = repositorySplit(sampled.map(/** Require independent repositories before fitting. */ /** Require independent repositories before fitting. */ row => row.example.repository), seed);
     if (calibrate && split.validation.length === 0)
         throw createPmCliExpectedError("Calibration needs at least two repositories with sampled labels");
@@ -173,8 +184,7 @@ export async function runEvaluationCommand(ctx, calibrate, readCorpus = readPubl
         usage.add(result.usage);
         for (const [channel, label] of Object.entries(example.labels)) {
             const probabilities = result.answers[channel].probabilities;
-            observations.push({ repository: example.repository, commit: example.commit, data_sha256: example.data_sha256,
-                example_sha256: example.example_sha256, question_sha256: questionFingerprint(channel, example.questions[channel]), channel, label, probabilities,
+            observations.push({ ...exampleEvidence(example), question_sha256: questionFingerprint(channel, example.questions[channel]), channel, label, probabilities,
                 latency_ms: latency, input_tokens: result.usage.input_tokens, output_tokens: result.usage.output_tokens });
         }
         if (exemplars === undefined)
@@ -199,8 +209,7 @@ export async function runEvaluationCommand(ctx, calibrate, readCorpus = readPubl
             usage.add(exemplarResult.usage);
         }
         for (const [channel, label] of Object.entries(example.labels)) {
-            exemplarObservations.push({ repository: example.repository, commit: example.commit, data_sha256: example.data_sha256,
-                example_sha256: example.example_sha256, question_sha256: questionFingerprint(channel, example.questions[channel]), channel, label,
+            exemplarObservations.push({ ...exampleEvidence(example), question_sha256: questionFingerprint(channel, example.questions[channel]), channel, label,
                 probabilities: exemplarResult.answers[channel].probabilities,
                 latency_ms: exemplarLatency, input_tokens: exemplarResult.usage.input_tokens, output_tokens: exemplarResult.usage.output_tokens,
                 exemplar_ids: retrieved.map(/** Item ids of each retrieved unit, joined per unit. */ /** Item ids of each retrieved unit, joined per unit. */ exemplar => exemplar.ids.join("+")),
@@ -220,7 +229,7 @@ export async function runEvaluationCommand(ctx, calibrate, readCorpus = readPubl
     if (await modelDigest(config.baseUrl, config.model, config.timeoutMs) !== digest)
         throw createPmCliExpectedError("Model digest changed during evaluation; calibration was not saved");
     const channels = [...new Set(observations.map(/** Compute separate metrics for each question. */ /** Compute separate metrics for each question. */ row => row.channel))];
-    const report = { version: EVALUATION_VERSION, task: task, model: config.model, model_digest: digest, seed,
+    const report = { ...(localUnverified ? { provenance: "local-unverified" } : {}), version: EVALUATION_VERSION, task: task, model: config.model, model_digest: digest, seed,
         model_calls: calls, sampled_examples: sampled.length,
         eligible_examples: units.length,
         retrieval_misses: built.reduce(/** Keep failed duplicate retrieval visible. */ (sum, result) => sum + result.retrieval_misses, 0), skipped,
@@ -247,13 +256,15 @@ export async function runEvaluationCommand(ctx, calibrate, readCorpus = readPubl
     if (!calibrate)
         return report;
     const fitRows = exemplars === undefined ? observations : exemplarObservations;
-    const receipt = calibrateObservations(task, config.model, digest, fitRows, seed, target, exemplars);
+    const receipt = calibrateObservations(task, config.model, digest, fitRows, seed, target, exemplars, localUnverified);
     // Retrieval failures mean a duplicate calibration does not cover the actual decision pipeline.
     if (report.retrieval_misses > 0)
         for (const channel of Object.values(receipt.channels)) {
             channel.threshold = null;
             channel.reason = "duplicate_retrieval_misses";
         }
+    if (localUnverified)
+        return { ...report, calibration: receipt, settings_write: { changed: false, reason: "local-unverified receipts are returned privately and cannot be saved into committable project settings" } };
     const key = calibrationKey(task, config.model, exemplars);
     const settingsWrite = await ctx.sdk.mutateWorkspaceSettings({ operationId: `jev-calibration-${randomUUID()}`,
         /** Merge only this task/model/exemplar receipt while holding the SDK settings audit lock. */

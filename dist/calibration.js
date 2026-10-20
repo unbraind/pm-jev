@@ -1,6 +1,7 @@
 import { TokenUsageTotals } from "./token-usage.js";
 import { createHash } from "node:crypto";
 import { createJevClient, parseQuestionsDocument, runDecision } from "./index.js";
+import { assertPublicProvenance } from "./source-provenance.js";
 /** Stable corpus identity; template or label changes require a new version. */
 export const DATASET_VERSION = "pm-jev-calibration/1";
 /** Independent failure families requested by the calibration item. */
@@ -54,6 +55,7 @@ export function datasetBytes(dataset) {
 /** Refuse edited or imported corpora so the opt-in command stays synthetic-only. */
 export function readDataset(text) {
     const raw = JSON.parse(text);
+    assertPublicProvenance(raw);
     if (raw === null || typeof raw !== "object" || !("seed" in raw) || typeof raw.seed !== "number")
         throw new Error("Invalid synthetic dataset");
     const generated = generateDataset(raw.seed);

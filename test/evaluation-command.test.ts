@@ -1,17 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { createExtensionCommandSdk, getSettingsPath, readFileIfExists } from "@unbrained/pm-cli/sdk";
 import { channelLabels, runEvaluationCommand } from "../evaluation-command.ts";
 import type { CommandHandlerContext } from "@unbrained/pm-cli/sdk/authoring";
 import type { CalibrationReceipt, Observation } from "../decision-calibration.ts";
-import { activeCalibration, calibrationKey, evidenceHash, readCalibration } from "../decision-calibration.ts";
+import { activeCalibration, calibrateObservations, calibrationKey, evidenceHash, readCalibration } from "../decision-calibration.ts";
+import { assertPublicProvenance } from "../source-provenance.ts";
+import { verifyPublicArtifacts } from "../scripts/verify-public-provenance.ts";
 import { buildUnits, deterministicSample, readPublicCorpus } from "../tracker-evaluation.ts";
 import type { TrackerCorpus } from "../tracker-evaluation.ts";
 import { EMBEDDING_MODEL, eligibleExemplars, embeddingRank, embedTexts, estimateTokens, majorityLabel } from "../exemplar-retrieval.ts";
 import type { ExemplarSetting } from "../exemplar-retrieval.ts";
 import { publicInspection, syntheticCorpus } from "./evaluation-fixtures.ts";
-import { answers, scenario, trackerSnapshot } from "./fixtures.ts";
+import { answers, project, scenario, trackerSnapshot } from "./fixtures.ts";
 import type { Questions } from "@typesafe-ai/sdk";
 
 /** Bind evaluator requests to an actual host SDK and an independent synthetic public source. */
@@ -32,6 +36,96 @@ function serve(server: Parameters<Parameters<typeof scenario>[0]>[1], changed = 
     response.end(JSON.stringify(result));
   });
 }
+
+test("eval and calibrate expose actionable gh errors before inference", async () => {
+  const origin = await syntheticCorpus();
+  const bin = mkdtempSync(join(tmpdir(), "jev-command-gh-"));
+  const previous = process.env.PATH;
+  try {
+    await scenario(async (fixture, server) => {
+      serve(server);
+      process.env.PATH = `${bin}:${previous}`;
+      for (const [stderr, expected] of [
+        ["gh: command not found", "gh missing"],
+        ["not authenticated; run gh auth login", "not authenticated"],
+        ["HTTP 404: repository not found", "repository not found/private"],
+        ["HTTP 429: rate limit exceeded", "rate-limited"],
+        ["network connection timed out", "network"],
+      ]) {
+        writeFileSync(join(bin, "gh"), `#!/bin/sh\nprintf '%s\\n' '${stderr} token=synthetic-only' 'SECOND LINE SECRET' >&2\nexit 1\n`, { mode: 0o755 });
+        for (const command of ["jev eval", "jev calibrate"]) {
+          await assert.rejects(fixture.harness.runCommand({ command, pmRoot: fixture.pmRoot, options: { task: "triage", from: origin.pmRoot, sample: "1" } }), error => {
+            assert.ok(error instanceof Error);
+            assert.ok(error.message.includes(`gh: ${expected}`), error.message);
+            assert.ok(error.message.includes("unbraind/pm-alpha"));
+            assert.ok(error.message.includes("--from <tracker>"));
+            assert.ok(!/synthetic-only|SECOND LINE/.test(error.message));
+            return true;
+          });
+        }
+      }
+      assert.equal(server.requests.length, 0);
+    });
+  } finally {
+    if (previous === undefined) delete process.env.PATH; else process.env.PATH = previous;
+    rmSync(bin, { recursive: true, force: true });
+    origin.dispose();
+  }
+});
+
+test("local-unverified eval and calibrate read git and plain trackers with neither gh nor git on PATH", async () => {
+  const gitSource = await syntheticCorpus();
+  const plainSource = await project();
+  const emptyPath = mkdtempSync(join(tmpdir(), "jev-no-tools-"));
+  const previousPath = process.env.PATH;
+  const previousCeiling = process.env.GIT_CEILING_DIRECTORIES;
+  try {
+    await plainSource.pm.create({ id: "synthetic-local", type: "Issue", title: "Synthetic local login failure", priority: "2" });
+    await scenario(async (fixture, server) => {
+      serve(server);
+      const destinationBefore = trackerSnapshot(fixture.pmRoot);
+      const plainBefore = trackerSnapshot(plainSource.pmRoot);
+      const gitBefore = trackerSnapshot(gitSource.pmRoot);
+      process.env.PATH = emptyPath;
+      process.env.GIT_CEILING_DIRECTORIES = dirname(plainSource.cwd);
+      const sources = [plainSource.pmRoot, gitSource.pmRoot];
+      for (const from of sources) {
+        await assert.rejects(runEvaluationCommand(context(fixture, { task: "triage", from, sample: "1" }), false), /--local-unverified/);
+      }
+      assert.equal(server.requests.length, 0);
+      for (const key of ["localUnverified", "local_unverified", "local-unverified"]) {
+        const report = await runEvaluationCommand(context(fixture, { task: "triage", from: sources, sample: "2", [key]: true, retrieval: "lexical", exemplars: "1" }), false) as { provenance: string; observations: Observation[]; exemplar_observations: Observation[]; model_calls: number };
+        assert.equal(report.provenance, "local-unverified");
+        assert.ok(report.model_calls >= 2);
+        assert.equal(report.observations.length, 4);
+        for (const row of [...report.observations, ...report.exemplar_observations]) assert.equal(row.provenance, "local-unverified");
+        assert.ok(!JSON.stringify(report).includes(plainSource.cwd));
+        assert.throws(() => assertPublicProvenance(report), /local-unverified.*public corpus/);
+        assert.throws(() => calibrateObservations("triage", "tev1:4b", "c".repeat(64), report.observations, "0", 0.9), /local-unverified.*public corpus/);
+      }
+      const result = await runEvaluationCommand(context(fixture, { task: "triage", from: sources, sample: "2", localUnverified: true }), true) as { provenance: string; calibration: CalibrationReceipt; settings_write: { changed: boolean; reason: string } };
+      assert.equal(result.provenance, "local-unverified");
+      assert.equal(result.calibration.provenance, "local-unverified");
+      assert.ok(result.calibration.data.every(row => row.provenance === "local-unverified"));
+      assert.equal(result.settings_write.changed, false);
+      assert.match(result.settings_write.reason, /cannot be saved/);
+      assert.deepEqual(trackerSnapshot(fixture.pmRoot), destinationBefore);
+      assert.deepEqual(trackerSnapshot(plainSource.pmRoot), plainBefore);
+      assert.deepEqual(trackerSnapshot(gitSource.pmRoot), gitBefore);
+      // A marked receipt cannot be committed as a fixture or published from the package's artifact tree.
+      const candidate = join(emptyPath, "calibration");
+      mkdirSync(candidate);
+      writeFileSync(join(candidate, "private.json"), JSON.stringify(result));
+      assert.throws(() => verifyPublicArtifacts(emptyPath), /local-unverified.*committed fixture/);
+    });
+  } finally {
+    if (previousPath === undefined) delete process.env.PATH; else process.env.PATH = previousPath;
+    if (previousCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES; else process.env.GIT_CEILING_DIRECTORIES = previousCeiling;
+    rmSync(emptyPath, { recursive: true, force: true });
+    gitSource.dispose();
+    plainSource.dispose();
+  }
+});
 
 test("eval reports exact schemas and full provenance without modifying source trackers or destination config", async () => {
   const origin = await syntheticCorpus();

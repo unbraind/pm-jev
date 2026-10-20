@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import type { NoulResponse } from "@typesafe-ai/sdk";
 import { createJevClient, parseQuestionsDocument, runDecision } from "./index.ts";
 import type { JevConfig } from "./index.ts";
+import { assertPublicProvenance } from "./source-provenance.ts";
 
 /** Stable corpus identity; template or label changes require a new version. */
 export const DATASET_VERSION = "pm-jev-calibration/1";
@@ -73,6 +74,7 @@ export function datasetBytes(dataset: CalibrationDataset): string {
 /** Refuse edited or imported corpora so the opt-in command stays synthetic-only. */
 export function readDataset(text: string): CalibrationDataset {
   const raw: unknown = JSON.parse(text);
+  assertPublicProvenance(raw);
   if (raw === null || typeof raw !== "object" || !("seed" in raw) || typeof raw.seed !== "number") throw new Error("Invalid synthetic dataset");
   const generated = generateDataset(raw.seed);
   if (JSON.stringify(raw) !== JSON.stringify(generated)) throw new Error("Dataset differs from the versioned synthetic generator");
