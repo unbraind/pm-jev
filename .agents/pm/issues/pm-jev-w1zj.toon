@@ -6,11 +6,13 @@ status: open
 priority: 2
 tags[3]: deferred,eval,reliability
 created_at: "2026-10-18T03:58:44.531Z"
-updated_at: "2026-10-18T04:17:34.563Z"
+updated_at: "2026-10-19T15:37:28.401Z"
 author: codex-agent
 acceptance_criteria: "A synthetic two-request run failing on the second request reports two attempts and one completed example, preserves hashes and validated observations, makes no configuration write and does not retry; the failure receipt excludes source text and local paths."
 parent: pm-jev-0w3q
 dependencies[2]{id,kind,created_at,author,source_kind,author_source}:
   pm-jev-82ip,related,"2026-10-18T04:17:34.007Z",codex-agent,"cli:update:dep",detected
   pm-jev-hx9w,related,"2026-10-18T04:17:34.007Z",codex-agent,"cli:update:dep",detected
+comments[1]{created_at,author,text}:
+  "2026-10-19T15:37:28.401Z",codex-agent,"Additional evidence from pm-jev-vouf: a benchmark postprocessor assertion aborted after replacement inference but before report publication, losing one validated probability/latency per model. Both calls are counted in the real-label receipt; replacement persistence was moved before validation. This reinforces the existing need for append-only partial evaluation receipts rather than final-report-only publication."
 body: ""
