@@ -56,7 +56,7 @@
     "calibration:types": "node scripts/calibrate.ts types"
   },
   "dependencies": {
-    "@typesafe-ai/sdk": "^0.6.0"
+    "@typesafe-ai/sdk": "^0.7.0"
   },
   "peerDependencies": {
     "@unbrained/pm-cli": ">=2026.10.5"
@@ -69,7 +69,7 @@
     "@types/node": "26.6.5",
     "@unbrained/pm-cli": "2026.10.13",
     "c8": "^12.0.0",
-    "eslint": "10.12.0",
+    "eslint": "10.13.0",
     "jscpd": "5.4.1",
     "pm-changelog": "2026.10.13",
     "pm-ops": "2026.10.14",
