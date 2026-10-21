@@ -64,7 +64,7 @@ Runtime tracker paths come from the host and SDK, including custom pm storage ro
 | `pm jev link --open --limit 20` | Stream a bounded open backlog with changed/would_change/skipped/failed counts. |
 | `pm jev dedupe --title "Fix login crash" --body "Details" --limit 8` | Rank all tracker items in code, then choose a candidate id or `none`. |
 | `pm jev dedupe --status open --type Issue --limit-pairs 20` | Verify bounded existing pairs with typed duplicate/related propositions and abstain bands. |
-| `pm jev dedupe --apply --close --min-confidence 0.95` | Link qualifying newer duplicates and related pairs; optionally close duplicates; never delete. |
+| `pm jev dedupe --apply --min-confidence 0.95` | Add calibrated duplicate links and receipts; proposals never close items. |
 | `pm jev ask <id> --questions questions.json` | Validate and answer caller-defined choice, score and noul questions. |
 | `pm jev gate --noul "The text contains credentials or private data." --text "Synthetic text" --threshold 0.5 --expect false` | Exit 0 when the proposition does not hold; exit 1 when credentials/private data are detected. |
 | `pm jev gate --noul "Does this item need human input?" --item <id>` | Evaluate the minimal item projection instead of text. |
@@ -192,53 +192,43 @@ The global score order is stable; `--limit-pairs` defaults to
 the invocation shares one `jev.total_deadline_ms` budget, including model loading,
 and `jev.timeout_ms` limits each attempt. Larger batches may need larger explicit
 budgets. No lexical issue-code heuristic promotes UTF-8 to a near-exact
-match. Tags and linked files are retrieval-only signals: model input is limited to each title's first 320 characters and 1600
+match. A title-only trigram channel also preserves short matching titles when long bodies differ. Tags and linked files are retrieval-only signals: model input is limited to each title's first 320 characters and 1600
 characters of distinct description/body; closure labels, ids and annotations are
 excluded. This truncation can hide useful evidence and is recorded as a limitation.
 
-Each pair asks the same two typed noul questions, `same_work` and `related_work`, through
-the existing client, validation, retries and deadlines. Calls run sequentially under one
+Precision-first scans ask the typed `same_work` noul question through
+the existing client, validation, retries and deadlines. The historical two-question
+catalog remains available for replay. Calls run sequentially under one
 invocation deadline. Output rows contain
-`{a,b,probability,related_probability,decision,reason}`, newer item first, with
-creation-time ties broken by id. At cutoffs t (same work) and r (related work): p≥t
-proposes a duplicate; otherwise related≥r proposes related work; both questions at or
-below their negative cutoffs propose distinct work; anything else abstains. An exact 0.5
-always abstains on the deciding question. Explanations name the deterministic rule; they
-are not model rationales.
-The two-question dev split fits separate duplicate and related operating points for
-`tev1:4b`; their measurements are below. Each effective cutoff is the greater of
-its operating point and the requested/configured min-confidence. Other models retain
-the existing 0.8 floor without a measured pair calibration. Measured local models
-must match their recorded digest both before and after inference; both digest
-reads share the invocation deadline, including in preview. These cutoffs
-maximize dev F1 subject to the floor, at least three positive predictions and one
-true positive; they are not a high-precision qualification.
+`{a,b,probability,decision,reason}`, newer item first, with creation-time ties broken
+by id. A positive model score alone cannot authorize a link: both calibrated
+channels must qualify, otherwise the tool returns an unsure abstention.
+Pair scans now use the precision-first, train-fitted combined policy described in
+[duplicate quality](docs/duplicate-quality.md). The historical two-question F1
+operating points below remain replayable evidence. New duplicate proposals require
+both the semantic score and model confidence to clear the frozen combined cutoffs.
+The default uses the fitted raw cutoff directly; explicitly configured confidence
+can tighten it. Other models have no measured duplicate policy and return an explicit unsure
+abstention, even at probability one. A higher requested/configured min-confidence
+can only tighten the model cutoff. Null cutoffs disable proposals. Measured local
+models must match their recorded digest before and after inference; both reads
+share the invocation deadline.
 
-`--apply` writes duplicate and related verdicts, through the SDK, with a `related` edge
-and a directed canonical-id receipt comment that records the verdict: the pinned SDK has
-no `duplicate-of` mutation kind. Duplicate verdicts apply before related verdicts,
-so an auxiliary link cannot consume a guarded duplicate source. Related verdicts are never closed; closing additionally
-requires `--close`, applies only to duplicate verdicts, and the reason is exactly
-`duplicate of <canonical-id>`. An operational inference failure happens before any
-write. Evidence is re-read before apply and the source receipt is checked under the
-item lock. A canonical item and a modified source are protected from becoming
-duplicate chains within that batch. The SDK records link/comment updates and
-closure as separate history events. The link guard retains its exact post-link
-revision for the live close attempt; the close lock checks that revision and the
-receipt deadline even though closure adds no comment. A changed item, expired
-deadline or historical receipt receives `jev_stale_inference` for that directed
-duplicate closure; the item stays open
-and its prior link and receipt remain. Retry the scan to obtain fresh evidence; a later ordinary closure remains available.
-There is no cross-item transaction or rollback promise. The canonical target is
-rechecked before the update but is not locked
-together with the source. Stale evidence at the pre-write check or mutation lock
-is returned as `skipped_stale_evidence`; the batch preserves earlier writes and
-continues to later pairs. Other mutation errors still propagate. Repeated
-invocations can append another receipt.
+`--apply` writes qualifying duplicate links through the SDK, using a `related` edge
+and a directed canonical-id receipt: the pinned SDK has no `duplicate-of` mutation
+kind. Proposals are links-only; `--close` fails with actionable guidance before
+inference or mutation. The related-work question no longer participates in duplicate scans.
+An operational inference failure occurs before any write. Both items are re-read
+before apply, and the source receipt is checked under the item lock. A canonical
+item and a modified source are protected against duplicate chains within a batch.
+Stale evidence is returned as `skipped_stale_evidence`; earlier links remain and
+later pairs continue. There is no cross-item transaction: the canonical target is
+rechecked but is not locked together with the source. Repeated invocations may
+append another receipt.
 
-### Real duplicate-label measurement (2026-10-19)
+### Historical duplicate-label measurement (2026-10-19)
 
-[The current receipt](calibration/dedupe-report-v2.json) records the two-question
+[The dual-question receipt](calibration/dedupe-report-v2.json) records the two-question
 catalog hash, public source commits/archive hashes, complete SDK corpus hashes,
 ordered pair identities, raw probabilities, retrieval misses, timings and metric
 replay data. [The historical receipt](calibration/dedupe-report-v1.json) used only
@@ -326,7 +316,7 @@ would stay unchanged.
 node --test test/dedupe-evaluation.test.ts
 ```
 
-Delivery checks: `npm run release:check` and `bun run release:check` both pass
+Historical PR #36 delivery checks: `npm run release:check` and `bun run release:check` both passed
 270/270 tests with disposable HOME and global/system Git configuration disabled.
 Statements and lines (5260/5260), functions (216/216), and all measured branches
 are 100% across 22 runtime/script files; duplication is zero at unchanged thresholds.

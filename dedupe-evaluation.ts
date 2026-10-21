@@ -1,5 +1,6 @@
 import { candidatePairs, orderedPair, pairKey, pairState, pairVerdict } from "./dedupe.ts";
 import type { PairItem, DuplicatePair } from "./dedupe.ts";
+import { duplicateSplit, wilson } from "./duplicate-quality.ts";
 import { duplicateTarget } from "./tracker-evaluation.ts";
 import { evidenceHash } from "./decision-calibration.ts";
 
@@ -125,15 +126,8 @@ export function labelledRelatedPairs(corpora: readonly DuplicateCorpus[], positi
   }
   return selectPairs(positives, controls, positivesPerSplit, true);
 }
-/** Two-sided Wilson interval; empty denominators remain explicitly undefined. */
-export function wilson(successes: number, count: number, z = 1.959963984540054): [number, number] | null {
-  if (count === 0) return null;
-  const p = successes / count;
-  const d = 1 + z * z / count;
-  const center = (p + z * z / (2 * count)) / d;
-  const delta = z * Math.sqrt(p * (1 - p) / count + z * z / (4 * count * count)) / d;
-  return [Math.max(0, center - delta), Math.min(1, center + delta)];
-}
+/** Preserve the historical interval helper for receipt replay callers. */
+export { wilson } from "./duplicate-quality.ts";
 /** Harmonic mean with explicit zero support. */
 function harmonic(a: number, b: number): number { return a + b === 0 ? 0 : 2 * a * b / (a + b); }
 /** The verdict stub used to score stored observations; ids never enter metrics. */
@@ -177,4 +171,53 @@ export function duplicateMetrics(rows: readonly PairObservation[], threshold: nu
 /** Preserve the documented dev-only fitting entry point for single-question callers. */
 export function fitDuplicateThreshold(rows: readonly PairObservation[], lexical: boolean): number {
   return fitPairThreshold(rows, "duplicate", { threshold: 0.8, relatedThreshold: 0.8 }, lexical);
+}
+
+/** Reconstruct an explicitly deleted duplicate from public append-only history; reject incomplete projections. */
+export function historicalDuplicate(events: readonly { op: string; message?: string; patch: readonly { op: string; path: string; value?: unknown }[] }[]): PairItem | undefined {
+  const metadata: Record<string, unknown> = {};
+  let body = "";
+  for (const event of events) {
+    if (event.op === "delete") {
+      const target = /duplicate of ([a-z0-9]+(?:-[a-z0-9]+)+)|duplicate[^;]*; retained ([a-z0-9]+(?:-[a-z0-9]+)+)/i.exec(event.message ?? "");
+      if (target === null || typeof metadata.id !== "string" || typeof metadata.title !== "string" || typeof metadata.type !== "string" || typeof metadata.created_at !== "string" || typeof metadata.updated_at !== "string" || !Array.isArray(metadata.tags)) return undefined;
+      return { ...metadata, description: typeof metadata.description === "string" ? metadata.description : "", body, status: "closed", close_reason: `Duplicate of ${target[1] ?? target[2]}` } as PairItem;
+    }
+    for (const patch of event.patch) {
+      const key = /^\/metadata\/([^/]+)$/.exec(patch.path)?.[1];
+      if (key !== undefined) { if (patch.op === "remove") delete metadata[key]; else metadata[key] = patch.value; }
+      else if (patch.path === "/body" && typeof patch.value === "string") body = patch.value;
+      else return undefined;
+    }
+  }
+  return undefined;
+}
+
+/** Repository-separated duplicate closure components, including siblings implied by recorded equivalence. */
+export function repositoryDuplicatePairs(corpora: readonly DuplicateCorpus[], positivesPerSplit = 50): LabelledPair[] {
+  const positives: LabelledPair[] = [], controls: LabelledPair[] = [];
+  for (const corpus of corpora) {
+    if (!corpus.items.some(/** No positive closure means no controls from this repository are sampled. */ item => (item.status === "closed" || item.status === "canceled") && closureTarget(item) !== undefined)) continue;
+    const { byId, targets, ranked, scores } = corpusIndex(corpus);
+    const split = duplicateSplit(corpus.repository) === "train" ? "dev" : "heldout";
+    const groups = new Map(corpus.items.map(/** Start each item as a singleton equivalence group. */ item => [item.id, new Set([item.id])]));
+    for (const item of corpus.items) {
+      const target = targets.get(item.id);
+      if ((item.status !== "closed" && item.status !== "canceled") || target === undefined || target === item.id || !byId.has(target)) continue;
+      const union = new Set([...groups.get(item.id) as Set<string>, ...groups.get(target) as Set<string>]);
+      for (const id of union) groups.set(id, union);
+    }
+    for (const group of new Set(groups.values())) {
+      const members = [...group].sort();
+      for (let i = 0; i < members.length; i++) for (let j = i + 1; j < members.length; j++) {
+        const key = pairKey(members[i], members[j]);
+        positives.push(labelPair(corpus.repository, orderedPair(byId.get(members[i]) as PairItem, byId.get(members[j]) as PairItem, scores.get(key) ?? 0), true, scores.has(key), split));
+      }
+    }
+    for (const pair of ranked) {
+      if (groups.get(pair.a.id) === groups.get(pair.b.id) || sameEvidence(pair)) continue;
+      controls.push(labelPair(corpus.repository, pair, false, true, split));
+    }
+  }
+  return selectPairs(positives, controls, positivesPerSplit, false);
 }

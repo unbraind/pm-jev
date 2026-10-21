@@ -1,16 +1,16 @@
 id: pm-jev-vouf
 title: Detect existing duplicate items with calibrated pair decisions
-description: "Add bounded title and body lexical candidates, sequential typed pair verification, abstention and explicit SDK apply/close receipts. Measure lexical and local model arms on public duplicate closures with held-out labels."
+description: "Calibrate links-only duplicate proposals with title/body/tag/file candidates, a fixed repository train/held-out split, precision-first train thresholds, and explicit unsure abstention. Report lexical-only, model-only and combined held-out metrics and the measured frontier, including sparse-label limitations. Work in plain-directory trackers; proposals never merge or close items."
 type: Feature
 pm_format_version: 2
 status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T15:15:26.929Z"
-updated_at: "2026-10-21T09:17:58.303Z"
+updated_at: "2026-10-21T16:08:50.968Z"
 author: codex-agent
 parent: pm-jev-0w3q
-comments[47]{created_at,author,text}:
+comments[58]{created_at,author,text}:
   "2026-10-19T15:15:41.354Z",codex-agent,"Plan: preserve pre-create title screening; add bounded pair scanning over certified complete SDK reads, sequential noul verification, a symmetric abstain band, and explicit apply/close authorization with receipts. Evaluate public tracker-copy duplicate closures versus lexical hard controls, using disjoint duplicate groups and a maximum of 200 pairs per local model arm. Canonical checkouts and external data remain read-only."
   "2026-10-19T15:23:37.144Z",codex-agent,"Implemented real-SDK pair scans and mutation guards. Focused pair regressions pass, including abstention, confidence authorization, explicit close gating, receipt history, read-only scans and model-unavailable refusal. Public evaluation inventory: 29 verified public copies; 2 skipped before tracker reads. Strict resolvable labels yield 35 positives (31 historical consolidation receipts plus 4 standard closures), paired with 70 lexical controls. Duplicate-group hashing separates dev and held-out items; retrieval misses count as false negatives. Calls run sequentially under nice."
   "2026-10-19T15:27:55.026Z",codex-agent,"Independent behavioral revert proofs: disabling only the positive probability cutoff makes the real-tracker apply regression fail (duplicate versus abstain); forcing closure without checking the extra close flag makes it fail (closed versus open). Source restored byte-for-byte; the same focused test passes 1/1. Command: node --test --test-name-pattern=\"pair apply writes only above threshold\" test/dedupe.test.ts. Threshold selection is dev-F1 with a 0.8 model floor; this is an operating-point calibration, not a 95% precision guarantee. Lexical controls are closed-world labels and may contain unrecorded duplicates."
@@ -58,19 +58,35 @@ comments[47]{created_at,author,text}:
   "2026-10-21T09:09:42.996Z",codex-agent,"PR 36 review round: fetched every review thread and comment (pagination complete). One unresolved thread PRRT_kwDOU8IMzs6useZi; latest CodeRabbit review has no Outside diff range findings. Branch already includes main. Verified benchmark ignores checkpoints on restart. Implement the owner-selected one-shot contract: reject non-empty scratch before corpus inspection, document new empty scratch after failure, preserve automatic_retries: 0. Add executable refusal and preservation regression, prove failure with the guard behavior reverted, inspect the whole PR for the same class, then run unchanged npm and Bun release gates. No review replies or thread resolution."
   "2026-10-21T09:11:10.183Z",codex-agent,"PRRT_kwDOU8IMzs6useZi fixed: README and benchmark header now document one-shot execution and a new empty scratch directory after failure. The benchmark rejects any non-empty scratch before source collection/inference. Regression covers corpus, observations, progress, hidden files and source subdirectories with an empty executable PATH, verifying existing scratch evidence and the output report are unchanged. Behavioral revert proof: removed only the non-empty scratch guard, leaving test and docs fixed; node --test test/dedupe-benchmark.test.ts exited 1 (0 passed, 1 failed, ERR_ASSERTION: expected one-shot refusal but reached source scandir ENOENT). Restored source byte-for-byte; same command passed 1/1 with no skips. Whole PR self-review covered retrieval, dual verdicts, guarded writes, calibration/replay and benchmark checkpoint handling; no further instance of the restart defect. Strict pm health separately reports the already tracked pm-jev-v2la extension version skew (pinned host 2026.10.17, managed pm-github host 2026.10.21); integrity and history drift checks pass. Keep dependency pin unchanged per queue rules."
   "2026-10-21T09:17:56.476Z",codex-agent,"Review round complete: both linked release checks passed 2/2 commands on their first attempts under disposable HOME and disabled global/system Git config. Exact commands: env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 npm run release:check; env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 bun run release:check. Each passed 270/270 tests, zero failures/cancellations/skips/todos, at unchanged thresholds. Coverage 100% statements/lines (5260/5260), functions (216/216), and branches (npm 2175/2175; Bun 2174/2174), across 22 runtime/script sources. Zero duplication (0/12745 lines, 59 sources, zero clone pairs); 604/604 declarations documented; production audit, package dry run, changelog and publish attestation pass. Rebuilt committed dist matches exactly. Focused linked regression passes 1/1; isolated removal of only the guard fails 0/1 as recorded above. Additional empty-fleet probes accepted new and existing empty scratch through collection, then refused both used directories after controlled label failure, without inference or report writes. README delivery counts refreshed. Remaining separate risk is existing strict-health extension version skew pm-jev-v2la; no new PM CLI/SDK bug confirmed. No threads replied to/resolved, no merge or release. Claim released for orchestrator verification after recording this result."
-files[11]{path,scope}:
+  "2026-10-21T14:39:35.024Z",codex-agent,"Plan: grow public closure labels with a fixed repository split, fit precision-first lexical/model/combined thresholds on train only, report held-out abstention and frontier, and enforce links-only proposals. Verify real plain-directory trackers and unchanged release gates."
+  "2026-10-21T14:52:50.762Z",codex-agent,"Public snapshot collection verified 30 public fleet repositories. Expanded benchmark currently selects 52 positive pairs (versus 35 in PR 36), using recorded duplicate equivalence components plus three explicitly deleted duplicate records reconstructed from public history. Fixed repository hash split leaves only two held-out positives: this is a material uncertainty, not broad quality certification. The old model cache is incompatible with the current local endpoint; a public-model refresh is in progress. No threshold uses held-out labels."
+  "2026-10-21T14:57:01.298Z",codex-agent,Evidence links were added by this session; one files_add inherited the existing configured pi-glm author because the shell author export did not persist. All subsequent tracker writes explicitly set codex-agent. Existing append-only history is preserved.
+  "2026-10-21T15:07:08.153Z",codex-agent,"Behavioral revert proofs completed with source restored byte-for-byte. Restoring only the previous candidatePairs function fails the title-only long-body regression (score 0.7719298245614035 versus 1); restored code passes 1/1. Restoring only the previous runPairDedupe function fails the active-SDK-guard links-only regression because the close flag is accepted; restored code passes 1/1. Commands: node --test --test-name-pattern \"title-only retrieval\" test/dedupe.test.ts; node --test --test-name-pattern \"pair command rejects close through an active real SDK guard\" test/dedupe.test.ts. New production and evaluation calls share the duplicate-only same_work question; historical dual-question replay remains unchanged. Follow-up pm-jev-xgo9 owns independent public annotation and additional positive-source repositories."
+  "2026-10-21T15:15:37.338Z",codex-agent,"Real-model one-shot inference is running on the fresh public snapshot and duplicate-only question catalog. The focused pm-linked suite passed 1/1 command, and its separate no-Git/title/close-refusal regression passed 3/3 tests with no skips. A preliminary full coverage run exposed an existing five-second synthetic receipt deadline expiring under shared-host contention; the fixture now uses a two-minute positive-case deadline while expiry assertions still advance the clock deterministically. Gate percentages and production deadlines remain unchanged."
+  "2026-10-21T15:17:15.789Z",codex-agent,"Targeted current-source coverage passes 100% statements, branches, functions and lines for duplicate-quality.ts and dedupe-evaluation.ts. Explicit boundary: benchmark retrieval uses the full top-8-per-item candidate graph; a default 20-pair production invocation can lose more recall. Training selection and measured held-out uncertainty remain separate from that runtime budget."
+  "2026-10-21T15:22:34.163Z",codex-agent,"Current duplicate-command regressions pass 31/31 with zero failures, skips, cancellations or todos. Targeted dedupe.ts coverage is 100% statements/branches/functions/lines; the calibration and label modules also pass all four dimensions at 100%. Benchmark preservation tests pass 2/2. The final public inference report and full npm/Bun release checks are still pending."
+  "2026-10-21T15:25:55.074Z",codex-agent,"Precision-objective behavioral proof: replacing only fitQualityPolicy with F1 maximization makes the fixed regression fail, selecting model 0.9 / lexical 0.7 instead of the precision-qualified 0.95 / 0.95. Restoring the function byte-for-byte passes 1/1, no skips. Command: node --test --test-name-pattern \"calibration chooses precision\" test/duplicate-quality.test.ts. This specifically rejects the old higher-F1/lower-precision objective; no held-out data participates."
+  "2026-10-21T15:43:21.781Z",codex-agent,"One-shot inference complete: 156 observations, 30 verified public snapshots, 52 positive pairs, three deleted duplicate records recovered; source text remains outside the package. Final fitting searches every observed train raw score, with empirical precision >=0.8 and >=3 proposals. The inherited raw 0.8 floor limited train recall to 8%; removing it yields 6 TP/0 FP/44 FN (12% recall, 96% abstention). Frozen combined cutoffs: model 0.7412531715646369, lexical 0.6989304812834224. Held-out lexical-only abstains 6/6 (undefined precision, 0/2 recall); model-only and combined each yield TP1/FP0/FN1, precision1/1, recall1/2, abstention5/6. This is a point estimate on two positives, not broad certification: Wilson precision CI 0.2065-1. Offline refitting preserves the one-shot samples, observations and source data byte-for-byte in value; only train-derived policies/frontier/metrics are recomputed. Default pair scans now honor the fitted cutoff without an implicit raw 0.8 override; explicit configured/flag confidence can only tighten it."
+  "2026-10-21T15:57:27.542Z",codex-agent,"The isolated npm release gate passed 1/1 linked command: env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check. Exact current-source suite: 281/281 tests, zero failures, cancellations, skips or todos. All four c8 dimensions are 100%, zero duplication (0/13175 lines, 63 sources), and 643 declarations documented across 23 sources. Public provenance, typecheck, lint, build, production audit, pack dry run, changelog and publish-attestation checks pass. Independent exhaustive train-only search checked all 20700 combined, 150 model-only and 138 lexical-only raw cutoff points and exactly matched the compact-frontier selected policies. The inherited release-test entry was refused for foreign branch provenance; a task-specific equivalent with current source provenance executed and passed, rather than counting the refusal as evidence."
+  "2026-10-21T16:07:57.274Z",codex-agent,"Final local gates passed: env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check and the equivalent bun run release:check each pass 281/281 tests with zero failures, cancellations, skips or todos. Both measure statements/lines 5399/5399, functions228/228, branches2287/2287 (100% across 23 runtime/script sources). Zero duplication0/13175 across63 sources; 643 declarations documented. Public provenance, typecheck/lint/build, production audit, pack dry run, changelog and publish-attestation checks pass. Calibration/evaluation replay15/15 and benchmark preservation2/2 pass; separate calibrated-default and no-Git/title/close-refusal linked tests pass. No new PM CLI/SDK defect confirmed. Remaining risks: two held-out positives, correlated closure siblings and closed-world negative controls; follow-up pm-jev-xgo9 owns independent labels. Changes remain unmerged and unreleased; releasing this claim for orchestrator verification without closing the item."
+files[16]{path,scope}:
   calibration/dedupe-report-v1.json,project
   calibration/dedupe-report-v2.json,project
+  calibration/duplicate-quality-report-v3.json,project
   decision-calibration.ts,project
   dedupe-evaluation.ts,project
   dedupe.ts,project
+  duplicate-quality.ts,project
   index.ts,project
   test/agent-ux.test.ts,project
   test/dedupe-benchmark.test.ts,project
   test/dedupe-calibration.acceptance.ts,project
   test/dedupe-evaluation.test.ts,project
   test/dedupe.test.ts,project
-tests[13]:
+  test/duplicate-quality.acceptance.ts,project
+  test/duplicate-quality.test.ts,project
+  test/public-duplicate-fixtures.ts,project
+tests[19]:
   - command: nice -n 15 node --test test/dedupe.test.ts test/dedupe-evaluation.test.ts
     scope: project
     provenance:
@@ -80,24 +96,24 @@ tests[13]:
       source_ref: feat/jev-dedupe
   - command: "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 npm run release:check"
     scope: project
-    timeout_seconds: 900
+    timeout_seconds: 3600
     provenance:
       author: codex-agent
       created_at: "2026-10-19T15:34:41.051Z"
       source_kind: local_mutation
       source_ref: feat/jev-dedupe
     updated_by: codex-agent
-    updated_at: "2026-10-19T23:49:12.488Z"
+    updated_at: "2026-10-21T15:15:15.044Z"
   - command: "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 bun run release:check"
     scope: project
-    timeout_seconds: 900
+    timeout_seconds: 3600
     provenance:
       author: codex-agent
       created_at: "2026-10-19T15:34:43.957Z"
       source_kind: local_mutation
       source_ref: feat/jev-dedupe
     updated_by: codex-agent
-    updated_at: "2026-10-19T23:49:16.205Z"
+    updated_at: "2026-10-21T15:15:26.138Z"
   - command: node --test test/dedupe-evaluation.test.ts
     scope: project
     provenance:
@@ -150,14 +166,6 @@ tests[13]:
       created_at: "2026-10-21T06:47:17.904Z"
       source_kind: local_mutation
       source_ref: feat/duplicate-pair-decisions
-  - command: "node --test --test-name-pattern=\"duplicate links take precedence\" test/dedupe.test.ts"
-    scope: project
-    timeout_seconds: 120
-    provenance:
-      author: codex-agent
-      created_at: "2026-10-21T07:27:52.067Z"
-      source_kind: local_mutation
-      source_ref: feat/duplicate-pair-decisions
   - command: "node --test --test-name-pattern=\"pair metrics|threshold fitting\" test/dedupe-evaluation.test.ts"
     scope: project
     timeout_seconds: 120
@@ -174,6 +182,58 @@ tests[13]:
       created_at: "2026-10-21T09:10:47.364Z"
       source_kind: local_mutation
       source_ref: feat/duplicate-pair-decisions
-docs[1]{path,scope}:
+  - command: node --test test/duplicate-quality.test.ts test/dedupe.test.ts test/dedupe-evaluation.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T14:59:10.742Z"
+      source_kind: local_mutation
+      source_ref: feat/duplicate-calibration
+  - command: "node --test --test-name-pattern=\"title-only retrieval|pair command rejects close|without a git repository\" test/dedupe.test.ts"
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T15:11:00.026Z"
+      source_kind: local_mutation
+      source_ref: feat/duplicate-calibration
+  - command: "node --test --test-name-pattern=\"calibration chooses precision\" test/duplicate-quality.test.ts"
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T15:26:03.926Z"
+      source_kind: local_mutation
+      source_ref: feat/duplicate-calibration
+  - command: "node --test --test-name-pattern=\"default pair scans\" test/dedupe.test.ts"
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T15:43:36.898Z"
+      source_kind: local_mutation
+      source_ref: feat/duplicate-calibration
+  - command: "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check"
+    scope: project
+    timeout_seconds: 3600
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T15:45:33.202Z"
+      source_kind: local_mutation
+      source_ref: feat/duplicate-calibration
+  - command: "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 bun run release:check"
+    scope: project
+    timeout_seconds: 3600
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T15:57:36.033Z"
+      source_kind: local_mutation
+      source_ref: feat/duplicate-calibration
+  - command: node --test test/identity-audit.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T16:08:09.693Z"
+      source_kind: local_mutation
+      source_ref: feat/duplicate-calibration
+docs[2]{path,scope}:
+  docs/duplicate-quality.md,project
   README.md,project
 body: ""
