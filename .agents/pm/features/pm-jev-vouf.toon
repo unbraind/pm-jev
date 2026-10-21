@@ -7,10 +7,10 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T15:15:26.929Z"
-updated_at: "2026-10-21T08:44:19.233Z"
+updated_at: "2026-10-21T09:17:58.303Z"
 author: codex-agent
 parent: pm-jev-0w3q
-comments[44]{created_at,author,text}:
+comments[47]{created_at,author,text}:
   "2026-10-19T15:15:41.354Z",codex-agent,"Plan: preserve pre-create title screening; add bounded pair scanning over certified complete SDK reads, sequential noul verification, a symmetric abstain band, and explicit apply/close authorization with receipts. Evaluate public tracker-copy duplicate closures versus lexical hard controls, using disjoint duplicate groups and a maximum of 200 pairs per local model arm. Canonical checkouts and external data remain read-only."
   "2026-10-19T15:23:37.144Z",codex-agent,"Implemented real-SDK pair scans and mutation guards. Focused pair regressions pass, including abstention, confidence authorization, explicit close gating, receipt history, read-only scans and model-unavailable refusal. Public evaluation inventory: 29 verified public copies; 2 skipped before tracker reads. Strict resolvable labels yield 35 positives (31 historical consolidation receipts plus 4 standard closures), paired with 70 lexical controls. Duplicate-group hashing separates dev and held-out items; retrieval misses count as false negatives. Calls run sequentially under nice."
   "2026-10-19T15:27:55.026Z",codex-agent,"Independent behavioral revert proofs: disabling only the positive probability cutoff makes the real-tracker apply regression fail (duplicate versus abstain); forcing closure without checking the extra close flag makes it fail (closed versus open). Source restored byte-for-byte; the same focused test passes 1/1. Command: node --test --test-name-pattern=\"pair apply writes only above threshold\" test/dedupe.test.ts. Threshold selection is dev-F1 with a 0.8 model floor; this is an operating-point calibration, not a 95% precision guarantee. Lexical controls are closed-world labels and may contain unrecorded duplicates."
@@ -55,7 +55,10 @@ comments[44]{created_at,author,text}:
   "2026-10-21T08:29:43.233Z",codex-agent,"Live tev1:4b calibration completed: 195/195 scored requests, no scored failures or automatic retries, model digest unchanged. Versioned v2 receipt includes 30 verified-public committed sources, 5404 items, raw pair identities/probabilities and explicit preflight accounting (198 decision attempts overall). Held-out duplicate TP=3 FP=3 FN=5, precision=50%, recall=37.5%; related edge-proxy TP=0 FP=4 FN=15, precision/recall=0%. Retrieval misses: duplicate dev/heldout 7/3; related 12/8. README reports the weak accuracy and manual-review limitation. Receipt replay passes 7/7, including historical v1 compatibility; statistical payload hash is unchanged by provenance/timing metadata finalization. Final focused suite and unchanged release gates are next."
   "2026-10-21T08:33:17.353Z",codex-agent,"Final focused tracker/replay suite passes 37/37 with zero failures, cancellations, skips or todos. Current and historical receipt replay passes 7/7, metric/fitting selection 2/2, duplicate-precedence selection 1/1. Seven isolated semantic reverts fail their corresponding regressions and restored sources pass. Build, lint, docstrings (22 files, 604 declarations), and zero duplication pass; coverage thresholds remain unchanged. Regenerating changelog after tracker writes, then running both linked release checks with isolated HOME and Git identity."
   "2026-10-21T08:44:16.749Z",codex-agent,"Both linked release checks pass 2/2 commands under disposable HOME with global/system Git configuration disabled: npm run release:check and bun run release:check, each 269/269 tests with zero failures, cancellations, skips or todos. Coverage is 100% statements/lines (5260/5260), branches (2175/2175), functions (216/216), across all 22 inventoried runtime/script files. Duplication remains 0% across 58 sources. Production audit, package dry run, changelog and publish-attestation checks pass. Initial linked-runner refusal was foreign branch provenance; reviewed command fingerprints were acknowledged locally without changing project trust policy, then both commands executed successfully. Focused suite 37/37; seven semantic revert proofs documented. Accuracy remains advisory: duplicate held-out precision/recall 50%/37.5%, related edge proxy 0%/0%; no unattended qualification. Releasing the claim for orchestrator verification; final committed-head checks and PR publication follow. No new PM CLI/SDK defect confirmed."
-files[10]{path,scope}:
+  "2026-10-21T09:09:42.996Z",codex-agent,"PR 36 review round: fetched every review thread and comment (pagination complete). One unresolved thread PRRT_kwDOU8IMzs6useZi; latest CodeRabbit review has no Outside diff range findings. Branch already includes main. Verified benchmark ignores checkpoints on restart. Implement the owner-selected one-shot contract: reject non-empty scratch before corpus inspection, document new empty scratch after failure, preserve automatic_retries: 0. Add executable refusal and preservation regression, prove failure with the guard behavior reverted, inspect the whole PR for the same class, then run unchanged npm and Bun release gates. No review replies or thread resolution."
+  "2026-10-21T09:11:10.183Z",codex-agent,"PRRT_kwDOU8IMzs6useZi fixed: README and benchmark header now document one-shot execution and a new empty scratch directory after failure. The benchmark rejects any non-empty scratch before source collection/inference. Regression covers corpus, observations, progress, hidden files and source subdirectories with an empty executable PATH, verifying existing scratch evidence and the output report are unchanged. Behavioral revert proof: removed only the non-empty scratch guard, leaving test and docs fixed; node --test test/dedupe-benchmark.test.ts exited 1 (0 passed, 1 failed, ERR_ASSERTION: expected one-shot refusal but reached source scandir ENOENT). Restored source byte-for-byte; same command passed 1/1 with no skips. Whole PR self-review covered retrieval, dual verdicts, guarded writes, calibration/replay and benchmark checkpoint handling; no further instance of the restart defect. Strict pm health separately reports the already tracked pm-jev-v2la extension version skew (pinned host 2026.10.17, managed pm-github host 2026.10.21); integrity and history drift checks pass. Keep dependency pin unchanged per queue rules."
+  "2026-10-21T09:17:56.476Z",codex-agent,"Review round complete: both linked release checks passed 2/2 commands on their first attempts under disposable HOME and disabled global/system Git config. Exact commands: env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 npm run release:check; env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 nice -n 15 bun run release:check. Each passed 270/270 tests, zero failures/cancellations/skips/todos, at unchanged thresholds. Coverage 100% statements/lines (5260/5260), functions (216/216), and branches (npm 2175/2175; Bun 2174/2174), across 22 runtime/script sources. Zero duplication (0/12745 lines, 59 sources, zero clone pairs); 604/604 declarations documented; production audit, package dry run, changelog and publish attestation pass. Rebuilt committed dist matches exactly. Focused linked regression passes 1/1; isolated removal of only the guard fails 0/1 as recorded above. Additional empty-fleet probes accepted new and existing empty scratch through collection, then refused both used directories after controlled label failure, without inference or report writes. README delivery counts refreshed. Remaining separate risk is existing strict-health extension version skew pm-jev-v2la; no new PM CLI/SDK bug confirmed. No threads replied to/resolved, no merge or release. Claim released for orchestrator verification after recording this result."
+files[11]{path,scope}:
   calibration/dedupe-report-v1.json,project
   calibration/dedupe-report-v2.json,project
   decision-calibration.ts,project
@@ -63,10 +66,11 @@ files[10]{path,scope}:
   dedupe.ts,project
   index.ts,project
   test/agent-ux.test.ts,project
+  test/dedupe-benchmark.test.ts,project
   test/dedupe-calibration.acceptance.ts,project
   test/dedupe-evaluation.test.ts,project
   test/dedupe.test.ts,project
-tests[12]:
+tests[13]:
   - command: nice -n 15 node --test test/dedupe.test.ts test/dedupe-evaluation.test.ts
     scope: project
     provenance:
@@ -160,6 +164,14 @@ tests[12]:
     provenance:
       author: codex-agent
       created_at: "2026-10-21T07:59:25.419Z"
+      source_kind: local_mutation
+      source_ref: feat/duplicate-pair-decisions
+  - command: node --test test/dedupe-benchmark.test.ts
+    scope: project
+    timeout_seconds: 120
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T09:10:47.364Z"
       source_kind: local_mutation
       source_ref: feat/duplicate-pair-decisions
 docs[1]{path,scope}:

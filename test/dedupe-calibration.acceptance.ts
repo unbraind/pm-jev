@@ -1,4 +1,7 @@
-/** Opt-in real-model benchmark: node test/dedupe-calibration.acceptance.ts <fleet> <scratch> <report>. */
+/**
+ * Opt-in, one-shot real-model benchmark: node test/dedupe-calibration.acceptance.ts <fleet> <scratch> <report>.
+ * Failed runs require a new empty scratch directory; checkpoints are evidence only, not resumable state.
+ */
 import { execFileSync } from "node:child_process";
 import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -16,6 +19,7 @@ type Observation = PairObservation & { pair_id: string; latency_ms: number };
 const [fleet, scratch, output] = process.argv.slice(2);
 if (!fleet || !scratch || !output) throw new Error("Usage: node test/dedupe-calibration.acceptance.ts <fleet> <scratch> <report>");
 await mkdir(scratch, { recursive: true });
+if ((await readdir(scratch)).length > 0) throw new Error("Benchmark is one-shot; failed runs require a new empty scratch directory. Non-empty scratch directory refused.");
 /** Inspect only a named public clone; no tracker mutation or shell interpretation. */
 function inspect(command: string, args: string[], cwd: string, input?: Buffer): Buffer {
   return execFileSync(command, args, { cwd, input, timeout: 60_000, maxBuffer: 512 * 1024 * 1024, stdio: ["pipe", "pipe", "pipe"] });

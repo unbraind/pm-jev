@@ -307,6 +307,12 @@ nice -n 15 node test/dedupe-calibration.acceptance.ts \
   <fleet-directory> <empty-scratch-directory> calibration/dedupe-report-v2.json
 ```
 
+The opt-in benchmark is one-shot. Failed runs require a new empty scratch directory;
+non-empty scratch directories are refused before source collection or inference.
+Observation checkpoints and `report-progress.json` are evidence only and are not
+loaded on restart. Preserve a failed run's scratch directory for inspection and
+start again with a new empty scratch directory.
+
 The helper uses a six-minute attempt timeout and ten-minute per-pair deadline with
 no automatic retries. It verifies public origins/visibility and committed snapshots,
 keeps tracker text in scratch, makes sequential local requests, verifies model digests before and
@@ -321,8 +327,8 @@ node --test test/dedupe-evaluation.test.ts
 ```
 
 Delivery checks: `npm run release:check` and `bun run release:check` both pass
-269/269 tests with disposable HOME and global/system Git configuration disabled.
-Statements and lines (5260/5260), branches (2175/2175) and functions (216/216)
+270/270 tests with disposable HOME and global/system Git configuration disabled.
+Statements and lines (5260/5260), functions (216/216), and all measured branches
 are 100% across 22 runtime/script files; duplication is zero at unchanged thresholds.
 The pm-linked release selection passes 2/2 commands; the focused suite passes 37/37. Seven isolated behavioral reverts fail their regressions for structural retrieval,
 related verdicts, related link writes, duplicate groups, write precedence, metric
@@ -330,6 +336,9 @@ target selection and fitting the related channel. Restored sources pass. No-git 
 tracker with an empty executable PATH and a Git ceiling. Pair confidence flags
 must be between 0.5 and 1; configured values below 0.5 are clamped while retaining
 the model's operating-point floor.
+
+The benchmark refusal regression passes with the guard present and fails when only
+that guard is removed; it verifies existing scratch evidence and reports are preserved.
 
 ## How good are the decisions?
 
