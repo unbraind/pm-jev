@@ -2,14 +2,15 @@ id: pm-jev-vouf
 title: Detect existing duplicate items with calibrated pair decisions
 description: "Add bounded title and body lexical candidates, sequential typed pair verification, abstention and explicit SDK apply/close receipts. Measure lexical and local model arms on public duplicate closures with held-out labels."
 type: Feature
+pm_format_version: 2
 status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T15:15:26.929Z"
-updated_at: "2026-10-19T23:56:05.032Z"
+updated_at: "2026-10-21T08:44:19.233Z"
 author: codex-agent
 parent: pm-jev-0w3q
-comments[31]{created_at,author,text}:
+comments[44]{created_at,author,text}:
   "2026-10-19T15:15:41.354Z",codex-agent,"Plan: preserve pre-create title screening; add bounded pair scanning over certified complete SDK reads, sequential noul verification, a symmetric abstain band, and explicit apply/close authorization with receipts. Evaluate public tracker-copy duplicate closures versus lexical hard controls, using disjoint duplicate groups and a maximum of 200 pairs per local model arm. Canonical checkouts and external data remain read-only."
   "2026-10-19T15:23:37.144Z",codex-agent,"Implemented real-SDK pair scans and mutation guards. Focused pair regressions pass, including abstention, confidence authorization, explicit close gating, receipt history, read-only scans and model-unavailable refusal. Public evaluation inventory: 29 verified public copies; 2 skipped before tracker reads. Strict resolvable labels yield 35 positives (31 historical consolidation receipts plus 4 standard closures), paired with 70 lexical controls. Duplicate-group hashing separates dev and held-out items; retrieval misses count as false negatives. Calls run sequentially under nice."
   "2026-10-19T15:27:55.026Z",codex-agent,"Independent behavioral revert proofs: disabling only the positive probability cutoff makes the real-tracker apply regression fail (duplicate versus abstain); forcing closure without checking the extra close flag makes it fail (closed versus open). Source restored byte-for-byte; the same focused test passes 1/1. Command: node --test --test-name-pattern=\"pair apply writes only above threshold\" test/dedupe.test.ts. Threshold selection is dev-F1 with a 0.8 model floor; this is an operating-point calibration, not a 95% precision guarantee. Lexical controls are closed-world labels and may contain unrecorded duplicates."
@@ -41,16 +42,31 @@ comments[31]{created_at,author,text}:
   "2026-10-19T23:49:09.254Z",codex-agent,"Seeded duplicate benchmark passed 20/20 independent repetitions with strict sample counts, split guards and twin-control assertion unchanged. Focused pm-linked suite passed 31/31. Initial npm release run hit the linked runner default 120-second timeout while the stability check was competing for CPU; rerun will use a 900-second runner budget with unchanged coverage/duplication thresholds. Strict tracker health passes with extensions disabled; normal health retains the pre-existing global pm-github host-version skew only."
   "2026-10-19T23:52:11.691Z",codex-agent,"Round 5 mapping: PRRT_kwDOU8IMzs6uI6uO now reports skipped_stale_evidence on revision drift and typed mutation-lock refusal while preserving earlier closures and continuing to a later valid pair. A real SDK invalid-status failure still propagates. PRRT_kwDOU8IMzs6uI6uQ retains sampled controls before filtering positives, requires two twins and a selected enriched-repository dev positive, and rejects sampling the twin pair. Root proof copies were compared, their useful tests recovered into test/, and both stray copies removed. Self-review covered both stale refusal paths and neighboring batch skip logic; source and canonical mutation safeguards remain active. The three newly linked regressions pass 3/3. No dependency pin or calibration artifact changed."
   "2026-10-19T23:56:03.357Z",codex-agent,"Round 5 final release selection passes 2/2 commands: npm run release:check and bun run release:check under disposable HOME with global/system Git identity disabled, each 235/235 tests and zero failures, skips, cancellations or todos. Unchanged gates measure 100% statements and lines (4993/4993), branches (1962/1962), functions (193/193), across 18 runtime/script sources; duplication is zero across 51 sources. Production audit, package dry run, changelog and publication attestation pass. Focused suite passes 31/31, newly linked regressions 3/3, current README-count assertion 1/1, seeded benchmark 20/20 repetitions. Obsolete README-count commands were replaced through remove/add, preserving immutable command definitions and append-only history. Initial default-runner timeouts are superseded by both passing 900-second-budget runs. No new PM CLI/SDK defect identified."
-files[8]{path,scope}:
+  "2026-10-21T04:49:49.807Z",pi-agent,"Finish-round assessment against the task contract: the merged scan (trigram candidate retrieval, calibrated same_work pair decisions, receipts, apply/close guards) covers most of the contract, but two spec gaps remain. (1) Candidate generation uses title/description/body only; the contract asks for cheap titles, tags and linked-files signals. (2) The typed result is duplicate/abstain/distinct; the contract names a typed duplicate/related/distinct result with confidence. Plan: add tag and linked-file Dice channels to candidate retrieval (retrieval only, model evidence unchanged); add a typed related_work noul question so pairs can verify as related (linked with a receipt on apply, never closed); rebuild the labelled benchmark from the read-only fleet trackers (duplicate closures plus dependency-edge related labels), rerun both local model arms with the two-question catalog, refit dev thresholds and report held-out precision/recall as a versioned receipt; add a no-git regression (PATH without git plus GIT_CEILING_DIRECTORIES) for the scan path. Tracker write prerequisite: the peer floor for the pm runtime is raised to 2026.10.10 per the documented guarded-write remediation (this item carries format-2 editor stamps on linked tests, which pre-2026.10.10 hosts refuse); installed dev pin is unchanged and Dependabot continues to own version bumps."
+  "2026-10-21T05:21:58.709Z",pi-agent,"Implementation round 1: candidate retrieval now has tag and linked-file Dice channels beside title trigrams (retrieval-only; model evidence unchanged), structural stopgrams are pruned with the same corpus-frequency rule, and pair decisions ask a second typed related_work noul question so rows verify as duplicate/related/distinct/abstain. Apply links related verdicts with the same receipt contract (verdict=related, close always false; only duplicate verdicts plus the explicit close flag ever close). Labelled related pairs are built from real public dependency edges, repository-separated. Independent behavioral revert proofs on disposable source copies, each restored byte-for-byte: removing only the structural channel fails the tag/linked-file retrieval regression 1/1 (shared-tag and shared-file pairs vanish); restoring the single-question decision rule fails the typed-verdict regression 1/1; skipping related verdicts in apply fails the related-link regression 1/1 (no link written). Focused pair suite passes 29/29."
+  "2026-10-21T05:46:28.984Z",codex-agent,"Handoff review: retain structural candidate channels and typed related-work decisions, critically verify label construction and current calibration before publishing. Refit local tev1:4b against public read-only tracker evidence; add reproducible receipts, regression revert proofs, and both unchanged release gates. No merge or release."
+  "2026-10-21T05:48:59.263Z",codex-agent,"Critical review corrected related-label pair identity to match ordered evidence, excludes entire duplicate chains (including unresolved chains) from related labels and controls, and avoids rebuilding an item index per edge. Pair suite passes 29/29, including no-git scan/apply with an empty executable PATH. New opt-in benchmark snapshots verified-public committed trackers into scratch and persists pair identities with raw probabilities before scoring; source trackers are read-only."
+  "2026-10-21T05:53:27.656Z",codex-agent,"Independent behavioral revert proofs completed on restored source: removing structural retrieval fails the tag/file regression; disabling the related verdict fails typed cutoffs; applying duplicates only fails related-link persistence; accepting any two distinct ids as related ground truth fails the real-tracker transitive/unresolved-chain regression. Every reverted source restored byte-for-byte. Snapshot collection verified 30 public repositories and 5404 items; inference and held-out scoring remain in progress. Zero-duplication gate passes across 58 sources at the unchanged 0% threshold."
+  "2026-10-21T05:58:39.882Z",codex-agent,"Optional small-model calibration timed out on its first request after 90 seconds, with no retained observation; its old single-question threshold is removed for the new catalog. Continuing with the requested tev1:4b arm over the verified snapshots (105 duplicate and 90 related pairs). The initial full suite found the inherited manifest/peer-floor mismatch and absent v2 receipt; manifest and lockfile now match the intended runtime floor. New null-channel and lexical-fit coverage cases added. Old README-count-only linked assertion removed rather than preserving obsolete evidence."
+  "2026-10-21T06:47:11.595Z",codex-agent,"Calibration checkpoint: the restarted sequential tev1:4b run has retained 64 of 195 observations without scored-request failures. All 30 source commits independently resolve through the public GitHub commit API. Helper deadlines are explicitly extended for the slow local loader; source trackers and service configuration remain unchanged. Restored documented duplicateMetrics/fitDuplicateThreshold entry points and replayed the unchanged historical v1 receipt. Current v2 measurements and final release gates remain pending; no PR, merge or release yet."
+  "2026-10-21T07:27:47.955Z",codex-agent,"Calibration checkpoint: duplicate dev cutoff is 0.8503113731400108. Held-out duplicate labels yield TP=3 FP=3 FN=5 (50% precision, 37.5% recall; 24 pairs, 8 positives); 3 positives miss retrieval. These small closed-world measurements do not qualify unattended deduplication. Related-work arm remains active, with 123 of 195 total observations retained and no scored-request failures. Critical apply-order fix: duplicate writes now precede related writes while output stays in candidate order, so an auxiliary link cannot invalidate a verified duplicate. Real temporary-tracker regression passes 1/1; reverting only write precedence fails with an unapplied duplicate. Source restored byte-for-byte. Typecheck and zero-duplication gates pass."
+  "2026-10-21T07:54:27.409Z",codex-agent,"Development folds are complete: duplicate cutoff=0.8503113731400108 from 81 dev pairs; related cutoff=0.8628309325787965 from 45 dev pairs with the duplicate cutoff fixed. Related dev edge-proxy agreement is weak (TP=2 FP=17 FN=13); these F1 operating points are explicitly not precision qualifications. Both cutoffs are now fixed in the runtime; the final 45 related held-out pairs are still running. No scored-request failures have occurred. Public provenance, full pair identities and raw observations are preserved; final receipt replay and both release gates remain pending."
+  "2026-10-21T07:59:19.793Z",codex-agent,"Two additional independent scoring revert proofs pass their negative checks: scoring the duplicate class instead of the requested related target fails TP=0 versus 1; fitting related thresholds from duplicate probabilities fails cutoff=0.8 versus 0.85 on overlapping controls. Source restored byte-for-byte after each; restored metric/fitting tests pass 2/2. This brings the isolated behavioral proofs to seven. Typecheck and unchanged zero-duplication gate pass. Final held-out inference remains active without scored-request failures."
+  "2026-10-21T08:29:43.233Z",codex-agent,"Live tev1:4b calibration completed: 195/195 scored requests, no scored failures or automatic retries, model digest unchanged. Versioned v2 receipt includes 30 verified-public committed sources, 5404 items, raw pair identities/probabilities and explicit preflight accounting (198 decision attempts overall). Held-out duplicate TP=3 FP=3 FN=5, precision=50%, recall=37.5%; related edge-proxy TP=0 FP=4 FN=15, precision/recall=0%. Retrieval misses: duplicate dev/heldout 7/3; related 12/8. README reports the weak accuracy and manual-review limitation. Receipt replay passes 7/7, including historical v1 compatibility; statistical payload hash is unchanged by provenance/timing metadata finalization. Final focused suite and unchanged release gates are next."
+  "2026-10-21T08:33:17.353Z",codex-agent,"Final focused tracker/replay suite passes 37/37 with zero failures, cancellations, skips or todos. Current and historical receipt replay passes 7/7, metric/fitting selection 2/2, duplicate-precedence selection 1/1. Seven isolated semantic reverts fail their corresponding regressions and restored sources pass. Build, lint, docstrings (22 files, 604 declarations), and zero duplication pass; coverage thresholds remain unchanged. Regenerating changelog after tracker writes, then running both linked release checks with isolated HOME and Git identity."
+  "2026-10-21T08:44:16.749Z",codex-agent,"Both linked release checks pass 2/2 commands under disposable HOME with global/system Git configuration disabled: npm run release:check and bun run release:check, each 269/269 tests with zero failures, cancellations, skips or todos. Coverage is 100% statements/lines (5260/5260), branches (2175/2175), functions (216/216), across all 22 inventoried runtime/script files. Duplication remains 0% across 58 sources. Production audit, package dry run, changelog and publish-attestation checks pass. Initial linked-runner refusal was foreign branch provenance; reviewed command fingerprints were acknowledged locally without changing project trust policy, then both commands executed successfully. Focused suite 37/37; seven semantic revert proofs documented. Accuracy remains advisory: duplicate held-out precision/recall 50%/37.5%, related edge proxy 0%/0%; no unattended qualification. Releasing the claim for orchestrator verification; final committed-head checks and PR publication follow. No new PM CLI/SDK defect confirmed."
+files[10]{path,scope}:
   calibration/dedupe-report-v1.json,project
+  calibration/dedupe-report-v2.json,project
   decision-calibration.ts,project
   dedupe-evaluation.ts,project
   dedupe.ts,project
   index.ts,project
   test/agent-ux.test.ts,project
+  test/dedupe-calibration.acceptance.ts,project
   test/dedupe-evaluation.test.ts,project
   test/dedupe.test.ts,project
-tests[9]:
+tests[12]:
   - command: nice -n 15 node --test test/dedupe.test.ts test/dedupe-evaluation.test.ts
     scope: project
     provenance:
@@ -114,13 +130,38 @@ tests[9]:
       created_at: "2026-10-19T23:48:42.548Z"
       source_kind: local_mutation
       source_ref: feat/jev-dedupe
-  - command: "node --input-type=module -e 'import assert from \"node:assert/strict\"; import { readFileSync } from \"node:fs\"; const text = readFileSync(\"README.md\", \"utf8\"); assert.match(text, /235\\/235 tests with disposable HOME/); assert.match(text, /focused tracker\\/replay suite passes 26\\/26 tests; the separate artifact receipt\\nsuite passes 5\\/5/); assert.match(text, /pm-linked release selection passes 2\\/2 commands/);'"
+  - command: node --test test/dedupe.test.ts test/dedupe-evaluation.test.ts
     scope: project
+    timeout_seconds: 600
     provenance:
       author: codex-agent
-      created_at: "2026-10-19T23:55:14.978Z"
+      created_at: "2026-10-21T05:52:42.521Z"
       source_kind: local_mutation
-      source_ref: feat/jev-dedupe
+      source_ref: feat/duplicate-pair-decisions
+  - command: "node --test --test-name-pattern=\"documented single-question\" test/dedupe-evaluation.test.ts"
+    scope: project
+    timeout_seconds: 120
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T06:47:17.904Z"
+      source_kind: local_mutation
+      source_ref: feat/duplicate-pair-decisions
+  - command: "node --test --test-name-pattern=\"duplicate links take precedence\" test/dedupe.test.ts"
+    scope: project
+    timeout_seconds: 120
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T07:27:52.067Z"
+      source_kind: local_mutation
+      source_ref: feat/duplicate-pair-decisions
+  - command: "node --test --test-name-pattern=\"pair metrics|threshold fitting\" test/dedupe-evaluation.test.ts"
+    scope: project
+    timeout_seconds: 120
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T07:59:25.419Z"
+      source_kind: local_mutation
+      source_ref: feat/duplicate-pair-decisions
 docs[1]{path,scope}:
   README.md,project
 body: ""

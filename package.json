@@ -25,7 +25,8 @@
     "calibration/type-report-v1.json",
     "calibration/public-report-v1.json",
     "calibration/exemplar-report-v1.json",
-    "calibration/dedupe-report-v1.json"
+    "calibration/dedupe-report-v1.json",
+    "calibration/dedupe-report-v2.json"
   ],
   "scripts": {
     "build": "tsc",
@@ -60,7 +61,7 @@
     "@typesafe-ai/sdk": "^0.7.0"
   },
   "peerDependencies": {
-    "@unbrained/pm-cli": ">=2026.10.5"
+    "@unbrained/pm-cli": ">=2026.10.10"
   },
   "devDependencies": {
     "@babel/eslint-parser": "8.0.7",

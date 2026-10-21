@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import type { BeforeMutationHookContext } from "@unbrained/pm-cli/sdk/authoring";
 import type { Questions } from "@typesafe-ai/sdk";
@@ -31,10 +32,11 @@ async function seed(fixture: Fixture) {
   return orderedPair((await fixture.pm.get(a.id, { full: true })).item as PairItem, (await fixture.pm.get(b.id, { full: true })).item as PairItem, 1);
 }
 /** Script only the decision model boundary, keeping all tracker reads and writes real. */
-function probability(server: Server, value: number): void {
+function probability(server: Server, value: number, related = 0.1): void {
   server.setReply((_, response, body) => {
     const result = answers((body as { questions: Questions }).questions);
     result.answers.same_work = { type: "noul", noul: value };
+    result.answers.related_work = { type: "noul", noul: related };
     response.end(JSON.stringify(result));
   });
 }
@@ -63,15 +65,49 @@ test("pair candidates respect bounds, body evidence, Unicode, chronology and sta
   });
 });
 
-test("pair verdict has inclusive cutoffs, an abstain band and no positive exact tie", async () => {
+test("pair verdict has inclusive cutoffs, typed related verdicts and no positive exact tie", async () => {
   await scenario(async fixture => {
     const pair = await seed(fixture);
-    assert.equal(pairVerdict(pair, 0.8, 0.8).decision, "duplicate");
-    assert.equal(pairVerdict(pair, 1 - 0.8, 0.8).decision, "distinct");
-    assert.equal(pairVerdict(pair, 0.79, 0.8).decision, "abstain");
-    assert.equal(pairVerdict(pair, 0.5, 0.5).decision, "abstain");
-    assert.equal(pairVerdict(pair, 1, 1).decision, "duplicate");
-    assert.equal(pairVerdict(pair, 0, 1).decision, "distinct");
+    assert.equal(pairVerdict(pair, 0.8, 0.2, 0.8, 0.8).decision, "duplicate");
+    assert.equal(pairVerdict(pair, 1 - 0.8, 0.1, 0.8, 0.8).decision, "distinct");
+    assert.equal(pairVerdict(pair, 0.79, 0.2, 0.8, 0.8).decision, "abstain");
+    assert.equal(pairVerdict(pair, 0.5, 0.5, 0.5, 0.5).decision, "abstain");
+    assert.equal(pairVerdict(pair, 1, 1, 1, 1).decision, "duplicate");
+    assert.equal(pairVerdict(pair, 0, 0, 1, 1).decision, "distinct");
+    assert.equal(pairVerdict(pair, 0.2, 0.9, 0.8, 0.8).decision, "related");
+    assert.equal(pairVerdict(pair, 0.4, 0.95, 0.8, 0.8).reason, "related_above_threshold");
+    assert.equal(pairVerdict(pair, 0.6, 0.9, 0.8, 0.8).decision, "related");
+    assert.equal(pairVerdict(pair, 0.1, 0.79, 0.8, 0.8).decision, "abstain");
+    assert.equal(pairVerdict(pair, 0.9, 0.9, 0.8, 0.8).decision, "duplicate");
+  });
+});
+
+test("candidate retrieval uses tags and linked files beside title text", async () => {
+  await scenario(async fixture => {
+    const pair = await seed(fixture);
+    const item = (id: string, title: string, body: string, tags: string[], files: string[]): PairItem =>
+      ({ ...pair.a, id, title, description: "", body, tags, files: files.map(/** Linked files carry the contract scope. */ path => ({ path, scope: "project" })), dependencies: undefined } as PairItem);
+    const items = [
+      item("tag-a", "Renew gateway tokens", "rotate signing keys nightly", ["area:auth"], []),
+      item("tag-b", "Audit login flows", "review step-up prompts", ["area:auth"], []),
+      item("file-a", "Purge cache rows", "drop stale rows weekly", [], ["src/auth.ts"]),
+      item("file-b", "Track token latency", "emit durations per request", [], ["src/auth.ts"]),
+      item("alone", "Unrelated prose", "nothing shared here", ["area:other"], ["docs/other.md"]),
+    ];
+    const pairs = candidatePairs(items, 20);
+    const tagged = pairs.find(/** Shared tags alone must surface the pair. */ row => pairKey(row.a.id, row.b.id) === pairKey("tag-a", "tag-b"));
+    const filed = pairs.find(/** Shared linked files alone must surface the pair. */ row => pairKey(row.a.id, row.b.id) === pairKey("file-a", "file-b"));
+    assert.ok(tagged);
+    assert.equal(tagged!.score, 1);
+    assert.ok(filed);
+    assert.equal(filed!.score, 1);
+    assert.ok(pairs.every(/** No structural channel reaches the unrelated item; only weak trigram noise does. */ row => row.a.id !== "alone" && row.b.id !== "alone" || row.score < 0.5));
+    // A tag shared by more than maxPosting items is a structural stopgram, like common trigrams.
+    const crowded = Array.from({ length: 70 }, (_, i) => item(`crowd-${i}`, String(i), "", ["cli"], []));
+    assert.deepEqual(candidatePairs(crowded, 20), []);
+    const small = crowded.slice(0, 20);
+    assert.equal(candidatePairs(small, 20).length, 20);
+    assert.ok(candidatePairs(small, 20).every(/** Surviving shared tags score as full channel matches. */ row => row.score === 1));
   });
 });
 
@@ -111,7 +147,7 @@ test("pair apply writes only above threshold and closes only with the extra flag
     assert.equal(current.close_reason, undefined);
     assert.ok(current.dependencies?.some(dep => dep.id === pair.b.id && dep.kind === "related"));
     assert.equal(current.comments?.length, 1);
-    assert.match(current.comments![0].text, /canonical=.*probability=0.8, threshold=0.8, relation=related, close=false/);
+    assert.match(current.comments![0].text, /verdict=duplicate, canonical=.*probability=0.8, related_probability=0.1, threshold=0.8, related_threshold=0.8, relation=related, close=false/);
     await scan(fixture, { apply: true, close: true });
     current = (await fixture.pm.get(pair.a.id, { full: true })).item;
     assert.equal(current.status, "closed");
@@ -120,6 +156,77 @@ test("pair apply writes only above threshold and closes only with the extra flag
     assert.match(history.at(-2)!, /comments/);
     assert.match(history.at(-1)!, /close_reason/);
     assert.equal((await fixture.pm.get(pair.b.id, { full: true })).item.status, "open");
+  });
+});
+
+test("pair apply links typed related verdicts with a receipt and never closes them", async () => {
+  await scenario(async (fixture, server) => {
+    const pair = await seed(fixture);
+    probability(server, 0.2, 0.9);
+    const rows = await scan(fixture, { apply: true, close: true });
+    assert.equal(rows[0].decision, "related");
+    assert.equal(rows[0].related_probability, 0.9);
+    assert.equal(rows[0].reason, "linked_with_receipt");
+    const linked = (await fixture.pm.get(pair.a.id, { full: true })).item;
+    assert.equal(linked.status, "open");
+    assert.equal(linked.close_reason, undefined);
+    assert.ok(linked.dependencies?.some(dep => dep.id === pair.b.id && dep.kind === "related"));
+    assert.match(linked.comments![0].text, /verdict=related, canonical=.*related_probability=0.9, .*relation=related, close=false/);
+    assert.equal((await fixture.pm.get(pair.b.id, { full: true })).item.status, "open");
+    const history = readFileSync(join(fixture.pmRoot, "history", `${pair.a.id}.jsonl`), "utf8").trim().split("\n");
+    assert.match(history.at(-1)!, /comments/);
+  });
+});
+
+test("duplicate links take precedence when an earlier related pair shares their source", async () => {
+  await scenario(async (fixture, server) => {
+    for (const title of ["Session validation alpha", "Session validation beta", "Session validation gamma"]) {
+      await fixture.pm.create({ type: "Task", title, description: "Reject expired sessions before accepting account access" });
+    }
+    const items = (await fixture.pm.listAllComplete({ includeBody: true })).items;
+    const pairs = candidatePairs(items, 20);
+    const first = pairs[0];
+    const duplicateIndex = pairs.findIndex((pair, i) => i > 0 && [pair.a.id, pair.b.id].includes(first.a.id));
+    assert.ok(duplicateIndex > 0);
+    let call = 0;
+    server.setReply((_, response, body) => {
+      const result = answers((body as { questions: Questions }).questions);
+      const position = call++;
+      result.answers.same_work = { type: "noul", noul: position === duplicateIndex ? 0.99 : 0.1 };
+      result.answers.related_work = { type: "noul", noul: position === 0 ? 0.99 : 0.1 };
+      response.end(JSON.stringify(result));
+    });
+    const rows = await scan(fixture, { apply: true });
+    const duplicate = rows[duplicateIndex];
+    assert.equal(duplicate.decision, "duplicate");
+    assert.equal(duplicate.reason, "linked_with_receipt");
+    const written = (await fixture.pm.get(duplicate.a, { full: true })).item;
+    assert.ok(written.dependencies?.some(dep => dep.id === duplicate.b && dep.kind === "related"));
+    assert.ok(written.comments?.some(comment => comment.text.includes("verdict=duplicate,")));
+    assert.equal(call, pairs.length);
+  });
+});
+
+test("pair scan and apply work without a git repository and with no git on PATH", async () => {
+  await scenario(async (fixture, server) => {
+    const pair = await seed(fixture);
+    const previousPath = process.env.PATH;
+    const previousCeiling = process.env.GIT_CEILING_DIRECTORIES;
+    const stripped = mkdtempSync(join(tmpdir(), "jev-nogit-path-"));
+    process.env.PATH = stripped;
+    process.env.GIT_CEILING_DIRECTORIES = dirname(fixture.cwd);
+    try {
+      const rows = await scan(fixture, { apply: true });
+      assert.equal(rows[0].decision, "duplicate");
+      assert.equal(rows[0].reason, "linked_with_receipt");
+      const linked = (await fixture.pm.get(pair.a.id, { full: true })).item;
+      assert.ok(linked.dependencies?.some(dep => dep.id === pair.b.id && dep.kind === "related"));
+      assert.match(linked.comments![0].text, /pm-jev dedupe pair receipt:/);
+    } finally {
+      if (previousPath !== undefined) process.env.PATH = previousPath; else delete process.env.PATH;
+      if (previousCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES; else process.env.GIT_CEILING_DIRECTORIES = previousCeiling;
+      rmSync(stripped, { recursive: true, force: true });
+    }
   });
 });
 
@@ -154,7 +261,7 @@ test("pair scans clamp low configured confidence while preserving floors and exp
     assert.equal((await scan(fixture, { apply: true }))[0].reason, "linked_with_receipt");
     const linked = (await fixture.pm.get(pair.a.id, { full: true })).item;
     assert.equal(linked.status, "open");
-    assert.match(linked.comments![0].text, /probability=0.8, threshold=0.8,/);
+    assert.match(linked.comments![0].text, /verdict=duplicate, canonical=.*probability=0.8, related_probability=0.1, threshold=0.8, related_threshold=0.8,/);
     settings.jev = { min_confidence: 0.95 };
     writeFileSync(path, JSON.stringify(settings));
     const before = trackerSnapshot(fixture.pmRoot);
@@ -165,12 +272,13 @@ test("pair scans clamp low configured confidence while preserving floors and exp
     settings.jev = { min_confidence: 0.3 };
     writeFileSync(path, JSON.stringify(settings));
     const calibratedBefore = trackerSnapshot(fixture.pmRoot);
-    process.env.PM_JEV_MODEL = "tev1:0.8b";
-    const measured = PAIR_CALIBRATION["tev1:0.8b"];
+    process.env.PM_JEV_MODEL = "tev1:4b";
+    const measured = PAIR_CALIBRATION["tev1:4b"];
     server.setReply((request, response, body) => {
-      if (request.url === "/api/tags") { response.end(JSON.stringify({ models: [{ name: "tev1:0.8b", digest: measured.digest }] })); return; }
+      if (request.url === "/api/tags") { response.end(JSON.stringify({ models: [{ name: "tev1:4b", digest: measured.digest }] })); return; }
       const result = answers((body as { questions: Questions }).questions);
-      result.answers.same_work = { type: "noul", noul: 0.8 };
+      result.answers.same_work = { type: "noul", noul: measured.threshold - 0.001 };
+      result.answers.related_work = { type: "noul", noul: 0.1 };
       response.end(JSON.stringify(result));
     });
     assert.equal((await scan(fixture, { apply: true }))[0].decision, "abstain");
@@ -304,13 +412,14 @@ test("pair scans reject mixed pre-create flags and prune high-frequency trigrams
 test("measured pair cutoffs cannot be lowered and model digest drift refuses writes", async () => {
   await scenario(async (fixture, server) => {
     await seed(fixture);
-    process.env.PM_JEV_MODEL = "tev1:0.8b";
-    const measured = PAIR_CALIBRATION["tev1:0.8b"];
+    process.env.PM_JEV_MODEL = "tev1:4b";
+    const measured = PAIR_CALIBRATION["tev1:4b"];
     let p = measured.threshold - 0.0001, tags = 0, drift = false;
     server.setReply((request, response, body) => {
-      if (request.url === "/api/tags") { tags++; response.end(JSON.stringify({ models: [{ name: "tev1:0.8b", digest: drift && tags > 1 ? "c".repeat(64) : measured.digest }] })); return; }
+      if (request.url === "/api/tags") { tags++; response.end(JSON.stringify({ models: [{ name: "tev1:4b", digest: drift && tags > 1 ? "c".repeat(64) : measured.digest }] })); return; }
       const result = answers((body as { questions: Questions }).questions);
       result.answers.same_work = { type: "noul", noul: p };
+      result.answers.related_work = { type: "noul", noul: 0.1 };
       response.end(JSON.stringify(result));
     });
     const before = trackerSnapshot(fixture.pmRoot);
@@ -423,7 +532,7 @@ for (const delayedRead of [1, 2]) {
   test(`pair preview digest read ${delayedRead} shares the total run deadline`, async () => {
     await scenario(async (fixture, server) => {
       await seed(fixture);
-      process.env.PM_JEV_MODEL = "tev1:0.8b";
+      process.env.PM_JEV_MODEL = "tev1:4b";
       const path = getSettingsPath(fixture.pmRoot);
       const settings = JSON.parse(readFileSync(path, "utf8"));
       settings.jev = { total_deadline_ms: 1000, timeout_ms: 5000 };
@@ -432,7 +541,7 @@ for (const delayedRead of [1, 2]) {
       let delayedClosed: Promise<boolean> | undefined;
       server.setReply((request, response, body) => {
         if (request.url === "/api/tags") {
-          const payload = JSON.stringify({ models: [{ name: "tev1:0.8b", digest: PAIR_CALIBRATION["tev1:0.8b"].digest }] });
+          const payload = JSON.stringify({ models: [{ name: "tev1:4b", digest: PAIR_CALIBRATION["tev1:4b"].digest }] });
           if (++tags === delayedRead) {
             const timer = setTimeout(() => response.end(payload), 1200);
             delayedClosed = new Promise(resolve => { response.once("close", () => { clearTimeout(timer); resolve(!response.writableEnded); }); });
