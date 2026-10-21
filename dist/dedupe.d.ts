@@ -40,7 +40,7 @@ export declare const DUPLICATE_QUALITY_CALIBRATION: Readonly<Record<string, {
 export declare function pairKey(a: string, b: string): string;
 /** Orient ties deterministically; chronology is handled in code, never by the model. */
 export declare function orderedPair(a: PairItem, b: PairItem, score: number): DuplicatePair;
-/** Bounded top-K per item via inverted trigram, tag and linked-file indexes; retain at most limit global pairs. */
+/** Bounded top-K per item via trigram, structural and exact semantic/title indexes; retain at most limit global pairs. */
 export declare function candidatePairs(items: readonly PairItem[], limit: number, topK?: number): DuplicatePair[];
 /** Least-privilege, prompt-bounded pair evidence excludes closure labels, ids and receipts. */
 export declare function pairState(pair: DuplicatePair): {

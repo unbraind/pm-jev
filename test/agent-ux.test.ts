@@ -187,3 +187,12 @@ test("README pair-scan command documents same_work abstention and no writes", ()
   assert.match(row, /no writes/);
   assert.doesNotMatch(row, /related/);
 });
+
+/** Document the deterministic lexical contribution separately from model evidence. */
+test("README tags and linked files describe lexical decisions and model exclusion", () => {
+  const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+  const paragraph = readme.slice(readme.indexOf("Tags and linked files contribute"), readme.indexOf("Precision-first scans"));
+  assert.match(paragraph, /candidate retrieval and the lexical decision/);
+  assert.match(paragraph, /`duplicateSimilarity`[\s\S]*tags\/files overlap at 0\.05/);
+  assert.match(paragraph, /Tags and linked files are excluded from model\s+input/);
+});

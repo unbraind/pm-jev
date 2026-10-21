@@ -563,6 +563,24 @@ test("title-only retrieval survives unrelated long bodies", async () => {
   });
 });
 
+test("common-title retrieval survives stopgrams without full-text or structural neighbors", async () => {
+  await scenario(async fixture => {
+    const template = (await fixture.pm.create({ type: "Task", title: "Fix", body: "Independent title retrieval" })).item;
+    const items = Array.from({ length: 70 }, (_, i) => ({
+      ...template, id: `title-${i.toString().padStart(2, "0")}`,
+      title: i % 2 === 0 ? "Ｆｉｘ!" : "fix", description: "",
+      body: String.fromCodePoint(0x4e00 + i).repeat(80), tags: [], files: [], docs: [],
+    }));
+    const pairs = candidatePairs(items, items.length * 8);
+    assert.ok(pairs.length > 0, "title candidates survive when all shared title trigrams are stopgrams");
+    assert.ok(pairs.every(row => row.score === 1), "title similarity remains undiluted by disjoint bodies");
+    assert.ok(pairs.length <= items.length * 8, "independent title retrieval preserves the top-K bound");
+    assert.equal(new Set(pairs.flatMap(row => [row.a.id, row.b.id])).size, items.length);
+    assert.deepEqual(pairs, candidatePairs([...items].reverse(), items.length * 8));
+    assert.deepEqual(candidatePairs(items, 3), pairs.slice(0, 3));
+  });
+});
+
 test("uncalibrated models abstain without inference or mutation for every pair", async () => {
   await scenario(async (fixture, server) => {
     await seed(fixture);

@@ -4482,5 +4482,14 @@
     }
   ],
   "retrieval_scope": "Complete top-8 candidate graph; a production --limit-pairs budget may truncate it further",
-  "calibration_method": "Offline train-only threshold fitting over the unchanged one-shot observations; the inherited raw 0.8 score floor was removed because raw scores are not calibrated precision."
+  "calibration_method": "Offline train-only threshold fitting over the unchanged one-shot observations; the inherited raw 0.8 score floor was removed because raw scores are not calibrated precision.",
+  "retrieval_replay": {
+    "recorded_at": "2026-10-21T18:30:16.290Z",
+    "source_sha256": "952e77fc04b5f2c52f5bee32dfed740757a48a7a76821a734f744f26f5d9bef5",
+    "positive_source_repositories": 4,
+    "verified_data_hashes": 4,
+    "replayed_samples": 156,
+    "additional_model_calls": 0,
+    "method": "Rebuilt complete top-8 candidate graphs and hard-control selection from hash-verified original positive-source snapshots including recovered deleted duplicates. Pair identities, order, retrieval flags, lexical scores and model input hashes match all frozen samples exactly. Refit on train only and recomputed every arm and frontier metric from unchanged one-shot model observations; all policies and metrics unchanged."
+  }
 }

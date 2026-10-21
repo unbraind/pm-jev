@@ -31,6 +31,14 @@ to 8%; removing that restriction and searching the full **train-only** score ran
 finds the 12% point. This recalibration uses the unchanged one-shot observations;
 no model request was rerun and no held-out score selects a cutoff.
 
+After adding independent bounded exact-title retrieval, replay verified the
+original data hashes for all four positive-source repositories, including the
+three recovered deleted records. Rebuilding their complete candidate graphs and
+hard-control selection reproduces all 156 pair identities, retrieval flags,
+lexical scores and model-input hashes. Train-only refitting and every held-out
+arm/frontier metric remain unchanged, with zero additional model calls. The
+receipt's `retrieval_replay` records this check and the source hash.
+
 The held-out point estimate clears the 80% precision target, but one correct
 proposal is weak evidence: its descriptive 95% Wilson precision interval is
 20.7%–100%. The 95% recall interval is 9.5%–90.5%. The compact frontier in the
@@ -42,7 +50,9 @@ precision / 37.5% recall is not a controlled before/after comparison.
 
 Candidates combine title, description/body trigrams, tags and linked file/doc
 paths. A separate title channel preserves short titles despite unrelated long
-bodies. The semantic score used by the lexical and combined arms weights token
+bodies. Bounded exact normalized-title groups supply independent candidates even
+when common title trigrams are removed as stopgrams and no other signal overlaps.
+The semantic score used by the lexical and combined arms weights token
 Dice overlap: title 0.65, distinct description/body 0.30, tags/files 0.05. These
 weights were fixed before inference. Generic shared tags alone cannot qualify a
 pair as a duplicate. The production semantic projection and model question catalog
@@ -112,13 +122,12 @@ and authenticated public GitHub inspection.
 
 ## Validation
 
-Both `npm run release:check` and `bun run release:check` pass 281/281 tests with
-zero failures, cancellations, skips or todos, under disposable HOME and disabled
-global/system Git configuration. The unchanged coverage gates measure 100%
-statements/lines (5,399/5,399), functions (228/228) and branches (2,287/2,287)
-across 23 runtime/script sources. Duplication is zero; 643 required declarations
-are documented. Production audit, public provenance, package dry run, changelog
-and publish-attestation checks pass.
+Validation requires both `npm run release:check` and `bun run release:check`
+under disposable HOME and disabled global/system Git configuration. Coverage
+thresholds remain 100% for statements, lines, functions and branches across
+runtime/script sources; the duplication threshold remains zero. The gates also
+check declaration documentation, production audit, public provenance, package dry
+run, changelog and publish attestation. The PR body records the current run counts.
 
 Independent exhaustive train-only search checks 20,700 combined cutoff points,
 150 model-only points and 138 lexical-only points and selects the same policies

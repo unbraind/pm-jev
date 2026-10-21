@@ -42,11 +42,11 @@ function grams(item: PairItem): Set<string> {
   const text = semanticText(item);
   return new Set(Array.from({ length: Math.max(0, text.length - 2) }, /** Extract overlapping character trigrams. */ (_, i) => text.slice(i, i + 3)));
 }
-/** Cheap normalized tag tokens; retrieval-only evidence never sent to the model. */
+/** Cheap normalized tag tokens; lexical evidence never sent to the model. */
 function tagTokens(item: PairItem): Set<string> {
   return new Set(item.tags.map(/** Namespaced tags cannot collide with file paths or trigrams. */ tag => `#${tag.normalize("NFKC").toLowerCase()}`));
 }
-/** Cheap linked file and doc path tokens; retrieval-only evidence never sent to the model. */
+/** Cheap linked file and doc path tokens; lexical evidence never sent to the model. */
 function fileTokens(item: PairItem): Set<string> {
   return new Set([...(item.files ?? []), ...(item.docs ?? [])].map(/** Namespaced paths cannot collide with tags or trigrams. */ file => `@${file.path.normalize("NFKC").toLowerCase()}`));
 }
@@ -58,19 +58,22 @@ function pairOrder(a: DuplicatePair, b: DuplicatePair): number { return b.score 
 export function orderedPair(a: PairItem, b: PairItem, score: number): DuplicatePair {
   return a.created_at > b.created_at || (a.created_at === b.created_at && a.id > b.id) ? { a, b, score } : { a: b, b: a, score };
 }
-/** Bounded top-K per item via inverted trigram, tag and linked-file indexes; retain at most limit global pairs. */
+/** Bounded top-K per item via trigram, structural and exact semantic/title indexes; retain at most limit global pairs. */
 export function candidatePairs(items: readonly PairItem[], limit: number, topK = 8): DuplicatePair[] {
   const documents = items.map(grams);
   const titles = items.map(/** Preserve short concrete titles beside long boilerplate bodies. */ item => grams({ ...item, description: "", body: "" }));
   const structural = items.map(/** Tags and linked files are cheap candidate signals beside title text. */ item => new Set([...tagTokens(item), ...fileTokens(item)]));
   const identities = items.map(/** Preserve exact semantic equality when corpus stopgrams remove every trigram. */ item => createHash("sha256").update(semanticText(item)).digest("hex"));
+  const retrievalKeys = items.map(/** Exact titles independently survive stopgrams even when the remaining evidence differs. */ (item, i) => [identities[i], `title:${semanticText({ ...item, description: "", body: "" })}`]);
   const identical = new Map<string, number[]>();
   const index = new Map<string, number[]>();
   const linked = new Map<string, number[]>();
   for (const [i, document] of documents.entries()) {
-    const group = identical.get(identities[i]) ?? [];
-    group.push(i);
-    identical.set(identities[i], group);
+    for (const key of retrievalKeys[i]) {
+      const group = identical.get(key) ?? [];
+      group.push(i);
+      identical.set(key, group);
+    }
     for (const gram of document) {
       const posting = index.get(gram) ?? [];
       posting.push(i);
@@ -82,7 +85,7 @@ export function candidatePairs(items: readonly PairItem[], limit: number, topK =
       linked.set(token, posting);
     }
   }
-  for (const group of identical.values()) group.sort(/** Stable exact-match neighbors independent of SDK enumeration order. */ (a, b) => items[a].id.localeCompare(items[b].id));
+  for (const group of identical.values()) group.sort(/** Stable semantic/title neighbors independent of SDK enumeration order. */ (a, b) => items[a].id.localeCompare(items[b].id));
   // Very common trigrams and tags contribute little retrieval evidence and make the inverted indexes quadratic.
   // Keep all signals in small trackers; large trackers drop corpus-frequency stopgrams.
   const maxPosting = Math.max(64, Math.ceil(items.length * 0.02));
@@ -98,7 +101,7 @@ export function candidatePairs(items: readonly PairItem[], limit: number, topK =
   for (const [i, document] of documents.entries()) {
     const lexical = new Map<number, number>();
     const shared = new Map<number, number>();
-    for (const j of (identical.get(identities[i]) as number[]).slice(0, topK + 1)) if (j !== i) lexical.set(j, 0);
+    for (const key of retrievalKeys[i]) for (const j of (identical.get(key) as number[]).slice(0, topK + 1)) if (j !== i) lexical.set(j, 0);
     for (const gram of document) for (const j of index.get(gram) as number[]) if (j !== i) lexical.set(j, (lexical.get(j) ?? 0) + 1);
     for (const token of structural[i]) for (const j of linked.get(token) as number[]) if (j !== i) shared.set(j, (shared.get(j) ?? 0) + 1);
     /** Each channel must independently resemble the pair; the strongest channel sets the candidate score. */

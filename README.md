@@ -181,18 +181,25 @@ rejects scan-only flags.
 Candidate generation uses Unicode-normalized title, description and body character
 trigrams, plus a structural channel of normalized tags and linked file/doc paths.
 Each channel uses Dice overlap; the stronger score ranks the pair, so shared tags
-or files can retrieve pairs with dissimilar text. Retrieval uses two inverted indexes
-and eight neighbors per item.
+or files can retrieve pairs with dissimilar text. Retrieval uses two inverted indexes,
+bounded exact semantic/title groups and eight neighbors per item.
 In large trackers it removes trigrams, tags and paths occurring in more than max(64, 2% of items)
 documents before scoring. These corpus-frequency stopgrams keep common boilerplate from
 dominating work; a normalized-text fallback preserves identical semantic
 groups, including punctuation variants, even when all their trigrams are common.
+Exact normalized titles also supply bounded neighbors per item independently
+of full-text and structural matches, so common short titles survive stopgram removal
+even when descriptions and bodies differ.
 The global score order is stable; `--limit-pairs` defaults to
 20 and accepts 1–200. Start with `--limit-pairs 1` on a slow or busy local host:
 the invocation shares one `jev.total_deadline_ms` budget, including model loading,
 and `jev.timeout_ms` limits each attempt. Larger batches may need larger explicit
 budgets. No lexical issue-code heuristic promotes UTF-8 to a near-exact
-match. A title-only trigram channel also preserves short matching titles when long bodies differ. Tags and linked files are retrieval-only signals: model input is limited to each title's first 320 characters and 1600
+match. A title-only trigram channel also preserves short matching titles when long bodies differ.
+Tags and linked files contribute to candidate retrieval and the lexical decision:
+`duplicateSimilarity` weights title overlap at 0.65, description/body overlap at
+0.30 and tags/files overlap at 0.05. Tags and linked files are excluded from model
+input, which is limited to each title's first 320 characters and 1600
 characters of distinct description/body; closure labels, ids and annotations are
 excluded. This truncation can hide useful evidence and is recorded as a limitation.
 
