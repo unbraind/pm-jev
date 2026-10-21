@@ -426,7 +426,18 @@ test("hosted pair scanning reuses the existing explicit provider privacy boundar
     const oldKey = process.env.TYPESAFE_API_KEY;
     process.env.TYPESAFE_API_KEY = "synthetic";
     const restore = hostedFixture(server);
-    try { assert.equal((await scan(fixture)).length, 1); }
+    const before = trackerSnapshot(fixture.pmRoot);
+    try {
+      for (const apply of [false, true]) {
+        const rows = await scan(fixture, { apply });
+        assert.deepEqual(server.requests, [], "uncalibrated hosted scans send no item evidence");
+        assert.equal(rows.length, 1);
+        assert.equal(rows[0].reason, "unsure_uncalibrated_model");
+        assert.equal(rows[0].decision, "abstain");
+        assert.equal(rows[0].probability, 0);
+      }
+      assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+    }
     finally { restore(); if (oldKey === undefined) delete process.env.TYPESAFE_API_KEY; else process.env.TYPESAFE_API_KEY = oldKey; }
   });
 });
@@ -552,15 +563,38 @@ test("title-only retrieval survives unrelated long bodies", async () => {
   });
 });
 
-test("uncalibrated models abstain even at probability one and cannot mutate", async () => {
+test("uncalibrated models abstain without inference or mutation for every pair", async () => {
   await scenario(async (fixture, server) => {
     await seed(fixture);
+    await fixture.pm.create({ type: "Task", title: "Repair", body: "Reject expired sessions before displaying account details" });
     process.env.PM_JEV_MODEL = "unmeasured-model";
     probability(server, 1);
     const before = trackerSnapshot(fixture.pmRoot);
-    const rows = await scan(fixture, { apply: true });
-    assert.equal(rows[0].decision, "abstain");
-    assert.match(rows[0].reason, /unsure/);
+    for (const apply of [false, true]) {
+      const rows = await scan(fixture, { apply });
+      assert.deepEqual(server.requests, [], "uncalibrated local scans do not call the model");
+      assert.equal(rows.length, 3);
+      assert.ok(rows.every(row => row.decision === "abstain" && row.reason === "unsure_uncalibrated_model" && row.probability === 0));
+    }
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+  });
+});
+
+test("disabled calibration cutoffs abstain without pair inference or writes", async () => {
+  await scenario(async (fixture, server) => {
+    await seed(fixture);
+    const before = trackerSnapshot(fixture.pmRoot);
+    for (const policy of [{ model: null, lexical: 0.2 }, { model: 0.8, lexical: null }]) {
+      Object.defineProperty(DUPLICATE_QUALITY_CALIBRATION, "scripted-test-model", { configurable: true, value: { policy, digest: "a".repeat(64) } });
+      for (const apply of [false, true]) {
+        const rows = await scan(fixture, { apply });
+        assert.equal(rows.length, 1);
+        assert.equal(rows[0].reason, "unsure_uncalibrated_model");
+        assert.equal(rows[0].probability, 0);
+        assert.equal(rows[0].decision, "abstain");
+      }
+    }
+    assert.ok(server.requests.every(request => request.path === "/api/tags"), "disabled policies retain digest checks without scoring item evidence");
     assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
   });
 });

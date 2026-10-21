@@ -63,7 +63,7 @@ Runtime tracker paths come from the host and SDK, including custom pm storage ro
 | `pm jev link <id> --apply --min-confidence 0.8` | Add qualifying new SDK edges and one receipt; hierarchy requires `--allow-parent`. |
 | `pm jev link --open --limit 20` | Stream a bounded open backlog with changed/would_change/skipped/failed counts. |
 | `pm jev dedupe --title "Fix login crash" --body "Details" --limit 8` | Rank all tracker items in code, then choose a candidate id or `none`. |
-| `pm jev dedupe --status open --type Issue --limit-pairs 20` | Verify bounded existing pairs with typed duplicate/related propositions and abstain bands. |
+| `pm jev dedupe --status open --type Issue --limit-pairs 20` | Verify bounded existing pairs with the calibrated `same_work` policy; unsure pairs abstain; no writes. |
 | `pm jev dedupe --apply --min-confidence 0.95` | Add calibrated duplicate links and receipts; proposals never close items. |
 | `pm jev ask <id> --questions questions.json` | Validate and answer caller-defined choice, score and noul questions. |
 | `pm jev gate --noul "The text contains credentials or private data." --text "Synthetic text" --threshold 0.5 --expect false` | Exit 0 when the proposition does not hold; exit 1 when credentials/private data are detected. |
@@ -209,7 +209,7 @@ operating points below remain replayable evidence. New duplicate proposals requi
 both the semantic score and model confidence to clear the frozen combined cutoffs.
 The default uses the fitted raw cutoff directly; explicitly configured confidence
 can tighten it. Other models have no measured duplicate policy and return an explicit unsure
-abstention, even at probability one. A higher requested/configured min-confidence
+abstention without inference (`probability: 0`, `reason: unsure_uncalibrated_model`); null cutoffs skip inference too. A higher requested/configured min-confidence
 can only tighten the model cutoff. Null cutoffs disable proposals. Measured local
 models must match their recorded digest before and after inference; both reads
 share the invocation deadline.

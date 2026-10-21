@@ -5,6 +5,11 @@ semantic lexical score and a local model probability to clear frozen cutoffs.
 They return `decision: abstain` with `reason: unsure_below_calibrated_confidence`
 when evidence is insufficient. Model probabilities are raw model output; the
 precision constraint calibrates a decision threshold, not a probability estimate.
+Models without an enabled measured duplicate policy skip inference and return
+`decision: abstain`, `probability: 0`, `reason: unsure_uncalibrated_model` for
+every candidate, including explicitly opted-in hosted scans. The zero is a
+sentinel for an unscored pair, not a measured model probability. Null cutoffs
+disable inference too; known calibration entries retain their digest checks.
 
 The [public receipt](../calibration/duplicate-quality-report-v3.json) records 156
 pairs from 30 public snapshots: 52 positive pairs (35 in the historical report),

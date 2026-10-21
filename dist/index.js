@@ -1784,8 +1784,8 @@ function registerCommands(api) {
     }));
     api.registerCommand(defineCommand({
         name: "jev dedupe",
-        description: "Detect existing duplicate and related pairs with abstaining typed decisions, or screen a title before creation",
-        intent: "Verify duplicate and related work in a bounded tracker scan or screen a title before creation",
+        description: "Propose calibrated duplicate pairs with abstention, or screen a title before creation; links only, never closes items",
+        intent: "Verify duplicate work in a bounded tracker scan or screen a title before creation",
         flags: DEDUPE_FLAGS,
         failure_hints: ["Ranking is deterministic in code; only the confirmation needs the decision endpoint (pm jev doctor)"],
         examples: ['pm jev dedupe --title "Fix login crash"', 'pm jev dedupe --title "Fix login crash" --body "Steps: ..." --limit 12', 'pm jev dedupe --limit-pairs 20'],

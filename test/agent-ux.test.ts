@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import test from "node:test";
 import { answers, scenario } from "./fixtures.ts";
 import { activateExtensionForTest } from "@unbrained/pm-cli/sdk/testing";
@@ -142,16 +142,48 @@ test("compact all four commands while JSON and full retain precision and every o
   });
 });
 
-/** Dedupe help guidance must match the dispatcher: --title is optional screening, and pair scanning has an example. */
-test("dedupe help presents --title as optional screening with a pair-scan example", async () => {
+/** Inspect dedupe metadata registered through the real extension lifecycle. */
+async function dedupeHelp() {
   const activation = await activateExtensionForTest(extension, { capabilities: ["commands", "schema", "hooks"] });
   const command = activation.registrations.commands.find(registered => registered.command === "jev dedupe");
   assert.ok(command, "jev dedupe command is registered");
-  const title = activation.registrations.flags.find(registered => registered.target_command === "jev dedupe")?.flags.find(flag => flag.long === "--title");
+  return { command, flags: activation.registrations.flags };
+}
+
+/** Dedupe help guidance must match the dispatcher: --title is optional screening, and pair scanning has an example. */
+test("dedupe help presents --title as optional screening with a pair-scan example", async () => {
+  const { command, flags } = await dedupeHelp();
+  const title = flags.find(registered => registered.target_command === "jev dedupe")?.flags.find(flag => flag.long === "--title");
   assert.ok(title, "--title flag is registered");
   assert.match(title.description ?? "", /Pre-create screening/);
   assert.match(title.description ?? "", /omit to scan existing pairs/);
   assert.doesNotMatch(title.description ?? "", /required/);
   assert.ok(command.examples.some(example => example.includes("--limit-pairs")), "a pair-scan example is listed");
   assert.ok(command.examples.some(example => example.includes("--title")), "the title screening example is retained");
+});
+
+/** Public command metadata must describe the deployed duplicate-only policy. */
+test("dedupe description and intent promise calibrated duplicate links only", async () => {
+  const { command } = await dedupeHelp();
+  assert.ok(command.description);
+  assert.ok(command.intent);
+  assert.match(command.description, /calibrated duplicate/i);
+  assert.match(command.description, /abstention/i);
+  assert.match(command.description, /never closes items/i);
+  for (const text of [command.description, command.intent]) {
+    assert.match(text, /duplicate/i);
+    assert.match(text, /screen a title before creation/i);
+    assert.doesNotMatch(text, /related/i);
+  }
+});
+
+/** The command table is a public policy contract alongside the detailed guide. */
+test("README pair-scan command documents same_work abstention and no writes", () => {
+  const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+  const row = readme.split("\n").find(line => line.startsWith("| `pm jev dedupe --status open --type Issue --limit-pairs 20`"));
+  assert.ok(row);
+  assert.match(row, /calibrated `same_work`/);
+  assert.match(row, /unsure pairs abstain/);
+  assert.match(row, /no writes/);
+  assert.doesNotMatch(row, /related/);
 });
