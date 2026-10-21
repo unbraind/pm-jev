@@ -1,0 +1,14 @@
+{
+  "version": "pm-jev-cost/1",
+  "provenance": "synthetic",
+  "observations": [
+    { "id": "s1", "group": "project-a", "split": "selection", "task": "duplicate", "label": true, "confidence": 0.95, "eligible": true },
+    { "id": "s2", "group": "project-a", "split": "selection", "task": "duplicate", "label": false, "confidence": 0.8, "eligible": true },
+    { "id": "s3", "group": "project-a", "split": "selection", "task": "type", "label": "Issue", "predicted": "Task", "confidence": 0.8, "eligible": true },
+    { "id": "s4", "group": "project-a", "split": "selection", "task": "type", "label": "Issue", "predicted": "Issue", "confidence": 0.95, "eligible": true },
+    { "id": "h1", "group": "project-b", "split": "heldout", "task": "duplicate", "label": true, "confidence": 0.95, "eligible": true },
+    { "id": "h2", "group": "project-b", "split": "heldout", "task": "duplicate", "label": false, "confidence": 0.8, "eligible": true },
+    { "id": "h3", "group": "project-b", "split": "heldout", "task": "type", "label": "Issue", "predicted": "Task", "confidence": 0.8, "eligible": true },
+    { "id": "h4", "group": "project-b", "split": "heldout", "task": "type", "label": "Issue", "predicted": "Issue", "confidence": 0.95, "eligible": true }
+  ]
+}
