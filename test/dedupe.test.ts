@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import type { BeforeMutationHookContext } from "@unbrained/pm-cli/sdk/authoring";
 import type { Questions } from "@typesafe-ai/sdk";
-import { candidatePairs, orderedPair, pairKey, pairState, pairVerdict, runPairDedupe, PAIR_CALIBRATION } from "../dedupe.ts";
+import { candidatePairs, orderedPair, pairKey, pairState, pairVerdict, runPairDedupe, PAIR_CALIBRATION, DUPLICATE_QUALITY_CALIBRATION } from "../dedupe.ts";
 import type { PairItem, PairVerdict } from "../dedupe.ts";
 import { answers, scenario as modelScenario, trackerSnapshot, hostedFixture } from "./fixtures.ts";
 import { getSettingsPath, PmClient, createExtensionCommandSdk } from "@unbrained/pm-cli/sdk";
@@ -14,11 +14,27 @@ import { getSettingsPath, PmClient, createExtensionCommandSdk } from "@unbrained
 type Fixture = Parameters<Parameters<typeof modelScenario>[0]>[0];
 type Server = Parameters<Parameters<typeof modelScenario>[0]>[1];
 
-/** Use a labelled scripted model without impersonating measured production model weights. */
+/** Script the HTTP model boundary and its policy catalog; tracker SDK operations remain real. */
 async function scenario(run: (fixture: Fixture, server: Server) => Promise<void>): Promise<void> {
   const previous = process.env.PM_JEV_MODEL;
   process.env.PM_JEV_MODEL = "scripted-test-model";
-  try { await modelScenario(run); } finally { if (previous === undefined) delete process.env.PM_JEV_MODEL; else process.env.PM_JEV_MODEL = previous; }
+  const measuredDescriptor = Object.getOwnPropertyDescriptor(DUPLICATE_QUALITY_CALIBRATION, "tev1:4b");
+  Object.defineProperty(DUPLICATE_QUALITY_CALIBRATION, "tev1:4b", { configurable: true, value: { policy: { model: PAIR_CALIBRATION["tev1:4b"].threshold, lexical: 0.2 }, digest: PAIR_CALIBRATION["tev1:4b"].digest } });
+  const descriptor = Object.getOwnPropertyDescriptor(DUPLICATE_QUALITY_CALIBRATION, "scripted-test-model");
+  Object.defineProperty(DUPLICATE_QUALITY_CALIBRATION, "scripted-test-model", { configurable: true, value: { policy: { model: 0.8, lexical: 0.2 }, digest: "a".repeat(64) } });
+  try { await modelScenario(async (fixture, server) => {
+    const setReply = server.setReply;
+    server.setReply = handler => setReply((request, response, body) => {
+      if (request.url === "/api/tags" && process.env.PM_JEV_MODEL === "scripted-test-model") { response.end(JSON.stringify({ models: [{ name: "scripted-test-model", digest: "a".repeat(64) }] })); return; }
+      handler(request, response, body);
+    });
+    probability(server, 0.9);
+    await run(fixture, server);
+  }); } finally {
+    if (measuredDescriptor === undefined) Reflect.deleteProperty(DUPLICATE_QUALITY_CALIBRATION, "tev1:4b");
+    else Object.defineProperty(DUPLICATE_QUALITY_CALIBRATION, "tev1:4b", measuredDescriptor);
+    if (descriptor === undefined) Reflect.deleteProperty(DUPLICATE_QUALITY_CALIBRATION, "scripted-test-model");
+    else Object.defineProperty(DUPLICATE_QUALITY_CALIBRATION, "scripted-test-model", descriptor); if (previous === undefined) delete process.env.PM_JEV_MODEL; else process.env.PM_JEV_MODEL = previous; }
 }
 
 /** Run the registered command using the real scratch tracker SDK. */
@@ -32,11 +48,10 @@ async function seed(fixture: Fixture) {
   return orderedPair((await fixture.pm.get(a.id, { full: true })).item as PairItem, (await fixture.pm.get(b.id, { full: true })).item as PairItem, 1);
 }
 /** Script only the decision model boundary, keeping all tracker reads and writes real. */
-function probability(server: Server, value: number, related = 0.1): void {
+function probability(server: Server, value: number): void {
   server.setReply((_, response, body) => {
     const result = answers((body as { questions: Questions }).questions);
     result.answers.same_work = { type: "noul", noul: value };
-    result.answers.related_work = { type: "noul", noul: related };
     response.end(JSON.stringify(result));
   });
 }
@@ -120,7 +135,7 @@ test("pair dry-run is read-only, bounds inference and filters complete SDK items
     assert.equal(rows.length, 1);
     assert.equal(rows[0].decision, "duplicate");
     assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
-    assert.equal(server.requests.length, 1);
+    assert.equal(server.requests.filter(row => row.path === "/v1/systemone").length, 1);
     assert.ok(!JSON.stringify(server.requests).includes("PRIVATE_ANNOTATION"));
     assert.deepEqual(await scan(fixture, { type: "Feature" }), []);
     await fixture.pm.update(pair.a.id, { status: "closed", closeReason: "test complete" });
@@ -129,7 +144,7 @@ test("pair dry-run is read-only, bounds inference and filters complete SDK items
   });
 });
 
-test("pair apply writes only above threshold and closes only with the extra flag", async () => {
+test("pair apply writes only calibrated links and rejects every close flag", async () => {
   await scenario(async (fixture, server) => {
     const pair = await seed(fixture);
     probability(server, 0.79);
@@ -147,63 +162,23 @@ test("pair apply writes only above threshold and closes only with the extra flag
     assert.equal(current.close_reason, undefined);
     assert.ok(current.dependencies?.some(dep => dep.id === pair.b.id && dep.kind === "related"));
     assert.equal(current.comments?.length, 1);
-    assert.match(current.comments![0].text, /verdict=duplicate, canonical=.*probability=0.8, related_probability=0.1, threshold=0.8, related_threshold=0.8, relation=related, close=false/);
-    await scan(fixture, { apply: true, close: true });
+    assert.match(current.comments![0].text, /verdict=duplicate, canonical=.*probability=0.8, threshold=0.8, .*lexical_threshold=0.2, .*relation=related, close=false/);
+    await assert.rejects(scan(fixture, { apply: true, close: true }), /links-only/);
     current = (await fixture.pm.get(pair.a.id, { full: true })).item;
-    assert.equal(current.status, "closed");
-    assert.equal(current.close_reason, `duplicate of ${pair.b.id}`);
-    const history = readFileSync(join(fixture.pmRoot, "history", `${pair.a.id}.jsonl`), "utf8").trim().split("\n");
-    assert.match(history.at(-2)!, /comments/);
-    assert.match(history.at(-1)!, /close_reason/);
+    assert.equal(current.status, "open");
     assert.equal((await fixture.pm.get(pair.b.id, { full: true })).item.status, "open");
   });
 });
 
-test("pair apply links typed related verdicts with a receipt and never closes them", async () => {
+test("low duplicate confidence abstains without proposing a link", async () => {
   await scenario(async (fixture, server) => {
-    const pair = await seed(fixture);
-    probability(server, 0.2, 0.9);
-    const rows = await scan(fixture, { apply: true, close: true });
-    assert.equal(rows[0].decision, "related");
-    assert.equal(rows[0].related_probability, 0.9);
-    assert.equal(rows[0].reason, "linked_with_receipt");
-    const linked = (await fixture.pm.get(pair.a.id, { full: true })).item;
-    assert.equal(linked.status, "open");
-    assert.equal(linked.close_reason, undefined);
-    assert.ok(linked.dependencies?.some(dep => dep.id === pair.b.id && dep.kind === "related"));
-    assert.match(linked.comments![0].text, /verdict=related, canonical=.*related_probability=0.9, .*relation=related, close=false/);
-    assert.equal((await fixture.pm.get(pair.b.id, { full: true })).item.status, "open");
-    const history = readFileSync(join(fixture.pmRoot, "history", `${pair.a.id}.jsonl`), "utf8").trim().split("\n");
-    assert.match(history.at(-1)!, /comments/);
-  });
-});
-
-test("duplicate links take precedence when an earlier related pair shares their source", async () => {
-  await scenario(async (fixture, server) => {
-    for (const title of ["Session validation alpha", "Session validation beta", "Session validation gamma"]) {
-      await fixture.pm.create({ type: "Task", title, description: "Reject expired sessions before accepting account access" });
-    }
-    const items = (await fixture.pm.listAllComplete({ includeBody: true })).items;
-    const pairs = candidatePairs(items, 20);
-    const first = pairs[0];
-    const duplicateIndex = pairs.findIndex((pair, i) => i > 0 && [pair.a.id, pair.b.id].includes(first.a.id));
-    assert.ok(duplicateIndex > 0);
-    let call = 0;
-    server.setReply((_, response, body) => {
-      const result = answers((body as { questions: Questions }).questions);
-      const position = call++;
-      result.answers.same_work = { type: "noul", noul: position === duplicateIndex ? 0.99 : 0.1 };
-      result.answers.related_work = { type: "noul", noul: position === 0 ? 0.99 : 0.1 };
-      response.end(JSON.stringify(result));
-    });
+    await seed(fixture);
+    probability(server, 0.2);
+    const before = trackerSnapshot(fixture.pmRoot);
     const rows = await scan(fixture, { apply: true });
-    const duplicate = rows[duplicateIndex];
-    assert.equal(duplicate.decision, "duplicate");
-    assert.equal(duplicate.reason, "linked_with_receipt");
-    const written = (await fixture.pm.get(duplicate.a, { full: true })).item;
-    assert.ok(written.dependencies?.some(dep => dep.id === duplicate.b && dep.kind === "related"));
-    assert.ok(written.comments?.some(comment => comment.text.includes("verdict=duplicate,")));
-    assert.equal(call, pairs.length);
+    assert.equal(rows[0].decision, "abstain");
+    assert.equal(rows[0].reason, "unsure_below_calibrated_confidence");
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
   });
 });
 
@@ -222,6 +197,8 @@ test("pair scan and apply work without a git repository and with no git on PATH"
       const linked = (await fixture.pm.get(pair.a.id, { full: true })).item;
       assert.ok(linked.dependencies?.some(dep => dep.id === pair.b.id && dep.kind === "related"));
       assert.match(linked.comments![0].text, /pm-jev dedupe pair receipt:/);
+      await assert.rejects(scan(fixture, { apply: true, close: true }), /links-only/);
+      assert.equal((await fixture.pm.get(pair.a.id)).item.status, "open");
     } finally {
       if (previousPath !== undefined) process.env.PATH = previousPath; else delete process.env.PATH;
       if (previousCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES; else process.env.GIT_CEILING_DIRECTORIES = previousCeiling;
@@ -237,7 +214,7 @@ test("pair scan rejects invalid flags and refuses unavailable models with a reme
     await assert.rejects(scan(fixture, {}, ["extra"]));
     server.setReply((_, response) => { response.statusCode = 404; response.end(JSON.stringify({ error: "model unavailable" })); });
     const before = trackerSnapshot(fixture.pmRoot);
-    await assert.rejects(scan(fixture, { apply: true, close: true }), /ollama pull|doctor/);
+    await assert.rejects(scan(fixture, { apply: true }), /ollama pull|doctor/);
     assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
   });
 });
@@ -261,7 +238,7 @@ test("pair scans clamp low configured confidence while preserving floors and exp
     assert.equal((await scan(fixture, { apply: true }))[0].reason, "linked_with_receipt");
     const linked = (await fixture.pm.get(pair.a.id, { full: true })).item;
     assert.equal(linked.status, "open");
-    assert.match(linked.comments![0].text, /verdict=duplicate, canonical=.*probability=0.8, related_probability=0.1, threshold=0.8, related_threshold=0.8,/);
+    assert.match(linked.comments![0].text, /verdict=duplicate, canonical=.*probability=0.8, threshold=0.8, .*lexical_threshold=0.2,/);
     settings.jev = { min_confidence: 0.95 };
     writeFileSync(path, JSON.stringify(settings));
     const before = trackerSnapshot(fixture.pmRoot);
@@ -278,7 +255,6 @@ test("pair scans clamp low configured confidence while preserving floors and exp
       if (request.url === "/api/tags") { response.end(JSON.stringify({ models: [{ name: "tev1:4b", digest: measured.digest }] })); return; }
       const result = answers((body as { questions: Questions }).questions);
       result.answers.same_work = { type: "noul", noul: measured.threshold - 0.001 };
-      result.answers.related_work = { type: "noul", noul: 0.1 };
       response.end(JSON.stringify(result));
     });
     assert.equal((await scan(fixture, { apply: true }))[0].decision, "abstain");
@@ -302,7 +278,7 @@ test("pair apply skips changed evidence and avoids duplicate chains in a batch",
     await fixture.pm.create({ type: "Task", title: "Repair expired sessions", body: pair.a.body });
     const rows = await scan(fixture, { apply: true, minConfidence: "0.8" });
     assert.ok(rows.some(row => row.reason === "linked_with_receipt"));
-    assert.ok(rows.some(row => row.reason === "same_work_above_threshold"));
+    assert.ok(rows.some(row => row.reason === "calibrated_duplicate"));
   });
 });
 
@@ -318,12 +294,12 @@ test("pair apply preserves earlier writes and continues past stale pairs", async
       if (++calls === 1) await fixture.pm.update(twinIds[1], { body: "concurrent requested work revision" });
       response.end(JSON.stringify(answers((body as { questions: Questions }).questions)));
     });
-    const rows = await scan(fixture, { apply: true, close: true, limitPairs: "3" });
-    assert.deepEqual(rows.map(row => row.reason), ["linked_and_closed_with_receipt", "skipped_stale_evidence", "linked_and_closed_with_receipt"]);
+    const rows = await scan(fixture, { apply: true, limitPairs: "3" });
+    assert.deepEqual(rows.map(row => row.reason), ["linked_with_receipt", "skipped_stale_evidence", "linked_with_receipt"]);
     assert.ok([rows[1].a, rows[1].b].includes(twinIds[1]));
     for (const row of [rows[0], rows[2]]) {
       const linked = (await fixture.pm.get(row.a, { full: true })).item;
-      assert.equal(linked.status, "closed");
+      assert.equal(linked.status, "open");
       assert.ok(linked.dependencies?.some(dep => dep.id === row.b && dep.kind === "related"));
       assert.equal(linked.comments?.length, 1);
       assert.match(linked.comments![0].text, /pm-jev dedupe pair receipt:.*canonical=/);
@@ -419,7 +395,6 @@ test("measured pair cutoffs cannot be lowered and model digest drift refuses wri
       if (request.url === "/api/tags") { tags++; response.end(JSON.stringify({ models: [{ name: "tev1:4b", digest: drift && tags > 1 ? "c".repeat(64) : measured.digest }] })); return; }
       const result = answers((body as { questions: Questions }).questions);
       result.answers.same_work = { type: "noul", noul: p };
-      result.answers.related_work = { type: "noul", noul: 0.1 };
       response.end(JSON.stringify(result));
     });
     const before = trackerSnapshot(fixture.pmRoot);
@@ -451,7 +426,18 @@ test("hosted pair scanning reuses the existing explicit provider privacy boundar
     const oldKey = process.env.TYPESAFE_API_KEY;
     process.env.TYPESAFE_API_KEY = "synthetic";
     const restore = hostedFixture(server);
-    try { assert.equal((await scan(fixture)).length, 1); }
+    const before = trackerSnapshot(fixture.pmRoot);
+    try {
+      for (const apply of [false, true]) {
+        const rows = await scan(fixture, { apply });
+        assert.deepEqual(server.requests, [], "uncalibrated hosted scans send no item evidence");
+        assert.equal(rows.length, 1);
+        assert.equal(rows[0].reason, "unsure_uncalibrated_model");
+        assert.equal(rows[0].decision, "abstain");
+        assert.equal(rows[0].probability, 0);
+      }
+      assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+    }
     finally { restore(); if (oldKey === undefined) delete process.env.TYPESAFE_API_KEY; else process.env.TYPESAFE_API_KEY = oldKey; }
   });
 });
@@ -483,7 +469,7 @@ for (const change of ["none", "body", "comment", "removed receipt", "expired", "
       const pm = guardedClient(fixture);
       const original = pair.a;
       const input = createHash("sha256").update(JSON.stringify([original.id, original.title, original.description, original.body, original.type, original.status, original.created_at, original.updated_at, original.dependencies])).digest("hex");
-      const deadline = Date.now() + 5000;
+      const deadline = Date.now() + 120_000;
       const receipt = `pm-jev dedupe pair receipt: input_sha256=${input}, deadline_ms=${deadline}, canonical=${pair.b.id}, close=true.`;
       await pm.update(original.id, { dep: [`id=${pair.b.id},kind=related`], comment: [receipt] });
       const linked = (await fixture.pm.get(original.id, { full: true })).item;
@@ -518,13 +504,12 @@ for (const change of ["none", "body", "comment", "removed receipt", "expired", "
   });
 }
 
-test("pair command closes unchanged evidence through the active real SDK guard", async () => {
+test("pair command rejects close through an active real SDK guard", async () => {
   await scenario(async fixture => {
     const pair = await seed(fixture);
     const pm = guardedClient(fixture);
-    const rows = await runPairDedupe({ pm_root: fixture.pmRoot, source_workspace_root: fixture.cwd, args: [], options: { apply: true, close: true }, global: { author: "fixture" }, command: "jev dedupe", sdk: createExtensionCommandSdk(fixture.pmRoot, pm, "fixture", "jev dedupe") });
-    assert.equal(rows[0].reason, "linked_and_closed_with_receipt");
-    assert.equal((await fixture.pm.get(pair.a.id)).item.status, "closed");
+    await assert.rejects(runPairDedupe({ pm_root: fixture.pmRoot, source_workspace_root: fixture.cwd, args: [], options: { apply: true, close: true }, global: { author: "fixture" }, command: "jev dedupe", sdk: createExtensionCommandSdk(fixture.pmRoot, pm, "fixture", "jev dedupe") }), /links-only/);
+    assert.equal((await fixture.pm.get(pair.a.id)).item.status, "open");
   });
 });
 
@@ -566,5 +551,138 @@ test("pair guard permits unrelated closes with absent or ordinary comments", asy
       await pm.update(item.id, { status: "closed", closeReason: "Work completed" });
       assert.equal((await fixture.pm.get(item.id)).item.status, "closed");
     }
+  });
+});
+
+test("title-only retrieval survives unrelated long bodies", async () => {
+  await scenario(async fixture => {
+    const pair = await seed(fixture);
+    const a = { ...pair.a, title: "Reject expired sessions", body: "alpha ".repeat(2000), description: "" };
+    const b = { ...pair.b, title: a.title, body: "zulu ".repeat(2000), description: "" };
+    assert.equal(candidatePairs([a, b], 1)[0].score, 1);
+  });
+});
+
+test("common-title retrieval survives stopgrams without full-text or structural neighbors", async () => {
+  await scenario(async fixture => {
+    const template = (await fixture.pm.create({ type: "Task", title: "Fix", body: "Independent title retrieval" })).item;
+    const items = Array.from({ length: 70 }, (_, i) => ({
+      ...template, id: `title-${i.toString().padStart(2, "0")}`,
+      title: i % 2 === 0 ? "Ｆｉｘ!" : "fix", description: "",
+      body: String.fromCodePoint(0x4e00 + i).repeat(80), tags: [], files: [], docs: [],
+    }));
+    const pairs = candidatePairs(items, items.length * 8);
+    assert.ok(pairs.length > 0, "title candidates survive when all shared title trigrams are stopgrams");
+    assert.ok(pairs.every(row => row.score === 1), "title similarity remains undiluted by disjoint bodies");
+    assert.ok(pairs.length <= items.length * 8, "independent title retrieval preserves the top-K bound");
+    assert.equal(new Set(pairs.flatMap(row => [row.a.id, row.b.id])).size, items.length);
+    assert.deepEqual(pairs, candidatePairs([...items].reverse(), items.length * 8));
+    assert.deepEqual(candidatePairs(items, 3), pairs.slice(0, 3));
+  });
+});
+
+test("uncalibrated models abstain without inference or mutation for every pair", async () => {
+  await scenario(async (fixture, server) => {
+    await seed(fixture);
+    await fixture.pm.create({ type: "Task", title: "Repair", body: "Reject expired sessions before displaying account details" });
+    process.env.PM_JEV_MODEL = "unmeasured-model";
+    probability(server, 1);
+    const before = trackerSnapshot(fixture.pmRoot);
+    for (const apply of [false, true]) {
+      const rows = await scan(fixture, { apply });
+      assert.deepEqual(server.requests, [], "uncalibrated local scans do not call the model");
+      assert.equal(rows.length, 3);
+      assert.ok(rows.every(row => row.decision === "abstain" && row.reason === "unsure_uncalibrated_model" && row.probability === 0));
+    }
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+  });
+});
+
+test("disabled calibration cutoffs abstain without pair inference or writes", async () => {
+  await scenario(async (fixture, server) => {
+    await seed(fixture);
+    const before = trackerSnapshot(fixture.pmRoot);
+    for (const policy of [{ model: null, lexical: 0.2 }, { model: 0.8, lexical: null }]) {
+      Object.defineProperty(DUPLICATE_QUALITY_CALIBRATION, "scripted-test-model", { configurable: true, value: { policy, digest: "a".repeat(64) } });
+      for (const apply of [false, true]) {
+        const rows = await scan(fixture, { apply });
+        assert.equal(rows.length, 1);
+        assert.equal(rows[0].reason, "unsure_uncalibrated_model");
+        assert.equal(rows[0].probability, 0);
+        assert.equal(rows[0].decision, "abstain");
+      }
+    }
+    assert.ok(server.requests.every(request => request.path === "/api/tags"), "disabled policies retain digest checks without scoring item evidence");
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+  });
+});
+
+test("default pair scans honor the fitted raw cutoff while explicit confidence can only tighten it", async () => {
+  await scenario(async (fixture, server) => {
+    await seed(fixture);
+    Object.defineProperty(DUPLICATE_QUALITY_CALIBRATION, "scripted-test-model", { configurable: true, value: { policy: { model: 0.7, lexical: 0.2 }, digest: "a".repeat(64) } });
+    probability(server, 0.71);
+    assert.equal((await scan(fixture))[0].decision, "duplicate");
+    assert.equal((await scan(fixture, { minConfidence: "0.8" }))[0].decision, "abstain");
+    const path = getSettingsPath(fixture.pmRoot);
+    const settings = JSON.parse(readFileSync(path, "utf8"));
+    settings.jev = { min_confidence: 0.9 };
+    writeFileSync(path, JSON.stringify(settings));
+    assert.equal((await scan(fixture))[0].decision, "abstain");
+    assert.equal((await scan(fixture, { minConfidence: "0.5" }))[0].decision, "duplicate");
+    probability(server, 0.69);
+    assert.equal((await scan(fixture, { minConfidence: "0.5" }))[0].decision, "abstain");
+  });
+});
+
+test("lexical prefilter abstains without inference or mutation below the fitted cutoff", async () => {
+  const lexical = DUPLICATE_QUALITY_CALIBRATION["tev1:4b"].policy.lexical;
+  await scenario(async (fixture, server) => {
+    for (const body of ["apricot", "zebra"]) await fixture.pm.create({ type: "Task", title: "Review config", body });
+    Object.defineProperty(DUPLICATE_QUALITY_CALIBRATION, "scripted-test-model", { configurable: true, value: {
+      policy: { model: 0.8, lexical }, digest: "a".repeat(64),
+    } });
+    server.setReply((_, response) => { response.statusCode = 503; response.end(JSON.stringify({ error: "ineligible pairs must not request inference" })); });
+    const before = trackerSnapshot(fixture.pmRoot);
+    for (const apply of [false, true]) {
+      const rows = await scan(fixture, { apply });
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].decision, "abstain");
+      assert.equal(rows[0].reason, "unsure_below_lexical_cutoff");
+      assert.equal(rows[0].probability, 0);
+    }
+    assert.equal(server.requests.length, 4, "both digest checks are retained for each invocation");
+    assert.ok(server.requests.every(request => request.path === "/api/tags"), "no item evidence is sent for lexically ineligible pairs");
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+  });
+});
+
+test("lexical prefilter preserves inclusive cutoffs and mixed-batch write alignment", async () => {
+  await scenario(async (fixture, server) => {
+    const items: PairItem[] = [];
+    for (const [id, body] of [["mixed-a", "apricot"], ["mixed-b", "zebra"], ["mixed-c", "zebra"]]) {
+      const created = await fixture.pm.create({ id, type: "Task", title: "Review config", body });
+      items.push((await fixture.pm.get(created.item.id, { full: true })).item as PairItem);
+    }
+    const before = trackerSnapshot(fixture.pmRoot);
+    for (const lexical of [0.95 + Number.EPSILON, 0.95, 0.95 - Number.EPSILON]) {
+      Object.defineProperty(DUPLICATE_QUALITY_CALIBRATION, "scripted-test-model", { configurable: true, value: { policy: { model: 0.8, lexical }, digest: "a".repeat(64) } });
+      const requestsBefore = server.requests.filter(request => request.path === "/v1/systemone").length;
+      const rows = await scan(fixture);
+      const scored = lexical > 0.95 ? 0 : 1;
+      assert.equal(rows.length, 3);
+      assert.equal(rows.filter(row => row.reason === "unsure_below_lexical_cutoff" && row.probability === 0).length, 3 - scored);
+      assert.equal(server.requests.filter(request => request.path === "/v1/systemone").length - requestsBefore, scored);
+      assert.equal(rows.filter(row => row.decision === "duplicate" && row.probability === 0.9).length, scored);
+    }
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+    const applied = await scan(fixture, { apply: true });
+    assert.deepEqual(applied.map(row => row.reason), ["unsure_below_lexical_cutoff", "unsure_below_lexical_cutoff", "linked_with_receipt"]);
+    const approved = applied[2];
+    assert.equal(pairKey(approved.a, approved.b), pairKey(items[1].id, items[2].id));
+    const linked = (await fixture.pm.get(approved.a, { full: true })).item;
+    assert.ok(linked.dependencies?.some(dep => dep.id === approved.b && dep.kind === "related"));
+    assert.equal(linked.comments?.length, 1);
+    assert.equal((await fixture.pm.get(items[0].id, { full: true })).item.comments?.length ?? 0, 0);
   });
 });

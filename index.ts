@@ -2210,9 +2210,9 @@ const DEDUPE_FLAGS: FlagDefinition[] = [
   { long: "--status", value_name: "open|all", value_type: "string", description: "Scan existing items (default open); --title selects pre-create screening" },
   { long: "--type", value_name: "t", value_type: "string", description: "Scan only this item type" },
   { long: "--limit-pairs", value_name: "N", value_type: "string", description: "Maximum sequential pair decisions (default 20, maximum 200)" },
-  { long: "--min-confidence", value_name: "p", value_type: "string", description: "Raise the measured model cutoffs and symmetric abstention bands (minimum floor 0.8)" },
-  { long: "--apply", value_type: "boolean", description: "Link qualifying newer duplicates and related pairs with a receipt" },
-  { long: "--close", value_type: "boolean", description: "Also close linked duplicates; requires --apply" },
+  { long: "--min-confidence", value_name: "p", value_type: "string", description: "Raise the train-calibrated duplicate cutoff; insufficient evidence stays unsure" },
+  { long: "--apply", value_type: "boolean", description: "Add calibrated duplicate links with a receipt; never close items" },
+  { long: "--close", value_type: "boolean", description: "Removed: duplicate proposals are links-only; use --apply" },
   { long: "--title", value_name: "text", value_type: "string", description: "Pre-create screening: title of the item about to be created; omit to scan existing pairs" },
   { long: "--body", value_name: "text", value_type: "string", description: "Optional proposed body text for context" },
   { long: "--limit", value_name: "n", value_type: "string", description: "Maximum candidates ranked into the choice (default 8, max 32)" },
@@ -2293,8 +2293,8 @@ function registerCommands(api: ExtensionApi): void {
   api.registerCommand(
     defineCommand({
       name: "jev dedupe",
-      description: "Detect existing duplicate and related pairs with abstaining typed decisions, or screen a title before creation",
-      intent: "Verify duplicate and related work in a bounded tracker scan or screen a title before creation",
+      description: "Propose calibrated duplicate pairs with abstention, or screen a title before creation; links only, never closes items",
+      intent: "Verify duplicate work in a bounded tracker scan or screen a title before creation",
       flags: DEDUPE_FLAGS,
       failure_hints: ["Ranking is deterministic in code; only the confirmation needs the decision endpoint (pm jev doctor)"],
       examples: ['pm jev dedupe --title "Fix login crash"', 'pm jev dedupe --title "Fix login crash" --body "Steps: ..." --limit 12', 'pm jev dedupe --limit-pairs 20'],

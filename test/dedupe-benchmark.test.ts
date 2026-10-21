@@ -30,3 +30,19 @@ test("one-shot benchmark refuses non-empty scratch before source collection and 
     assert.equal(readFileSync(output, "utf8"), "existing report");
   }
 });
+
+test("precision-first benchmark refuses reused collection and inference before tools or evidence writes", t => {
+  const scratch = mkdtempSync(join(tmpdir(), "jev-quality-once-"));
+  t.after(() => rmSync(scratch, { recursive: true, force: true }));
+  mkdirSync(join(scratch, "inference"));
+  writeFileSync(join(scratch, "inference", "observations.json"), "checkpoint");
+  const output = join(scratch, "report.json");
+  writeFileSync(output, "report retained");
+  for (const mode of ["collect", "infer"]) {
+    const result = spawnSync(process.execPath, ["test/duplicate-quality.acceptance.ts", mode, "missing-public-fleet", scratch, output], { encoding: "utf8", timeout: 60_000, cwd: new URL("..", import.meta.url), env: { ...process.env, PATH: "" } });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, mode === "collect" ? /Collection requires an empty scratch directory/ : /EEXIST/);
+    assert.equal(readFileSync(output, "utf8"), "report retained");
+    assert.equal(readFileSync(join(scratch, "inference", "observations.json"), "utf8"), "checkpoint");
+  }
+});
