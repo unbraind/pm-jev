@@ -2,12 +2,14 @@ id: pm-jev-i3wg
 title: PR 24 immutable history integration needs an approved merge procedure
 description: "CodeRabbit discussion_r4305962880 remains valid at cbd9093. Four events in history streams pm-jev-2mg8 and pm-jev-3ntg have altered before_hash and record_hash values, with original events nested in reanchor_evidence. Fresh clone strict health passes after receipt reference reconciliation, but health does not attest immutable history preservation. Existing history must not be rewritten or repaired by this review worker. The orchestrator must provide an approved immutable-history integration procedure before this review finding can be marked fixed."
 type: Issue
-status: open
+status: canceled
 priority: 1
 tags[3]: deferred,history,integration
 created_at: "2026-10-18T06:37:50.900Z"
-updated_at: "2026-10-18T06:37:50.900Z"
+updated_at: "2026-10-21T19:37:47.248Z"
 author: codex-agent
 acceptance_criteria: Preserve original branch event hashes through an approved immutable merge procedure; verify fresh clone strict health; obtain independent review without rewriting existing history in this review round.
 parent: pm-jev-0w3q
+comments[1]{created_at,author,text}:
+  "2026-10-21T19:36:26.184Z",codex-agent,"Authorized tracker reconciliation, audit 2026-10-21. Owner-authorized takeover of any historical assignment for this verified terminal transition. Reverified current main 4db41b03f85f: merged #24 (b479dd0); owner no-Git contract of 2026-10-20 still supersedes this Git-only work; source tree exactly matches the audited snapshot. **PR 24 immutable history integration needs an approved merge procedure.** [PR #24](https://github.com/unbraind/pm-jev/pull/24) is already merged (b479dd0). The requested Git-specific immutable-history merge procedure is superseded by the 2026-10-20 prohibition on merge-driver/receipt work."
 body: ""

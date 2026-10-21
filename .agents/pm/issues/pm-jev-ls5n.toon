@@ -2,26 +2,47 @@ id: pm-jev-ls5n
 title: Preserve unknown token usage after TypeSafe SDK update
 description: "Repair Dependabot PR 32: accept nullable usage, retain unknown receipt fields, and report unknown-call counts in calibration and evaluation totals. Prove with real HTTP fixtures and behavioral reverts."
 type: Issue
-status: in_progress
+status: closed
 priority: 1
 tags: []
 created_at: "2026-10-20T07:00:14.776Z"
-updated_at: "2026-10-20T07:27:30.431Z"
+updated_at: "2026-10-21T19:45:29.686Z"
+closed_at: "2026-10-21T19:34:44.569Z"
+completed_at: "2026-10-21T19:34:44.569Z"
 author: codex-agent
-comments[5]{created_at,author,text}:
+comments[7]{created_at,author,text}:
   "2026-10-20T07:00:38.590Z",codex-agent,"Classification: intended SDK contract change (usage may be null) exposes our strict validator and arithmetic assumptions. Preserve null per field and propagate incomplete totals, with per-call unknown counts; clamp exemplar additions conservatively when measured input usage is unavailable."
   "2026-10-20T07:06:03.915Z",codex-agent,"Additional intended TypeSafe SDK changes: box question union, non-null request state, and automatic zstd request compression above 1024 bytes. Keep the existing question catalog explicit and local Ollama JSON requests uncompressed. Ambient extension discovery causes a local health version-skew finding; verify durable health in a fresh clone with isolated identity."
   "2026-10-20T07:09:28.827Z",codex-agent,"Behavioral revert proof: reverting only calibrate to the PR head makes node --test --test-reporter=tap --test-name-pattern=\"calibration preserves nullable\" test/calibration.test.ts fail 1/1 (exit 1); reverting only runEvaluationCommand makes node --test --test-reporter=tap --test-name-pattern=\"evaluation retains unknown\" test/evaluation-command.test.ts fail 1/1 (exit 1). Independently reverting nullable usage validation fails the calibration null fixture 1/1; reverting local uncompressed-client behavior fails the large-request calibration regression 1/1. All fixes restored. Compatibility suite: 43/43 pass, zero skipped. The SDK now rejects bare noul questions; make their existing key-as-proposition meaning explicit."
   "2026-10-20T07:11:44.891Z",codex-agent,"Dependabot refreshed PR 32 after toolchain PR 31 landed. Merged origin/main and the refreshed dependency branch without stashing or rewriting history, then reinstalled the exact lockfile. PR is held as draft with auto-merge disabled to honor the no-merge requirement. Full npm and Bun gates will run on this integrated dependency graph."
   "2026-10-20T07:27:28.255Z",codex-agent,"Final integrated-tree gates: env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check and the same isolated identity with bun run release:check both exit 0. Each runs 238/238 passing tests, zero failures, cancellations, skips or todos; Node coverage inventories 19 sources and c8 measures 100% statements, branches, functions and lines. Duplication is 0%; all 565 declarations are documented; production audit reports zero vulnerabilities. Linked nullable calibration regression: 1/1 pass through pm test. Dist rebuilt from the pinned toolchain. No undocumented pm-cli behavior found here: the generated extension merge=text attribute is covered by its GH-1460 changelog entry."
-files[5]{path,scope}:
+  "2026-10-21T19:32:32.960Z",codex-agent,"Authorized tracker reconciliation, audit 2026-10-21. Owner-authorized takeover of any historical assignment for this verified terminal transition. Reverified current main 4db41b03f85f: merged #32 (c7519cb); source tree exactly matches the audited snapshot. **Preserve unknown token usage after TypeSafe SDK update.** [PR #32](https://github.com/unbraind/pm-jev/pull/32) (c7519cb) accepts nullable SDK usage and preserves unknown-call accounting in calibration/evaluation receipts."
+  "2026-10-21T19:45:29.682Z",codex-agent,"Tracker-only reconciliation applied to the authorized audit candidates. Linked git diff --check passed. After this final pm write, regenerate with npm run changelog:full; npm run changelog:check and npx pm health are the remaining local gates. Full release gates are delegated to CI; no implementation functions changed, so behavioral revert proof does not apply."
+files[6]{path,scope}:
+  .agents/pm/issues/pm-jev-ls5n.toon,project
   calibration.ts,project
   evaluation-command.ts,project
   index.ts,project
   test/fixtures/nullable-usage.json,project
   token-usage.ts,project
-tests[1]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
-  node --test --test-reporter=tap --test-name-pattern=nullable test/calibration.test.ts,project,120,codex-agent,"2026-10-20T07:07:43.801Z",local_mutation,dependabot/npm_and_yarn/dependencies-6a231f7cea
-docs[1]{path,scope}:
+tests[2]:
+  - command: node --test --test-reporter=tap --test-name-pattern=nullable test/calibration.test.ts
+    scope: project
+    timeout_seconds: 120
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-20T07:07:43.801Z"
+      source_kind: local_mutation
+      source_ref: dependabot/npm_and_yarn/dependencies-6a231f7cea
+  - command: git diff --check
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T19:43:46.407Z"
+      source_kind: local_mutation
+      source_ref: chore/reconcile-tracker-1021
+docs[2]{path,scope}:
+  CHANGELOG.md,project
   docs/threshold-calibration.md,project
+close_reason: "Reverified current main 4db41b03f85f: merged #32 (c7519cb); source tree exactly matches the audited snapshot. **Preserve unknown token usage after TypeSafe SDK update.** [PR #32](https://github.com/unbraind/pm-jev/pull/32) (c7519cb) accepts nullable SDK usage and preserves unknown-call accounting in calibration/evaluation receipts."
 body: ""

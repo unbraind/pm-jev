@@ -5,6 +5,7 @@
 ### Added
 
 - Compact decision output for agent context budgets ([pm-jev-qriu](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-qriu.toon))
+- pm-jev packaging, gates and CI ([pm-jev-0q58](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-0q58.toon))
 - Detect existing duplicate items with calibrated pair decisions ([pm-jev-vouf](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-vouf.toon))
 - Retrieve same-tracker labelled exemplars for evaluation and calibration ([pm-jev-f4ba](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-f4ba.toon))
 - Evaluate decisions against public tracker ground truth ([pm-jev-82ip](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-82ip.toon))
@@ -17,7 +18,6 @@
 - pm-jev gate command: calibrated noul exit gate for agents and CI ([pm-jev-nn3x](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-nn3x.toon))
 - pm-jev models and doctor commands ([pm-jev-f8t5](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-f8t5.toon))
 - Batch open backlog triage with bounded streaming and stable receipts ([pm-jev-k8qe](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-k8qe.toon))
-- pm-jev packaging, gates and CI ([pm-jev-0q58](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-0q58.toon))
 
 ### Changed
 
@@ -27,6 +27,7 @@
 ### Fixed
 
 - Gate outcomes need explicit proposition and expected-result semantics ([pm-jev-43xa](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-43xa.toon))
+- Resolve development glob toolchain audit findings without downgrading fleet gates ([pm-jev-2rp1](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-2rp1.toon))
 - Name evaluation source failures and support local tracker reads without GitHub ([pm-jev-0s07](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-0s07.toon))
 - Preserve unknown token usage after TypeSafe SDK update ([pm-jev-ls5n](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-ls5n.toon))
 - Calibrate triage type proposals for projects with many item types ([pm-jev-2mg8](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-2mg8.toon))
