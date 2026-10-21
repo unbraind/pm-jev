@@ -17,26 +17,56 @@ function canonical(id, targets, ids) {
     }
     return ids.has(id) ? id : null;
 }
-/** Build duplicate-group-separated real closures and top lexical controls at a strict 2:1 ratio. */
+/** Resolve duplicate groups and production candidates once for either label set. */
+function corpusIndex(corpus) {
+    const byId = new Map(corpus.items.map(/** Index complete tracker items. */ /** Index complete tracker items. */ item => [item.id, item]));
+    const ids = new Set(byId.keys()), targets = new Map();
+    for (const item of corpus.items) {
+        const target = closureTarget(item);
+        if (target !== undefined)
+            targets.set(item.id, target);
+    }
+    const ranked = candidatePairs(corpus.items, corpus.items.length * 8);
+    const scores = new Map(ranked.map(/** Preserve production channel scores. */ /** Preserve production channel scores. */ pair => [pairKey(pair.a.id, pair.b.id), pair.score]));
+    return { byId, ids, targets, ranked, scores };
+}
+/** Store ordered pair identity immediately, including retrieval misses. */
+function labelPair(repository, pair, label, retrieved, split) {
+    return { pair_id: `${repository}:${pair.a.id}:${pair.b.id}`, repository, pair, label, retrieved, split };
+}
+/** Identical semantic projections cannot establish reliable negative controls. */
+function sameEvidence(pair) {
+    const state = pairState(pair);
+    return evidenceHash(state.A) === evidenceHash(state.B);
+}
+/** Sample positives independently of scores, then select hard controls from their repositories. */
+function selectPairs(positives, controls, count, related) {
+    /** Preserve the published seeds and stable tie policies for both benchmark versions. */
+    const samplingKey = (row) => related ? row.pair_id : pairKey(row.pair.a.id, row.pair.b.id);
+    /** Duplicate and edge benchmarks retain their original tie identities. */
+    const tieKey = (row) => related ? row.pair_id : `${row.repository}${samplingKey(row)}`;
+    const selected = [];
+    for (const split of ["dev", "heldout"]) {
+        const pos = positives.filter(/** Respect the preassigned population. */ /** Respect the preassigned population. */ row => row.split === split)
+            .sort(/** Label sampling never depends on model outcomes. */ (a, b) => evidenceHash([a.repository, samplingKey(a)]).localeCompare(evidenceHash([b.repository, samplingKey(b)]))).slice(0, count);
+        const repositories = new Set(pos.map(/** Restrict controls to the positive repositories. */ /** Restrict controls to the positive repositories. */ row => row.repository));
+        const neg = controls.filter(/** Controls share their positive population. */ /** Controls share their positive population. */ row => row.split === split && repositories.has(row.repository))
+            .sort(/** Hardest retrieval scores first, with stable ties. */ (a, b) => b.pair.score - a.pair.score || tieKey(a).localeCompare(tieKey(b))).slice(0, 2 * pos.length);
+        if (pos.length === 0 || neg.length !== 2 * pos.length)
+            throw new Error("Insufficient real labels or lexical controls for both splits");
+        selected.push(...pos, ...neg);
+    }
+    return selected;
+}
+/** Build duplicate-group-separated real closures and hard controls at a strict 2:1 ratio. */
 export function labelledPairs(corpora, positivesPerSplit = 30) {
-    const repositories = [...corpora].filter(/** Only labelled repositories enter stratified partitioning. */ /** Only labelled repositories enter stratified partitioning. */ corpus => corpus.items.some(/** Require a terminal duplicate closure with a target. */ /** Require a terminal duplicate closure with a target. */ item => (item.status === "closed" || item.status === "canceled") && closureTarget(item) !== undefined))
-        .sort(/** Seeded repository ordering prevents model outcomes from influencing the split. */ (a, b) => evidenceHash(["dedupe-20261019", a.repository]).localeCompare(evidenceHash(["dedupe-20261019", b.repository])));
-    const positives = [];
-    const controls = [];
+    const repositories = [...corpora].filter(/** Only repositories with terminal duplicate labels enter. */ /** Only repositories with terminal duplicate labels enter. */ corpus => corpus.items.some(/** Require an explicit closure target. */ /** Require an explicit closure target. */ item => (item.status === "closed" || item.status === "canceled") && closureTarget(item) !== undefined))
+        .sort(/** Seeded ordering cannot depend on inference. */ (a, b) => evidenceHash(["dedupe-20261019", a.repository]).localeCompare(evidenceHash(["dedupe-20261019", b.repository])));
+    const positives = [], controls = [];
     for (const corpus of repositories) {
-        const byId = new Map(corpus.items.map(/** Index complete items locally. */ /** Index complete items locally. */ item => [item.id, item]));
-        const ids = new Set(byId.keys());
-        const targets = new Map();
-        for (const item of corpus.items) {
-            const target = closureTarget(item);
-            if (target !== undefined)
-                targets.set(item.id, target);
-        }
-        const ranked = candidatePairs(corpus.items, corpus.items.length * 8);
-        const scores = new Map(ranked.map(/** Preserve the same corpus-frequency scoring used in production. */ /** Preserve the same corpus-frequency scoring used in production. */ pair => [pairKey(pair.a.id, pair.b.id), pair.score]));
-        const retrieved = new Set(ranked.map(/** Record retrieval misses instead of dropping hard positives. */ /** Record retrieval misses instead of dropping hard positives. */ pair => pairKey(pair.a.id, pair.b.id)));
+        const { byId, ids, targets, ranked, scores } = corpusIndex(corpus);
         const known = new Set();
-        /** Keep every member of an explicit duplicate group in one preassigned split. */
+        /** Entire resolved duplicate groups share a preassigned split. */
         const splitOf = (id) => evidenceHash(["dedupe-20261019", corpus.repository, canonical(id, targets, ids)])[0] < "8" ? "dev" : "heldout";
         for (const item of corpus.items) {
             if (item.status !== "closed" && item.status !== "canceled")
@@ -48,31 +78,50 @@ export function labelledPairs(corpora, positivesPerSplit = 30) {
             if (known.has(key))
                 continue;
             known.add(key);
-            const other = byId.get(target);
-            const score = scores.get(key) ?? 0;
-            const pair = orderedPair(item, other, score);
-            positives.push({ pair_id: `${corpus.repository}:${pair.a.id}:${pair.b.id}`, repository: corpus.repository, pair, label: true, retrieved: retrieved.has(key), split: splitOf(item.id) });
+            const pair = orderedPair(item, byId.get(target), scores.get(key) ?? 0);
+            positives.push(labelPair(corpus.repository, pair, true, scores.has(key), splitOf(item.id)));
         }
         for (const pair of ranked) {
-            const a = canonical(pair.a.id, targets, ids);
-            const b = canonical(pair.b.id, targets, ids);
-            if (a === null || b === null || a === b || splitOf(a) !== splitOf(b))
+            const a = canonical(pair.a.id, targets, ids), b = canonical(pair.b.id, targets, ids);
+            if (a === null || b === null || a === b || splitOf(a) !== splitOf(b) || sameEvidence(pair))
                 continue;
-            const state = pairState(pair);
-            if (evidenceHash(state.A) === evidenceHash(state.B))
-                continue;
-            controls.push({ pair_id: `${corpus.repository}:${pair.a.id}:${pair.b.id}`, repository: corpus.repository, pair, label: false, retrieved: true, split: splitOf(a) });
+            controls.push(labelPair(corpus.repository, pair, false, true, splitOf(a)));
         }
     }
-    const selected = [];
-    for (const split of ["dev", "heldout"]) {
-        const pos = positives.filter(/** Keep disjoint repository populations. */ /** Keep disjoint repository populations. */ row => row.split === split).sort(/** Deterministic positive sampling independent of lexical similarity. */ (a, b) => evidenceHash([a.repository, pairKey(a.pair.a.id, a.pair.b.id)]).localeCompare(evidenceHash([b.repository, pairKey(b.pair.a.id, b.pair.b.id)]))).slice(0, positivesPerSplit);
-        const neg = controls.filter(/** Controls come from the selected positive repositories only. */ /** Controls come from the selected positive repositories only. */ row => row.split === split && pos.some(/** Match the current repository population. */ /** Match the current repository population. */ positive => positive.repository === row.repository)).sort(/** Use the generator's hardest controls with stable ties. */ (a, b) => b.pair.score - a.pair.score || `${a.repository}${pairKey(a.pair.a.id, a.pair.b.id)}`.localeCompare(`${b.repository}${pairKey(b.pair.a.id, b.pair.b.id)}`)).slice(0, 2 * pos.length);
-        if (pos.length === 0 || neg.length !== 2 * pos.length)
-            throw new Error("Insufficient real duplicate closures or lexical controls for both splits");
-        selected.push(...pos, ...neg);
+    return selectPairs(positives, controls, positivesPerSplit, false);
+}
+/** Build repository-separated real dependency edges and lexical controls at a strict 2:1 ratio. */
+export function labelledRelatedPairs(corpora, positivesPerSplit = 15) {
+    const positives = [], controls = [];
+    for (const corpus of corpora) {
+        const { byId, ids, targets, ranked, scores } = corpusIndex(corpus);
+        /** Exclude entire duplicate groups, cycles and unresolved targets. */
+        const separateWork = (a, b) => {
+            const left = canonical(a, targets, ids), right = canonical(b, targets, ids);
+            return left !== null && right !== null && left !== right;
+        };
+        const edges = new Set(), seen = new Set();
+        const split = evidenceHash(["dedupe-related", corpus.repository])[0] < "8" ? "dev" : "heldout";
+        for (const item of corpus.items) {
+            for (const dep of item.dependencies ?? []) {
+                if (dep.id === item.id || !byId.has(dep.id))
+                    continue;
+                const key = pairKey(item.id, dep.id);
+                edges.add(key);
+                if (!separateWork(item.id, dep.id) || seen.has(key))
+                    continue;
+                seen.add(key);
+                const pair = orderedPair(item, byId.get(dep.id), scores.get(key) ?? 0);
+                positives.push(labelPair(corpus.repository, pair, true, scores.has(key), split));
+            }
+        }
+        for (const pair of ranked) {
+            if (edges.has(pairKey(pair.a.id, pair.b.id)) || !separateWork(pair.a.id, pair.b.id) || sameEvidence(pair))
+                continue;
+            controls.push(labelPair(corpus.repository, pair, false, true, split));
+        }
     }
-    return selected;
+    return selectPairs(positives, controls, positivesPerSplit, true);
 }
 /** Two-sided Wilson interval; empty denominators remain explicitly undefined. */
 export function wilson(successes, count, z = 1.959963984540054) {
@@ -86,14 +135,16 @@ export function wilson(successes, count, z = 1.959963984540054) {
 }
 /** Harmonic mean with explicit zero support. */
 function harmonic(a, b) { return a + b === 0 ? 0 : 2 * a * b / (a + b); }
+/** The verdict stub used to score stored observations; ids never enter metrics. */
+const scoredPair = { a: { id: "a" }, b: { id: "b" } };
 /** Positive-class metrics count abstained and unretrieved positives as missed work. */
-export function duplicateMetrics(rows, threshold, lexical = false) {
+export function pairMetrics(rows, target, thresholds, lexical = false) {
     let tp = 0, fp = 0, fn = 0, abstained = 0;
     for (const row of rows) {
-        const decision = !row.retrieved ? "distinct" : lexical ? (row.probability >= threshold ? "duplicate" : "distinct") : pairVerdict({ a: { id: "a" }, b: { id: "b" } }, row.probability, threshold).decision;
+        const decision = !row.retrieved ? "distinct" : lexical ? (row.probability >= thresholds.threshold ? target : "distinct") : pairVerdict(scoredPair, row.probability, row.related_probability ?? 0, thresholds.threshold, thresholds.relatedThreshold).decision;
         if (decision === "abstain")
             abstained++;
-        if (decision === "duplicate") {
+        if (decision === target) {
             if (row.label)
                 tp++;
             else
@@ -112,18 +163,28 @@ export function duplicateMetrics(rows, threshold, lexical = false) {
         abstain_rate: rows.length === 0 ? null : abstained / rows.length, abstain_ci95: wilson(abstained, rows.length) };
 }
 /** Tune F1 on dev observations only, retaining the existing 0.8 model safety floor. */
-export function fitDuplicateThreshold(rows, lexical) {
-    const cutoffs = [...new Set([lexical ? 0 : 0.8, 1, ...rows.map(/** Fit only observed cutoffs, retaining ties. */ /** Fit only observed cutoffs, retaining ties. */ row => row.probability)])].filter(/** Preserve the existing 0.8 safety floor for model decisions. */ /** Preserve the existing 0.8 safety floor for model decisions. */ p => lexical || p >= 0.8).sort(/** Prefer the lower cutoff on equal F1. */ (a, b) => a - b);
+export function fitPairThreshold(rows, target, base, lexical) {
+    const observed = rows.map(/** Fit the channel of the requested target class. */ /** Fit the channel of the requested target class. */ row => target === "related" && !lexical ? row.related_probability ?? 0 : row.probability);
+    const cutoffs = [...new Set([lexical ? 0 : 0.8, 1, ...observed])].filter(/** Preserve the existing 0.8 safety floor for model decisions. */ /** Preserve the existing 0.8 safety floor for model decisions. */ p => lexical || p >= 0.8).sort(/** Prefer the lower cutoff on equal F1. */ (a, b) => a - b);
     let best = Infinity, f1 = -1;
-    for (const threshold of cutoffs) {
-        const metrics = duplicateMetrics(rows, threshold, lexical);
+    for (const cutoff of cutoffs) {
+        const thresholds = target === "related" && !lexical ? { ...base, relatedThreshold: cutoff } : { ...base, threshold: cutoff };
+        const metrics = pairMetrics(rows, target, thresholds, lexical);
         if (!lexical && (metrics.tp === 0 || metrics.tp + metrics.fp < 3))
             continue;
         if (metrics.f1 > f1) {
-            best = threshold;
+            best = cutoff;
             f1 = metrics.f1;
         }
     }
     return best;
+}
+/** Replay historical single-question receipts through the preserved public helper. */
+export function duplicateMetrics(rows, threshold, lexical = false) {
+    return pairMetrics(rows, "duplicate", { threshold, relatedThreshold: 0.8 }, lexical);
+}
+/** Preserve the documented dev-only fitting entry point for single-question callers. */
+export function fitDuplicateThreshold(rows, lexical) {
+    return fitPairThreshold(rows, "duplicate", { threshold: 0.8, relatedThreshold: 0.8 }, lexical);
 }
 //# sourceMappingURL=dedupe-evaluation.js.map

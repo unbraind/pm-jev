@@ -13,7 +13,7 @@ training is separate from the pm-rl evaluation work.
 
 ## Install and check
 
-Requirements: Node 22.18 or newer, pm-cli 2026.10.5 or newer, and Ollama with a
+Requirements: Node 22.18 or newer, pm-cli 2026.10.10 or newer, and Ollama with a
 decision-capable model and the `/v1/systemone` API. Bun is also supported.
 
 From a built local checkout, install into a scratch or existing pm project:
@@ -63,8 +63,8 @@ Runtime tracker paths come from the host and SDK, including custom pm storage ro
 | `pm jev link <id> --apply --min-confidence 0.8` | Add qualifying new SDK edges and one receipt; hierarchy requires `--allow-parent`. |
 | `pm jev link --open --limit 20` | Stream a bounded open backlog with changed/would_change/skipped/failed counts. |
 | `pm jev dedupe --title "Fix login crash" --body "Details" --limit 8` | Rank all tracker items in code, then choose a candidate id or `none`. |
-| `pm jev dedupe --status open --type Issue --limit-pairs 20` | Verify bounded existing pairs with a typed same-work proposition and an abstain band. |
-| `pm jev dedupe --apply --close --min-confidence 0.95` | Link qualifying newer duplicates and optionally close them; never delete. |
+| `pm jev dedupe --status open --type Issue --limit-pairs 20` | Verify bounded existing pairs with typed duplicate/related propositions and abstain bands. |
+| `pm jev dedupe --apply --close --min-confidence 0.95` | Link qualifying newer duplicates and related pairs; optionally close duplicates; never delete. |
 | `pm jev ask <id> --questions questions.json` | Validate and answer caller-defined choice, score and noul questions. |
 | `pm jev gate --noul "The text contains credentials or private data." --text "Synthetic text" --threshold 0.5 --expect false` | Exit 0 when the proposition does not hold; exit 1 when credentials/private data are detected. |
 | `pm jev gate --noul "Does this item need human input?" --item <id>` | Evaluate the minimal item projection instead of text. |
@@ -179,35 +179,46 @@ read semantics even on hosts where `list --all` returns brief rows. `--status op
 rejects scan-only flags.
 
 Candidate generation uses Unicode-normalized title, description and body character
-trigrams with Dice overlap, an inverted index, and eight neighbors per item. In
-large trackers it removes trigrams occurring in more than max(64, 2% of items)
-documents before scoring. These corpus-frequency stopgrams keep common boilerplate
-from dominating work; a normalized-text fallback preserves identical semantic
+trigrams, plus a structural channel of normalized tags and linked file/doc paths.
+Each channel uses Dice overlap; the stronger score ranks the pair, so shared tags
+or files can retrieve pairs with dissimilar text. Retrieval uses two inverted indexes
+and eight neighbors per item.
+In large trackers it removes trigrams, tags and paths occurring in more than max(64, 2% of items)
+documents before scoring. These corpus-frequency stopgrams keep common boilerplate from
+dominating work; a normalized-text fallback preserves identical semantic
 groups, including punctuation variants, even when all their trigrams are common.
 The global score order is stable; `--limit-pairs` defaults to
-20 and accepts 1–200. No lexical issue-code heuristic promotes UTF-8 to a near-exact
-match. Model input is limited to each title's first 320 characters and 1600
+20 and accepts 1–200. Start with `--limit-pairs 1` on a slow or busy local host:
+the invocation shares one `jev.total_deadline_ms` budget, including model loading,
+and `jev.timeout_ms` limits each attempt. Larger batches may need larger explicit
+budgets. No lexical issue-code heuristic promotes UTF-8 to a near-exact
+match. Tags and linked files are retrieval-only signals: model input is limited to each title's first 320 characters and 1600
 characters of distinct description/body; closure labels, ids and annotations are
 excluded. This truncation can hide useful evidence and is recorded as a limitation.
 
-Each pair asks the same typed `same_work` noul question through the existing client,
-validation, retries and deadlines. Calls run sequentially under one invocation
-deadline. Output rows contain `{a,b,probability,decision,reason}`, newer item first,
-with creation-time ties broken by id. At cutoff t, p≥t proposes a duplicate,
-p≤1−t proposes distinct work, and the middle band abstains. An exact 0.5 always
-abstains. Explanations name the deterministic rule; they are not model rationales.
-The real-label dev split fits cutoffs 0.8340513300400778 for `tev1:0.8b` and
-0.8 for `tev1:4b`. The effective cutoff is the greater of its
-operating point and the requested/configured min-confidence. Other models retain
+Each pair asks the same two typed noul questions, `same_work` and `related_work`, through
+the existing client, validation, retries and deadlines. Calls run sequentially under one
+invocation deadline. Output rows contain
+`{a,b,probability,related_probability,decision,reason}`, newer item first, with
+creation-time ties broken by id. At cutoffs t (same work) and r (related work): p≥t
+proposes a duplicate; otherwise related≥r proposes related work; both questions at or
+below their negative cutoffs propose distinct work; anything else abstains. An exact 0.5
+always abstains on the deciding question. Explanations name the deterministic rule; they
+are not model rationales.
+The two-question dev split fits separate duplicate and related operating points for
+`tev1:4b`; their measurements are below. Each effective cutoff is the greater of
+its operating point and the requested/configured min-confidence. Other models retain
 the existing 0.8 floor without a measured pair calibration. Measured local models
 must match their recorded digest both before and after inference; both digest
 reads share the invocation deadline, including in preview. These cutoffs
 maximize dev F1 subject to the floor, at least three positive predictions and one
 true positive; they are not a high-precision qualification.
 
-`--apply` writes only duplicate verdicts, through the SDK, with a `related` edge and
-a directed canonical-id receipt comment: the pinned SDK has no `duplicate-of`
-mutation kind. Closing additionally requires `--close`; the reason is exactly
+`--apply` writes duplicate and related verdicts, through the SDK, with a `related` edge
+and a directed canonical-id receipt comment that records the verdict: the pinned SDK has
+no `duplicate-of` mutation kind. Duplicate verdicts apply before related verdicts,
+so an auxiliary link cannot consume a guarded duplicate source. Related verdicts are never closed; closing additionally
+requires `--close`, applies only to duplicate verdicts, and the reason is exactly
 `duplicate of <canonical-id>`. An operational inference failure happens before any
 write. Evidence is re-read before apply and the source receipt is checked under the
 item lock. A canonical item and a modified source are protected from becoming
@@ -227,100 +238,107 @@ invocations can append another receipt.
 
 ### Real duplicate-label measurement (2026-10-19)
 
-[Versioned receipt](calibration/dedupe-report-v1.json) contains public repository
-identities, source commits, complete SDK corpus hashes, pair ids/hashes, raw
-probabilities, retrieval misses, timings and metric replay data. Sources were
-verified with `gh repo view --json visibility`, copied with `cp -a` to disposable
-directories, and read through the SDK without extensions. There were 29 available
-verified public trackers, including the public upstream pm-cli tracker. The
-estimated larger fleet/label counts were not reproduced: 35 terminal closures had
-an explicit, resolvable duplicate target (31 historical consolidation receipts and
-four standard closures). These are real tracker labels, not model-generated truth.
+[The current receipt](calibration/dedupe-report-v2.json) records the two-question
+catalog hash, public source commits/archive hashes, complete SDK corpus hashes,
+ordered pair identities, raw probabilities, retrieval misses, timings and metric
+replay data. [The historical receipt](calibration/dedupe-report-v1.json) used only
+`same_work`; its thresholds and metrics do not apply to the current catalog.
 
-The deterministic label builder in `dedupe-evaluation.ts` assigns entire resolved
-duplicate groups to dev or held out using SHA-256 of seed `dedupe-20261019`, public
-repository and canonical id. Controls require both sides in one split, come from
-the same repositories and are the candidate generator's highest-scoring pairs
-outside known duplicate groups. Identical semantic projections are excluded as
-ambiguous controls. There are 81 dev pairs (27 positives/54 controls) and **24
-held-out pairs (8 positives/16 controls)**; item ids do not cross splits. Eight
-positive pairs miss top-eight retrieval, including one held-out positive; these
-count as false negatives rather than disappearing from the denominator.
-Retrieval is measured before the invocation's global pair cap; a smaller scan cap
-can omit additional pairs.
+Sources are verified public before reading committed tracker snapshots into scratch.
+The SDK certifies complete metadata/body reads with extensions disabled. Source
+trackers remain read-only. Duplicate positives are explicit resolvable terminal
+closures; related positives are existing dependency edges outside resolved duplicate
+groups. Labels and relationship metadata never enter model input. Controls are the
+highest-scoring candidate pairs outside recorded positive groups/edges; identical
+semantic projections are excluded.
 
-Threshold selection maximizes dev F1 over observed cutoffs, with ties choosing the
-lower cutoff. Models retain the existing 0.8 probability floor and require three
-positive predictions including one true positive. The lexical cutoff is 0 (accept
-every retrieved pair); model cutoffs are 0.8340513300400778 and 0.8 respectively.
-This fits operating points, not probability calibration or a precision guarantee.
+Duplicate groups are assigned to dev or held out by SHA-256 of seed
+`dedupe-20261019`, repository and resolved canonical id, with no item crossing splits.
+Related labels use seed `dedupe-related` and whole-repository splits. These are
+separate task-specific splits: items and repositories may recur across the two sets,
+so they are not a joint repository-disjoint evaluation. Both sets
+retain two controls per positive. Retrieval is measured before the global scan cap;
+unretrieved positives remain false negatives. Smaller invocation caps can miss more.
 
-| Arm | Precision, 95% Wilson CI | Recall, 95% Wilson CI | F1, Wilson envelope | Abstain, 95% Wilson CI | Mean latency/pair | Recorded arm wall |
-| --- | --- | --- | --- | --- | --- | --- |
-| Lexical only | 30.4% [15.6, 50.9] | 87.5% [52.9, 97.8] | 45.2% [21.8, 69.5] | 0% [0, 13.8] | 0.062 s | 6.5 s |
-| tev1:0.8b | 46.2% [23.2, 70.9] | 75.0% [40.9, 92.9] | 57.1% [26.6, 82.5] | 41.7% [24.5, 61.2] | 0.893 s | 94.8 s |
-| tev1:4b | 62.5% [30.6, 86.3] | 62.5% [30.6, 86.3] | 62.5% [27.2, 88.1] | 16.7% [6.7, 35.9] | 5.572 s | 589.6 s |
+Operating points maximize dev F1 over observed cutoffs, retaining the 0.8 model
+floor and requiring at least three positive predictions including one true positive.
+Related threshold selection uses the frozen duplicate cutoff because duplicate
+verdicts take precedence. Held-out probabilities never select thresholds. This
+fits operating points, not probability calibration or a precision guarantee.
 
-The F1 envelope propagates Bonferroni 97.5% Wilson precision/recall bounds through
-their harmonic mean. It is an approximate conservative envelope, not an exact
-binomial interval for F1. Pairs share items and are correlated; these intervals do
-not establish independent population guarantees. Controls are closed-world
-non-edges, not independently adjudicated negatives; missing duplicate links can
-inflate false positives. The small split, historical closures, concentrated source
-repositories, shared templates, bounded prompt evidence and one local run limit
-transfer. Model point estimates improve F1 here, with lower recall and wide,
-overlapping uncertainty. The 4b dev F1 was only 14.8%; its better held-out result
-does not establish stable generalization. These numbers do not justify unattended
-deduplication.
+The receipt covers **30 public repositories and 5,404 items**. Duplicate folds have
+81 dev pairs (27 positives) and 24 held-out pairs (8 positives); related folds each
+have 45 pairs (15 positives). Duplicate retrieval misses are 7 dev / 3 held out;
+related misses are 12 dev / 8 held out. They remain in recall denominators.
 
-Inference was niced and sequential. Each model arm used **107 calls**, below 200:
-105 scored pairs, one excluded identical-text control and one replacement inference
-repeated after a postprocessing assertion aborted before persistence. That attempt
-is counted; its probability/latency was not retained. Final replacement observations
-are persisted before validation. Mean model latency uses the 105 retained scored
-observations. Recorded arm wall includes the initial run and final replacement;
-the unretained attempt has no separate duration. Total elapsed wall from the first
-inference receipt through final publication, including postprocessing and repeats,
-was **810.5 s**. The initial exploratory 95%-precision constraint selected no small
-model cutoff; the receipt explicitly records the change to dev-F1 selection.
+| Arm / target | Held-out n (positive) | Cutoff | Precision, 95% Wilson CI | Recall, 95% Wilson CI | F1 |
+| --- | --- | --- | --- | --- | --- |
+| Candidate score / duplicate | 24 (8) | 0 | 23.8% [10.6, 45.1] | 62.5% [30.6, 86.3] | 34.5% |
+| tev1:4b / duplicate | 24 (8) | 0.8503 | 50.0% [18.8, 81.2] | 37.5% [13.7, 69.4] | 42.9% |
+| tev1:4b / related edge proxy | 45 (15) | 0.8628 | 0% [0, 49.0] | 0% [0, 20.4] | 0% |
 
-To reproduce, verify the public sources listed in the receipt, copy each tracker
-to scratch, obtain certified complete SDK items with `includeBody: true`, and feed
-`{repository,commit,items}` records to `labelledPairs(corpora,30)`. The builder
-recreates the split and controls; for each row run `runDecision` with `pairState`
-and `PAIR_QUESTIONS` from `dedupe.ts`, using the existing local client. Verify model
-digests before/after, keep calls sequential and fit only dev observations with
-`fitDuplicateThreshold`. `duplicateMetrics` scores held-out observations, including
-retrieval misses. Persist `pair_id: "repository:a:b"` on every serialized sample
-and scored model observation before writing evaluation progress or the final report.
-The receipt's pair ids were added from its existing sample order without rerunning
-inference: the same evaluation script produced observations in that order, and
-this alignment is trusted for the backfill. Replay verifies every stored id against
-the sample's repository and item ids before splitting; regressions reject cross-split
-swaps even when thresholds and all metrics remain unchanged.
-The committed artifact replays without inference:
+The `lexical` receipt arm uses the combined candidate score without inference.
+Full-precision model cutoffs are 0.8503113731400108 and 0.8628309325787965.
+Duplicate counts are TP=3, FP=3, FN=5. Related edge-proxy counts are TP=0, FP=4,
+FN=15: the current pipeline has no successful held-out related-edge detections.
+These operating points carry no unattended-use qualification.
+
+The successful sequential arm retained **195 scored requests**, with mean latency
+44.1 s and arm wall time 143.4 minutes under shared local load. Its final invocation
+(including label construction/scoring) took 144.0 minutes. Earlier source collection
+and three timed-out preflight attempts are excluded from that wall measurement and
+recorded separately: 198 attempted decision requests overall, plus one request to load the
+model and one probe using an invalid route. No automatic retries were used; model digests
+matched before and after the successful arm. The versioned v1 receipt is unchanged.
+
+Wilson intervals describe precision and recall. Pairs share items and are correlated;
+these intervals do not establish independent population guarantees. Controls are
+closed-world non-edges, not independently adjudicated negatives. Unrecorded links
+can inflate false positives. Dependency edges provide a proxy for relatedness rather
+than exhaustive semantic labels. Small splits, source concentration, shared templates,
+bounded evidence and one local run limit transfer. These results do not justify
+unattended deduplication. Preview proposals and inspect their evidence before apply.
+
+Reproduce from a source checkout with local Ollama `tev1:4b`. Use disposable public
+fleet clones at the source commits listed in the receipt:
+
+```sh
+nice -n 15 node test/dedupe-calibration.acceptance.ts \
+  <fleet-directory> <empty-scratch-directory> calibration/dedupe-report-v2.json
+```
+
+The opt-in benchmark is one-shot. Failed runs require a new empty scratch directory;
+non-empty scratch directories are refused before source collection or inference.
+Observation checkpoints and `report-progress.json` are evidence only and are not
+loaded on restart. Preserve a failed run's scratch directory for inspection and
+start again with a new empty scratch directory.
+
+The helper uses a six-minute attempt timeout and ten-minute per-pair deadline with
+no automatic retries. It verifies public origins/visibility and committed snapshots,
+keeps tracker text in scratch, makes sequential local requests, verifies model digests before and
+after each arm, and persists each pair id with its raw probabilities immediately.
+Only hashes, public item identities and measurements enter the published receipt.
+`fitPairThreshold` fits dev observations; `pairMetrics` replays the held-out scores.
+Receipt regressions reject cross-split observation swaps even when aggregate metrics
+would stay unchanged.
 
 ```sh
 node --test test/dedupe-evaluation.test.ts
 ```
 
 Delivery checks: `npm run release:check` and `bun run release:check` both pass
-235/235 tests with disposable HOME and global/system Git configuration disabled.
-All four measured coverage dimensions are 100%, and duplication is zero at the
-unchanged thresholds. The pm-linked release selection passes 2/2 commands. The
-focused tracker/replay suite passes 26/26 tests; the separate artifact receipt
-suite passes 5/5. Independently disabling the positive cutoff
-changes tracker bytes below threshold and fails the apply regression; forcing
-closure without the close flag fails with `closed` versus `open`. Restored source
-passes. The packed CLI's 20-row public pm-github-copy dogfood leaves authoritative
-tracker bytes unchanged; its first ten verdicts are included in the PR.
-A fresh `git clone --no-local` of the review candidate passes strict
-health with required merge drivers and all four commit-identity tests, using the
-pinned installed dependencies and isolated HOME/Git configuration. The delivery
-receipt includes the configured-confidence regression and append-only tracker
-evidence; measured calibration artifacts retain their original bytes. Pair scans
-clamp a shared confidence setting below 0.5 while retaining the calibrated safety
-floor; explicitly supplied pair confidence flags must still be between 0.5 and 1.
+270/270 tests with disposable HOME and global/system Git configuration disabled.
+Statements and lines (5260/5260), functions (216/216), and all measured branches
+are 100% across 22 runtime/script files; duplication is zero at unchanged thresholds.
+The pm-linked release selection passes 2/2 commands; the focused suite passes 37/37. Seven isolated behavioral reverts fail their regressions for structural retrieval,
+related verdicts, related link writes, duplicate groups, write precedence, metric
+target selection and fitting the related channel. Restored sources pass. No-git scan/apply runs in a real temporary
+tracker with an empty executable PATH and a Git ceiling. Pair confidence flags
+must be between 0.5 and 1; configured values below 0.5 are clamped while retaining
+the model's operating-point floor.
+
+The benchmark refusal regression passes with the guard present and fails when only
+that guard is removed; it verifies existing scratch evidence and reports are preserved.
 
 ## How good are the decisions?
 
