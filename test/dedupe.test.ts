@@ -634,3 +634,55 @@ test("default pair scans honor the fitted raw cutoff while explicit confidence c
     assert.equal((await scan(fixture, { minConfidence: "0.5" }))[0].decision, "abstain");
   });
 });
+
+test("lexical prefilter abstains without inference or mutation below the fitted cutoff", async () => {
+  const lexical = DUPLICATE_QUALITY_CALIBRATION["tev1:4b"].policy.lexical;
+  await scenario(async (fixture, server) => {
+    for (const body of ["apricot", "zebra"]) await fixture.pm.create({ type: "Task", title: "Review config", body });
+    Object.defineProperty(DUPLICATE_QUALITY_CALIBRATION, "scripted-test-model", { configurable: true, value: {
+      policy: { model: 0.8, lexical }, digest: "a".repeat(64),
+    } });
+    server.setReply((_, response) => { response.statusCode = 503; response.end(JSON.stringify({ error: "ineligible pairs must not request inference" })); });
+    const before = trackerSnapshot(fixture.pmRoot);
+    for (const apply of [false, true]) {
+      const rows = await scan(fixture, { apply });
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].decision, "abstain");
+      assert.equal(rows[0].reason, "unsure_below_lexical_cutoff");
+      assert.equal(rows[0].probability, 0);
+    }
+    assert.equal(server.requests.length, 4, "both digest checks are retained for each invocation");
+    assert.ok(server.requests.every(request => request.path === "/api/tags"), "no item evidence is sent for lexically ineligible pairs");
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+  });
+});
+
+test("lexical prefilter preserves inclusive cutoffs and mixed-batch write alignment", async () => {
+  await scenario(async (fixture, server) => {
+    const items: PairItem[] = [];
+    for (const [id, body] of [["mixed-a", "apricot"], ["mixed-b", "zebra"], ["mixed-c", "zebra"]]) {
+      const created = await fixture.pm.create({ id, type: "Task", title: "Review config", body });
+      items.push((await fixture.pm.get(created.item.id, { full: true })).item as PairItem);
+    }
+    const before = trackerSnapshot(fixture.pmRoot);
+    for (const lexical of [0.95 + Number.EPSILON, 0.95, 0.95 - Number.EPSILON]) {
+      Object.defineProperty(DUPLICATE_QUALITY_CALIBRATION, "scripted-test-model", { configurable: true, value: { policy: { model: 0.8, lexical }, digest: "a".repeat(64) } });
+      const requestsBefore = server.requests.filter(request => request.path === "/v1/systemone").length;
+      const rows = await scan(fixture);
+      const scored = lexical > 0.95 ? 0 : 1;
+      assert.equal(rows.length, 3);
+      assert.equal(rows.filter(row => row.reason === "unsure_below_lexical_cutoff" && row.probability === 0).length, 3 - scored);
+      assert.equal(server.requests.filter(request => request.path === "/v1/systemone").length - requestsBefore, scored);
+      assert.equal(rows.filter(row => row.decision === "duplicate" && row.probability === 0.9).length, scored);
+    }
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+    const applied = await scan(fixture, { apply: true });
+    assert.deepEqual(applied.map(row => row.reason), ["unsure_below_lexical_cutoff", "unsure_below_lexical_cutoff", "linked_with_receipt"]);
+    const approved = applied[2];
+    assert.equal(pairKey(approved.a, approved.b), pairKey(items[1].id, items[2].id));
+    const linked = (await fixture.pm.get(approved.a, { full: true })).item;
+    assert.ok(linked.dependencies?.some(dep => dep.id === approved.b && dep.kind === "related"));
+    assert.equal(linked.comments?.length, 1);
+    assert.equal((await fixture.pm.get(items[0].id, { full: true })).item.comments?.length ?? 0, 0);
+  });
+});

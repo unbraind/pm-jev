@@ -210,6 +210,9 @@ invocation deadline. Output rows contain
 `{a,b,probability,decision,reason}`, newer item first, with creation-time ties broken
 by id. A positive model score alone cannot authorize a link: both calibrated
 channels must qualify, otherwise the tool returns an unsure abstention.
+Pairs below the lexical cutoff skip inference and return `probability: 0` with
+`reason: unsure_below_lexical_cutoff`. This zero marks an unscored pair, not a
+measured probability; pairs at or above the lexical cutoff still ask the model.
 Pair scans now use the precision-first, train-fitted combined policy described in
 [duplicate quality](docs/duplicate-quality.md). The historical two-question F1
 operating points below remain replayable evidence. New duplicate proposals require

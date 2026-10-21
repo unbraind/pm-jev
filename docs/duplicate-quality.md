@@ -2,8 +2,11 @@
 
 Duplicate proposals cost work when wrong. Pair scans therefore require both a
 semantic lexical score and a local model probability to clear frozen cutoffs.
-They return `decision: abstain` with `reason: unsure_below_calibrated_confidence`
-when evidence is insufficient. Model probabilities are raw model output; the
+Pairs below the lexical cutoff skip model inference and return `decision: abstain`,
+`probability: 0`, `reason: unsure_below_lexical_cutoff`. The zero is an unscored
+sentinel, not a measured probability. Pairs at or above the lexical cutoff still
+ask the model and return `reason: unsure_below_calibrated_confidence` when its
+score is insufficient. Model probabilities are raw model output; the
 precision constraint calibrates a decision threshold, not a probability estimate.
 Models without an enabled measured duplicate policy skip inference and return
 `decision: abstain`, `probability: 0`, `reason: unsure_uncalibrated_model` for

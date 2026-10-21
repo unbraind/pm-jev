@@ -12,7 +12,7 @@ export interface DuplicatePair {
     b: PairItem;
     score: number;
 }
-/** Token-lean typed pair verdict, with deterministic explanation rather than invented rationale. */
+/** Token-lean typed pair verdict; probability zero is unscored when the reason skips inference. */
 export interface PairVerdict {
     a: string;
     b: string;

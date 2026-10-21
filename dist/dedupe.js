@@ -221,9 +221,14 @@ export async function runPairDedupe(ctx) {
             rows.push({ a: pair.a.id, b: pair.b.id, probability: 0, decision: "abstain", reason: "unsure_uncalibrated_model" });
             continue;
         }
+        const lexical = duplicateSimilarity(pair);
+        if (lexical < calibration.policy.lexical) {
+            rows.push({ a: pair.a.id, b: pair.b.id, probability: 0, decision: "abstain", reason: "unsure_below_lexical_cutoff" });
+            continue;
+        }
         const result = await runDecision(client, config, pairState(pair), DUPLICATE_QUESTIONS, signal);
         const probability = result.answers.same_work.noul;
-        const approved = qualityProposes({ label: false, retrieved: true, probability, lexical: duplicateSimilarity(pair) }, "combined", { model: threshold, lexical: calibration.policy.lexical });
+        const approved = qualityProposes({ label: false, retrieved: true, probability, lexical }, "combined", { model: threshold, lexical: calibration.policy.lexical });
         const row = { a: pair.a.id, b: pair.b.id, probability, decision: approved ? "duplicate" : "abstain", reason: approved ? "calibrated_duplicate" : "unsure_below_calibrated_confidence" };
         rows.push(row);
     }

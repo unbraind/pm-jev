@@ -13,7 +13,7 @@ import { modelDigest, readOpaqueJevSettings } from "./decision-calibration.ts";
 export type PairItem = ItemMetadata & { body?: string };
 /** A lexical candidate with the newer item first and deterministic similarity. */
 export interface DuplicatePair { a: PairItem; b: PairItem; score: number }
-/** Token-lean typed pair verdict, with deterministic explanation rather than invented rationale. */
+/** Token-lean typed pair verdict; probability zero is unscored when the reason skips inference. */
 export interface PairVerdict { a: string; b: string; probability: number; related_probability?: number; decision: "duplicate" | "related" | "distinct" | "abstain"; reason: string }
 /** Historical typed pair propositions retained for versioned benchmark replay. */
 export const PAIR_QUESTIONS: Questions = {
@@ -210,9 +210,14 @@ export async function runPairDedupe(ctx: CommandHandlerContext): Promise<PairVer
       rows.push({ a: pair.a.id, b: pair.b.id, probability: 0, decision: "abstain", reason: "unsure_uncalibrated_model" });
       continue;
     }
+    const lexical = duplicateSimilarity(pair);
+    if (lexical < calibration.policy.lexical) {
+      rows.push({ a: pair.a.id, b: pair.b.id, probability: 0, decision: "abstain", reason: "unsure_below_lexical_cutoff" });
+      continue;
+    }
     const result = await runDecision(client, config, pairState(pair), DUPLICATE_QUESTIONS, signal);
     const probability = (result.answers.same_work as NoulResponse).noul;
-    const approved = qualityProposes({ label: false, retrieved: true, probability, lexical: duplicateSimilarity(pair) }, "combined", { model: threshold, lexical: calibration.policy.lexical });
+    const approved = qualityProposes({ label: false, retrieved: true, probability, lexical }, "combined", { model: threshold, lexical: calibration.policy.lexical });
     const row: PairVerdict = { a: pair.a.id, b: pair.b.id, probability, decision: approved ? "duplicate" : "abstain", reason: approved ? "calibrated_duplicate" : "unsure_below_calibrated_confidence" };
     rows.push(row);
   }
