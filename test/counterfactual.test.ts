@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import test from "node:test";
-import { cpSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
+import test, { mock } from "node:test";
+import { cpSync, mkdirSync, readFileSync, renameSync, rmdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -180,6 +180,112 @@ test("nullable usage stays unknown and non-winning distribution drift remains vi
   });
 });
 
+test("noul confidence follows the selected boolean in baseline, comparisons and CLI output", async () => {
+  await scenario(async (fixture, server) => {
+    const input = await options(fixture.pmRoot);
+    const noulQuestions: Questions = { sensitive: { type: "noul" } };
+    let p = 0;
+    server.setReply((_, response, body) => {
+      const request = body as { state: Record<string, unknown>; questions: Questions };
+      const result = answers(request.questions);
+      result.answers.sensitive = { type: "noul", noul: Object.hasOwn(request.state, "title") ? p : 1 - p };
+      response.end(JSON.stringify(result));
+    });
+    for (p of [0, 0.1, 0.49, 0.5, 0.9, 1]) {
+      const receipt = await explainDecision({ ...input, questions: noulQuestions, fields: ["title"], maxCalls: 2 });
+      assert.deepEqual(receipt.baseline!.sensitive, { kind: "noul", value: p >= 0.5, probability: Math.max(p, 1 - p) });
+      const compared = receipt.comparisons[0];
+      assert.equal(compared.proposals.sensitive.value, 1 - p >= 0.5);
+      assert.ok(Math.abs(compared.proposals.sensitive.probability - Math.max(p, 1 - p)) < 1e-12);
+      assert.ok(Math.abs(compared.max_probability_delta - Math.abs(1 - 2 * p)) < 1e-12);
+      assert.deepEqual(compared.changed, p === 0.5 ? [] : ["sensitive"]);
+    }
+    p = 0.1;
+    const item = (await fixture.pm.create({ type: "Task", title: "Synthetic boolean evidence" })).item;
+    const file = join(fixture.cwd, "noul.json"); writeFileSync(file, JSON.stringify(noulQuestions));
+    for (const json of [true, false]) {
+      const result = await fixture.harness.runCommand({ command: "jev explain", pmRoot: fixture.pmRoot, args: [item.id], options: { questions: file, fields: "title", maxCalls: "2" }, global: { json } });
+      const receipt = result.result as CounterfactualReceipt;
+      assert.equal(receipt.baseline!.sensitive.value, false);
+      assert.equal(receipt.baseline!.sensitive.probability, 0.9);
+      assert.equal(receipt.comparisons[0].proposals.sensitive.value, true);
+      assert.equal(receipt.comparisons[0].proposals.sensitive.probability, 0.9);
+    }
+  });
+});
+
+test("endpoint configuration failures have endpoint remedies and unexpected command errors propagate", async () => {
+  await scenario(async (fixture, server) => {
+    const item = (await fixture.pm.create({ type: "Task", title: "Synthetic refusal evidence" })).item;
+    const file = join(fixture.cwd, "questions.json"); writeFileSync(file, JSON.stringify(questions));
+    const ctx = { command: "jev explain", pm_root: fixture.pmRoot, source_workspace_root: fixture.cwd, args: [item.id], options: { questions: file, fields: "title" }, global: {} };
+    const before = trackerSnapshot(fixture.pmRoot);
+    const originalUrl = process.env.PM_JEV_BASE_URL;
+    const settingsPath = join(fixture.pmRoot, "settings.json");
+    const settings = readFileSync(settingsPath, "utf8");
+    /** Verify refusal recovery without exposing bad configuration or making requests. */
+    const endpointRefused = async () => {
+      const result = await runExplanationCommand(ctx);
+      assert.ok("refusal" in result && result.refusal);
+      assert.equal(result.refusal.code, "endpoint_refused");
+      assert.match(result.refusal.remedy, /pm jev doctor/);
+      assert.match(result.refusal.remedy, /PM_JEV_BASE_URL/);
+      assert.doesNotMatch(result.refusal.remedy, /--questions/);
+    };
+    try {
+      for (const url of ["not a URL", "ftp:synthetic", "https://synthetic.invalid"]) {
+        process.env.PM_JEV_BASE_URL = url;
+        await endpointRefused();
+      }
+      process.env.PM_JEV_BASE_URL = originalUrl;
+      writeFileSync(settingsPath, JSON.stringify({ ...JSON.parse(settings), jev: { provider: "unsupported" } }));
+      await endpointRefused();
+      writeFileSync(settingsPath, settings);
+      const unexpected = new Error("unexpected option boundary failure");
+      const invalidOptions = Object.defineProperty({}, "questions", { get() { throw unexpected; } });
+      await assert.rejects(runExplanationCommand({ ...ctx, options: invalidOptions }), error => error === unexpected);
+      const parseFailure = mock.method(JSON, "parse", () => { throw unexpected; });
+      try { await assert.rejects(runExplanationCommand(ctx), error => error === unexpected); }
+      finally { parseFailure.mock.restore(); }
+
+      const savedSettings = join(fixture.cwd, "settings.saved");
+      renameSync(settingsPath, savedSettings); mkdirSync(settingsPath);
+      try { await assert.rejects(runExplanationCommand(ctx), { code: "EISDIR" }); }
+      finally { rmdirSync(settingsPath); renameSync(savedSettings, settingsPath); }
+
+      const itemPath = join(fixture.pmRoot, "tasks", `${item.id}.toon`);
+      const originalItem = readFileSync(itemPath, "utf8");
+      writeFileSync(itemPath, "not a valid item document");
+      try { await assert.rejects(runExplanationCommand(ctx), error => error instanceof Error && !(error instanceof CounterfactualRefusal)); }
+      finally { writeFileSync(itemPath, originalItem); }
+      assert.equal(server.requests.length, 0);
+      assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+    } finally {
+      if (originalUrl === undefined) delete process.env.PM_JEV_BASE_URL; else process.env.PM_JEV_BASE_URL = originalUrl;
+      writeFileSync(settingsPath, settings);
+    }
+  });
+});
+
+test("unexpected SDK construction and between-call boundary errors keep their original identity", async () => {
+  await scenario(async (fixture, server) => {
+    const input = await options(fixture.pmRoot);
+    const unexpected = new Error("unexpected SDK boundary failure");
+    const unreadableInput = { ...input, get evidence(): Record<string, unknown> { throw unexpected; } };
+    await assert.rejects(explainDecision(unreadableInput), error => error === unexpected);
+    const refusedEndpoint = { ...input.endpoint, get hostedBlocked(): null { throw unexpected; } };
+    await assert.rejects(explainDecision({ ...input, endpoint: refusedEndpoint }), error => error === unexpected);
+    assert.equal(server.requests.length, 0);
+    const changingEndpoint = { ...input.endpoint };
+    server.setReply((_, response, body) => {
+      Object.defineProperty(changingEndpoint, "config", { get() { throw unexpected; } });
+      response.end(JSON.stringify(answers((body as { questions: Questions }).questions)));
+    });
+    await assert.rejects(explainDecision({ ...input, endpoint: changingEndpoint }), error => error === unexpected);
+    assert.equal(server.requests.length, 1);
+  });
+});
+
 test("CLI uses host SDK reads in a non-git tracker, handles aliases and refuses invalid inputs", async () => {
   await scenario(async (fixture, server) => {
     const item = (await fixture.pm.create({ type: "Task", title: "Synthetic decision evidence" })).item;
@@ -248,6 +354,11 @@ test("built command runs through the actual host parser in TOON and JSON with no
     await assert.rejects(run(process.execPath, [...invalid, "--json"], { cwd: fixture.cwd, env, timeout: 60000 }), (error: unknown) => {
       const failed = error as { code: number; stdout: string }; assert.equal(failed.code, 2);
       assert.equal((JSON.parse(failed.stdout) as { refusal: { code: string } }).refusal.code, "invalid_request"); return true;
+    });
+    await assert.rejects(run(process.execPath, [...base, "--json"], { cwd: fixture.cwd, env: { ...env, PM_JEV_BASE_URL: "not a URL" }, timeout: 60000 }), (error: unknown) => {
+      const failed = error as { code: number; stdout: string }; assert.equal(failed.code, 2);
+      const refusal = (JSON.parse(failed.stdout) as { refusal: { code: string; remedy: string } }).refusal;
+      assert.equal(refusal.code, "endpoint_refused"); assert.match(refusal.remedy, /PM_JEV_BASE_URL/); return true;
     });
     assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
   });

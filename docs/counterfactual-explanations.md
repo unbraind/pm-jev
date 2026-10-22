@@ -40,6 +40,9 @@ with `code`, `message` and `remedy`. The CLI renders the refusal as
 `{ok:false,exit_code:2,refusal:{code,message,remedy}}`. Endpoint privacy refusals
 use `endpoint_refused`; malformed input uses `invalid_request`. Existing hosted
 opt-in, runtime credentials, redirects and response validation still apply.
+Invalid endpoint URLs/providers return an endpoint-specific `pm jev doctor`
+remedy. Unexpected option, settings I/O, tracker-read or SDK boundary errors
+propagate to the host instead of being relabeled as question-file refusals.
 
 The call budget includes the baseline, failed requests and comparisons. It
 defaults to 5 and accepts integers 1..17. SDK retries are disabled. Comparisons
@@ -59,7 +62,10 @@ the existing lower bounds. CLI fields are restricted to the six projected keys.
 
 `baseline` and comparison `proposals` contain compact typed outcomes: a choice's
 selected label, a score's highest-probability rubric level (ties choose the first
-level), or `noul >= 0.5`. `changed` names only questions whose outcome changed;
+level), or `noul >= 0.5`. `changed` names only questions whose outcome changed.
+`probability` always refers to the selected value: a false noul proposal has
+probability `1 - p`, where `p` is the provider's true-proposition probability.
+The underlying true/false distribution remains unchanged for delta comparisons.
 `max_probability_delta` measures the largest absolute probability movement over
 **all** labels. Thus an unchanged outcome can still have a nonzero probability
 delta. These are raw typed proposals, before triage calibration, abstention or

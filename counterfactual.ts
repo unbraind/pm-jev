@@ -1,6 +1,6 @@
 import { createHmac, randomBytes, createHash } from "node:crypto";
 import type { Questions, SystemOneResult, ChoiceResponse, ScoreResponse, NoulResponse } from "@typesafe-ai/sdk";
-import { createJevClient, parseQuestionsDocument, runDecision } from "./index.ts";
+import { createJevClient, isPmCliExpectedError, parseQuestionsDocument, runDecision } from "./index.ts";
 import type { ResolvedJevEndpoint } from "./index.ts";
 import { TokenUsageTotals } from "./token-usage.ts";
 
@@ -26,6 +26,7 @@ export class CounterfactualRefusal extends Error {
 export interface ExplanationProposal {
   readonly kind: "choice" | "score" | "noul";
   readonly value: string | number | boolean;
+  /** Probability of the selected value, including the false noul outcome. */
   readonly probability: number;
 }
 
@@ -77,6 +78,11 @@ function invalidRequest(): CounterfactualRefusal {
   return new CounterfactualRefusal("invalid_request", "Explanation input exceeds its bounds or has an invalid shape.", "Use a JSON object up to 32 KiB, 1..16 distinct own fields (names up to 64 characters), 1..8 typed questions with up to 32 options, and --max-calls 1..17.");
 }
 
+/** Keep endpoint recovery consistent between SDK construction and CLI resolution. */
+export function explanationEndpointRefusal(): CounterfactualRefusal {
+  return new CounterfactualRefusal("endpoint_refused", "Decision endpoint configuration refused the explanation.", "Run pm jev doctor; set a valid HTTP(S) PM_JEV_BASE_URL and supported jev.provider, or use the local provider. Hosted endpoints require explicit opt-in and runtime credentials.");
+}
+
 /** Freeze caller-owned inputs into JSON snapshots before the first asynchronous call. */
 function snapshot(options: CounterfactualOptions) {
   try {
@@ -100,7 +106,8 @@ function snapshot(options: CounterfactualOptions) {
     const limit = options.maxCalls ?? 5;
     requireBound(Number.isSafeInteger(limit) && limit >= 1 && limit <= 17);
     return { evidence, fields, questions, limit };
-  } catch {
+  } catch (error) {
+    if (!(error instanceof CounterfactualRefusal || error instanceof TypeError || isPmCliExpectedError(error))) throw error;
     throw invalidRequest();
   }
 }
@@ -112,7 +119,7 @@ function outcomes(result: SystemOneResult<Questions>, questions: Questions) {
   for (const [name, question] of Object.entries(questions)) {
     if (question.type === "noul") {
       const p = (result.answers[name] as NoulResponse).noul;
-      proposals[name] = { kind: "noul", value: p >= 0.5, probability: p };
+      proposals[name] = { kind: "noul", value: p >= 0.5, probability: p >= 0.5 ? p : 1 - p };
       distributions[name] = { true: p, false: 1 - p };
     } else {
       const answer = result.answers[name] as ChoiceResponse | ScoreResponse;
@@ -131,7 +138,10 @@ export async function explainDecision(options: CounterfactualOptions, env: Recor
   const { evidence, fields, questions, limit } = snapshot(options);
   let client;
   try { client = createJevClient(options.endpoint, env, 0); }
-  catch { throw new CounterfactualRefusal("endpoint_refused", "Decision endpoint configuration refused the explanation.", "Run pm jev doctor; use the local provider or explicitly opt in to the hosted provider with runtime credentials."); }
+  catch (error) {
+    if (!isPmCliExpectedError(error)) throw error;
+    throw explanationEndpointRefusal();
+  }
   const signal = AbortSignal.timeout(options.endpoint.config.totalDeadlineMs);
   const key = randomBytes(32);
   /** Keyed digests identify exact evidence within this receipt without exposing it. */
@@ -166,7 +176,10 @@ export async function explainDecision(options: CounterfactualOptions, env: Recor
           comparisons.push({ field, evidence_digest: digest(state), changed, proposals: current.proposals, max_probability_delta: Math.max(...deltas) });
         }
       }
-    } catch { stopped = signal.aborted ? "deadline" : "provider_failure"; }
+    } catch (error) {
+      if (!isPmCliExpectedError(error)) throw error;
+      stopped = signal.aborted ? "deadline" : "provider_failure";
+    }
     if (stopped !== null && field !== null) omitted.push({ field, reason: stopped });
   }
   return { version: COUNTERFACTUAL_VERSION, complete: baseline !== null && omitted.length === 0, model,

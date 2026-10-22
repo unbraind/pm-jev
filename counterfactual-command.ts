@@ -1,10 +1,10 @@
 import { open } from "node:fs/promises";
 import { constants } from "node:fs";
-import { PmClient, readStringOption } from "@unbrained/pm-cli/sdk";
+import { createExtensionCommandSdk, isErrnoError, isPmCliExpectedError, PmClient, readStringOption } from "@unbrained/pm-cli/sdk";
 import type { CommandHandlerContext, FlagDefinition } from "@unbrained/pm-cli/sdk/authoring";
 import { parseQuestionsDocument, projectItemState, resolveJevEndpoint } from "./index.ts";
 import type { ProjectableItem } from "./index.ts";
-import { CounterfactualRefusal, explainDecision } from "./counterfactual.ts";
+import { CounterfactualRefusal, explainDecision, explanationEndpointRefusal } from "./counterfactual.ts";
 
 /** Explicit comparisons are opt-in; there is no mutation or apply flag. */
 export const EXPLANATION_FLAGS: FlagDefinition[] = [
@@ -20,13 +20,18 @@ function commandRefusal(): CounterfactualRefusal {
 
 /** Bound file reads even if the regular file grows after opening. */
 async function explanationQuestions(file: string) {
-  const handle = await open(file, constants.O_RDONLY | constants.O_NONBLOCK);
   try {
-    if (!(await handle.stat()).isFile()) throw commandRefusal();
-    const read = await handle.read({ buffer: Buffer.alloc(16385), position: 0 });
-    if (read.bytesRead > 16384) throw commandRefusal();
-    return parseQuestionsDocument(JSON.parse(read.buffer.subarray(0, read.bytesRead).toString("utf8")) as unknown);
-  } finally { await handle.close(); }
+    const handle = await open(file, constants.O_RDONLY | constants.O_NONBLOCK);
+    try {
+      if (!(await handle.stat()).isFile()) throw commandRefusal();
+      const read = await handle.read({ buffer: Buffer.alloc(16385), position: 0 });
+      if (read.bytesRead > 16384) throw commandRefusal();
+      return parseQuestionsDocument(JSON.parse(read.buffer.subarray(0, read.bytesRead).toString("utf8")) as unknown);
+    } finally { await handle.close(); }
+  } catch (error) {
+    if (error instanceof SyntaxError || isPmCliExpectedError(error) || isErrnoError(error)) throw commandRefusal();
+    throw error;
+  }
 }
 
 /** Reuse host routing, reads and rendering; return redacted typed refusals in either format. */
@@ -37,9 +42,15 @@ export async function runExplanationCommand(ctx: CommandHandlerContext) {
     const id = ctx.args[0];
     if (!id?.trim() || !file || !fields) throw commandRefusal();
     const questions = await explanationQuestions(file);
-    const endpoint = await resolveJevEndpoint(ctx.pm_root, process.env);
-    const pm = ctx.sdk?.client ?? new PmClient({ pmRoot: ctx.pm_root, cwd: ctx.source_workspace_root, author: ctx.global.author });
-    const result = await pm.get(id, { fields: "id,title,type,status,priority,tags,description,body" }) as { item: ProjectableItem };
+    const endpoint = await resolveJevEndpoint(ctx.pm_root, process.env).catch(/** Map known configuration refusals while preserving unexpected failures. */ (error: unknown) => {
+      if (!isPmCliExpectedError(error)) throw error;
+      throw explanationEndpointRefusal();
+    });
+    const sdk = ctx.sdk ?? createExtensionCommandSdk(ctx.pm_root, new PmClient({ pmRoot: ctx.pm_root, cwd: ctx.source_workspace_root, author: ctx.global.author }), ctx.global.author, ctx.command);
+    const result = await sdk.client.get(id, { fields: "id,title,type,status,priority,tags,description,body" }).catch(/** Only a host-classified missing item is a malformed item selection. */ (error: unknown) => {
+      if (!sdk.isItemNotFoundError(error)) throw error;
+      throw commandRefusal();
+    }) as { item: ProjectableItem };
     const rawLimit = readStringOption(ctx.options, "maxCalls", ["max_calls", "max-calls"]);
     const hasLimit = ["maxCalls", "max_calls", "max-calls"].some(/** Empty explicit limits must not silently become the default budget. */ key => ctx.options[key] !== undefined);
     if (hasLimit && rawLimit === undefined) throw commandRefusal();
@@ -47,7 +58,7 @@ export async function runExplanationCommand(ctx: CommandHandlerContext) {
       ...(rawLimit === undefined ? {} : { maxCalls: Number(rawLimit) }) });
     return { ok: receipt.baseline !== null, ...(receipt.baseline === null ? { exit_code: 2 } : {}), ...receipt };
   } catch (error) {
-    const refusal = error instanceof CounterfactualRefusal ? error : commandRefusal();
-    return { ok: false, exit_code: 2, refusal: { code: refusal.code, message: refusal.message, remedy: refusal.remedy } };
+    if (!(error instanceof CounterfactualRefusal)) throw error;
+    return { ok: false, exit_code: 2, refusal: { code: error.code, message: error.message, remedy: error.remedy } };
   }
 }

@@ -1,5 +1,5 @@
 import { createHmac, randomBytes, createHash } from "node:crypto";
-import { createJevClient, parseQuestionsDocument, runDecision } from "./index.js";
+import { createJevClient, isPmCliExpectedError, parseQuestionsDocument, runDecision } from "./index.js";
 import { TokenUsageTotals } from "./token-usage.js";
 /** Versioned sensitivity receipt; no narrative rationale or mutation authority. */
 export const COUNTERFACTUAL_VERSION = "pm-jev-counterfactual/1";
@@ -26,6 +26,10 @@ function requireBound(ok) {
 function invalidRequest() {
     return new CounterfactualRefusal("invalid_request", "Explanation input exceeds its bounds or has an invalid shape.", "Use a JSON object up to 32 KiB, 1..16 distinct own fields (names up to 64 characters), 1..8 typed questions with up to 32 options, and --max-calls 1..17.");
 }
+/** Keep endpoint recovery consistent between SDK construction and CLI resolution. */
+export function explanationEndpointRefusal() {
+    return new CounterfactualRefusal("endpoint_refused", "Decision endpoint configuration refused the explanation.", "Run pm jev doctor; set a valid HTTP(S) PM_JEV_BASE_URL and supported jev.provider, or use the local provider. Hosted endpoints require explicit opt-in and runtime credentials.");
+}
 /** Freeze caller-owned inputs into JSON snapshots before the first asynchronous call. */
 function snapshot(options) {
     try {
@@ -51,7 +55,9 @@ function snapshot(options) {
         requireBound(Number.isSafeInteger(limit) && limit >= 1 && limit <= 17);
         return { evidence, fields, questions, limit };
     }
-    catch {
+    catch (error) {
+        if (!(error instanceof CounterfactualRefusal || error instanceof TypeError || isPmCliExpectedError(error)))
+            throw error;
         throw invalidRequest();
     }
 }
@@ -62,7 +68,7 @@ function outcomes(result, questions) {
     for (const [name, question] of Object.entries(questions)) {
         if (question.type === "noul") {
             const p = result.answers[name].noul;
-            proposals[name] = { kind: "noul", value: p >= 0.5, probability: p };
+            proposals[name] = { kind: "noul", value: p >= 0.5, probability: p >= 0.5 ? p : 1 - p };
             distributions[name] = { true: p, false: 1 - p };
         }
         else {
@@ -83,8 +89,10 @@ export async function explainDecision(options, env = process.env) {
     try {
         client = createJevClient(options.endpoint, env, 0);
     }
-    catch {
-        throw new CounterfactualRefusal("endpoint_refused", "Decision endpoint configuration refused the explanation.", "Run pm jev doctor; use the local provider or explicitly opt in to the hosted provider with runtime credentials.");
+    catch (error) {
+        if (!isPmCliExpectedError(error))
+            throw error;
+        throw explanationEndpointRefusal();
     }
     const signal = AbortSignal.timeout(options.endpoint.config.totalDeadlineMs);
     const key = randomBytes(32);
@@ -130,7 +138,9 @@ export async function explainDecision(options, env = process.env) {
                 }
             }
         }
-        catch {
+        catch (error) {
+            if (!isPmCliExpectedError(error))
+                throw error;
             stopped = signal.aborted ? "deadline" : "provider_failure";
         }
         if (stopped !== null && field !== null)

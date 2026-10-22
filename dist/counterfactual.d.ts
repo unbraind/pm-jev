@@ -15,6 +15,7 @@ export declare class CounterfactualRefusal extends Error {
 export interface ExplanationProposal {
     readonly kind: "choice" | "score" | "noul";
     readonly value: string | number | boolean;
+    /** Probability of the selected value, including the false noul outcome. */
     readonly probability: number;
 }
 /** An observed field removal, preserving changed outcomes and distribution movement. */
@@ -64,6 +65,8 @@ export interface CounterfactualOptions {
     /** Includes baseline and failed attempts; defaults to 5, maximum 17. */
     readonly maxCalls?: number;
 }
+/** Keep endpoint recovery consistent between SDK construction and CLI resolution. */
+export declare function explanationEndpointRefusal(): CounterfactualRefusal;
 /** Measure local sensitivity with sequential calls, no retries and one shared deadline. */
 export declare function explainDecision(options: CounterfactualOptions, env?: Record<string, string | undefined>): Promise<CounterfactualReceipt>;
 //# sourceMappingURL=counterfactual.d.ts.map
