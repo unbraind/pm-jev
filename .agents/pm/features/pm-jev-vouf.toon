@@ -3,13 +3,18 @@ title: Detect existing duplicate items with calibrated pair decisions
 description: "Calibrate links-only duplicate proposals with title/body/tag/file candidates, a fixed repository train/held-out split, precision-first train thresholds, and explicit unsure abstention. Report lexical-only, model-only and combined held-out metrics and the measured frontier, including sparse-label limitations. Work in plain-directory trackers; proposals never merge or close items."
 type: Feature
 pm_format_version: 2
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-19T15:15:26.929Z"
-updated_at: "2026-10-21T20:02:13.078Z"
+updated_at: "2026-10-22T08:55:46.778Z"
+closed_at: "2026-10-22T08:55:46.758Z"
+completed_at: "2026-10-20T00:44:51.000Z"
 author: codex-agent
 parent: pm-jev-0w3q
+resolution: "Delivered by https://github.com/unbraind/pm-jev/pull/30 (merge e287ff4a3b1a, head 1da497c9f3ff)"
+expected_result: "Delivered by the linked pull request, merged after its head check gate passed."
+actual_result: "Merged at 2026-10-20T00:44:51Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[75]{created_at,author,text}:
   "2026-10-19T15:15:41.354Z",codex-agent,"Plan: preserve pre-create title screening; add bounded pair scanning over certified complete SDK reads, sequential noul verification, a symmetric abstain band, and explicit apply/close authorization with receipts. Evaluate public tracker-copy duplicate closures versus lexical hard controls, using disjoint duplicate groups and a maximum of 200 pairs per local model arm. Canonical checkouts and external data remain read-only."
   "2026-10-19T15:23:37.144Z",codex-agent,"Implemented real-SDK pair scans and mutation guards. Focused pair regressions pass, including abstention, confidence authorization, explicit close gating, receipt history, read-only scans and model-unavailable refusal. Public evaluation inventory: 29 verified public copies; 2 skipped before tracker reads. Strict resolvable labels yield 35 positives (31 historical consolidation receipts plus 4 standard closures), paired with 70 lexical controls. Duplicate-group hashing separates dev and held-out items; retrieval misses count as false negatives. Calls run sequentially under nice."
@@ -278,4 +283,5 @@ tests[22]:
 docs[2]{path,scope}:
   docs/duplicate-quality.md,project
   README.md,project
+close_reason: "{\"pr\":30,\"url\":\"https://github.com/unbraind/pm-jev/pull/30\",\"merge_commit_sha\":\"e287ff4a3b1a21c9dbeab42a4e6094b053552de2\",\"head_sha\":\"1da497c9f3ffadfaeaff4c8011456b11b4cdea6f\",\"merged_at\":\"2026-10-20T00:44:51Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""
