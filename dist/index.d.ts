@@ -18,6 +18,10 @@ export type { Questions, SystemOneResult };
 export { COST_POLICY_VERSION, CostPolicyRefusal, parseCostDataset, selectAbstentionPolicy, abstainWithPolicy } from "./cost-policy.ts";
 /** Typed caller costs, evidence, receipts and refusal codes. */
 export type { DecisionCosts, CostObservation, CostDataset, CostRefusalCode, AbstentionPolicy, CostMetrics, CostPoint, CostPolicyReport } from "./cost-policy.ts";
+/** Bounded sensitivity comparisons over the existing typed decision interface. */
+export { COUNTERFACTUAL_VERSION, CounterfactualRefusal, explainDecision } from "./counterfactual.ts";
+/** Typed options, compact proposals and uncertainty-bearing explanation receipts. */
+export type { CounterfactualOptions, CounterfactualReceipt, ExplanationProposal, FieldComparison } from "./counterfactual.ts";
 /** Version of the triage question catalog; surfaced in every triage receipt. */
 export declare const TRIAGE_CATALOG_VERSION = "pm-jev-triage/2";
 /** Explicit non-mutating candidate, distinct from every registered type. */
