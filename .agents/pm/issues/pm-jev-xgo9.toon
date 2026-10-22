@@ -1,0 +1,16 @@
+id: pm-jev-xgo9
+title: Expand independent duplicate ground truth across public repositories
+description: "The precision-first benchmark assigns whole repositories before inference, but available public duplicate closures leave only two held-out positive pairs. Add independently adjudicated duplicate and nonduplicate labels from additional public tracker repositories, record provenance and label disagreements, and freeze a new repository split before any model evaluation. Do not treat correlated closure-component siblings as independent evidence or retune the existing held-out set."
+type: Issue
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-21T15:00:08.751Z"
+updated_at: "2026-10-21T15:06:26.792Z"
+author: codex-agent
+parent: pm-jev-0w3q
+comments[1]{created_at,author,text}:
+  "2026-10-21T15:06:06.126Z",codex-agent,"Discovered while implementing pm-jev-vouf: the fixed repository split yields only two held-out positives from the available public closure corpus. This follow-up owns independent public annotation and additional source repositories; it must use a fresh frozen split rather than tune the current held-out set."
+docs[1]{path,scope}:
+  docs/duplicate-quality.md,project
+body: ""

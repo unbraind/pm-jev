@@ -57,15 +57,6 @@ jobs:
           # clone-local merge driver config declared by .gitattributes is absent.
           ./node_modules/.bin/pm health --strict-exit --require-merge-drivers
 
-      - name: Type check
-        run: npm run typecheck
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Duplication gate
-        run: npm run duplication
-
       - name: Build and verify committed output is current
         shell: bash
         run: |
@@ -84,26 +75,14 @@ jobs:
           fi
           echo "Committed dist/ matches a fresh build."
 
-      - name: Verify complete docstring coverage
-        run: npm run docstring
-
-      - name: Test with coverage gate
-        run: npm run coverage
-
-      - name: Production dependency audit
-        run: npm run audit:prod
-
-      - name: Verify npm package contents
-        run: npm run pack:dry-run
-
-      - name: Verify generated changelog
-        run: npm run changelog:check
-
-      - name: Verify every publish invocation is attested
-        run: npm run verify:release-publish-attestation
+      - name: Full npm release gate
+        run: env HOME="$(mktemp -d)" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check
 
       - name: Verify Bun can install the package graph
         run: bun install --no-save
+
+      - name: Full Bun release gate
+        run: env HOME="$(mktemp -d)" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 bun run release:check
 
       # `npm run test:live` and `npm run test:install` are deliberately NOT
       # CI steps: live acceptance needs the local Ollama tev1 decision model

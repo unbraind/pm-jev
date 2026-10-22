@@ -1,0 +1,4495 @@
+{
+  "version": "pm-jev-duplicate-quality/3",
+  "model_calls": 156,
+  "automatic_retries": 0,
+  "request_timeout_ms": 360000,
+  "pair_deadline_ms": 600000,
+  "recorded_at": "2026-10-21T15:34:51.520Z",
+  "model": "tev1:4b",
+  "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+  "question_sha256": "10a236388896b7721ff48aac35eed73cd0853bffb953105080b7307c386e5964",
+  "split_seed": "duplicate-quality-20261021",
+  "fitting": "Train only: search every observed raw score, maximize recall at empirical precision >= 0.8 and >= 3 proposals; tie by precision then stricter cutoffs. Null disables proposals. Frontier is train-nondominated, with strict-cutoff ties.",
+  "labels": "Recorded terminal duplicate closures plus explicitly deleted duplicates reconstructed from committed history; equivalence components include sibling pairs. Hard controls are unrecorded duplicate relationships, not independently adjudicated negatives.",
+  "archive_hash_method": "SHA-256 of JSON-encoded archive base64 via evidenceHash; data hashes include reconstructed historical items",
+  "source_method": "Public origin, PUBLIC visibility and public commit reachability verified; regular committed archives and certified complete SDK reads; text stays in scratch.",
+  "limitations": "Repository-separated populations are small and imbalanced. Closure-component siblings and shared-item controls are correlated; Wilson intervals are descriptive, not an independent-population guarantee. Frontier held-out metrics are descriptive only and never select a deployed cutoff.",
+  "data": [
+    {
+      "repository": "unbraind/pm-ado",
+      "commit": "60e82831e38c02e98b314f1443ce427c64456a14",
+      "items": 27,
+      "historical_items": 0,
+      "archive_sha256": "3694f2f7a1671d3154019b2e2d21ed1bf4a1e42ba5fbd03bbd0b4721488e807c",
+      "data_sha256": "9c859154a197cd8998c44c17e3844aa92bc0576589262e17de384e86f00926c1",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-beads",
+      "commit": "74637e97fb1048d1e3ce158d6ad05ee8058157c8",
+      "items": 93,
+      "historical_items": 1,
+      "archive_sha256": "228d48bd5906be99a9f8ccdacce508cba0993b926554eca54988463f308a6bf0",
+      "data_sha256": "255d3bbded04114e93adc5b01b342c78ccb7e26cedf920d5cfd79050a6dcdb38",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-brand",
+      "commit": "8fbe9b7ee9154d6acd33d865062a92679239eb0d",
+      "items": 11,
+      "historical_items": 0,
+      "archive_sha256": "fb95b1ddbf3eb84724f19d089f80c47eab8c74e0ac343580137cc1f3d7d01d62",
+      "data_sha256": "2a30f36afb377292b9d86df73bb3ec0bb18a540e1cb809bbe0a67adf7084e8f9",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-brief",
+      "commit": "46295a662309efe77729306b24f9cdf67e679eb7",
+      "items": 86,
+      "historical_items": 0,
+      "archive_sha256": "984e422cbbd0545d8a4534f37c9c6b4593a1894a742c8a8abccabc8699cff124",
+      "data_sha256": "df9225a574a51e9b7fc03c4e90f955d3d9e6b6e72d765a91c90d4d0fd14123cf",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-changelog",
+      "commit": "55c4fac5e7fb7d75251eed077f1e6a22a0da40d7",
+      "items": 187,
+      "historical_items": 0,
+      "archive_sha256": "4ffc34b23bdfa58b81ee9bbd61a2c950109e2faa470f6d175a32efc05f0ae979",
+      "data_sha256": "61636455689e899517c46dd15279d0612636e615cec4bb006c9c133c92db3561",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-cli",
+      "commit": "e8cc0b67119f9bcda8e9ec631602a7474141b2e0",
+      "items": 3022,
+      "historical_items": 1,
+      "archive_sha256": "485dbc87cd425bb6c208f0c109d73b425b6e8a6e1d213933c24155f257cdc6a6",
+      "data_sha256": "145953c290cf29e38d621c34e99a203a3b5a275809dc9fd1f49e527484a7ea6f",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-context",
+      "commit": "7d156cd179b1a02a4023d0c8690dcba7d8594c81",
+      "items": 80,
+      "historical_items": 0,
+      "archive_sha256": "8757fbe6c1d920b657a0585722e8b3f2931df372e3d86aba7e8b987472d25c0a",
+      "data_sha256": "fa2ebac91a5187942d03c40a10b1014f4db4c29c4dcee59604d66c6dfe818acc",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-csv",
+      "commit": "e40f2826702e329d855348a20953ee1fe8264dad",
+      "items": 114,
+      "historical_items": 0,
+      "archive_sha256": "217152e1d3df667d73843abe4fea37bf54dbee39586860d73e9ffe0b86f88697",
+      "data_sha256": "6ee1f8090ae19d9f35fbf4b072efabf8e03ca63f8397308328fa1935285beaa9",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-gantt-chart",
+      "commit": "80717afb81f1b7ee6e435cfcd02a5f76746097d4",
+      "items": 107,
+      "historical_items": 0,
+      "archive_sha256": "60e100a06eccf7b1f639a5ac7369b5d26fd5e08b37e1ebffd1c38704358c8529",
+      "data_sha256": "78fff995585b129fb4969c3ed19b3e0e6fecdc69a55b58a6bfed497896a89f50",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-github",
+      "commit": "eebda9277e52f636e17824c65d2bfd933ec6c458",
+      "items": 144,
+      "historical_items": 0,
+      "archive_sha256": "fb90846edaf050fe6b8215e6ae8fb16a8416142e6f5e0e11589f035e7b980d8f",
+      "data_sha256": "29e19eb96c74405da8d068c36c52f06b1d8178accc51ce3b7d7f8d22fba140c3",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-graph",
+      "commit": "f46704ef4083287ba54766a8a03e6e09df7ec7d6",
+      "items": 99,
+      "historical_items": 0,
+      "archive_sha256": "fb27d7b93e38299d8bcf7d167e852bf31689f22062847e8ce22351e7120e391c",
+      "data_sha256": "881218312e9f6a79f373ca750df394cb6483fb371de2bc1dad16c0f32c02744d",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-jev",
+      "commit": "4db41b03f85fac8a1cfa1f2e69eb008bbe0d7f04",
+      "items": 32,
+      "historical_items": 0,
+      "archive_sha256": "a661b1faa1d60a8d983fe32794a3b6341f88a3220933389b5797eafeb3c779d5",
+      "data_sha256": "bd990651edf381ff76e2a9dfc17d381480d14bf5134750f8e0cae6de60c50743",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-jira",
+      "commit": "01fb41c6625106f4f18f1927cd65367ef3dc374f",
+      "items": 104,
+      "historical_items": 0,
+      "archive_sha256": "55126ad1fd60ba23fbf6974f075280dab10d523dc1678c8640f1bdd18c7edb70",
+      "data_sha256": "82e3b84d9e9ab80118f6c49bd4baa0c27522695ca4120dfaedfc258089e56a21",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-linear",
+      "commit": "0d5da8ab182b5f5349a54e4ce6cd0c274aee0400",
+      "items": 101,
+      "historical_items": 1,
+      "archive_sha256": "45b4623b77b833987057777a681fe4e65679d9d641ecd99e942f6e5ea6f7ead6",
+      "data_sha256": "01983e2a9750cb43e81e4d5b8ec62a4b1094df4ba76ab06758369c172ec15507",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-lint",
+      "commit": "66a2af13a7e1a5559f7d9d8a4ed431f2886a99c7",
+      "items": 12,
+      "historical_items": 0,
+      "archive_sha256": "0d590a73576afe8796f2f0c6076168d25a2f4bd4ec86ea4a41f4095f4bd1a382",
+      "data_sha256": "18effd45a9596b992d49de24a856f727a6ad8a0396de18fa7fc2c7a50cce6c98",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-memory",
+      "commit": "516fa71c98b3f2591b41b18ce6226f54e6c964a4",
+      "items": 9,
+      "historical_items": 0,
+      "archive_sha256": "45a62e5db836b690959c24cf6b476e9e44f0e93fe0eee7bc460f3cf01b59bd2c",
+      "data_sha256": "d9e6e2e0e62c2aba18bfa7ef422bf3068632e213a6afbe899baae70cf30dc4dc",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-ops",
+      "commit": "eba7d5262fd75e67afce0caad29dae7dc7dfbaeb",
+      "items": 146,
+      "historical_items": 0,
+      "archive_sha256": "940e8cab186643a4ba8dd47921203f0dc63c803ed23f63892d953ab3285b9554",
+      "data_sha256": "aff351d0cc6d405b68c35b2c0f0300b2751f28a46dd18b1d22b7334ae34886a7",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-presets",
+      "commit": "42cffb618b7bc6135f89828dcdfcfae25f0a44c1",
+      "items": 74,
+      "historical_items": 0,
+      "archive_sha256": "e1d83e686614564ff28d99c10dce3211f08c0e2ea0fd9f4991c9f2d2e2d52f78",
+      "data_sha256": "7804ccf8b9032e19b1b0db5f22670c7df08900aa6fa4c1b8c61a29c7cf31768b",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-review",
+      "commit": "68eea9cccf2a32c0f101cb85ce8b2f58369f600e",
+      "items": 45,
+      "historical_items": 0,
+      "archive_sha256": "9ecf688893aa8c237d9127fc2558f3f55f0095e35787f5f6cee01af0f33dbefa",
+      "data_sha256": "0ebda7d43d0bc5e520d2b532291eee5c9d32643e8ba86491b0dfea0dc39c9dbd",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-rl",
+      "commit": "ce948522e18a37f92e9d3b345371ac924c5fa305",
+      "items": 95,
+      "historical_items": 0,
+      "archive_sha256": "d6b5c1c2d465246eb757cb877620ef54b88d75bf7fc9151a4d5fe048532e7b40",
+      "data_sha256": "8f5b695cf69006d54e9dab9ef5e0f1b7b55b13a3c7879ec2a6a66b4c98b37939",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-rlm",
+      "commit": "e164938e68399736126343e5469b6722d0e1a471",
+      "items": 14,
+      "historical_items": 0,
+      "archive_sha256": "076c7c40316b3481884f1e3e42fb83a494e5cf87525d120fb4a5adab7d207d69",
+      "data_sha256": "29068f23d67fa6bc5ecae100947ef6ceb2efd06611664ed9b6b9e8e897d242f3",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-rust",
+      "commit": "8e32f851504c4169704d3af3cec4b91420c9d33c",
+      "items": 74,
+      "historical_items": 0,
+      "archive_sha256": "a9123c9f9ae2917b4c5f7c18616107a66f2c538ed67d651b07294dadd4eee7b2",
+      "data_sha256": "c0e8ae032b1db32250e0e4ab7319989a9e09c7bec870ddf7a18d4c50aac12ece",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-slack",
+      "commit": "f4dce1dcf2b291a99d6c9e3f99fb529b104c707f",
+      "items": 85,
+      "historical_items": 0,
+      "archive_sha256": "aea4aa429403c57c6e1a99be1d7c30dbd68df72edefdbeb31e3f645a7fad21c3",
+      "data_sha256": "370276c0451db22d492808b434e7bd06d647a1e1e9c8c49905436236e7b73e2e",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-slack-standup",
+      "commit": "ab7e0809d2579c14b037a407b43ec4386a281757",
+      "items": 95,
+      "historical_items": 0,
+      "archive_sha256": "4a89f9313b0ccf02934c412fe6bf1a75a5cd0183aded63c0c1109c24474d9c4e",
+      "data_sha256": "d61c97ffd9c801f96e1f716590cf70f00d7c1636ab7f2d62569374eaf2d9cad1",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-starter",
+      "commit": "43c733ded9097773009284e1dfa3481829a45b06",
+      "items": 74,
+      "historical_items": 0,
+      "archive_sha256": "bcbbb075fa1c954dff4c67b83e2b13127b2464c86e24ad881576f1e27afdb8c3",
+      "data_sha256": "946aff37083ad96b4cffa20289b1be4efd40ba886253ce8b34e1eaac428e03b0",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-swarm",
+      "commit": "1dfceab6c4777da56df01e85ae68dbd4128492b1",
+      "items": 15,
+      "historical_items": 0,
+      "archive_sha256": "949570aa2181674ba7a85ee2935eef95b9536481205d76a1fa32982af6be24f2",
+      "data_sha256": "779813cb04e030973d2d480a5e0b3068e688df48421b52aa3994bf030d9cdd4e",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-todos",
+      "commit": "f102374b5f7f0da0a273c9867706d2dc9796d439",
+      "items": 91,
+      "historical_items": 0,
+      "archive_sha256": "d8ad306730a1a2ff220b93c36f1126c221fc581d5595978fbb53b16189ee00f2",
+      "data_sha256": "3f53f7faa71ace0ebdbc970f789f57ab13fc33fd781726ea5333deb41a958738",
+      "split": "heldout"
+    },
+    {
+      "repository": "unbraind/pm-ts-starter",
+      "commit": "0e73ece1ca5ba6814e0036e23f43bee9edceb984",
+      "items": 78,
+      "historical_items": 0,
+      "archive_sha256": "e718ce196460ff5d5a3054f97d3f9ef168cd0bfe700a7d3777aef6d0a8e259e8",
+      "data_sha256": "2c76b9ac3fe87a9bd4b06352f74fb080d0267c849d532eab404ad235b79e6af7",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-vcs",
+      "commit": "27e1d84671fa8c139f7dd00b9e41a7b407319ec7",
+      "items": 147,
+      "historical_items": 0,
+      "archive_sha256": "4c7752129986c983ebf8b7275c2d83a774b0447a2fd85681e5d65053aa05b0c9",
+      "data_sha256": "c7e734f1332c6d42033c4736c6233c8683af06130e0d116402cebe22bcbf176e",
+      "split": "train"
+    },
+    {
+      "repository": "unbraind/pm-web",
+      "commit": "ca7e188bc91ebec838e6791afcbc38f6d057463b",
+      "items": 172,
+      "historical_items": 0,
+      "archive_sha256": "6307c62d21ea5a4f9e676b245ea32b1b4ff4dd68063d96cc12dac6106b7a9c8b",
+      "data_sha256": "d41159d845aef00f9b6e083370b5d180e9e6a5f0371b3e022b6f8b101dd437b3",
+      "split": "heldout"
+    }
+  ],
+  "samples": [
+    {
+      "pair_id": "unbraind/pm-cli:pm-n8w4:pm-u4hy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-n8w4",
+      "b": "pm-u4hy",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.786,
+      "example_sha256": "3c832d4d8e962923f94626f9a3915c05d7937c44f185735e1258e1aa1590e690"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-acx9",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-u8fr",
+      "b": "pm-acx9",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9277777777777778,
+      "example_sha256": "0c4b43715d9330a471fdafdab5b53e694882b5c81a9c3472f57b15abf6a40451"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u4hy:pm-0jpx",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-u4hy",
+      "b": "pm-0jpx",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.8070370370370371,
+      "example_sha256": "00a849e68ebb3dca29838762c17fe66900b71a319f197573ec804b80938fe46c"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-3tjx:pm-knwz",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-3tjx",
+      "b": "pm-knwz",
+      "label": true,
+      "retrieved": false,
+      "split": "train",
+      "lexical": 0.5501895515487749,
+      "example_sha256": "cf9eddb0fb52d3d20167c45a748b66ff31e82c023dfd280a2067a4021fd1c90e"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2cr5:pm-eyoz",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-2cr5",
+      "b": "pm-eyoz",
+      "label": true,
+      "retrieved": false,
+      "split": "train",
+      "lexical": 0.6592261904761905,
+      "example_sha256": "0b3143205a75051cf4c311334080ce940a57263d0a6b794a68fa81c0e5ae4d5a"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-7akk:pm-u4hy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-7akk",
+      "b": "pm-u4hy",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.778,
+      "example_sha256": "e1534f780e81a23433d9f725406cc79df8967523ecf751c6d78bce00bbdc7da7"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-n8w4:pm-0jpx",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-n8w4",
+      "b": "pm-0jpx",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.7757142857142858,
+      "example_sha256": "4e30a0a2a73cc4887b7b510c99d40160aff05b435e9a6921cdfbc78b2a830504"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-iziy:pm-phpq",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-iziy",
+      "b": "pm-phpq",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.687008547008547,
+      "example_sha256": "bdb229aaead892b21e54315eb3a2c477401c298f3e62e865d4703b8ebd3db316"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u4hy:pm-eoil",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-u4hy",
+      "b": "pm-eoil",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.7648051948051948,
+      "example_sha256": "bdf65e78429e66756b2beac1ffedfcccfb46104c18e40525e252d0c0358e6f78"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u4hy:pm-16pn",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-u4hy",
+      "b": "pm-16pn",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.772409638554217,
+      "example_sha256": "9a1b22cbd8540d84b6144b4d8dd141b603352031bf81f0d1e8c31e8af794490d"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2cr5:pm-j0o4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-2cr5",
+      "b": "pm-j0o4",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6639880952380952,
+      "example_sha256": "0f21c81462dead445ffb4a95a7425d45f2b66126ed00c116041d0e8a61587cd8"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-akty:pm-7akk",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-akty",
+      "b": "pm-7akk",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.8284615384615386,
+      "example_sha256": "84b0eca05c8162a156ed0303e666837b76042543c4b29e8cf213a7964e91476c"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-x89f:pm-eamp",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-x89f",
+      "b": "pm-eamp",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.7456357048748352,
+      "example_sha256": "dbd62c531f59ecea5f18d700cee98ae44a059809c204dcac80477677d68dcad4"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-204c",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-u8fr",
+      "b": "pm-204c",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6845029239766082,
+      "example_sha256": "5db45a353b3bf625c0562fd101cdf3e972db26b66b4dd3fbc46c432d8b266d28"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-dyu6:pm-f0e9",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-dyu6",
+      "b": "pm-f0e9",
+      "label": true,
+      "retrieved": false,
+      "split": "train",
+      "lexical": 0.6341245270037839,
+      "example_sha256": "29f26beaf5cdee57830c03077f88fda78374954e043f66685e68befe7ce87d90"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-7vr0:pm-2cr5",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-7vr0",
+      "b": "pm-2cr5",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.7495192307692308,
+      "example_sha256": "e7467276ea701043333f7fd248ad78983911d67b3a1a9cf52bae8a3eac1880ce"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2cr5:pm-6k5l",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-2cr5",
+      "b": "pm-6k5l",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6421765734265733,
+      "example_sha256": "ea5be077baf578c45dc0f9d25b1d10702510c93c2bd5f08a517ccbe5120d879a"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-j0o4:pm-k4u5",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-j0o4",
+      "b": "pm-k4u5",
+      "label": true,
+      "retrieved": false,
+      "split": "train",
+      "lexical": 0.6287499999999999,
+      "example_sha256": "92ca81fe10f8a1146c675ee402e3ba1b82cdaecee44c066a1ba9f43b8b8f174e"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-j0o4:pm-6k5l",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-j0o4",
+      "b": "pm-6k5l",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6391834365325076,
+      "example_sha256": "ff15b956a5ed795b10379df4012613230fa804caac51fae0df1dadcc6eba59a2"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-f0e9",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-u8fr",
+      "b": "pm-f0e9",
+      "label": true,
+      "retrieved": false,
+      "split": "train",
+      "lexical": 0.6357134048587988,
+      "example_sha256": "1b2954bf00932dd48622f7d9d47dc9a8de0978f3b70b48248f150a591248bf00"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-iziy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-u8fr",
+      "b": "pm-iziy",
+      "label": true,
+      "retrieved": false,
+      "split": "train",
+      "lexical": 0.6597597597597596,
+      "example_sha256": "911efeac51f15c3f7a220e1d97572cf2966c164da95892e283d3c1067e75051d"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-mn6w",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-u8fr",
+      "b": "pm-mn6w",
+      "label": true,
+      "retrieved": false,
+      "split": "train",
+      "lexical": 0.6280718954248365,
+      "example_sha256": "1f75c5176c9c550f41acc7b4b8f9bab0a7cc8493aa3fc6679d6507eeedd7b25a"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-3tjx:pm-vz16",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-3tjx",
+      "b": "pm-vz16",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6361111111111111,
+      "example_sha256": "617fe7bc08c03a9e9bf83bf6a0db698ed004379a842edd6ce5f75a4b8cf390b2"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-akty:pm-0jpx",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-akty",
+      "b": "pm-0jpx",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.7728169014084507,
+      "example_sha256": "af80e064f528c5f94c7e78f4978b1d1d21d316f628000ca3c8c727d05c9d51f6"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2cr5:pm-zre8",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-2cr5",
+      "b": "pm-zre8",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6816964285714285,
+      "example_sha256": "78a19586d5769990a4c4384ec1182203842a339036126b3cf6dec1512540b782"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-f0e9:pm-iziy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-f0e9",
+      "b": "pm-iziy",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.722455648926237,
+      "example_sha256": "8e3c9e045c0f51d5eeaf9d04dc301be3621b1c5f75bb075ff92040e7c5558696"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-j0o4:pm-eyoz",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-j0o4",
+      "b": "pm-eyoz",
+      "label": true,
+      "retrieved": false,
+      "split": "train",
+      "lexical": 0.6287499999999999,
+      "example_sha256": "acfb1458c073f18ef5b6458244cb6bacc9e8177302865e18ae2dc4466c8018e7"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-eamp:pm-qkj9",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-eamp",
+      "b": "pm-qkj9",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.8459326788218795,
+      "example_sha256": "a1fcbc77f4f119ba1bbe62acd553eab80c286c5ea98c589b428167868cebd060"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-j82fd3:pm-ntyda8",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-j82fd3",
+      "b": "pm-ntyda8",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9645567904581187,
+      "example_sha256": "feae78b85f76f7d1865a14dc49b6c9321b019dc65d35f733db9a6939c03daace"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-449do9:pm-4flipp",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-449do9",
+      "b": "pm-4flipp",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6989304812834224,
+      "example_sha256": "daf6db7f0e652bd604f2064be701b22df89383cd1bbe3f8b974b7194428cac12"
+    },
+    {
+      "pair_id": "unbraind/pm-linear:pm-linear-zczw:pm-linear-vzqx",
+      "repository": "unbraind/pm-linear",
+      "a": "pm-linear-zczw",
+      "b": "pm-linear-vzqx",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.8841463414634146,
+      "example_sha256": "304ca050c38868f97b1f1d7ffc8c3530f3d4507be16c2ca1f5ef66d37976ee3a"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-wjdr:pm-204c",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-wjdr",
+      "b": "pm-204c",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.7317460317460317,
+      "example_sha256": "b4bb41b0ae114b1e5991f0efa9286f8da3bf92b6869114f83cae541334e47d42"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-phpq",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-u8fr",
+      "b": "pm-phpq",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6712140712140712,
+      "example_sha256": "de8722f9821e9cab8694d6c8f816f31c0f7a6d5351ea7d583b512e65c722c2f4"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-cg7l:pm-02c4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-cg7l",
+      "b": "pm-02c4",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.902488038277512,
+      "example_sha256": "dad517827c3d9ea9817d8813b6c1baf45fcaf49155d8375564688fe8717bade3"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-7akk:pm-0jpx",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-7akk",
+      "b": "pm-0jpx",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.7757142857142858,
+      "example_sha256": "26e9ce728cbfe86151020a3524491b6361e1a2126767b359fe83c72fc97ce180"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-x4sy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-x4sy",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.905377176015474,
+      "example_sha256": "4ccd8a635d5b627f816e1b72fb59ca0b2dc1e69b46ffa9214d5b9e768a175e60"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-eyoz:pm-o4ky",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-eyoz",
+      "b": "pm-o4ky",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9071428571428573,
+      "example_sha256": "1603a189063064d046532fc2ab79a5ea6729366e37b320224c58d737a0961028"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-6k5l:pm-eyoz",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-6k5l",
+      "b": "pm-eyoz",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.644813829787234,
+      "example_sha256": "5779312d788a85259c0d7c0eca032d504b7d9de6b9ba1f0a17a92b7255f5690b"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-zre8:pm-6k5l",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-zre8",
+      "b": "pm-6k5l",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6332808924485125,
+      "example_sha256": "675200f14775b4819f911491e5b7ff28834073017e23dfdab0707baf8580ff01"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-zre8:pm-o4ky",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-zre8",
+      "b": "pm-o4ky",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5968530020703934,
+      "example_sha256": "c9052592b408db85e25c5e65450b7c2f95121e75b60e109f433854c0f7c0de4b"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-akty:pm-u4hy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-akty",
+      "b": "pm-u4hy",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.7831578947368422,
+      "example_sha256": "6d2f8ec9128d3117d508a7f35047de91d3f6ef006e6f718566053fae3d76f18e"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-dyu6:pm-a5ea",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-dyu6",
+      "b": "pm-a5ea",
+      "label": true,
+      "retrieved": false,
+      "split": "train",
+      "lexical": 0.6264052287581698,
+      "example_sha256": "bc662a8e9795e83adab8780c4207f7ef23b5ed4a18650f803b11a12de9505bd9"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2joy:pm-eamp",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-2joy",
+      "b": "pm-eamp",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.8307615629984051,
+      "example_sha256": "5604aafa64d640529540ed84f70678d64b3a82a5e4656a43c81b029823bc4315"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-akty:pm-n8w4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-akty",
+      "b": "pm-n8w4",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.8376923076923077,
+      "example_sha256": "18207133ce7b5dca18bfa3d4055f5301ab095b49f513768f99a76177f24c96d7"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2cr5:pm-k4u5",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-2cr5",
+      "b": "pm-k4u5",
+      "label": true,
+      "retrieved": false,
+      "split": "train",
+      "lexical": 0.6592261904761905,
+      "example_sha256": "64b737fe19e7e9b07d75bcee71e99d70fcd87a85714112feee6a16d51bcc1056"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-53q4:pm-ylg3",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-53q4",
+      "b": "pm-ylg3",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9061384487072561,
+      "example_sha256": "d51d063270c1ff5ad3e49385c1a4f925179689ac3002862cd0d7f77c86a7996b"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-x89f:pm-qkj9",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-x89f",
+      "b": "pm-qkj9",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.7855035350442576,
+      "example_sha256": "eca9345c29923166f67b78ef94b6c1a23b92486c2a942051d5d544c75d665a66"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-i1rm:pm-s5vv",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-i1rm",
+      "b": "pm-s5vv",
+      "label": true,
+      "retrieved": false,
+      "split": "train",
+      "lexical": 0.9036363636363637,
+      "example_sha256": "ba95342f7455ef5d7009cae50e93bfed1c17fe1c3c04d761bd2fa247e33879ce"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-7akk:pm-16pn",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-7akk",
+      "b": "pm-16pn",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.7616666666666667,
+      "example_sha256": "fb64ae89e051e3bed059ebc3401b73d449bde54b58f1c1d75da17bf046c19dea"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-iziy:pm-204c",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-iziy",
+      "b": "pm-204c",
+      "label": true,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.8043643987040212,
+      "example_sha256": "494604d3caa09a494f9196b0481b3fe012dd20c4282b3d4ea3424143f8727b17"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-5bwo:pm-00yy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-5bwo",
+      "b": "pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.40789473684210525,
+      "example_sha256": "af30f9bcc1b645904e2be0a02615273c82d05e9fd9aa1b50595c5c5f6fdd7484"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-6oox:pm-00yy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-6oox",
+      "b": "pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.15065091610414658,
+      "example_sha256": "a7480935376ff676927ef30b33d1f7b81a290e99890ecc40f38190d4358bb33c"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-e77a:pm-00yy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-e77a",
+      "b": "pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.060294117647058824,
+      "example_sha256": "627a49b6e34ef190d7f5f69b5a6bd66eb024a2f0f17c4a564e5b90a40c8690d0"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-izx5:pm-00yy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-izx5",
+      "b": "pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.0645,
+      "example_sha256": "27041b3e931c473f50cf1286e65dbb77b47388b163c3943681fc909469cf859f"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-k8ik:pm-00yy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-k8ik",
+      "b": "pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.049489795918367344,
+      "example_sha256": "f32f4f6eb510c6e2b4f5e152f3d2ae06e37f01bbf9125edd2bfc7cf2749963e1"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-srex:pm-00yy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-srex",
+      "b": "pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.06637931034482758,
+      "example_sha256": "02bf8c6b410920d9ea65e67b8a7f92ce6b52395332626f0dc3169881803e6051"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-02c4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6575198587819947,
+      "example_sha256": "bfe7676f886bdfddefe0a5f6702cd4fc84814e2b8b39df970399eee76f84a967"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-02c4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6620574162679427,
+      "example_sha256": "dd63e2af930632832f9be450fa24da17282ebcb78b6b313146db22494de190e7"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-51y8",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-02c4",
+      "b": "pm-51y8",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6209179170344219,
+      "example_sha256": "212d3e98108214335bb93ca9f392a7dc46ffccdc00897a14d5f9903cbe8fe42d"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-53q4:pm-02c4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-53q4",
+      "b": "pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6477540106951872,
+      "example_sha256": "c61a351146c73e420cd600a067a0e96a4ab146da3a227e1fb711dfe0f0703597"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-5p3z",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-02c4",
+      "b": "pm-5p3z",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5991202346041056,
+      "example_sha256": "9522b06525ae8bce3610e0214eab6c14e38f6213a44db624dcb91ecbe53390b9"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-8m72",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-02c4",
+      "b": "pm-8m72",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6103030303030303,
+      "example_sha256": "d754c1c18abd8f18b79c8aad0b21f5cb211f9e1ce598ac57d5b4e268ea0df60b"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-bv2c",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-02c4",
+      "b": "pm-bv2c",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6020979020979021,
+      "example_sha256": "4a2f3bb60a06d8f61df501d767adf3f9775e6ef26bc0e7f0ee4809003b132fd8"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-d3i5",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-02c4",
+      "b": "pm-d3i5",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5962679425837321,
+      "example_sha256": "acea58cc5c27aa64b04240fb73fccda7c11b9ede39dddb0f9bf9d9033c3b1e76"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-eu59",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-02c4",
+      "b": "pm-eu59",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.621878121878122,
+      "example_sha256": "ccb2b1d08cc109736464a8a2c25e71bd10b56028c57023f0686184b482ba8ddd"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-i1rm:pm-02c4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-i1rm",
+      "b": "pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6577600749765699,
+      "example_sha256": "cc18acfe47b4a78cea1660075887edd279781510c44d58b2e2b41dcc3342ec3d"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-ipul",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-02c4",
+      "b": "pm-ipul",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5860853432282004,
+      "example_sha256": "b4bf7faccc386bc0406f3305d88b3f01fe6aaa6e364d6ba86303053766b88e6c"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-ncbe",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-02c4",
+      "b": "pm-ncbe",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6284715284715285,
+      "example_sha256": "442c00330f0a917d31fc845a8c1e892d1729e5331945a337b4ad01069c6fc6d0"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-pagj",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-02c4",
+      "b": "pm-pagj",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6086913086913087,
+      "example_sha256": "4ce8df601289284da13f81697039570da64a4f93d293f2eb5a4fdca6e54117d4"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-rb9v:pm-02c4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-rb9v",
+      "b": "pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6415151515151516,
+      "example_sha256": "919cfb1883d230edb2fd463e22e026df6df799020fb15dd9cb47dc8fb7e6f386"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-s5vv:pm-02c4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-s5vv",
+      "b": "pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6886363636363637,
+      "example_sha256": "0dd59895bc9fe42b7e1340b0b845cff278ada24dea9f575a9e53599766529f74"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-tl4d",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-02c4",
+      "b": "pm-tl4d",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.596969696969697,
+      "example_sha256": "b8a4d1f87f79288913be116aa1452f6c49b1b84398bac36cfc3e5753810ab434"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-v6vi",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-02c4",
+      "b": "pm-v6vi",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.597678916827853,
+      "example_sha256": "03a6ad6059eda2a87b3bcaa9586713975cd596f1e1acaffbfc6d12b2b1ceeba9"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-x4sy:pm-02c4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-x4sy",
+      "b": "pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6958944281524927,
+      "example_sha256": "8e6a98e256f823708ad0d3e819557a968cec32c3c9a8b55f8a453bf15026f246"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-ylg3:pm-02c4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-ylg3",
+      "b": "pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6774977497749776,
+      "example_sha256": "a9b50324b9b61d626edf90b64fbca9a67f710a9776ce7939a961979d73c541e1"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-090w",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-090w",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6828671328671329,
+      "example_sha256": "3a39edd73f03285e863f8ab94a6ce3f9495050a913f57c081033265ac9c3bb17"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-51y8",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-51y8",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5982792207792208,
+      "example_sha256": "ecb5c48eac46cbadfcf86db387c330db34885e3a4bae48f0a546c941bce77ac3"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-53q4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-53q4",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.669041769041769,
+      "example_sha256": "2cebabbc2146aa80e653929adac7aed64bc5c603a6552012de95e67c3519f3aa"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-5p3z",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-5p3z",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.571283422459893,
+      "example_sha256": "5db70d2a378e749802f165cbaf81faff0cc62a7a1fd8798de0a7d4b8ac92c686"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-8m72",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-8m72",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5687878787878788,
+      "example_sha256": "33ab6692da491d5903d1bcb4ce1a0b3ee6d4e4779bf0a303b0b73af396e7fd5c"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-bv2c",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-bv2c",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5736363636363637,
+      "example_sha256": "5036e817a12a48e8928f6889e1b9a41dd7782d63d320ee24096f5ee2a12cc0f0"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-cg7l",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-cg7l",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6886363636363637,
+      "example_sha256": "da2dca15894f7d507872c2440cb509083fc40534648927cc9183828302217e1a"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-d3i5",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-d3i5",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5632517482517483,
+      "example_sha256": "edb2b9878e9c3bea1fe10342c19c2d2ac6e842c839627eec90cd670a04d19640"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-eu59",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-eu59",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5796363636363637,
+      "example_sha256": "94251a2cedd9253f48a5c084cc9acde7bf1d6e9797c602580fe4f2833dd0f0a7"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-i1rm",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-i1rm",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6900514579759863,
+      "example_sha256": "0744373840586a8973239d45bbc18e06f278942998603ab943de93d227831089"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-ipul",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-ipul",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.554570943075616,
+      "example_sha256": "774828439ba80840b57e23caabd737d3a7704d333aec79b0d7d8a90e72451e9f"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-ncbe",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-ncbe",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5856363636363637,
+      "example_sha256": "79090e4221d42cf56eb333d0fd84a493837dd0b54ed8898cf4fddc7539957b23"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-pagj",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-pagj",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5736363636363637,
+      "example_sha256": "2978e081db8e6abdbf87430df4336fc5778ac91199c44c8b0f43c9bc40f3b41e"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-rb9v:pm-090w",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-rb9v",
+      "b": "pm-090w",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6580808080808082,
+      "example_sha256": "ca76c40cf3b57fa4a5ef10496201140aa4216945ba270f95c34fac4acaceffbd"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-s5vv",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-s5vv",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6593506493506494,
+      "example_sha256": "c6130f85070cb5357eca3bffaee3e1d2f2ab3140f9b10227ac2b10561bf34206"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-tl4d",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-tl4d",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5591919191919192,
+      "example_sha256": "844610f1ff01533075e1e30e9c7a8f3c518303aa97b48a3ee48327da0248c56f"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-v6vi",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-v6vi",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5643159752868491,
+      "example_sha256": "76a069faebc6151ce7c22919d3762f12997d512ecb70e6ae97072b55453438a9"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-x4sy",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-x4sy",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6536363636363637,
+      "example_sha256": "f830eea297abfc7a388b79258c072046da0038419d88de00cfaa56f54aadfc02"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-ylg3",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-090w",
+      "b": "pm-ylg3",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6390909090909092,
+      "example_sha256": "7bd00cacac1bfefb968281d23b14bfe3c2c9dc09f91dfb043257fa752681dc54"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-f0v0:pm-0ab3",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-f0v0",
+      "b": "pm-0ab3",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6099734042553191,
+      "example_sha256": "52ed9360d3978a68aca2c542e71c0c1919c197dbf829024c08f463af9c4f73d1"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-tixl:pm-0ab3",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-tixl",
+      "b": "pm-0ab3",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.06982456140350876,
+      "example_sha256": "908e4a4961d546a034cffe47868e24caf209ac52c2cb3df1591617a885e5696a"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-k6uglj:pm-0bbc53",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-k6uglj",
+      "b": "pm-0bbc53",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.17104575163398691,
+      "example_sha256": "2eb9b7880395e28c69de287ee47acfa1ca5c7f874c87c447ee0caa5da417dce6"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-8kxm:pm-0c0g",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-8kxm",
+      "b": "pm-0c0g",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.2226950354609929,
+      "example_sha256": "698ff2a3e4fdb3d1f4b51c9d70fc8886651eb953f4f8be5543ccdacc1152bc2b"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0c0j:pm-awfr",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0c0j",
+      "b": "pm-awfr",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.21977687626774844,
+      "example_sha256": "8dc03dc89b80fa43018e7f5b1926901d85842eb44614355e3806945540781535"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-su6i:pm-0c9q",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-su6i",
+      "b": "pm-0c9q",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.24460669274228597,
+      "example_sha256": "ff7d55f079518b8e1ce0b89e4841f81c687d2cda5c56b93424f6f2a0219c893c"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-t5ud:pm-0c9q",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-t5ud",
+      "b": "pm-0c9q",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.16576554025865667,
+      "example_sha256": "893bda6bd7cc9ecaa9fc53c1d9428fee958e33d12fe3be3eded4ff20c2494e9a"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0e8w:pm-30lh",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0e8w",
+      "b": "pm-30lh",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.265728500355366,
+      "example_sha256": "c550bdc5cc98c58e1b7260fc8bcd74aa9bfd51f8c6bc6ba9ed2f7ef71332a435"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0e8w:pm-433d",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0e8w",
+      "b": "pm-433d",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.3733724722765819,
+      "example_sha256": "3a15953a401d9667ae9e41b59d133fc9ac1539c14f087981cc54f682b0cb3eca"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-8d71:pm-0e8w",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-8d71",
+      "b": "pm-0e8w",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.2690196078431373,
+      "example_sha256": "a678f7a95cdf7e147ce06c0f8ae84f32c3696f2735cd3ad5ff1a89b8643d7ee6"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-mwwp:pm-0e8w",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-mwwp",
+      "b": "pm-0e8w",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.26518987341772154,
+      "example_sha256": "4cd06ac6bad9fe22fde84143ec728badfdfeaf8d7ae4f54151f5f9107d8ccfd3"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0e8w:pm-qkx0",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0e8w",
+      "b": "pm-qkx0",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.3726934984520124,
+      "example_sha256": "eacc40cb87c0680db75151fb164ed8c91875df25c5a0cf742272bdae87f84b3c"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-zpwfzy:pm-0fxa",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-zpwfzy",
+      "b": "pm-0fxa",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.222603550295858,
+      "example_sha256": "46f268f3b140f44063a2b5530ce1a117870934ede476a2dc5ac0fb00ab4896c4"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0g2p:pm-p7av",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0g2p",
+      "b": "pm-p7av",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.09722222222222221,
+      "example_sha256": "2deed5c4dc91731b5ff6f96eaf80abcda4e4c4d492f9ff1c8fb8b62526c144aa"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-r31390:pm-0g2p",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-r31390",
+      "b": "pm-0g2p",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.276007326007326,
+      "example_sha256": "1b186785d232c725cba3fd1f98f991a2550f48b5a0abf867e7656569d599ba7a"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0g2p:pm-wvhs",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0g2p",
+      "b": "pm-wvhs",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.26761904761904765,
+      "example_sha256": "9cf7849fd3470fcd9352f7410fcc833c2ba38dcefc31879084d998864c4eb528"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-bdvm:pm-0hnu",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-bdvm",
+      "b": "pm-0hnu",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.3368693992698307,
+      "example_sha256": "628ad4c0907451b1e923686b63b4ccb50ee810ce997680ad623a47f1b046c0da"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0k4o8t:pm-83ov2i",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0k4o8t",
+      "b": "pm-83ov2i",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.21697802197802196,
+      "example_sha256": "4c4a844e1fe9e7de5b9b22e79d796c039d9afd35d089deb1e5f1d4c5391ee87e"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-1uok:pm-0m2m",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-1uok",
+      "b": "pm-0m2m",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9413043478260871,
+      "example_sha256": "680d29f95d46796a6bd3a8f2934657cbe8af3fa816e3fa648ea4ea2885c1974b"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0m2m:pm-3isc",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0m2m",
+      "b": "pm-3isc",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9413043478260871,
+      "example_sha256": "6823ee9befc0d0b61038aa33d35e69f16d3dfc3c181b140fcfafeaabdbfb8dec"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-4la5:pm-0m2m",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-4la5",
+      "b": "pm-0m2m",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9391304347826088,
+      "example_sha256": "3adde8c70bb798b757cae3928aac77c00f85b782ae03d8097ed3aab92c957b8c"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0m2m:pm-huq2",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0m2m",
+      "b": "pm-huq2",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9413043478260871,
+      "example_sha256": "6b4cda80b7134178173f6ae00355582f3e35854241b35c5974e719b18e7e0d54"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0m2m:pm-r5mf",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0m2m",
+      "b": "pm-r5mf",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9413043478260871,
+      "example_sha256": "d14739bc9a9c2e81b6c3f272bdcc73a9faf93c2e59602704c4cd3aa26983f7e8"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0m2m:pm-u57g",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0m2m",
+      "b": "pm-u57g",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9423636363636365,
+      "example_sha256": "a13c4c2f869e0a2ab32467230fec2c793ecea30690e64dd87b9114fad49e29c5"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0m2m:pm-y49x",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0m2m",
+      "b": "pm-y49x",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9413043478260871,
+      "example_sha256": "f3d0213fdb0f0c7c1a786d45db9026f717bad63292dd3bc58ab34df55a94f46e"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-ycxu:pm-0m2m",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-ycxu",
+      "b": "pm-0m2m",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.9413043478260871,
+      "example_sha256": "3515732b99de861affbdce1373ae926457bdcd75c5a9b46bcba30e27a0fc7687"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0p4aal:pm-2x67z9",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-0p4aal",
+      "b": "pm-2x67z9",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.09142857142857144,
+      "example_sha256": "8b7dbfc501b579f96c0c1693eebbc1d0d038eb6c21971bb59313f78651af0717"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-j24z:pm-0u1y",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-j24z",
+      "b": "pm-0u1y",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.45209643605870015,
+      "example_sha256": "03bb0054d785de7456476ec7df42fb9466ac7e477dca9c48cb293bfc5f96bb8d"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-ngdf:pm-0u1y",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-ngdf",
+      "b": "pm-0u1y",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.3724213286713287,
+      "example_sha256": "33afd09267ca7caeb8a6c6a4fad841428c7d16cc6d9670da87695a32a3b149f6"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-8jss:pm-0v2m",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-8jss",
+      "b": "pm-0v2m",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.2615207373271889,
+      "example_sha256": "817ff7e67f30920c48c7e90d0751f0a05fc2b740a0391c7ca256a4c7a0593766"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-c3sz:pm-0v2m",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-c3sz",
+      "b": "pm-0v2m",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.20997023809523813,
+      "example_sha256": "21642661a116f3aa5760a8f50013816c4b8545d90cf80f43d3aa3a9b20aa834a"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-pmyq:pm-0v2m",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-pmyq",
+      "b": "pm-0v2m",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.24550827423167848,
+      "example_sha256": "227b2b41701618d14f40efd1ec00d56a6d7c688854071987f6547506644cab74"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-bw70:pm-0xix",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-bw70",
+      "b": "pm-0xix",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.02857142857142857,
+      "example_sha256": "b8eabad9a48dfa9804da461ddff90626665045733f9caea85653a4d8ddd24950"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-byl1:pm-0xix",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-byl1",
+      "b": "pm-0xix",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.24523809523809526,
+      "example_sha256": "449fe35159f9398f0e9771f463bcd594653c4f3a61edaf6fe1de085ef7dc4cd6"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-dmuq:pm-0xix",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-dmuq",
+      "b": "pm-0xix",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.25270935960591134,
+      "example_sha256": "1b7e5abd92e6172ab3a1c52e09f9eab9ac433183545f09d1f852857adbf73c09"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-eifq:pm-0xix",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-eifq",
+      "b": "pm-0xix",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.2693121693121693,
+      "example_sha256": "0c72bd1366c8f28cfe56edd3a5be8e840b76533bbfd783eff50be8be4dbbbe51"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-51y8",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-51y8",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5920979020979021,
+      "example_sha256": "5eaa97c8df6a50c302296db02e5f67bbb2011597c0a7e1b81d151943663edaf7"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-53q4",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-53q4",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6733451015004414,
+      "example_sha256": "a114e9b8ca5ec47f347d77db1d3c5870913a92481c04da8233f219b6e1d54367"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-5p3z",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-5p3z",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5749129593810445,
+      "example_sha256": "658143316d9f83ec42509a4c663afe4a6eea7594f3044ad6ec75ba4989dcd8be"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-8m72",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-8m72",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5723176823176823,
+      "example_sha256": "8a1dcd14ec41d9b7f6e6bfb56bc7cf5f454e333c4995807572ff3defb86a1cff"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-bv2c",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-bv2c",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5840711462450593,
+      "example_sha256": "d634cbfec8359a6f562c394f7f9016b5ed75cc67d3efde8f939c5342c3f57dec"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-cg7l",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-cg7l",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6948863636363637,
+      "example_sha256": "7a954b80e914b113c772471793f74f9f292cb9b9313d1f6979952d68e54c2e72"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-d3i5",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-d3i5",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5661363636363637,
+      "example_sha256": "506e7a86831ca958088461bf6730db2ba43a0afc89f05d7ccf19869547f6ddfd"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-eu59",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-eu59",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5775494071146245,
+      "example_sha256": "bd023c036db89f0e5254b200e6efaf18990d2cb620c6b2ada108f17c40ab85e9"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-i1rm",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-i1rm",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6840445269016698,
+      "example_sha256": "c06b38bcb17185675731a8f77cd27c11dba56725a4360aabd366dd879e11e492"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-ipul",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-ipul",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5687878787878788,
+      "example_sha256": "3e3b7a97c091d8f3761bc639ad06ac4097a5bbe9b6120631f363e3aaee874d84"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-ncbe",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-ncbe",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.590592885375494,
+      "example_sha256": "f318531de282d34dfce3fe6315cf99452313dba8d008439ec2c848b688a0f6a5"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-pagj",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-pagj",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5775494071146245,
+      "example_sha256": "2adf0fa87b82406cb51145e6f30c8392b884754294d7de540b075fe76664bbb3"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-rb9v",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-rb9v",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6736363636363637,
+      "example_sha256": "278ae82074f32139a0e94e26d01aad98c84f8f809bcc9b3817d0cb3dbb3f5d11"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-s5vv",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-s5vv",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6515745079662606,
+      "example_sha256": "1f2b8ffde714813f73ad9250a753c18c41e59999821b348e9257559e06ce81d9"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-tl4d",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-tl4d",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5616363636363637,
+      "example_sha256": "663cf07621eef50fe408e965e17301cd0a3f399b53a1fe7651d9635c47c08c6d"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-v6vi",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-v6vi",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5673205741626794,
+      "example_sha256": "fad265338c94d79bf7645508b9d09aba69d53a2b261f9c3b6a51ca88cb352685"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-ylg3",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10no",
+      "b": "pm-ylg3",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.6418716577540107,
+      "example_sha256": "fa0830a071bf76c427da64fb91f0dc427c6df3f10b8808644950ea3adff20e02"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10qthi:pm-m1tfmp",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-10qthi",
+      "b": "pm-m1tfmp",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.07727272727272727,
+      "example_sha256": "8b20c872ea07277117509b05b64e1edbf68d52865cfef5e2373a83c151399ee5"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-11t5:pm-8fvl",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-11t5",
+      "b": "pm-8fvl",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.5698156682027651,
+      "example_sha256": "95c9924ea74727d9dc06b3919cea786bae8aea079722d11f08f99976e2a45b71"
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-mlc3:pm-11t5",
+      "repository": "unbraind/pm-cli",
+      "a": "pm-mlc3",
+      "b": "pm-11t5",
+      "label": false,
+      "retrieved": true,
+      "split": "train",
+      "lexical": 0.1953143728887436,
+      "example_sha256": "e532a9fc16ec11708b178143f4fc6603df9df13110e73be4a51c92cd1242517a"
+    },
+    {
+      "pair_id": "unbraind/pm-changelog:pmc-yy8d:pmc-6kvp",
+      "repository": "unbraind/pm-changelog",
+      "a": "pmc-yy8d",
+      "b": "pmc-6kvp",
+      "label": true,
+      "retrieved": true,
+      "split": "heldout",
+      "lexical": 0.9863636363636363,
+      "example_sha256": "36a5335e7958ec3e2b40f918b28de6e4f2909faf3db917b0dbaf32b29992ba1c"
+    },
+    {
+      "pair_id": "unbraind/pm-beads:pm-beads-tsm5:pm-beads-xwv6",
+      "repository": "unbraind/pm-beads",
+      "a": "pm-beads-tsm5",
+      "b": "pm-beads-xwv6",
+      "label": true,
+      "retrieved": true,
+      "split": "heldout",
+      "lexical": 0.65,
+      "example_sha256": "5596ba59f3acf5563c161a6f849b91bc91392e336996b8a634200cc146e7dce9"
+    },
+    {
+      "pair_id": "unbraind/pm-beads:pm-beads-fiq7:pm-beads-dlsd",
+      "repository": "unbraind/pm-beads",
+      "a": "pm-beads-fiq7",
+      "b": "pm-beads-dlsd",
+      "label": false,
+      "retrieved": true,
+      "split": "heldout",
+      "lexical": 0.4016611902154071,
+      "example_sha256": "739bc86ed05b4f9efd4ec00307e705a7669e4853912d058eee7f35e6e8ae90b7"
+    },
+    {
+      "pair_id": "unbraind/pm-beads:pm-beads-e4cs:pm-beads-v36s",
+      "repository": "unbraind/pm-beads",
+      "a": "pm-beads-e4cs",
+      "b": "pm-beads-v36s",
+      "label": false,
+      "retrieved": true,
+      "split": "heldout",
+      "lexical": 0.5580286168521463,
+      "example_sha256": "e21c3e2810d6253a38e8032ea9008c5f66f812006c701777559c40e26a0552a4"
+    },
+    {
+      "pair_id": "unbraind/pm-beads:pm-beads-j4up:pm-beads-jwwg",
+      "repository": "unbraind/pm-beads",
+      "a": "pm-beads-j4up",
+      "b": "pm-beads-jwwg",
+      "label": false,
+      "retrieved": true,
+      "split": "heldout",
+      "lexical": 0.45,
+      "example_sha256": "e049506b3c3edcf7e88618ab4308a4c74a8191b47a7b9b0b80675662a9661103"
+    },
+    {
+      "pair_id": "unbraind/pm-beads:pm-beads-j4up:pm-beads-rsp7",
+      "repository": "unbraind/pm-beads",
+      "a": "pm-beads-j4up",
+      "b": "pm-beads-rsp7",
+      "label": false,
+      "retrieved": true,
+      "split": "heldout",
+      "lexical": 0.22333333333333333,
+      "example_sha256": "21742dc539b9f7e556b98ec15966437ca05c85489d2c94b47f88e0fa7b4b30c7"
+    }
+  ],
+  "observations": [
+    {
+      "pair_id": "unbraind/pm-cli:pm-n8w4:pm-u4hy",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.786,
+      "probability": 0.0023320564039872867,
+      "latency_ms": 38413.74884800002
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-acx9",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.9277777777777778,
+      "probability": 0.7425628486625823,
+      "latency_ms": 6995.458366000035
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u4hy:pm-0jpx",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.8070370370370371,
+      "probability": 0.06583320421191512,
+      "latency_ms": 4537.577252999996
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-3tjx:pm-knwz",
+      "label": true,
+      "retrieved": false,
+      "lexical": 0.5501895515487749,
+      "probability": 0.1294659186894297,
+      "latency_ms": 5487.356065
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2cr5:pm-eyoz",
+      "label": true,
+      "retrieved": false,
+      "lexical": 0.6592261904761905,
+      "probability": 0.2739069438815458,
+      "latency_ms": 4430.040321000037
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-7akk:pm-u4hy",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.778,
+      "probability": 0.002739423825102222,
+      "latency_ms": 3661.293718000001
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-n8w4:pm-0jpx",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.7757142857142858,
+      "probability": 0.0031420966320683933,
+      "latency_ms": 5096.540037000028
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-iziy:pm-phpq",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.687008547008547,
+      "probability": 0.03550864881686155,
+      "latency_ms": 3268.4420350000146
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u4hy:pm-eoil",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.7648051948051948,
+      "probability": 0.003036160462687653,
+      "latency_ms": 4521.523051000026
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u4hy:pm-16pn",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.772409638554217,
+      "probability": 0.00566344632319939,
+      "latency_ms": 5354.695309000032
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2cr5:pm-j0o4",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.6639880952380952,
+      "probability": 0.119429400903116,
+      "latency_ms": 5019.225325000007
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-akty:pm-7akk",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.8284615384615386,
+      "probability": 0.004051454678630324,
+      "latency_ms": 4792.061174000031
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-x89f:pm-eamp",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.7456357048748352,
+      "probability": 0.2497927188485234,
+      "latency_ms": 6297.091064000037
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-204c",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.6845029239766082,
+      "probability": 0.0205816622574288,
+      "latency_ms": 4509.849552
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-dyu6:pm-f0e9",
+      "label": true,
+      "retrieved": false,
+      "lexical": 0.6341245270037839,
+      "probability": 0.016875407681792853,
+      "latency_ms": 4212.742557999969
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-7vr0:pm-2cr5",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.7495192307692308,
+      "probability": 0.5769200475558219,
+      "latency_ms": 4548.806851000001
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2cr5:pm-6k5l",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.6421765734265733,
+      "probability": 0.09206745215299207,
+      "latency_ms": 3976.157516999985
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-j0o4:pm-k4u5",
+      "label": true,
+      "retrieved": false,
+      "lexical": 0.6287499999999999,
+      "probability": 0.0891234663204849,
+      "latency_ms": 5431.653889999958
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-j0o4:pm-6k5l",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.6391834365325076,
+      "probability": 0.03085632629264112,
+      "latency_ms": 3764.200208000024
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-f0e9",
+      "label": true,
+      "retrieved": false,
+      "lexical": 0.6357134048587988,
+      "probability": 0.020413320583652753,
+      "latency_ms": 3651.524417000008
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-iziy",
+      "label": true,
+      "retrieved": false,
+      "lexical": 0.6597597597597596,
+      "probability": 0.013357108522048399,
+      "latency_ms": 3547.13708700001
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-mn6w",
+      "label": true,
+      "retrieved": false,
+      "lexical": 0.6280718954248365,
+      "probability": 0.016996937739073306,
+      "latency_ms": 4282.138146999991
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-3tjx:pm-vz16",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.6361111111111111,
+      "probability": 0.0065150168742634336,
+      "latency_ms": 5085.184899999993
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-akty:pm-0jpx",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.7728169014084507,
+      "probability": 0.0036253007447755612,
+      "latency_ms": 5031.568181999959
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2cr5:pm-zre8",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.6816964285714285,
+      "probability": 0.21795329501996036,
+      "latency_ms": 6786.852339999983
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-f0e9:pm-iziy",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.722455648926237,
+      "probability": 0.4997844696178417,
+      "latency_ms": 6339.863132999977
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-j0o4:pm-eyoz",
+      "label": true,
+      "retrieved": false,
+      "lexical": 0.6287499999999999,
+      "probability": 0.09339321783529883,
+      "latency_ms": 5100.962926000007
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-eamp:pm-qkj9",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.8459326788218795,
+      "probability": 0.8288370911352513,
+      "latency_ms": 5411.882769000018
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-j82fd3:pm-ntyda8",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.9645567904581187,
+      "probability": 0.9708610426259943,
+      "latency_ms": 11149.564465000003
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-449do9:pm-4flipp",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.6989304812834224,
+      "probability": 0.7412531715646369,
+      "latency_ms": 4176.033924999996
+    },
+    {
+      "pair_id": "unbraind/pm-linear:pm-linear-zczw:pm-linear-vzqx",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.8841463414634146,
+      "probability": 0.9079076726170195,
+      "latency_ms": 4068.1560240000254
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-wjdr:pm-204c",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.7317460317460317,
+      "probability": 0.35623667123311475,
+      "latency_ms": 3147.4970259999973
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-u8fr:pm-phpq",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.6712140712140712,
+      "probability": 0.01736062560103621,
+      "latency_ms": 4229.502372999967
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-cg7l:pm-02c4",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.902488038277512,
+      "probability": 0.5455595243575689,
+      "latency_ms": 4566.741424000007
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-7akk:pm-0jpx",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.7757142857142858,
+      "probability": 0.0034567710254262184,
+      "latency_ms": 7014.31417300005
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-x4sy",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.905377176015474,
+      "probability": 0.39059114874896445,
+      "latency_ms": 9805.893895999994
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-eyoz:pm-o4ky",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.9071428571428573,
+      "probability": 0.9421177028683019,
+      "latency_ms": 6489.501881999895
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-6k5l:pm-eyoz",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.644813829787234,
+      "probability": 0.4562233295586513,
+      "latency_ms": 5725.669537000009
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-zre8:pm-6k5l",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.6332808924485125,
+      "probability": 0.03385407797153473,
+      "latency_ms": 4900.612817000016
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-zre8:pm-o4ky",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.5968530020703934,
+      "probability": 0.06545020234246654,
+      "latency_ms": 4885.269021000015
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-akty:pm-u4hy",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.7831578947368422,
+      "probability": 0.0026240354110215473,
+      "latency_ms": 4832.333773000049
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-dyu6:pm-a5ea",
+      "label": true,
+      "retrieved": false,
+      "lexical": 0.6264052287581698,
+      "probability": 0.04001402725437635,
+      "latency_ms": 8455.61292600003
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2joy:pm-eamp",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.8307615629984051,
+      "probability": 0.5147728826061241,
+      "latency_ms": 6006.374589999905
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-akty:pm-n8w4",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.8376923076923077,
+      "probability": 0.004250403346110344,
+      "latency_ms": 7721.361606999999
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-2cr5:pm-k4u5",
+      "label": true,
+      "retrieved": false,
+      "lexical": 0.6592261904761905,
+      "probability": 0.24466037692750334,
+      "latency_ms": 5546.028489000048
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-53q4:pm-ylg3",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.9061384487072561,
+      "probability": 0.5420916484020017,
+      "latency_ms": 10685.738790999982
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-x89f:pm-qkj9",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.7855035350442576,
+      "probability": 0.4174361326045473,
+      "latency_ms": 4910.97920400009
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-i1rm:pm-s5vv",
+      "label": true,
+      "retrieved": false,
+      "lexical": 0.9036363636363637,
+      "probability": 0.5083410153755785,
+      "latency_ms": 4940.1586159999715
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-7akk:pm-16pn",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.7616666666666667,
+      "probability": 0.005193155612860445,
+      "latency_ms": 4581.371406999999
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-iziy:pm-204c",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.8043643987040212,
+      "probability": 0.2402787910501105,
+      "latency_ms": 5046.679882999975
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-5bwo:pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.40789473684210525,
+      "probability": 0.6013352408543194,
+      "latency_ms": 5802.05587000004
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-6oox:pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.15065091610414658,
+      "probability": 0.0063901372034661855,
+      "latency_ms": 4835.385114999954
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-e77a:pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.060294117647058824,
+      "probability": 0.012944479903188972,
+      "latency_ms": 4294.049707000027
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-izx5:pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.0645,
+      "probability": 0.001989920806721768,
+      "latency_ms": 7853.428390999907
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-k8ik:pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.049489795918367344,
+      "probability": 0.0073383477822749205,
+      "latency_ms": 6667.4283440000145
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-srex:pm-00yy",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.06637931034482758,
+      "probability": 0.015956119303379056,
+      "latency_ms": 9032.098206999945
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6575198587819947,
+      "probability": 0.01304168484265471,
+      "latency_ms": 8740.478434000048
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6620574162679427,
+      "probability": 0.02504170934144029,
+      "latency_ms": 4243.249461999978
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-51y8",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6209179170344219,
+      "probability": 0.0171690794602343,
+      "latency_ms": 5867.715746999951
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-53q4:pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6477540106951872,
+      "probability": 0.02160303345605345,
+      "latency_ms": 4664.713458999991
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-5p3z",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5991202346041056,
+      "probability": 0.023841298089322782,
+      "latency_ms": 13790.860296000028
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-8m72",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6103030303030303,
+      "probability": 0.018580271650746064,
+      "latency_ms": 8466.36416899995
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-bv2c",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6020979020979021,
+      "probability": 0.029005759843726837,
+      "latency_ms": 16060.36084999994
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-d3i5",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5962679425837321,
+      "probability": 0.017180315698019463,
+      "latency_ms": 13403.808700999944
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-eu59",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.621878121878122,
+      "probability": 0.2328671136915673,
+      "latency_ms": 8543.629018999985
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-i1rm:pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6577600749765699,
+      "probability": 0.01655456637173998,
+      "latency_ms": 8078.958395999973
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-ipul",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5860853432282004,
+      "probability": 0.020129182988104396,
+      "latency_ms": 9125.756216999958
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-ncbe",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6284715284715285,
+      "probability": 0.2435605502264321,
+      "latency_ms": 9393.924574999954
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-pagj",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6086913086913087,
+      "probability": 0.022747111013106378,
+      "latency_ms": 12560.139666000032
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-rb9v:pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6415151515151516,
+      "probability": 0.01591391728810391,
+      "latency_ms": 11541.348516000086
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-s5vv:pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6886363636363637,
+      "probability": 0.02406183765515708,
+      "latency_ms": 11779.164053000044
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-tl4d",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.596969696969697,
+      "probability": 0.013151437404445443,
+      "latency_ms": 9273.117851000046
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-02c4:pm-v6vi",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.597678916827853,
+      "probability": 0.017186596971042557,
+      "latency_ms": 7971.927419000072
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-x4sy:pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6958944281524927,
+      "probability": 0.04494023801916017,
+      "latency_ms": 13233.834620999987
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-ylg3:pm-02c4",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6774977497749776,
+      "probability": 0.03896649844243224,
+      "latency_ms": 12295.869418999995
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-090w",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6828671328671329,
+      "probability": 0.020596239268674287,
+      "latency_ms": 24391.457479999983
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-51y8",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5982792207792208,
+      "probability": 0.02080837589215331,
+      "latency_ms": 12546.089228999917
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-53q4",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.669041769041769,
+      "probability": 0.015622589279516813,
+      "latency_ms": 22555.074809000012
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-5p3z",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.571283422459893,
+      "probability": 0.015489221866525247,
+      "latency_ms": 12465.937084999983
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-8m72",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5687878787878788,
+      "probability": 0.012646270482310066,
+      "latency_ms": 9195.679614999914
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-bv2c",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5736363636363637,
+      "probability": 0.01925117722888184,
+      "latency_ms": 10130.022391000064
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-cg7l",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6886363636363637,
+      "probability": 0.018906473117945646,
+      "latency_ms": 26077.515489999903
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-d3i5",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5632517482517483,
+      "probability": 0.01101184131396062,
+      "latency_ms": 9016.856895999983
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-eu59",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5796363636363637,
+      "probability": 0.023946817156079186,
+      "latency_ms": 7391.576163999969
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-i1rm",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6900514579759863,
+      "probability": 0.03008942514805666,
+      "latency_ms": 9356.873762000003
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-ipul",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.554570943075616,
+      "probability": 0.00932433047959185,
+      "latency_ms": 6102.690057000029
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-ncbe",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5856363636363637,
+      "probability": 0.02320601280669756,
+      "latency_ms": 6873.7040040000575
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-pagj",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5736363636363637,
+      "probability": 0.02369560387718729,
+      "latency_ms": 9937.281317000045
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-rb9v:pm-090w",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6580808080808082,
+      "probability": 0.021863006468561447,
+      "latency_ms": 11520.636638999917
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-s5vv",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6593506493506494,
+      "probability": 0.025830155745860766,
+      "latency_ms": 5270.5627869999735
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-tl4d",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5591919191919192,
+      "probability": 0.008447080581432984,
+      "latency_ms": 5560.696653000079
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-v6vi",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5643159752868491,
+      "probability": 0.01157809389696517,
+      "latency_ms": 6467.388262000051
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-x4sy",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6536363636363637,
+      "probability": 0.01859558129422051,
+      "latency_ms": 5233.647381999996
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-090w:pm-ylg3",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6390909090909092,
+      "probability": 0.014243613774471859,
+      "latency_ms": 5788.018209000118
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-f0v0:pm-0ab3",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6099734042553191,
+      "probability": 0.3788423228667782,
+      "latency_ms": 5052.881712000119
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-tixl:pm-0ab3",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.06982456140350876,
+      "probability": 0.016043954980257215,
+      "latency_ms": 5527.280196999898
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-k6uglj:pm-0bbc53",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.17104575163398691,
+      "probability": 0.015300606085185745,
+      "latency_ms": 10061.38931800006
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-8kxm:pm-0c0g",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.2226950354609929,
+      "probability": 0.19999801575531484,
+      "latency_ms": 5454.706377999857
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0c0j:pm-awfr",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.21977687626774844,
+      "probability": 0.00799748438924027,
+      "latency_ms": 5123.517538000131
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-su6i:pm-0c9q",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.24460669274228597,
+      "probability": 0.04317904898468421,
+      "latency_ms": 5650.83971900004
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-t5ud:pm-0c9q",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.16576554025865667,
+      "probability": 0.1259294828975817,
+      "latency_ms": 4633.31693900004
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0e8w:pm-30lh",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.265728500355366,
+      "probability": 0.022716772570623548,
+      "latency_ms": 4750.650120000122
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0e8w:pm-433d",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.3733724722765819,
+      "probability": 0.012706642468510873,
+      "latency_ms": 4564.77126599988
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-8d71:pm-0e8w",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.2690196078431373,
+      "probability": 0.3672135480001421,
+      "latency_ms": 4957.891935000196
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-mwwp:pm-0e8w",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.26518987341772154,
+      "probability": 0.021228975517423452,
+      "latency_ms": 7487.140464999946
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0e8w:pm-qkx0",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.3726934984520124,
+      "probability": 0.0235074820937661,
+      "latency_ms": 7284.333458000096
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-zpwfzy:pm-0fxa",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.222603550295858,
+      "probability": 0.06212245513532523,
+      "latency_ms": 8909.27580599999
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0g2p:pm-p7av",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.09722222222222221,
+      "probability": 0.036160977436606845,
+      "latency_ms": 12012.921509000007
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-r31390:pm-0g2p",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.276007326007326,
+      "probability": 0.04463448714150504,
+      "latency_ms": 12922.374514000025
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0g2p:pm-wvhs",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.26761904761904765,
+      "probability": 0.01104121022645729,
+      "latency_ms": 8906.382358999923
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-bdvm:pm-0hnu",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.3368693992698307,
+      "probability": 0.03514135397795646,
+      "latency_ms": 8752.146399999969
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0k4o8t:pm-83ov2i",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.21697802197802196,
+      "probability": 0.11484308854461803,
+      "latency_ms": 6267.853340999922
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-1uok:pm-0m2m",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.9413043478260871,
+      "probability": 0.6263759669978366,
+      "latency_ms": 23593.058907000115
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0m2m:pm-3isc",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.9413043478260871,
+      "probability": 0.6287039882467286,
+      "latency_ms": 18985.31711299997
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-4la5:pm-0m2m",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.9391304347826088,
+      "probability": 0.7167254050022478,
+      "latency_ms": 16256.65451900009
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0m2m:pm-huq2",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.9413043478260871,
+      "probability": 0.5939492631264326,
+      "latency_ms": 20327.69658400002
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0m2m:pm-r5mf",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.9413043478260871,
+      "probability": 0.5232209888061223,
+      "latency_ms": 16826.71705899993
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0m2m:pm-u57g",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.9423636363636365,
+      "probability": 0.5598019577566398,
+      "latency_ms": 20850.58843600005
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0m2m:pm-y49x",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.9413043478260871,
+      "probability": 0.5644530116439653,
+      "latency_ms": 21246.370604000054
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-ycxu:pm-0m2m",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.9413043478260871,
+      "probability": 0.6445415491532339,
+      "latency_ms": 29478.634869000176
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-0p4aal:pm-2x67z9",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.09142857142857144,
+      "probability": 0.014205475089165021,
+      "latency_ms": 13627.506545000011
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-j24z:pm-0u1y",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.45209643605870015,
+      "probability": 0.4831868642387825,
+      "latency_ms": 11037.304677000036
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-ngdf:pm-0u1y",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.3724213286713287,
+      "probability": 0.6164037993299627,
+      "latency_ms": 6672.776010000147
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-8jss:pm-0v2m",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.2615207373271889,
+      "probability": 0.010533846377232054,
+      "latency_ms": 4220.180132000009
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-c3sz:pm-0v2m",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.20997023809523813,
+      "probability": 0.02166471978192727,
+      "latency_ms": 5733.57672500005
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-pmyq:pm-0v2m",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.24550827423167848,
+      "probability": 0.011845767280273332,
+      "latency_ms": 4285.558393999934
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-bw70:pm-0xix",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.02857142857142857,
+      "probability": 0.4074876627946381,
+      "latency_ms": 5081.38738900004
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-byl1:pm-0xix",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.24523809523809526,
+      "probability": 0.4659726498320867,
+      "latency_ms": 4536.612090999959
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-dmuq:pm-0xix",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.25270935960591134,
+      "probability": 0.15634123387540602,
+      "latency_ms": 5678.426995999878
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-eifq:pm-0xix",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.2693121693121693,
+      "probability": 0.12440859525362655,
+      "latency_ms": 5732.507685000077
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-51y8",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5920979020979021,
+      "probability": 0.015069740406764167,
+      "latency_ms": 5985.124920000089
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-53q4",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6733451015004414,
+      "probability": 0.023204845495402027,
+      "latency_ms": 12821.167616000166
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-5p3z",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5749129593810445,
+      "probability": 0.02699359147487765,
+      "latency_ms": 6756.284737000009
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-8m72",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5723176823176823,
+      "probability": 0.014949781914271222,
+      "latency_ms": 5505.390898999991
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-bv2c",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5840711462450593,
+      "probability": 0.030130253794846032,
+      "latency_ms": 5783.04233899992
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-cg7l",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6948863636363637,
+      "probability": 0.029163842618239504,
+      "latency_ms": 10570.209394000005
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-d3i5",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5661363636363637,
+      "probability": 0.016587047640986185,
+      "latency_ms": 6600.007114999928
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-eu59",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5775494071146245,
+      "probability": 0.03736233760185639,
+      "latency_ms": 8648.585297999904
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-i1rm",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6840445269016698,
+      "probability": 0.01967313063860929,
+      "latency_ms": 10775.867891000118
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-ipul",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5687878787878788,
+      "probability": 0.012700518347801327,
+      "latency_ms": 11568.592419999884
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-ncbe",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.590592885375494,
+      "probability": 0.03855857281582991,
+      "latency_ms": 9398.247891000006
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-pagj",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5775494071146245,
+      "probability": 0.01898204984487552,
+      "latency_ms": 8172.439449000172
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-rb9v",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6736363636363637,
+      "probability": 0.022422158599091562,
+      "latency_ms": 9942.881745999912
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-s5vv",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6515745079662606,
+      "probability": 0.015546537641846384,
+      "latency_ms": 7763.198490000097
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-tl4d",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5616363636363637,
+      "probability": 0.010667315795257988,
+      "latency_ms": 6043.257198000094
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-v6vi",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5673205741626794,
+      "probability": 0.013797777940084414,
+      "latency_ms": 9096.77448199992
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10no:pm-ylg3",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.6418716577540107,
+      "probability": 0.017375925035899988,
+      "latency_ms": 8682.37503200001
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-10qthi:pm-m1tfmp",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.07727272727272727,
+      "probability": 0.014931395312889497,
+      "latency_ms": 5902.702898000134
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-11t5:pm-8fvl",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5698156682027651,
+      "probability": 0.019019379835040248,
+      "latency_ms": 5125.250614000019
+    },
+    {
+      "pair_id": "unbraind/pm-cli:pm-mlc3:pm-11t5",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.1953143728887436,
+      "probability": 0.014290690183900131,
+      "latency_ms": 5826.257336000213
+    },
+    {
+      "pair_id": "unbraind/pm-changelog:pmc-yy8d:pmc-6kvp",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.9863636363636363,
+      "probability": 0.9901985351195998,
+      "latency_ms": 4709.04537800001
+    },
+    {
+      "pair_id": "unbraind/pm-beads:pm-beads-tsm5:pm-beads-xwv6",
+      "label": true,
+      "retrieved": true,
+      "lexical": 0.65,
+      "probability": 0.7302290053013458,
+      "latency_ms": 5972.582049000077
+    },
+    {
+      "pair_id": "unbraind/pm-beads:pm-beads-fiq7:pm-beads-dlsd",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.4016611902154071,
+      "probability": 0.09748030446788676,
+      "latency_ms": 25637.704535000026
+    },
+    {
+      "pair_id": "unbraind/pm-beads:pm-beads-e4cs:pm-beads-v36s",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.5580286168521463,
+      "probability": 0.029778549148502417,
+      "latency_ms": 14848.18218600005
+    },
+    {
+      "pair_id": "unbraind/pm-beads:pm-beads-j4up:pm-beads-jwwg",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.45,
+      "probability": 0.6612203868919124,
+      "latency_ms": 15498.786022000015
+    },
+    {
+      "pair_id": "unbraind/pm-beads:pm-beads-j4up:pm-beads-rsp7",
+      "label": false,
+      "retrieved": true,
+      "lexical": 0.22333333333333333,
+      "probability": 0.11564511623098156,
+      "latency_ms": 7070.409995000111
+    }
+  ],
+  "arms": [
+    {
+      "arm": "lexical-only",
+      "policy": {
+        "model": null,
+        "lexical": null
+      },
+      "train": {
+        "count": 150,
+        "tp": 0,
+        "fp": 0,
+        "fn": 50,
+        "precision": null,
+        "recall": 0,
+        "abstention_rate": 1,
+        "precision_ci95": null,
+        "recall_ci95": [
+          6.938893903907228e-18,
+          0.07134759913335872
+        ]
+      },
+      "heldout": {
+        "count": 6,
+        "tp": 0,
+        "fp": 0,
+        "fn": 2,
+        "precision": null,
+        "recall": 0,
+        "abstention_rate": 1,
+        "precision_ci95": null,
+        "recall_ci95": [
+          0,
+          0.6576197724933469
+        ]
+      },
+      "frontier": [
+        {
+          "policy": {
+            "model": null,
+            "lexical": null
+          },
+          "train": {
+            "count": 150,
+            "tp": 0,
+            "fp": 0,
+            "fn": 50,
+            "precision": null,
+            "recall": 0,
+            "abstention_rate": 1,
+            "precision_ci95": null,
+            "recall_ci95": [
+              6.938893903907228e-18,
+              0.07134759913335872
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": null,
+            "recall": 0,
+            "abstention_rate": 1,
+            "precision_ci95": null,
+            "recall_ci95": [
+              0,
+              0.6576197724933469
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": null,
+            "lexical": 0.5968530020703934
+          },
+          "train": {
+            "count": 150,
+            "tp": 39,
+            "fp": 41,
+            "fn": 11,
+            "precision": 0.4875,
+            "recall": 0.78,
+            "abstention_rate": 0.4666666666666667,
+            "precision_ci95": [
+              0.38107879540381073,
+              0.5950666578345774
+            ],
+            "recall_ci95": [
+              0.6475845041874634,
+              0.8724608402978559
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1,
+            "abstention_rate": 0.6666666666666666,
+            "precision_ci95": [
+              0.34238022750665303,
+              1
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": null,
+            "lexical": 0.6332808924485125
+          },
+          "train": {
+            "count": 150,
+            "tp": 38,
+            "fp": 30,
+            "fn": 12,
+            "precision": 0.5588235294117647,
+            "recall": 0.76,
+            "abstention_rate": 0.5466666666666666,
+            "precision_ci95": [
+              0.44081865304588186,
+              0.6705376603046981
+            ],
+            "recall_ci95": [
+              0.6258731624205708,
+              0.8570260860300828
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1,
+            "abstention_rate": 0.6666666666666666,
+            "precision_ci95": [
+              0.34238022750665303,
+              1
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": null,
+            "lexical": 0.6421765734265733
+          },
+          "train": {
+            "count": 150,
+            "tp": 35,
+            "fp": 27,
+            "fn": 15,
+            "precision": 0.5645161290322581,
+            "recall": 0.7,
+            "abstention_rate": 0.5866666666666667,
+            "precision_ci95": [
+              0.44092987972148767,
+              0.6805741109751094
+            ],
+            "recall_ci95": [
+              0.562496495355466,
+              0.8089644649911906
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1,
+            "abstention_rate": 0.6666666666666666,
+            "precision_ci95": [
+              0.34238022750665303,
+              1
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": null,
+            "lexical": 0.6639880952380952
+          },
+          "train": {
+            "count": 150,
+            "tp": 33,
+            "fp": 19,
+            "fn": 17,
+            "precision": 0.6346153846153846,
+            "recall": 0.66,
+            "abstention_rate": 0.6533333333333333,
+            "precision_ci95": [
+              0.49871678132017094,
+              0.7519930012618661
+            ],
+            "recall_ci95": [
+              0.521538260502326,
+              0.7756305077749992
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": null,
+            "lexical": 0.6712140712140712
+          },
+          "train": {
+            "count": 150,
+            "tp": 32,
+            "fp": 18,
+            "fn": 18,
+            "precision": 0.64,
+            "recall": 0.64,
+            "abstention_rate": 0.6666666666666666,
+            "precision_ci95": [
+              0.501410168761127,
+              0.7586125034815325
+            ],
+            "recall_ci95": [
+              0.501410168761127,
+              0.7586125034815325
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": null,
+            "lexical": 0.6816964285714285
+          },
+          "train": {
+            "count": 150,
+            "tp": 31,
+            "fp": 15,
+            "fn": 19,
+            "precision": 0.6739130434782609,
+            "recall": 0.62,
+            "abstention_rate": 0.6933333333333334,
+            "precision_ci95": [
+              0.5296773241932241,
+              0.7913405669074435
+            ],
+            "recall_ci95": [
+              0.4815044693099298,
+              0.7413721068980641
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": null,
+            "lexical": 0.6845029239766082
+          },
+          "train": {
+            "count": 150,
+            "tp": 30,
+            "fp": 13,
+            "fn": 20,
+            "precision": 0.6976744186046512,
+            "recall": 0.6,
+            "abstention_rate": 0.7133333333333334,
+            "precision_ci95": [
+              0.5489463582227039,
+              0.8139799986415182
+            ],
+            "recall_ci95": [
+              0.4618143774758936,
+              0.7239161026974346
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": null,
+            "lexical": 0.6989304812834224
+          },
+          "train": {
+            "count": 150,
+            "tp": 28,
+            "fp": 8,
+            "fn": 22,
+            "precision": 0.7777777777777778,
+            "recall": 0.56,
+            "abstention_rate": 0.76,
+            "precision_ci95": [
+              0.6191529705388181,
+              0.8828366802420353
+            ],
+            "recall_ci95": [
+              0.4230602802165686,
+              0.6883780078874284
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": null,
+            "lexical": 0.9645567904581187
+          },
+          "train": {
+            "count": 150,
+            "tp": 1,
+            "fp": 0,
+            "fn": 49,
+            "precision": 1,
+            "recall": 0.02,
+            "abstention_rate": 0.9933333333333333,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.003539259271646236,
+              0.10495443589637815
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "arm": "model-only",
+      "policy": {
+        "model": 0.7412531715646369,
+        "lexical": null
+      },
+      "train": {
+        "count": 150,
+        "tp": 6,
+        "fp": 0,
+        "fn": 44,
+        "precision": 1,
+        "recall": 0.12,
+        "abstention_rate": 0.96,
+        "precision_ci95": [
+          0.6096657120978346,
+          1
+        ],
+        "recall_ci95": [
+          0.05617600150932274,
+          0.23804817383202992
+        ]
+      },
+      "heldout": {
+        "count": 6,
+        "tp": 1,
+        "fp": 0,
+        "fn": 1,
+        "precision": 1,
+        "recall": 0.5,
+        "abstention_rate": 0.8333333333333334,
+        "precision_ci95": [
+          0.20654931437723745,
+          1
+        ],
+        "recall_ci95": [
+          0.09453120573423074,
+          0.9054687942657693
+        ]
+      },
+      "frontier": [
+        {
+          "policy": {
+            "model": null,
+            "lexical": null
+          },
+          "train": {
+            "count": 150,
+            "tp": 0,
+            "fp": 0,
+            "fn": 50,
+            "precision": null,
+            "recall": 0,
+            "abstention_rate": 1,
+            "precision_ci95": null,
+            "recall_ci95": [
+              6.938893903907228e-18,
+              0.07134759913335872
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": null,
+            "recall": 0,
+            "abstention_rate": 1,
+            "precision_ci95": null,
+            "recall_ci95": [
+              0,
+              0.6576197724933469
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.0023320564039872867,
+            "lexical": null
+          },
+          "train": {
+            "count": 150,
+            "tp": 50,
+            "fp": 99,
+            "fn": 0,
+            "precision": 0.33557046979865773,
+            "recall": 1,
+            "abstention_rate": 0.006666666666666667,
+            "precision_ci95": [
+              0.26473022128466417,
+              0.41467613626990274
+            ],
+            "recall_ci95": [
+              0.9286524008666414,
+              1
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 4,
+            "fn": 0,
+            "precision": 0.3333333333333333,
+            "recall": 1,
+            "abstention_rate": 0,
+            "precision_ci95": [
+              0.09677141110578041,
+              0.700006684861608
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.016875407681792853,
+            "lexical": null
+          },
+          "train": {
+            "count": 150,
+            "tp": 37,
+            "fp": 66,
+            "fn": 13,
+            "precision": 0.3592233009708738,
+            "recall": 0.74,
+            "abstention_rate": 0.31333333333333335,
+            "precision_ci95": [
+              0.2731709258664398,
+              0.45539886043094663
+            ],
+            "recall_ci95": [
+              0.6044684273515117,
+              0.8412847250644762
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 4,
+            "fn": 0,
+            "precision": 0.3333333333333333,
+            "recall": 1,
+            "abstention_rate": 0,
+            "precision_ci95": [
+              0.09677141110578041,
+              0.700006684861608
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.020413320583652753,
+            "lexical": null
+          },
+          "train": {
+            "count": 150,
+            "tp": 34,
+            "fp": 54,
+            "fn": 16,
+            "precision": 0.38636363636363635,
+            "recall": 0.68,
+            "abstention_rate": 0.41333333333333333,
+            "precision_ci95": [
+              0.2914209943081463,
+              0.49081242993387464
+            ],
+            "recall_ci95": [
+              0.5418970269185592,
+              0.7924178373934316
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 4,
+            "fn": 0,
+            "precision": 0.3333333333333333,
+            "recall": 1,
+            "abstention_rate": 0,
+            "precision_ci95": [
+              0.09677141110578041,
+              0.700006684861608
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.03085632629264112,
+            "lexical": null
+          },
+          "train": {
+            "count": 150,
+            "tp": 32,
+            "fp": 31,
+            "fn": 18,
+            "precision": 0.5079365079365079,
+            "recall": 0.64,
+            "abstention_rate": 0.58,
+            "precision_ci95": [
+              0.38762886274954733,
+              0.6273319118601534
+            ],
+            "recall_ci95": [
+              0.501410168761127,
+              0.7586125034815325
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 3,
+            "fn": 0,
+            "precision": 0.4,
+            "recall": 1,
+            "abstention_rate": 0.16666666666666666,
+            "precision_ci95": [
+              0.11762077423264783,
+              0.769275718723987
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.04001402725437635,
+            "lexical": null
+          },
+          "train": {
+            "count": 150,
+            "tp": 29,
+            "fp": 26,
+            "fn": 21,
+            "precision": 0.5272727272727272,
+            "recall": 0.58,
+            "abstention_rate": 0.6333333333333333,
+            "precision_ci95": [
+              0.3979154435522611,
+              0.6530690163868067
+            ],
+            "recall_ci95": [
+              0.4423344176857823,
+              0.7062499664528802
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 3,
+            "fn": 0,
+            "precision": 0.4,
+            "recall": 1,
+            "abstention_rate": 0.16666666666666666,
+            "precision_ci95": [
+              0.11762077423264783,
+              0.769275718723987
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.06545020234246654,
+            "lexical": null
+          },
+          "train": {
+            "count": 150,
+            "tp": 28,
+            "fp": 22,
+            "fn": 22,
+            "precision": 0.56,
+            "recall": 0.56,
+            "abstention_rate": 0.6666666666666666,
+            "precision_ci95": [
+              0.4230602802165686,
+              0.6883780078874284
+            ],
+            "recall_ci95": [
+              0.4230602802165686,
+              0.6883780078874284
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 3,
+            "fn": 0,
+            "precision": 0.4,
+            "recall": 1,
+            "abstention_rate": 0.16666666666666666,
+            "precision_ci95": [
+              0.11762077423264783,
+              0.769275718723987
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.7412531715646369,
+            "lexical": null
+          },
+          "train": {
+            "count": 150,
+            "tp": 6,
+            "fp": 0,
+            "fn": 44,
+            "precision": 1,
+            "recall": 0.12,
+            "abstention_rate": 0.96,
+            "precision_ci95": [
+              0.6096657120978346,
+              1
+            ],
+            "recall_ci95": [
+              0.05617600150932274,
+              0.23804817383202992
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "arm": "combined",
+      "policy": {
+        "model": 0.7412531715646369,
+        "lexical": 0.6989304812834224
+      },
+      "train": {
+        "count": 150,
+        "tp": 6,
+        "fp": 0,
+        "fn": 44,
+        "precision": 1,
+        "recall": 0.12,
+        "abstention_rate": 0.96,
+        "precision_ci95": [
+          0.6096657120978346,
+          1
+        ],
+        "recall_ci95": [
+          0.05617600150932274,
+          0.23804817383202992
+        ]
+      },
+      "heldout": {
+        "count": 6,
+        "tp": 1,
+        "fp": 0,
+        "fn": 1,
+        "precision": 1,
+        "recall": 0.5,
+        "abstention_rate": 0.8333333333333334,
+        "precision_ci95": [
+          0.20654931437723745,
+          1
+        ],
+        "recall_ci95": [
+          0.09453120573423074,
+          0.9054687942657693
+        ]
+      },
+      "frontier": [
+        {
+          "policy": {
+            "model": null,
+            "lexical": null
+          },
+          "train": {
+            "count": 150,
+            "tp": 0,
+            "fp": 0,
+            "fn": 50,
+            "precision": null,
+            "recall": 0,
+            "abstention_rate": 1,
+            "precision_ci95": null,
+            "recall_ci95": [
+              6.938893903907228e-18,
+              0.07134759913335872
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": null,
+            "recall": 0,
+            "abstention_rate": 1,
+            "precision_ci95": null,
+            "recall_ci95": [
+              0,
+              0.6576197724933469
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.0023320564039872867,
+            "lexical": 0.5968530020703934
+          },
+          "train": {
+            "count": 150,
+            "tp": 39,
+            "fp": 41,
+            "fn": 11,
+            "precision": 0.4875,
+            "recall": 0.78,
+            "abstention_rate": 0.4666666666666667,
+            "precision_ci95": [
+              0.38107879540381073,
+              0.5950666578345774
+            ],
+            "recall_ci95": [
+              0.6475845041874634,
+              0.8724608402978559
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1,
+            "abstention_rate": 0.6666666666666666,
+            "precision_ci95": [
+              0.34238022750665303,
+              1
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.0023320564039872867,
+            "lexical": 0.6332808924485125
+          },
+          "train": {
+            "count": 150,
+            "tp": 38,
+            "fp": 30,
+            "fn": 12,
+            "precision": 0.5588235294117647,
+            "recall": 0.76,
+            "abstention_rate": 0.5466666666666666,
+            "precision_ci95": [
+              0.44081865304588186,
+              0.6705376603046981
+            ],
+            "recall_ci95": [
+              0.6258731624205708,
+              0.8570260860300828
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1,
+            "abstention_rate": 0.6666666666666666,
+            "precision_ci95": [
+              0.34238022750665303,
+              1
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.0023320564039872867,
+            "lexical": 0.6421765734265733
+          },
+          "train": {
+            "count": 150,
+            "tp": 35,
+            "fp": 27,
+            "fn": 15,
+            "precision": 0.5645161290322581,
+            "recall": 0.7,
+            "abstention_rate": 0.5866666666666667,
+            "precision_ci95": [
+              0.44092987972148767,
+              0.6805741109751094
+            ],
+            "recall_ci95": [
+              0.562496495355466,
+              0.8089644649911906
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1,
+            "abstention_rate": 0.6666666666666666,
+            "precision_ci95": [
+              0.34238022750665303,
+              1
+            ],
+            "recall_ci95": [
+              0.34238022750665303,
+              1
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.0023320564039872867,
+            "lexical": 0.6639880952380952
+          },
+          "train": {
+            "count": 150,
+            "tp": 33,
+            "fp": 19,
+            "fn": 17,
+            "precision": 0.6346153846153846,
+            "recall": 0.66,
+            "abstention_rate": 0.6533333333333333,
+            "precision_ci95": [
+              0.49871678132017094,
+              0.7519930012618661
+            ],
+            "recall_ci95": [
+              0.521538260502326,
+              0.7756305077749992
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.0023320564039872867,
+            "lexical": 0.6712140712140712
+          },
+          "train": {
+            "count": 150,
+            "tp": 32,
+            "fp": 18,
+            "fn": 18,
+            "precision": 0.64,
+            "recall": 0.64,
+            "abstention_rate": 0.6666666666666666,
+            "precision_ci95": [
+              0.501410168761127,
+              0.7586125034815325
+            ],
+            "recall_ci95": [
+              0.501410168761127,
+              0.7586125034815325
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.0023320564039872867,
+            "lexical": 0.6816964285714285
+          },
+          "train": {
+            "count": 150,
+            "tp": 31,
+            "fp": 15,
+            "fn": 19,
+            "precision": 0.6739130434782609,
+            "recall": 0.62,
+            "abstention_rate": 0.6933333333333334,
+            "precision_ci95": [
+              0.5296773241932241,
+              0.7913405669074435
+            ],
+            "recall_ci95": [
+              0.4815044693099298,
+              0.7413721068980641
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.0023320564039872867,
+            "lexical": 0.6845029239766082
+          },
+          "train": {
+            "count": 150,
+            "tp": 30,
+            "fp": 13,
+            "fn": 20,
+            "precision": 0.6976744186046512,
+            "recall": 0.6,
+            "abstention_rate": 0.7133333333333334,
+            "precision_ci95": [
+              0.5489463582227039,
+              0.8139799986415182
+            ],
+            "recall_ci95": [
+              0.4618143774758936,
+              0.7239161026974346
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.0023320564039872867,
+            "lexical": 0.6989304812834224
+          },
+          "train": {
+            "count": 150,
+            "tp": 28,
+            "fp": 8,
+            "fn": 22,
+            "precision": 0.7777777777777778,
+            "recall": 0.56,
+            "abstention_rate": 0.76,
+            "precision_ci95": [
+              0.6191529705388181,
+              0.8828366802420353
+            ],
+            "recall_ci95": [
+              0.4230602802165686,
+              0.6883780078874284
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        },
+        {
+          "policy": {
+            "model": 0.7412531715646369,
+            "lexical": 0.6989304812834224
+          },
+          "train": {
+            "count": 150,
+            "tp": 6,
+            "fp": 0,
+            "fn": 44,
+            "precision": 1,
+            "recall": 0.12,
+            "abstention_rate": 0.96,
+            "precision_ci95": [
+              0.6096657120978346,
+              1
+            ],
+            "recall_ci95": [
+              0.05617600150932274,
+              0.23804817383202992
+            ]
+          },
+          "heldout": {
+            "count": 6,
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.5,
+            "abstention_rate": 0.8333333333333334,
+            "precision_ci95": [
+              0.20654931437723745,
+              1
+            ],
+            "recall_ci95": [
+              0.09453120573423074,
+              0.9054687942657693
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "retrieval_scope": "Complete top-8 candidate graph; a production --limit-pairs budget may truncate it further",
+  "calibration_method": "Offline train-only threshold fitting over the unchanged one-shot observations; the inherited raw 0.8 score floor was removed because raw scores are not calibrated precision.",
+  "retrieval_replay": {
+    "recorded_at": "2026-10-21T18:30:16.290Z",
+    "source_sha256": "952e77fc04b5f2c52f5bee32dfed740757a48a7a76821a734f744f26f5d9bef5",
+    "positive_source_repositories": 4,
+    "verified_data_hashes": 4,
+    "replayed_samples": 156,
+    "additional_model_calls": 0,
+    "method": "Rebuilt complete top-8 candidate graphs and hard-control selection from hash-verified original positive-source snapshots including recovered deleted duplicates. Pair identities, order, retrieval flags, lexical scores and model input hashes match all frozen samples exactly. Refit on train only and recomputed every arm and frontier metric from unchanged one-shot model observations; all policies and metrics unchanged."
+  }
+}

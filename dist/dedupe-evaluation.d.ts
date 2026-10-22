@@ -32,8 +32,8 @@ export declare function closureTarget(item: PairItem): string | undefined;
 export declare function labelledPairs(corpora: readonly DuplicateCorpus[], positivesPerSplit?: number): LabelledPair[];
 /** Build repository-separated real dependency edges and lexical controls at a strict 2:1 ratio. */
 export declare function labelledRelatedPairs(corpora: readonly DuplicateCorpus[], positivesPerSplit?: number): LabelledPair[];
-/** Two-sided Wilson interval; empty denominators remain explicitly undefined. */
-export declare function wilson(successes: number, count: number, z?: number): [number, number] | null;
+/** Preserve the historical interval helper for receipt replay callers. */
+export { wilson } from "./duplicate-quality.ts";
 /** Positive-class metrics count abstained and unretrieved positives as missed work. */
 export declare function pairMetrics(rows: readonly PairObservation[], target: "duplicate" | "related", thresholds: PairThresholds, lexical?: boolean): {
     count: number;
@@ -68,4 +68,16 @@ export declare function duplicateMetrics(rows: readonly PairObservation[], thres
 };
 /** Preserve the documented dev-only fitting entry point for single-question callers. */
 export declare function fitDuplicateThreshold(rows: readonly PairObservation[], lexical: boolean): number;
+/** Reconstruct an explicitly deleted duplicate from public append-only history; reject incomplete projections. */
+export declare function historicalDuplicate(events: readonly {
+    op: string;
+    message?: string;
+    patch: readonly {
+        op: string;
+        path: string;
+        value?: unknown;
+    }[];
+}[]): PairItem | undefined;
+/** Repository-separated duplicate closure components, including siblings implied by recorded equivalence. */
+export declare function repositoryDuplicatePairs(corpora: readonly DuplicateCorpus[], positivesPerSplit?: number): LabelledPair[];
 //# sourceMappingURL=dedupe-evaluation.d.ts.map
