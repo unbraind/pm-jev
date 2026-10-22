@@ -28,7 +28,10 @@
     "calibration/dedupe-report-v1.json",
     "calibration/dedupe-report-v2.json",
     "calibration/duplicate-quality-report-v3.json",
-    "docs/duplicate-quality.md"
+    "docs/duplicate-quality.md",
+    "docs/cost-sensitive-abstention.md",
+    "examples/cost-policy.json",
+    "calibration/cost-policy-report-v1.json"
   ],
   "scripts": {
     "build": "tsc",

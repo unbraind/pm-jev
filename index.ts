@@ -31,6 +31,7 @@ import {
 import type { EntryType, Questions, ScoreCriteria, SystemOneResult, ChoiceResponse, ScoreResponse, NoulResponse } from "@typesafe-ai/sdk";
 import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.ts";
+import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.ts";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.ts";
 import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked, readOpaqueJevSettings } from "./decision-calibration.ts";
 import type { ActiveCalibration, CalibrationUse } from "./decision-calibration.ts";
@@ -63,6 +64,10 @@ export { createPmCliExpectedError };
 export type { ItemMetadata, PmSettings };
 /** Re-export the SDK question-map and result contracts callers validate against. */
 export type { Questions, SystemOneResult };
+/** Fixed-score cost selection and proposal vetoes for SDK consumers. */
+export { COST_POLICY_VERSION, CostPolicyRefusal, parseCostDataset, selectAbstentionPolicy, abstainWithPolicy } from "./cost-policy.ts";
+/** Typed caller costs, evidence, receipts and refusal codes. */
+export type { DecisionCosts, CostObservation, CostDataset, CostRefusalCode, AbstentionPolicy, CostMetrics, CostPoint, CostPolicyReport } from "./cost-policy.ts";
 
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
@@ -2254,6 +2259,14 @@ const GATE_FLAGS: FlagDefinition[] = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api: ExtensionApi): void {
+  api.registerCommand(defineCommand({
+    name: "jev policy",
+    description: "Select a measured abstention filter from caller costs and fixed labelled scores without retraining",
+    flags: COST_POLICY_FLAGS,
+    examples: ["pm jev policy --observations scores.json --false-duplicate-cost 20 --wrong-type-cost 10 --missed-candidate-cost 1 --json"],
+    /** Preserve the typed refusal and compact receipt in either host format. */
+    run: (ctx: CommandHandlerContext) => runCostPolicyCommand(ctx),
+  }));
   for (const calibrate of [false, true]) api.registerCommand(defineCommand({
     name: calibrate ? "jev calibrate" : "jev eval",
     description: calibrate ? "Fit local probabilities on public calibration repositories and validate on held-out repositories" : "Measure local typed decisions against committed public tracker labels",
