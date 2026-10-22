@@ -98,6 +98,10 @@ function measure(rows: readonly CostObservation[], threshold: number | null, cos
 }
 /** Rank explicit disable as stricter than every inclusive numeric threshold. */
 function strictness(threshold: number | null): number { return threshold ?? 2; }
+/** Compare costs within arithmetic rounding error without making tiny penalties absolute ties. */
+function compareCosts(x: number, y: number): number {
+  return x === y || Math.abs(x - y) / Math.max(x, y) <= 4 * Number.EPSILON ? 0 : x - y;
+}
 /** Select on selection labels only; held-out costs are diagnostics and never influence ties or thresholds. */
 export function selectAbstentionPolicy(input: CostDataset, costs: DecisionCosts): CostPolicyReport {
   validateCosts(costs);
@@ -112,7 +116,7 @@ export function selectAbstentionPolicy(input: CostDataset, costs: DecisionCosts)
   // A fixed 0.05 grid bounds compute/output and avoids deriving candidates from held-out scores.
   const thresholds: (number | null)[] = [null, ...Array.from({ length: 21 }, /** Include zero and one exactly. */ (_, index) => index / 20)];
   const curve = thresholds.map(/** Compare policies on the identical population, including retrieval misses. */ threshold => ({ threshold, selection: measure(selection, threshold, costs), heldout: measure(heldout, threshold, costs) }));
-  const selected = [...curve].sort(/** Lowest empirical cost, then fewer errors, higher coverage, then stricter cutoff. */ (a, b) => a.selection.cost - b.selection.cost ||
+  const selected = [...curve].sort(/** Lowest empirical cost, then fewer errors, higher coverage, then stricter cutoff. */ (a, b) => compareCosts(a.selection.cost, b.selection.cost) ||
     a.selection.false_duplicates + a.selection.wrong_types - b.selection.false_duplicates - b.selection.wrong_types || b.selection.proposed - a.selection.proposed || strictness(b.threshold) - strictness(a.threshold))[0];
   const policy: AbstentionPolicy = { version: COST_POLICY_VERSION, threshold: selected.threshold, mutation_authority: "none" };
   const evidence = { version: data.version, provenance: data.provenance, observations: rows };

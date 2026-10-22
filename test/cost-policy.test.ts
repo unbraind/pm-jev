@@ -77,6 +77,29 @@ test("selection deterministically prefers fewer errors, then coverage, then stri
   assert.equal(selectAbstentionPolicy({ ...sample, observations: rows.map(row => ({ ...row, task: "duplicate", label: true, confidence: 0 })) }, costs).policy.threshold, 0);
 });
 
+test("fractional cost ties prefer fewer errors across tasks and penalty scales", () => {
+  for (const task of ["duplicate", "type"] as const) {
+    const common = { group: "selection", split: "selection" as const, confidence: 0.8, eligible: true };
+    const positives = Array.from({ length: task === "duplicate" ? 3 : 2 }, (_, index): CostObservation => task === "duplicate"
+      ? { ...common, id: `correct-${index}`, task, label: true }
+      : { ...common, id: `correct-${index}`, task, label: "Issue", predicted: "Issue" });
+    const mistake: CostObservation = task === "duplicate"
+      ? { ...common, id: "mistake", task, label: false }
+      : { ...common, id: "mistake", task, label: "Issue", predicted: "Task" };
+    const data = { ...dataset(), observations: [...positives, mistake, ...dataset().observations.filter(row => row.split === "heldout")] };
+    for (const scale of [1e-300, 1e-12, 1, 1e6]) {
+      const penalties = { false_duplicate: 0.3 * scale, wrong_type: 0.3 * scale, missed_candidate: 0.1 * scale };
+      const report = selectAbstentionPolicy(data, penalties);
+      assert.equal(report.policy.threshold, null, `${task} rounding tie at scale ${scale} prefers no incorrect proposals`);
+      assert.equal(report.selected.selection.false_duplicates + report.selected.selection.wrong_types, 0);
+      assert.equal(report.selected.selection.missed_candidates, 3);
+      const lower = selectAbstentionPolicy(data, { ...penalties, [task === "duplicate" ? "false_duplicate" : "wrong_type"]: 0.3 * (1 - 1e-10) * scale });
+      assert.equal(lower.policy.threshold, 0.8, "a distinct lower cost must beat error-count ties even at tiny scales");
+      assert.ok(lower.selected.selection.cost < lower.curve[0].selection.cost);
+    }
+  }
+});
+
 test("untrusted dataset refuses malformed values and cross-split group leakage before selection", () => {
   for (const raw of [null, undefined, {}, { ...dataset(), version: "old" }, { ...dataset(), provenance: "private" }, { ...dataset(), observations: null }, { ...dataset(), observations: Array(5001).fill(null) }]) refuses(() => parseCostDataset(raw), "invalid_dataset");
   const base = dataset().observations[0];

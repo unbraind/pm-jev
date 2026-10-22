@@ -57,6 +57,8 @@ false_duplicates * false_duplicate_cost
   + missed_candidates * missed_candidate_cost
 ```
 
+Costs within four relative machine epsilons are treated as rounding ties (for
+example, `0.3` and `3 * 0.1`); there is no absolute tolerance floor for tiny costs.
 Ties prefer fewer incorrect proposals, then more proposals, then the stricter
 cutoff; a completely inactive tie prefers disable. Held-out cost and coverage
 are descriptive diagnostics and never select a cutoff. Inspect the preselected
