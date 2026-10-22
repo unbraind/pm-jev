@@ -2,14 +2,23 @@ id: pm-jev-i3wg
 title: PR 24 immutable history integration needs an approved merge procedure
 description: "CodeRabbit discussion_r4305962880 remains valid at cbd9093. Four events in history streams pm-jev-2mg8 and pm-jev-3ntg have altered before_hash and record_hash values, with original events nested in reanchor_evidence. Fresh clone strict health passes after receipt reference reconciliation, but health does not attest immutable history preservation. Existing history must not be rewritten or repaired by this review worker. The orchestrator must provide an approved immutable-history integration procedure before this review finding can be marked fixed."
 type: Issue
-status: canceled
+status: open
 priority: 1
 tags[3]: deferred,history,integration
 created_at: "2026-10-18T06:37:50.900Z"
-updated_at: "2026-10-21T19:37:47.248Z"
+updated_at: "2026-10-22T11:18:41.448Z"
 author: codex-agent
 acceptance_criteria: Preserve original branch event hashes through an approved immutable merge procedure; verify fresh clone strict health; obtain independent review without rewriting existing history in this review round.
 parent: pm-jev-0w3q
-comments[1]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-10-21T19:36:26.184Z",codex-agent,"Authorized tracker reconciliation, audit 2026-10-21. Owner-authorized takeover of any historical assignment for this verified terminal transition. Reverified current main 4db41b03f85f: merged #24 (b479dd0); owner no-Git contract of 2026-10-20 still supersedes this Git-only work; source tree exactly matches the audited snapshot. **PR 24 immutable history integration needs an approved merge procedure.** [PR #24](https://github.com/unbraind/pm-jev/pull/24) is already merged (b479dd0). The requested Git-specific immutable-history merge procedure is superseded by the 2026-10-20 prohibition on merge-driver/receipt work."
+  "2026-10-22T11:14:52.527Z",codex-agent,"PR 39 review: PRRT_kwDOU8IMzs6vKEU8 is valid. Main still contains four previously re-anchored events; the no-Git contract does not waive immutable history. Reopening this finding by appended tracker updates, without rewriting existing events. All review threads/comments and latest CodeRabbit body fetched completely; no Outside diff range findings. Main merged while retaining the existing divergent PR history stream; the default pinned merge driver attempted union_reanchor and was aborted before commit. Original main-side event remains available in the main parent; its current metadata will be appended using the pinned CLI instead of re-hashing that event. Full tracker-only diff checked for similar unsupported terminal transitions."
+  "2026-10-22T11:18:35.255Z",codex-agent,"PR 39 evidence: linked regression passes 1/1, verifying status open and all 34 original cad06f4 history prefixes by length plus SHA-256. The same status assertion against git show cad06f4:.agents/pm/issues/pm-jev-i3wg.toon fails with exit 1 because the original record is canceled (tracker evidence revert proof). The four inherited re-anchored records remain unchanged; this fixes the false cancellation, not the pre-existing integrity defect. npm ci passed with zero vulnerabilities; changelog generation/check and git diff --check passed. Fresh no-local clone with isolated identity and installed merge drivers passes strict pm health: 10 checks, zero failing, one stale-item advisory. Package worktree health exits 0 but reports existing extension SDK skew and an orphaned receipt from the aborted merge; one required reconcile attempt refused no_receipt_set_proves_snapshot with no history changes. No force repair attempted. Other terminal transitions were checked against main and merged delivery evidence; no additional valid findings. Releasing claim; keep item open. PM limitation: pinned default merge driver proposes union_reanchor on divergent history; pm claim requires reopening terminal items before claiming."
+files[2]{path,scope}:
+  .agents/pm/history/pm-jev-i3wg.jsonl,project
+  .agents/pm/issues/pm-jev-i3wg.toon,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "node --input-type=module -e 'import {readFileSync} from \"node:fs\"; import {createHash} from \"node:crypto\"; import assert from \"node:assert/strict\"; const evidence=JSON.parse(readFileSync(\".agents/pm/evidence/pr-39-history-prefix.json\",\"utf8\")); for(const row of evidence.streams){const prefix=readFileSync(row.path).subarray(0,row.bytes); assert.equal(createHash(\"sha256\").update(prefix).digest(\"hex\"),row.sha256,row.path);} assert.match(readFileSync(\".agents/pm/issues/pm-jev-i3wg.toon\",\"utf8\"),/^status: open$/m); console.log(`${evidence.streams.length} original history prefixes unchanged; integrity finding open`);'",project,codex-agent,"2026-10-22T11:16:37.902Z",local_mutation,chore/reconcile-tracker-1021
+docs[1]{path,scope}:
+  .agents/pm/evidence/pr-39-history-prefix.json,project
 body: ""

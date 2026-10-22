@@ -6,11 +6,14 @@ status: closed
 priority: 2
 tags: []
 created_at: "2026-10-20T09:59:36.702Z"
-updated_at: "2026-10-21T19:39:43.620Z"
+updated_at: "2026-10-22T11:15:49.737Z"
 closed_at: "2026-10-21T19:39:37.344Z"
-completed_at: "2026-10-21T19:39:37.344Z"
+completed_at: "2026-10-20T14:11:17.000Z"
 author: codex-agent
-comments[23]{created_at,author,text}:
+resolution: "Delivered by https://github.com/unbraind/pm-jev/pull/34 (merge 99b5f2546557, head 263bd7367f56)"
+expected_result: "Delivered by the linked pull request, merged after its head check gate passed."
+actual_result: "Merged at 2026-10-20T14:11:17Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
+comments[24]{created_at,author,text}:
   "2026-10-20T09:59:48.900Z",codex-agent,"Inspected source loading: every accepted --from currently runs git and gh before the SDK read. Implementing named gh failures with recovery guidance and fake-executable regression coverage. Local-source eligibility clarification is pending because the current public-origin and visibility verification requires those tools."
   "2026-10-20T10:01:22.633Z",codex-agent,"Diagnostic regressions pass (2 tests). Behavioral revert of inspectSource alone makes the fake-gh regression fail (1 pass, 1 fail), with the original opaque Public tracker inspection failed (gh) message; restored implementation passes. Typecheck, lint, zero-duplication and docstring checks pass."
   "2026-10-20T10:06:45.128Z",codex-agent,"The host command harness now surfaces expected actionable gh diagnostics for both eval and calibrate before model calls. Focused linked test command passes 3/3, and diagnostic module line/branch/function coverage is 100%. Local reads remain pending the eligibility decision: accepting arbitrary --from directories conflicts with existing public clone verification. No source eligibility checks have been changed."
@@ -34,6 +37,7 @@ comments[23]{created_at,author,text}:
   "2026-10-20T13:13:30.640Z",codex-agent,"Verified and fixed PRRT_kwDOU8IMzs6uVf5F. Three real Git tests now run inside withCLocale, which restores the prior LC_ALL in finally. Tar assertion accepts only positive exit statuses and nonempty stderr, without implementation-specific text. Behavioral revert proof: LC_ALL=de_AT.utf8 LANGUAGE=de node --test --test-name-pattern=\"empty git|without origin|missing tree path\" test/source-diagnostics.test.ts passes 3/3; replacing only withCLocale body with run() fails 3/3 on real translated Git diagnostics. With a temporary PATH entry mapping tar to the installed real bsdtar, node --test --test-name-pattern=\"tar extraction errors\" test/source-diagnostics.test.ts passes 1/1; restoring only the old GNU-specific assertion fails 1/1 (bsdtar emits status 1 and different stderr). Fixed code restored after both experiments. Full PR diff audited for locale/tool-specific diagnostics; no further instances found. No refusals or Outside diff range findings."
   "2026-10-20T13:26:55.494Z",codex-agent,"Review round complete for PRRT_kwDOU8IMzs6uVf5F: isolated npm run release:check and bun run release:check both pass, each 263/263 tests, zero failures/cancellations/skips/todo. Each measures 100% lines/statements (5162/5162), functions (203/203), branches (2093/2093), all 22 required sources; 584 documented declarations, 0% duplication and zero production vulnerabilities. All other release checks pass, including typecheck, lint, pack dry-run, provenance, changelog and publish-attestation. No retries or timeouts. All 109 tracked source/test/build/package hashes match across both gates; dist rebuilt without tracked drift. PM-linked German-locale diagnostic suite passes 20/20; independent helper and GNU-assertion reverts fail 3/3 and 1/1 respectively, then restored code passes. Strict health remains blocked solely by the existing extension/host version skew tracked in pm-jev-v2la; integrity/history checks pass and validate exits 0 with existing advisories. No new CLI/SDK bugs encountered. No refusals, additional same-class findings or Outside diff range findings; no thread replies/resolutions, merge or release. Releasing claim for orchestrator verification; item stays in progress."
   "2026-10-21T19:39:11.868Z",codex-agent,"Authorized tracker reconciliation, audit 2026-10-21. Owner-authorized takeover of any historical assignment for this verified terminal transition. Reverified current main 4db41b03f85f: merged #34 (99b5f25); source tree exactly matches the audited snapshot. **Name evaluation source failures and support local tracker reads without GitHub.** [PR #34](https://github.com/unbraind/pm-jev/pull/34) (99b5f25) reports named/redacted source failures and supports evaluation/calibration against explicit local trackers without gh/git."
+  "2026-10-22T11:15:49.736Z",codex-agent,"PR 39 integration: retained the complete original PR history prefix. Appended current main-side completion/resolution metadata through the pinned CLI; the incoming close event is preserved unchanged in parent 5ec1a0d. Existing local close timestamp remains unchanged because this item was already closed. No events were re-anchored or re-hashed."
 files[14]{path,scope}:
   calibration.ts,project
   decision-calibration.ts,project
@@ -103,5 +107,5 @@ tests[7]:
       source_ref: fix/eval-source-diagnostics
 docs[1]{path,scope}:
   README.md,project
-close_reason: "Reverified current main 4db41b03f85f: merged #34 (99b5f25); source tree exactly matches the audited snapshot. **Name evaluation source failures and support local tracker reads without GitHub.** [PR #34](https://github.com/unbraind/pm-jev/pull/34) (99b5f25) reports named/redacted source failures and supports evaluation/calibration against explicit local trackers without gh/git."
+close_reason: "{\"pr\":34,\"url\":\"https://github.com/unbraind/pm-jev/pull/34\",\"merge_commit_sha\":\"99b5f2546557816719c4c1ea6e28eb17a0d3faa5\",\"head_sha\":\"263bd7367f5609c10b66469a99f0386f9de2454d\",\"merged_at\":\"2026-10-20T14:11:17Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""
