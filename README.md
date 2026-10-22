@@ -414,11 +414,31 @@ recommending the local flag that is already enabled; neither mode calls the mode
 
 ### Without git
 
-Doctor, model discovery, triage, link, dedupe, ask and gate work in plain trackers.
+Doctor, model discovery, triage, link, dedupe, ask, gate and cost-policy selection work in plain trackers.
 Evaluation and calibration work there with `--local-unverified` and explicit local
 source directories; they require neither git nor GitHub. Default public-corpus
 sources still require git, GitHub CLI authentication, verified public visibility
 and a committed snapshot. The destination tracker itself need not be a git repo.
+
+### Cost-sensitive abstention policies
+
+Agents can declare the relative cost of false duplicates, wrong types and missed
+candidates, then select a measured proposal filter from fixed labelled scores:
+
+```sh
+pm jev policy --observations examples/cost-policy.json \
+  --false-duplicate-cost 20 --wrong-type-cost 10 --missed-candidate-cost 1 --json
+```
+
+The compact TOON/JSON receipt includes reproducible selection/held-out cost and
+coverage curves, the chosen threshold and content-free evidence hashes. `--full`
+adds every operating point's counts. No retraining, label changes or tracker
+writes occur. Policies only veto proposals; every existing mutation check remains
+mandatory. Typed SDK contracts, refusals with remedies, split requirements and an
+integration example are in [caller-cost abstention](docs/cost-sensitive-abstention.md).
+The command works without git or a model provider.
+
+### Public calibration workflow
 
 Use at least two repositories with relevant ground truth. Run from the project
 that should receive the calibration; every `--from` is a read-only source:

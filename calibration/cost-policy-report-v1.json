@@ -1,0 +1,1680 @@
+{
+  "version": "pm-jev-cost/1",
+  "source_receipt": "calibration/duplicate-quality-report-v3.json",
+  "model": "tev1:4b",
+  "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+  "question_sha256": "10a236388896b7721ff48aac35eed73cd0853bffb953105080b7307c386e5964",
+  "source_checks": [
+    {
+      "repository": "unbraind/pm-beads",
+      "commit": "74637e97fb1048d1e3ce158d6ad05ee8058157c8",
+      "items": 93,
+      "archive_sha256": "228d48bd5906be99a9f8ccdacce508cba0993b926554eca54988463f308a6bf0",
+      "tracker_unchanged": true
+    },
+    {
+      "repository": "unbraind/pm-linear",
+      "commit": "0d5da8ab182b5f5349a54e4ce6cd0c274aee0400",
+      "items": 101,
+      "archive_sha256": "45b4623b77b833987057777a681fe4e65679d9d641ecd99e942f6e5ea6f7ead6",
+      "tracker_unchanged": true
+    },
+    {
+      "repository": "unbraind/pm-changelog",
+      "commit": "55c4fac5e7fb7d75251eed077f1e6a22a0da40d7",
+      "items": 187,
+      "archive_sha256": "4ffc34b23bdfa58b81ee9bbd61a2c950109e2faa470f6d175a32efc05f0ae979",
+      "tracker_unchanged": true
+    }
+  ],
+  "copied_pair_labels_verified": 7,
+  "observations": 156,
+  "model_calls": 0,
+  "limitations": "Replay of frozen public scores from PR #37; 150 selection and 6 held-out pairs. Only three public source snapshots are re-read here. Controls are unrecorded relationships, not adjudicated negatives; correlated pairs and two held-out positives cannot establish production precision. Type costs have synthetic coverage only. Existing mutation gates remain mandatory.",
+  "results": [
+    {
+      "ok": true,
+      "version": "pm-jev-cost/1",
+      "provenance": "public",
+      "evidence_sha256": "ad4743059149603c1e192cefb095df994108748598612a0e20dd5177cc79ba16",
+      "costs": {
+        "false_duplicate": 1,
+        "wrong_type": 10,
+        "missed_candidate": 1
+      },
+      "policy": {
+        "version": "pm-jev-cost/1",
+        "threshold": 0.7,
+        "mutation_authority": "none"
+      },
+      "policy_sha256": "282860aedad4a10245a3ab57e87fe2d9c4052323629c2040a0dbea049aa26631",
+      "selected": {
+        "threshold": 0.7,
+        "selection": {
+          "count": 150,
+          "proposed": 7,
+          "false_duplicates": 1,
+          "wrong_types": 0,
+          "missed_candidates": 44,
+          "coverage": 0.04666666666666667,
+          "cost": 45,
+          "cost_per_example": 0.3
+        },
+        "heldout": {
+          "count": 6,
+          "proposed": 2,
+          "false_duplicates": 0,
+          "wrong_types": 0,
+          "missed_candidates": 0,
+          "coverage": 0.3333333333333333,
+          "cost": 0,
+          "cost_per_example": 0
+        }
+      },
+      "curve": [
+        {
+          "threshold": null,
+          "selection": {
+            "count": 150,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 50,
+            "coverage": 0,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 2,
+            "coverage": 0,
+            "cost": 2,
+            "cost_per_example": 0.3333333333333333
+          }
+        },
+        {
+          "threshold": 0,
+          "selection": {
+            "count": 150,
+            "proposed": 139,
+            "false_duplicates": 100,
+            "wrong_types": 0,
+            "missed_candidates": 11,
+            "coverage": 0.9266666666666666,
+            "cost": 111,
+            "cost_per_example": 0.74
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 6,
+            "false_duplicates": 4,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 1,
+            "cost": 4,
+            "cost_per_example": 0.6666666666666666
+          }
+        },
+        {
+          "threshold": 0.05,
+          "selection": {
+            "count": 150,
+            "proposed": 45,
+            "false_duplicates": 23,
+            "wrong_types": 0,
+            "missed_candidates": 28,
+            "coverage": 0.3,
+            "cost": 51,
+            "cost_per_example": 0.34
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 5,
+            "false_duplicates": 3,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.8333333333333334,
+            "cost": 3,
+            "cost_per_example": 0.5
+          }
+        },
+        {
+          "threshold": 0.1,
+          "selection": {
+            "count": 150,
+            "proposed": 41,
+            "false_duplicates": 22,
+            "wrong_types": 0,
+            "missed_candidates": 31,
+            "coverage": 0.2733333333333333,
+            "cost": 53,
+            "cost_per_example": 0.35333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 4,
+            "false_duplicates": 2,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.6666666666666666,
+            "cost": 2,
+            "cost_per_example": 0.3333333333333333
+          }
+        },
+        {
+          "threshold": 0.15,
+          "selection": {
+            "count": 150,
+            "proposed": 37,
+            "false_duplicates": 19,
+            "wrong_types": 0,
+            "missed_candidates": 32,
+            "coverage": 0.24666666666666667,
+            "cost": 51,
+            "cost_per_example": 0.34
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.2,
+          "selection": {
+            "count": 150,
+            "proposed": 35,
+            "false_duplicates": 17,
+            "wrong_types": 0,
+            "missed_candidates": 32,
+            "coverage": 0.23333333333333334,
+            "cost": 49,
+            "cost_per_example": 0.32666666666666666
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.25,
+          "selection": {
+            "count": 150,
+            "proposed": 30,
+            "false_duplicates": 15,
+            "wrong_types": 0,
+            "missed_candidates": 35,
+            "coverage": 0.2,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.3,
+          "selection": {
+            "count": 150,
+            "proposed": 30,
+            "false_duplicates": 15,
+            "wrong_types": 0,
+            "missed_candidates": 35,
+            "coverage": 0.2,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.35,
+          "selection": {
+            "count": 150,
+            "proposed": 30,
+            "false_duplicates": 15,
+            "wrong_types": 0,
+            "missed_candidates": 35,
+            "coverage": 0.2,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.4,
+          "selection": {
+            "count": 150,
+            "proposed": 26,
+            "false_duplicates": 13,
+            "wrong_types": 0,
+            "missed_candidates": 37,
+            "coverage": 0.17333333333333334,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.45,
+          "selection": {
+            "count": 150,
+            "proposed": 24,
+            "false_duplicates": 12,
+            "wrong_types": 0,
+            "missed_candidates": 38,
+            "coverage": 0.16,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.5,
+          "selection": {
+            "count": 150,
+            "proposed": 20,
+            "false_duplicates": 10,
+            "wrong_types": 0,
+            "missed_candidates": 40,
+            "coverage": 0.13333333333333333,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.55,
+          "selection": {
+            "count": 150,
+            "proposed": 16,
+            "false_duplicates": 9,
+            "wrong_types": 0,
+            "missed_candidates": 43,
+            "coverage": 0.10666666666666667,
+            "cost": 52,
+            "cost_per_example": 0.3466666666666667
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.6,
+          "selection": {
+            "count": 150,
+            "proposed": 12,
+            "false_duplicates": 6,
+            "wrong_types": 0,
+            "missed_candidates": 44,
+            "coverage": 0.08,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.65,
+          "selection": {
+            "count": 150,
+            "proposed": 7,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 44,
+            "coverage": 0.04666666666666667,
+            "cost": 45,
+            "cost_per_example": 0.3
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.7,
+          "selection": {
+            "count": 150,
+            "proposed": 7,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 44,
+            "coverage": 0.04666666666666667,
+            "cost": 45,
+            "cost_per_example": 0.3
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 2,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.3333333333333333,
+            "cost": 0,
+            "cost_per_example": 0
+          }
+        },
+        {
+          "threshold": 0.75,
+          "selection": {
+            "count": 150,
+            "proposed": 4,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 46,
+            "coverage": 0.02666666666666667,
+            "cost": 46,
+            "cost_per_example": 0.30666666666666664
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.8,
+          "selection": {
+            "count": 150,
+            "proposed": 4,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 46,
+            "coverage": 0.02666666666666667,
+            "cost": 46,
+            "cost_per_example": 0.30666666666666664
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.85,
+          "selection": {
+            "count": 150,
+            "proposed": 3,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 47,
+            "coverage": 0.02,
+            "cost": 47,
+            "cost_per_example": 0.31333333333333335
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.9,
+          "selection": {
+            "count": 150,
+            "proposed": 3,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 47,
+            "coverage": 0.02,
+            "cost": 47,
+            "cost_per_example": 0.31333333333333335
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.95,
+          "selection": {
+            "count": 150,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 49,
+            "coverage": 0.006666666666666667,
+            "cost": 49,
+            "cost_per_example": 0.32666666666666666
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 1,
+          "selection": {
+            "count": 150,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 50,
+            "coverage": 0,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 2,
+            "coverage": 0,
+            "cost": 2,
+            "cost_per_example": 0.3333333333333333
+          }
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "version": "pm-jev-cost/1",
+      "provenance": "public",
+      "evidence_sha256": "ad4743059149603c1e192cefb095df994108748598612a0e20dd5177cc79ba16",
+      "costs": {
+        "false_duplicate": 20,
+        "wrong_type": 10,
+        "missed_candidate": 1
+      },
+      "policy": {
+        "version": "pm-jev-cost/1",
+        "threshold": 0.8,
+        "mutation_authority": "none"
+      },
+      "policy_sha256": "555af39fac436ab4542eb73df51faf5767cfe66e1157c98c7e73aee75431809c",
+      "selected": {
+        "threshold": 0.8,
+        "selection": {
+          "count": 150,
+          "proposed": 4,
+          "false_duplicates": 0,
+          "wrong_types": 0,
+          "missed_candidates": 46,
+          "coverage": 0.02666666666666667,
+          "cost": 46,
+          "cost_per_example": 0.30666666666666664
+        },
+        "heldout": {
+          "count": 6,
+          "proposed": 1,
+          "false_duplicates": 0,
+          "wrong_types": 0,
+          "missed_candidates": 1,
+          "coverage": 0.16666666666666666,
+          "cost": 1,
+          "cost_per_example": 0.16666666666666666
+        }
+      },
+      "curve": [
+        {
+          "threshold": null,
+          "selection": {
+            "count": 150,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 50,
+            "coverage": 0,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 2,
+            "coverage": 0,
+            "cost": 2,
+            "cost_per_example": 0.3333333333333333
+          }
+        },
+        {
+          "threshold": 0,
+          "selection": {
+            "count": 150,
+            "proposed": 139,
+            "false_duplicates": 100,
+            "wrong_types": 0,
+            "missed_candidates": 11,
+            "coverage": 0.9266666666666666,
+            "cost": 2011,
+            "cost_per_example": 13.406666666666666
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 6,
+            "false_duplicates": 4,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 1,
+            "cost": 80,
+            "cost_per_example": 13.333333333333334
+          }
+        },
+        {
+          "threshold": 0.05,
+          "selection": {
+            "count": 150,
+            "proposed": 45,
+            "false_duplicates": 23,
+            "wrong_types": 0,
+            "missed_candidates": 28,
+            "coverage": 0.3,
+            "cost": 488,
+            "cost_per_example": 3.2533333333333334
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 5,
+            "false_duplicates": 3,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.8333333333333334,
+            "cost": 60,
+            "cost_per_example": 10
+          }
+        },
+        {
+          "threshold": 0.1,
+          "selection": {
+            "count": 150,
+            "proposed": 41,
+            "false_duplicates": 22,
+            "wrong_types": 0,
+            "missed_candidates": 31,
+            "coverage": 0.2733333333333333,
+            "cost": 471,
+            "cost_per_example": 3.14
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 4,
+            "false_duplicates": 2,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.6666666666666666,
+            "cost": 40,
+            "cost_per_example": 6.666666666666667
+          }
+        },
+        {
+          "threshold": 0.15,
+          "selection": {
+            "count": 150,
+            "proposed": 37,
+            "false_duplicates": 19,
+            "wrong_types": 0,
+            "missed_candidates": 32,
+            "coverage": 0.24666666666666667,
+            "cost": 412,
+            "cost_per_example": 2.7466666666666666
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 20,
+            "cost_per_example": 3.3333333333333335
+          }
+        },
+        {
+          "threshold": 0.2,
+          "selection": {
+            "count": 150,
+            "proposed": 35,
+            "false_duplicates": 17,
+            "wrong_types": 0,
+            "missed_candidates": 32,
+            "coverage": 0.23333333333333334,
+            "cost": 372,
+            "cost_per_example": 2.48
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 20,
+            "cost_per_example": 3.3333333333333335
+          }
+        },
+        {
+          "threshold": 0.25,
+          "selection": {
+            "count": 150,
+            "proposed": 30,
+            "false_duplicates": 15,
+            "wrong_types": 0,
+            "missed_candidates": 35,
+            "coverage": 0.2,
+            "cost": 335,
+            "cost_per_example": 2.2333333333333334
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 20,
+            "cost_per_example": 3.3333333333333335
+          }
+        },
+        {
+          "threshold": 0.3,
+          "selection": {
+            "count": 150,
+            "proposed": 30,
+            "false_duplicates": 15,
+            "wrong_types": 0,
+            "missed_candidates": 35,
+            "coverage": 0.2,
+            "cost": 335,
+            "cost_per_example": 2.2333333333333334
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 20,
+            "cost_per_example": 3.3333333333333335
+          }
+        },
+        {
+          "threshold": 0.35,
+          "selection": {
+            "count": 150,
+            "proposed": 30,
+            "false_duplicates": 15,
+            "wrong_types": 0,
+            "missed_candidates": 35,
+            "coverage": 0.2,
+            "cost": 335,
+            "cost_per_example": 2.2333333333333334
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 20,
+            "cost_per_example": 3.3333333333333335
+          }
+        },
+        {
+          "threshold": 0.4,
+          "selection": {
+            "count": 150,
+            "proposed": 26,
+            "false_duplicates": 13,
+            "wrong_types": 0,
+            "missed_candidates": 37,
+            "coverage": 0.17333333333333334,
+            "cost": 297,
+            "cost_per_example": 1.98
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 20,
+            "cost_per_example": 3.3333333333333335
+          }
+        },
+        {
+          "threshold": 0.45,
+          "selection": {
+            "count": 150,
+            "proposed": 24,
+            "false_duplicates": 12,
+            "wrong_types": 0,
+            "missed_candidates": 38,
+            "coverage": 0.16,
+            "cost": 278,
+            "cost_per_example": 1.8533333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 20,
+            "cost_per_example": 3.3333333333333335
+          }
+        },
+        {
+          "threshold": 0.5,
+          "selection": {
+            "count": 150,
+            "proposed": 20,
+            "false_duplicates": 10,
+            "wrong_types": 0,
+            "missed_candidates": 40,
+            "coverage": 0.13333333333333333,
+            "cost": 240,
+            "cost_per_example": 1.6
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 20,
+            "cost_per_example": 3.3333333333333335
+          }
+        },
+        {
+          "threshold": 0.55,
+          "selection": {
+            "count": 150,
+            "proposed": 16,
+            "false_duplicates": 9,
+            "wrong_types": 0,
+            "missed_candidates": 43,
+            "coverage": 0.10666666666666667,
+            "cost": 223,
+            "cost_per_example": 1.4866666666666666
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 20,
+            "cost_per_example": 3.3333333333333335
+          }
+        },
+        {
+          "threshold": 0.6,
+          "selection": {
+            "count": 150,
+            "proposed": 12,
+            "false_duplicates": 6,
+            "wrong_types": 0,
+            "missed_candidates": 44,
+            "coverage": 0.08,
+            "cost": 164,
+            "cost_per_example": 1.0933333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 20,
+            "cost_per_example": 3.3333333333333335
+          }
+        },
+        {
+          "threshold": 0.65,
+          "selection": {
+            "count": 150,
+            "proposed": 7,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 44,
+            "coverage": 0.04666666666666667,
+            "cost": 64,
+            "cost_per_example": 0.4266666666666667
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 20,
+            "cost_per_example": 3.3333333333333335
+          }
+        },
+        {
+          "threshold": 0.7,
+          "selection": {
+            "count": 150,
+            "proposed": 7,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 44,
+            "coverage": 0.04666666666666667,
+            "cost": 64,
+            "cost_per_example": 0.4266666666666667
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 2,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.3333333333333333,
+            "cost": 0,
+            "cost_per_example": 0
+          }
+        },
+        {
+          "threshold": 0.75,
+          "selection": {
+            "count": 150,
+            "proposed": 4,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 46,
+            "coverage": 0.02666666666666667,
+            "cost": 46,
+            "cost_per_example": 0.30666666666666664
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.8,
+          "selection": {
+            "count": 150,
+            "proposed": 4,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 46,
+            "coverage": 0.02666666666666667,
+            "cost": 46,
+            "cost_per_example": 0.30666666666666664
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.85,
+          "selection": {
+            "count": 150,
+            "proposed": 3,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 47,
+            "coverage": 0.02,
+            "cost": 47,
+            "cost_per_example": 0.31333333333333335
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.9,
+          "selection": {
+            "count": 150,
+            "proposed": 3,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 47,
+            "coverage": 0.02,
+            "cost": 47,
+            "cost_per_example": 0.31333333333333335
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.95,
+          "selection": {
+            "count": 150,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 49,
+            "coverage": 0.006666666666666667,
+            "cost": 49,
+            "cost_per_example": 0.32666666666666666
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 1,
+          "selection": {
+            "count": 150,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 50,
+            "coverage": 0,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 2,
+            "coverage": 0,
+            "cost": 2,
+            "cost_per_example": 0.3333333333333333
+          }
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "version": "pm-jev-cost/1",
+      "provenance": "public",
+      "evidence_sha256": "ad4743059149603c1e192cefb095df994108748598612a0e20dd5177cc79ba16",
+      "costs": {
+        "false_duplicate": 100,
+        "wrong_type": 10,
+        "missed_candidate": 1
+      },
+      "policy": {
+        "version": "pm-jev-cost/1",
+        "threshold": 0.8,
+        "mutation_authority": "none"
+      },
+      "policy_sha256": "ceff7c86d2825bea4cfd6b01daca84f50ae0a0f7ba13e2e1f38e4204b932b399",
+      "selected": {
+        "threshold": 0.8,
+        "selection": {
+          "count": 150,
+          "proposed": 4,
+          "false_duplicates": 0,
+          "wrong_types": 0,
+          "missed_candidates": 46,
+          "coverage": 0.02666666666666667,
+          "cost": 46,
+          "cost_per_example": 0.30666666666666664
+        },
+        "heldout": {
+          "count": 6,
+          "proposed": 1,
+          "false_duplicates": 0,
+          "wrong_types": 0,
+          "missed_candidates": 1,
+          "coverage": 0.16666666666666666,
+          "cost": 1,
+          "cost_per_example": 0.16666666666666666
+        }
+      },
+      "curve": [
+        {
+          "threshold": null,
+          "selection": {
+            "count": 150,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 50,
+            "coverage": 0,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 2,
+            "coverage": 0,
+            "cost": 2,
+            "cost_per_example": 0.3333333333333333
+          }
+        },
+        {
+          "threshold": 0,
+          "selection": {
+            "count": 150,
+            "proposed": 139,
+            "false_duplicates": 100,
+            "wrong_types": 0,
+            "missed_candidates": 11,
+            "coverage": 0.9266666666666666,
+            "cost": 10011,
+            "cost_per_example": 66.74
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 6,
+            "false_duplicates": 4,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 1,
+            "cost": 400,
+            "cost_per_example": 66.66666666666667
+          }
+        },
+        {
+          "threshold": 0.05,
+          "selection": {
+            "count": 150,
+            "proposed": 45,
+            "false_duplicates": 23,
+            "wrong_types": 0,
+            "missed_candidates": 28,
+            "coverage": 0.3,
+            "cost": 2328,
+            "cost_per_example": 15.52
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 5,
+            "false_duplicates": 3,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.8333333333333334,
+            "cost": 300,
+            "cost_per_example": 50
+          }
+        },
+        {
+          "threshold": 0.1,
+          "selection": {
+            "count": 150,
+            "proposed": 41,
+            "false_duplicates": 22,
+            "wrong_types": 0,
+            "missed_candidates": 31,
+            "coverage": 0.2733333333333333,
+            "cost": 2231,
+            "cost_per_example": 14.873333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 4,
+            "false_duplicates": 2,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.6666666666666666,
+            "cost": 200,
+            "cost_per_example": 33.333333333333336
+          }
+        },
+        {
+          "threshold": 0.15,
+          "selection": {
+            "count": 150,
+            "proposed": 37,
+            "false_duplicates": 19,
+            "wrong_types": 0,
+            "missed_candidates": 32,
+            "coverage": 0.24666666666666667,
+            "cost": 1932,
+            "cost_per_example": 12.88
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 100,
+            "cost_per_example": 16.666666666666668
+          }
+        },
+        {
+          "threshold": 0.2,
+          "selection": {
+            "count": 150,
+            "proposed": 35,
+            "false_duplicates": 17,
+            "wrong_types": 0,
+            "missed_candidates": 32,
+            "coverage": 0.23333333333333334,
+            "cost": 1732,
+            "cost_per_example": 11.546666666666667
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 100,
+            "cost_per_example": 16.666666666666668
+          }
+        },
+        {
+          "threshold": 0.25,
+          "selection": {
+            "count": 150,
+            "proposed": 30,
+            "false_duplicates": 15,
+            "wrong_types": 0,
+            "missed_candidates": 35,
+            "coverage": 0.2,
+            "cost": 1535,
+            "cost_per_example": 10.233333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 100,
+            "cost_per_example": 16.666666666666668
+          }
+        },
+        {
+          "threshold": 0.3,
+          "selection": {
+            "count": 150,
+            "proposed": 30,
+            "false_duplicates": 15,
+            "wrong_types": 0,
+            "missed_candidates": 35,
+            "coverage": 0.2,
+            "cost": 1535,
+            "cost_per_example": 10.233333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 100,
+            "cost_per_example": 16.666666666666668
+          }
+        },
+        {
+          "threshold": 0.35,
+          "selection": {
+            "count": 150,
+            "proposed": 30,
+            "false_duplicates": 15,
+            "wrong_types": 0,
+            "missed_candidates": 35,
+            "coverage": 0.2,
+            "cost": 1535,
+            "cost_per_example": 10.233333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 100,
+            "cost_per_example": 16.666666666666668
+          }
+        },
+        {
+          "threshold": 0.4,
+          "selection": {
+            "count": 150,
+            "proposed": 26,
+            "false_duplicates": 13,
+            "wrong_types": 0,
+            "missed_candidates": 37,
+            "coverage": 0.17333333333333334,
+            "cost": 1337,
+            "cost_per_example": 8.913333333333334
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 100,
+            "cost_per_example": 16.666666666666668
+          }
+        },
+        {
+          "threshold": 0.45,
+          "selection": {
+            "count": 150,
+            "proposed": 24,
+            "false_duplicates": 12,
+            "wrong_types": 0,
+            "missed_candidates": 38,
+            "coverage": 0.16,
+            "cost": 1238,
+            "cost_per_example": 8.253333333333334
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 100,
+            "cost_per_example": 16.666666666666668
+          }
+        },
+        {
+          "threshold": 0.5,
+          "selection": {
+            "count": 150,
+            "proposed": 20,
+            "false_duplicates": 10,
+            "wrong_types": 0,
+            "missed_candidates": 40,
+            "coverage": 0.13333333333333333,
+            "cost": 1040,
+            "cost_per_example": 6.933333333333334
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 100,
+            "cost_per_example": 16.666666666666668
+          }
+        },
+        {
+          "threshold": 0.55,
+          "selection": {
+            "count": 150,
+            "proposed": 16,
+            "false_duplicates": 9,
+            "wrong_types": 0,
+            "missed_candidates": 43,
+            "coverage": 0.10666666666666667,
+            "cost": 943,
+            "cost_per_example": 6.286666666666667
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 100,
+            "cost_per_example": 16.666666666666668
+          }
+        },
+        {
+          "threshold": 0.6,
+          "selection": {
+            "count": 150,
+            "proposed": 12,
+            "false_duplicates": 6,
+            "wrong_types": 0,
+            "missed_candidates": 44,
+            "coverage": 0.08,
+            "cost": 644,
+            "cost_per_example": 4.293333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 100,
+            "cost_per_example": 16.666666666666668
+          }
+        },
+        {
+          "threshold": 0.65,
+          "selection": {
+            "count": 150,
+            "proposed": 7,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 44,
+            "coverage": 0.04666666666666667,
+            "cost": 144,
+            "cost_per_example": 0.96
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 3,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.5,
+            "cost": 100,
+            "cost_per_example": 16.666666666666668
+          }
+        },
+        {
+          "threshold": 0.7,
+          "selection": {
+            "count": 150,
+            "proposed": 7,
+            "false_duplicates": 1,
+            "wrong_types": 0,
+            "missed_candidates": 44,
+            "coverage": 0.04666666666666667,
+            "cost": 144,
+            "cost_per_example": 0.96
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 2,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 0,
+            "coverage": 0.3333333333333333,
+            "cost": 0,
+            "cost_per_example": 0
+          }
+        },
+        {
+          "threshold": 0.75,
+          "selection": {
+            "count": 150,
+            "proposed": 4,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 46,
+            "coverage": 0.02666666666666667,
+            "cost": 46,
+            "cost_per_example": 0.30666666666666664
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.8,
+          "selection": {
+            "count": 150,
+            "proposed": 4,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 46,
+            "coverage": 0.02666666666666667,
+            "cost": 46,
+            "cost_per_example": 0.30666666666666664
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.85,
+          "selection": {
+            "count": 150,
+            "proposed": 3,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 47,
+            "coverage": 0.02,
+            "cost": 47,
+            "cost_per_example": 0.31333333333333335
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.9,
+          "selection": {
+            "count": 150,
+            "proposed": 3,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 47,
+            "coverage": 0.02,
+            "cost": 47,
+            "cost_per_example": 0.31333333333333335
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 0.95,
+          "selection": {
+            "count": 150,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 49,
+            "coverage": 0.006666666666666667,
+            "cost": 49,
+            "cost_per_example": 0.32666666666666666
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 1,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 1,
+            "coverage": 0.16666666666666666,
+            "cost": 1,
+            "cost_per_example": 0.16666666666666666
+          }
+        },
+        {
+          "threshold": 1,
+          "selection": {
+            "count": 150,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 50,
+            "coverage": 0,
+            "cost": 50,
+            "cost_per_example": 0.3333333333333333
+          },
+          "heldout": {
+            "count": 6,
+            "proposed": 0,
+            "false_duplicates": 0,
+            "wrong_types": 0,
+            "missed_candidates": 2,
+            "coverage": 0,
+            "cost": 2,
+            "cost_per_example": 0.3333333333333333
+          }
+        }
+      ]
+    }
+  ]
+}

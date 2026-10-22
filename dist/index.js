@@ -22,6 +22,7 @@ import { TokenUsageTotals } from "./token-usage.js";
 import { APIConnectionError, APIError, APITimeoutError, APIUserAbortError, TypeSafeClient, } from "@typesafe-ai/sdk";
 import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.js";
+import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.js";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.js";
 import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked, readOpaqueJevSettings } from "./decision-calibration.js";
 import { DEPENDENCY_KIND_VALUES, createPmCliExpectedError, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
@@ -31,6 +32,8 @@ import { defineCommand, defineExtension } from "@unbrained/pm-cli/sdk/authoring"
 export { isPmCliExpectedError };
 /** Re-export the structural expected-error factory for package consumers. */
 export { createPmCliExpectedError };
+/** Fixed-score cost selection and proposal vetoes for SDK consumers. */
+export { COST_POLICY_VERSION, CostPolicyRefusal, parseCostDataset, selectAbstentionPolicy, abstainWithPolicy } from "./cost-policy.js";
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
 // ---------------------------------------------------------------------------
@@ -1748,6 +1751,14 @@ const GATE_FLAGS = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api) {
+    api.registerCommand(defineCommand({
+        name: "jev policy",
+        description: "Select a measured abstention filter from caller costs and fixed labelled scores without retraining",
+        flags: COST_POLICY_FLAGS,
+        examples: ["pm jev policy --observations scores.json --false-duplicate-cost 20 --wrong-type-cost 10 --missed-candidate-cost 1 --json"],
+        /** Preserve the typed refusal and compact receipt in either host format. */
+        run: (ctx) => runCostPolicyCommand(ctx),
+    }));
     for (const calibrate of [false, true])
         api.registerCommand(defineCommand({
             name: calibrate ? "jev calibrate" : "jev eval",

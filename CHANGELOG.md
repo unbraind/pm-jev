@@ -5,6 +5,7 @@
 ### Added
 
 - Compact decision output for agent context budgets ([pm-jev-qriu](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-qriu.toon))
+- Select measured cost-sensitive abstention policies ([pm-jev-do7y](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-do7y.toon))
 - pm-jev packaging, gates and CI ([pm-jev-0q58](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-0q58.toon))
 - Detect existing duplicate items with calibrated pair decisions ([pm-jev-vouf](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-vouf.toon))
 - Retrieve same-tracker labelled exemplars for evaluation and calibration ([pm-jev-f4ba](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-f4ba.toon))
