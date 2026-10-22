@@ -1,0 +1,11 @@
+{
+  "route": {
+    "type": "choice",
+    "instructions": "Does this item describe broken behavior or a new capability?",
+    "criteria": {
+      "defect": "Existing behavior is broken",
+      "capability": "New capability or improvement",
+      "other": "Other work"
+    }
+  }
+}

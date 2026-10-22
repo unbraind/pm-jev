@@ -31,7 +31,10 @@
     "docs/duplicate-quality.md",
     "docs/cost-sensitive-abstention.md",
     "examples/cost-policy.json",
-    "calibration/cost-policy-report-v1.json"
+    "calibration/cost-policy-report-v1.json",
+    "docs/counterfactual-explanations.md",
+    "examples/explanation-questions.json",
+    "calibration/counterfactual-report-v1.json"
   ],
   "scripts": {
     "build": "tsc",

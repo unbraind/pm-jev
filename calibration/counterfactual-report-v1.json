@@ -1,0 +1,567 @@
+{
+  "version": "pm-jev-counterfactual-public/1",
+  "repository": "unbraind/pm-lint",
+  "commit": "7420b83854f22498fa564cf41bc4d298e8e593f4",
+  "archive_sha256": "5153c5f75342b055241b77486a961096e198ef273b374c027a2948b52b709fdb",
+  "tracker_items": 13,
+  "sampled_items": 6,
+  "authoritative_files_verified": 32,
+  "tracker_unchanged": true,
+  "git_available_during_decisions": false,
+  "model": "tev1:4b",
+  "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+  "sdk_calls": 24,
+  "cli_calls": 2,
+  "comparisons": 18,
+  "changed_comparisons": 5,
+  "stable_comparisons": 13,
+  "omitted_cli_comparisons": 2,
+  "empty_tags_stable": 3,
+  "limitations": "Six public items, one choice question, one sample per state. Observed sensitivity is not causal attribution, model accuracy, noise stability or held-out quality. No tracker evidence or provider credentials are included in this report. Built parser TOON/JSON and synthetic choice/score/noul contracts are covered separately by regression tests.",
+  "rows": [
+    {
+      "item": "pm-lint-1c6j",
+      "elapsed_ms": 23914,
+      "json_bytes": 1432,
+      "receipt": {
+        "version": "pm-jev-counterfactual/1",
+        "complete": true,
+        "model": "tev1:4b",
+        "questions_sha256": "7da86cf5c19e56427cc9f292d0d06b1064d0af08840796efdf7005a170be5e90",
+        "evidence_digest": "65cbe615530f6a8d6b21531ee1a5179227c3ac560fcc6819b75cf80afceaabcf",
+        "baseline": {
+          "route": {
+            "kind": "choice",
+            "value": "defect",
+            "probability": 0.453917658425088
+          }
+        },
+        "comparisons": [
+          {
+            "field": "tags",
+            "evidence_digest": "7c7880172389d45e6a43f96802715e8f5919312b217faf5cb8f0a25087717ef1",
+            "changed": [
+              "route"
+            ],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.4523482578215421
+              }
+            },
+            "max_probability_delta": 0.0047179137898960555
+          },
+          {
+            "field": "title",
+            "evidence_digest": "573f71e2bf43482b02639ae27f2ac89a930ca63a8ea1a221849d5569666f4286",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "defect",
+                "probability": 0.6042489972098565
+              }
+            },
+            "max_probability_delta": 0.1687403876624226
+          },
+          {
+            "field": "description",
+            "evidence_digest": "416288866925eaba17def13200854f3a5fb1a9950bfd21fa9b976c9f2511d06a",
+            "changed": [
+              "route"
+            ],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.7935459366388907
+              }
+            },
+            "max_probability_delta": 0.41482266907779564
+          }
+        ],
+        "omitted": [],
+        "calls": {
+          "attempted": 4,
+          "succeeded": 4,
+          "limit": 4,
+          "retries": 0
+        },
+        "usage": {
+          "input_tokens": 879,
+          "output_tokens": 0,
+          "unknown_calls": 0
+        },
+        "uncertainty": [
+          "single_sample_per_state",
+          "model_stochasticity_unmeasured",
+          "field_interactions_unmeasured",
+          "sensitivity_is_not_causation",
+          "only_supplied_evidence_tested"
+        ]
+      }
+    },
+    {
+      "item": "pm-lint-41oh",
+      "elapsed_ms": 7737,
+      "json_bytes": 1421,
+      "receipt": {
+        "version": "pm-jev-counterfactual/1",
+        "complete": true,
+        "model": "tev1:4b",
+        "questions_sha256": "7da86cf5c19e56427cc9f292d0d06b1064d0af08840796efdf7005a170be5e90",
+        "evidence_digest": "ad6ed96859d544e7bd3269851cf8cd8fab434bd7946094fd7fb565333b1162d4",
+        "baseline": {
+          "route": {
+            "kind": "choice",
+            "value": "defect",
+            "probability": 0.8517582026545327
+          }
+        },
+        "comparisons": [
+          {
+            "field": "tags",
+            "evidence_digest": "1c25881e98aa7d106658c9fd63d28204a042b45810ade8c3dc16f8ddfd6d269d",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "defect",
+                "probability": 0.8446577364082563
+              }
+            },
+            "max_probability_delta": 0.007100466246276471
+          },
+          {
+            "field": "title",
+            "evidence_digest": "1f9e4e595c29ab41dfd8015f194a965972bfc7d7ec783aa231732a348470aa80",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "defect",
+                "probability": 0.844692935178403
+              }
+            },
+            "max_probability_delta": 0.008993605172269159
+          },
+          {
+            "field": "description",
+            "evidence_digest": "ccb1ad6a69b99289e6deb2bd14e6340a57c4766f9dc647ea6929d5133ee1b98c",
+            "changed": [
+              "route"
+            ],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.6404888352602535
+              }
+            },
+            "max_probability_delta": 0.8098349406795486
+          }
+        ],
+        "omitted": [],
+        "calls": {
+          "attempted": 4,
+          "succeeded": 4,
+          "limit": 4,
+          "retries": 0
+        },
+        "usage": {
+          "input_tokens": 792,
+          "output_tokens": 0,
+          "unknown_calls": 0
+        },
+        "uncertainty": [
+          "single_sample_per_state",
+          "model_stochasticity_unmeasured",
+          "field_interactions_unmeasured",
+          "sensitivity_is_not_causation",
+          "only_supplied_evidence_tested"
+        ]
+      }
+    },
+    {
+      "item": "pm-lint-8kis",
+      "elapsed_ms": 8596,
+      "json_bytes": 1422,
+      "receipt": {
+        "version": "pm-jev-counterfactual/1",
+        "complete": true,
+        "model": "tev1:4b",
+        "questions_sha256": "7da86cf5c19e56427cc9f292d0d06b1064d0af08840796efdf7005a170be5e90",
+        "evidence_digest": "f324e371fc7516aaaacf9254b5e3ec10d8eb2d53e057730d9cf7dd6259266912",
+        "baseline": {
+          "route": {
+            "kind": "choice",
+            "value": "capability",
+            "probability": 0.7434043604945891
+          }
+        },
+        "comparisons": [
+          {
+            "field": "tags",
+            "evidence_digest": "f75ffab40d0e243d1e61e97a738c3fa2dbd17aa32bbfba39fcd0f207073c9081",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.73891907767523
+              }
+            },
+            "max_probability_delta": 0.0044852828193591154
+          },
+          {
+            "field": "title",
+            "evidence_digest": "fe4956b1e662b3b2dce60653e41b0d745dd063942a1a17ae3e58b0446c701c8f",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.6700379005929967
+              }
+            },
+            "max_probability_delta": 0.0733664599015924
+          },
+          {
+            "field": "description",
+            "evidence_digest": "3f74dffbdd6ee939ca3f4bffde0b725fda5dd25b732320983448a8680354a980",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.7615325670012
+              }
+            },
+            "max_probability_delta": 0.02007290844785181
+          }
+        ],
+        "omitted": [],
+        "calls": {
+          "attempted": 4,
+          "succeeded": 4,
+          "limit": 4,
+          "retries": 0
+        },
+        "usage": {
+          "input_tokens": 979,
+          "output_tokens": 0,
+          "unknown_calls": 0
+        },
+        "uncertainty": [
+          "single_sample_per_state",
+          "model_stochasticity_unmeasured",
+          "field_interactions_unmeasured",
+          "sensitivity_is_not_causation",
+          "only_supplied_evidence_tested"
+        ]
+      }
+    },
+    {
+      "item": "pm-lint-cli",
+      "elapsed_ms": 7125,
+      "json_bytes": 1428,
+      "receipt": {
+        "version": "pm-jev-counterfactual/1",
+        "complete": true,
+        "model": "tev1:4b",
+        "questions_sha256": "7da86cf5c19e56427cc9f292d0d06b1064d0af08840796efdf7005a170be5e90",
+        "evidence_digest": "2a92ad73c7388040623d8b6835bd1cb161b89b5f332d7f20069f1784b1b55420",
+        "baseline": {
+          "route": {
+            "kind": "choice",
+            "value": "capability",
+            "probability": 0.7016028198681912
+          }
+        },
+        "comparisons": [
+          {
+            "field": "tags",
+            "evidence_digest": "128043e8a237a215c859f034d6de1d6babab8e6945186b2bafb3842d08e153c2",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.7243413475832806
+              }
+            },
+            "max_probability_delta": 0.02273852771508944
+          },
+          {
+            "field": "title",
+            "evidence_digest": "b1388477703cbef96196e049d02093841dc5c48123fce92cfcc9dc6aedcc5797",
+            "changed": [
+              "route"
+            ],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "defect",
+                "probability": 0.5933967457563419
+              }
+            },
+            "max_probability_delta": 0.6705186749482688
+          },
+          {
+            "field": "description",
+            "evidence_digest": "b058f2b3ae86014711bf927f473f9073da6c3876863038b5c0d9e085d05022f2",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.7405461285924296
+              }
+            },
+            "max_probability_delta": 0.03894330872423846
+          }
+        ],
+        "omitted": [],
+        "calls": {
+          "attempted": 4,
+          "succeeded": 4,
+          "limit": 4,
+          "retries": 0
+        },
+        "usage": {
+          "input_tokens": 654,
+          "output_tokens": 0,
+          "unknown_calls": 0
+        },
+        "uncertainty": [
+          "single_sample_per_state",
+          "model_stochasticity_unmeasured",
+          "field_interactions_unmeasured",
+          "sensitivity_is_not_causation",
+          "only_supplied_evidence_tested"
+        ]
+      }
+    },
+    {
+      "item": "pm-lint-engine",
+      "elapsed_ms": 9270,
+      "json_bytes": 1429,
+      "receipt": {
+        "version": "pm-jev-counterfactual/1",
+        "complete": true,
+        "model": "tev1:4b",
+        "questions_sha256": "7da86cf5c19e56427cc9f292d0d06b1064d0af08840796efdf7005a170be5e90",
+        "evidence_digest": "ddbd96d149d4268e3d6c5166afef82cf1c3c72e7def4db4507d1ad47328e4e6a",
+        "baseline": {
+          "route": {
+            "kind": "choice",
+            "value": "capability",
+            "probability": 0.7030067079832136
+          }
+        },
+        "comparisons": [
+          {
+            "field": "tags",
+            "evidence_digest": "092299b39350de1bc4cf8193fe7236413f07615be5dff4b2da8643fb18d91680",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.7385323791528813
+              }
+            },
+            "max_probability_delta": 0.03552567116966765
+          },
+          {
+            "field": "title",
+            "evidence_digest": "7c7bcf01ff2ba3569c1557fcc0eb7a1698766190476becf627505197c07d6cfa",
+            "changed": [
+              "route"
+            ],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "defect",
+                "probability": 0.5933967457563419
+              }
+            },
+            "max_probability_delta": 0.6719225630632912
+          },
+          {
+            "field": "description",
+            "evidence_digest": "9fc9c64d0a7df202f7ee31c588db3d3fdbcc4704b589f4efa297949c1f1bfdcc",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.7279513448665895
+              }
+            },
+            "max_probability_delta": 0.024944636883375892
+          }
+        ],
+        "omitted": [],
+        "calls": {
+          "attempted": 4,
+          "succeeded": 4,
+          "limit": 4,
+          "retries": 0
+        },
+        "usage": {
+          "input_tokens": 657,
+          "output_tokens": 0,
+          "unknown_calls": 0
+        },
+        "uncertainty": [
+          "single_sample_per_state",
+          "model_stochasticity_unmeasured",
+          "field_interactions_unmeasured",
+          "sensitivity_is_not_causation",
+          "only_supplied_evidence_tested"
+        ]
+      }
+    },
+    {
+      "item": "pm-lint-epic",
+      "elapsed_ms": 12024,
+      "json_bytes": 1427,
+      "receipt": {
+        "version": "pm-jev-counterfactual/1",
+        "complete": true,
+        "model": "tev1:4b",
+        "questions_sha256": "7da86cf5c19e56427cc9f292d0d06b1064d0af08840796efdf7005a170be5e90",
+        "evidence_digest": "72f6d858c1f88654d702d8df3a029dcae748d9c5ace1dc779de24e3a23a94b04",
+        "baseline": {
+          "route": {
+            "kind": "choice",
+            "value": "capability",
+            "probability": 0.7912656272195053
+          }
+        },
+        "comparisons": [
+          {
+            "field": "tags",
+            "evidence_digest": "8402553a76b8c203793ba00eb7a000f7426d9897c467d4abc453e138122cdd51",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.8064019278381542
+              }
+            },
+            "max_probability_delta": 0.015998810193263546
+          },
+          {
+            "field": "title",
+            "evidence_digest": "3ab08d0968c52afbba06f8b753612a92d230105d10cc42d5c79a690db8bdb545",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.8116631494759828
+              }
+            },
+            "max_probability_delta": 0.020397522256477507
+          },
+          {
+            "field": "description",
+            "evidence_digest": "444212fa980b3e40c66e6d255614b9b23555ac73f014ea49c78f5208c7856652",
+            "changed": [],
+            "proposals": {
+              "route": {
+                "kind": "choice",
+                "value": "capability",
+                "probability": 0.6606906069572944
+              }
+            },
+            "max_probability_delta": 0.1305750202622109
+          }
+        ],
+        "omitted": [],
+        "calls": {
+          "attempted": 4,
+          "succeeded": 4,
+          "limit": 4,
+          "retries": 0
+        },
+        "usage": {
+          "input_tokens": 731,
+          "output_tokens": 0,
+          "unknown_calls": 0
+        },
+        "uncertainty": [
+          "single_sample_per_state",
+          "model_stochasticity_unmeasured",
+          "field_interactions_unmeasured",
+          "sensitivity_is_not_causation",
+          "only_supplied_evidence_tested"
+        ]
+      }
+    }
+  ],
+  "bounded_cli_receipt": {
+    "ok": true,
+    "version": "pm-jev-counterfactual/1",
+    "complete": false,
+    "model": "tev1:4b",
+    "questions_sha256": "7da86cf5c19e56427cc9f292d0d06b1064d0af08840796efdf7005a170be5e90",
+    "evidence_digest": "e7de273813625da2a49b11403d1cc4617a77e15f611a7cb4c4a6a7d7c42c6b70",
+    "baseline": {
+      "route": {
+        "kind": "choice",
+        "value": "defect",
+        "probability": 0.453917658425088
+      }
+    },
+    "comparisons": [
+      {
+        "field": "tags",
+        "evidence_digest": "1da6c8ac6c90cda911daa06ba92935051e547b2692e0619bceafb85226ab2dbc",
+        "changed": [
+          "route"
+        ],
+        "proposals": {
+          "route": {
+            "kind": "choice",
+            "value": "capability",
+            "probability": 0.4523482578215421
+          }
+        },
+        "max_probability_delta": 0.0047179137898960555
+      }
+    ],
+    "omitted": [
+      {
+        "field": "title",
+        "reason": "call_limit"
+      },
+      {
+        "field": "description",
+        "reason": "call_limit"
+      }
+    ],
+    "calls": {
+      "attempted": 2,
+      "succeeded": 2,
+      "limit": 2,
+      "retries": 0
+    },
+    "usage": {
+      "input_tokens": 482,
+      "output_tokens": 0,
+      "unknown_calls": 0
+    },
+    "uncertainty": [
+      "single_sample_per_state",
+      "model_stochasticity_unmeasured",
+      "field_interactions_unmeasured",
+      "sensitivity_is_not_causation",
+      "only_supplied_evidence_tested"
+    ]
+  }
+}

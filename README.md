@@ -66,6 +66,7 @@ Runtime tracker paths come from the host and SDK, including custom pm storage ro
 | `pm jev dedupe --status open --type Issue --limit-pairs 20` | Verify bounded existing pairs with the calibrated `same_work` policy; unsure pairs abstain; no writes. |
 | `pm jev dedupe --apply --min-confidence 0.95` | Add calibrated duplicate links and receipts; proposals never close items. |
 | `pm jev ask <id> --questions questions.json` | Validate and answer caller-defined choice, score and noul questions. |
+| `pm jev explain <id> --questions questions.json --fields tags,title --max-calls 3` | Compare typed proposals after explicit field removals; opaque evidence receipts, bounded calls, no writes. |
 | `pm jev gate --noul "The text contains credentials or private data." --text "Synthetic text" --threshold 0.5 --expect false` | Exit 0 when the proposition does not hold; exit 1 when credentials/private data are detected. |
 | `pm jev gate --noul "Does this item need human input?" --item <id>` | Evaluate the minimal item projection instead of text. |
 | `pm jev models` | List decision models and the discovery source. |
@@ -414,11 +415,33 @@ recommending the local flag that is already enabled; neither mode calls the mode
 
 ### Without git
 
-Doctor, model discovery, triage, link, dedupe, ask, gate and cost-policy selection work in plain trackers.
+Doctor, model discovery, triage, link, dedupe, ask, gate, explanations and cost-policy selection work in plain trackers.
 Evaluation and calibration work there with `--local-unverified` and explicit local
 source directories; they require neither git nor GitHub. Default public-corpus
 sources still require git, GitHub CLI authentication, verified public visibility
 and a committed snapshot. The destination tracker itself need not be a git repo.
+
+### Counterfactual decision explanations
+
+Measure sensitivity with the same typed questions used by `jev ask`:
+
+```sh
+pm jev explain my-item-1a2b --questions examples/explanation-questions.json \
+  --fields tags,title,description --max-calls 4 --json
+```
+
+The baseline and each explicit field removal consume one request; the hard limit
+includes failures and disables retries. Compact TOON/JSON reports changed typed
+outcomes, probability movement, opaque per-run evidence digests, call counts,
+uncertainty and every omitted comparison. Partial receipts retain completed work.
+This measures single-sample sensitivity; model noise and field interactions remain
+unmeasured. No items or receipts are written. Existing typed proposals/exemplars
+remain the model interface and pm-context retains evidence packing.
+
+SDK consumers can import `explainDecision`, `CounterfactualOptions`,
+`CounterfactualReceipt` and `CounterfactualRefusal`. See the
+[SDK example, bounds, refusal remedies and receipt contract](docs/counterfactual-explanations.md)
+and [packaged question example](examples/explanation-questions.json).
 
 ### Cost-sensitive abstention policies
 

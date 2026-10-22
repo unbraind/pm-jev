@@ -32,6 +32,7 @@ import type { EntryType, Questions, ScoreCriteria, SystemOneResult, ChoiceRespon
 import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.ts";
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.ts";
+import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.ts";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.ts";
 import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked, readOpaqueJevSettings } from "./decision-calibration.ts";
 import type { ActiveCalibration, CalibrationUse } from "./decision-calibration.ts";
@@ -68,6 +69,10 @@ export type { Questions, SystemOneResult };
 export { COST_POLICY_VERSION, CostPolicyRefusal, parseCostDataset, selectAbstentionPolicy, abstainWithPolicy } from "./cost-policy.ts";
 /** Typed caller costs, evidence, receipts and refusal codes. */
 export type { DecisionCosts, CostObservation, CostDataset, CostRefusalCode, AbstentionPolicy, CostMetrics, CostPoint, CostPolicyReport } from "./cost-policy.ts";
+/** Bounded sensitivity comparisons over the existing typed decision interface. */
+export { COUNTERFACTUAL_VERSION, CounterfactualRefusal, explainDecision } from "./counterfactual.ts";
+/** Typed options, compact proposals and uncertainty-bearing explanation receipts. */
+export type { CounterfactualOptions, CounterfactualReceipt, ExplanationProposal, FieldComparison } from "./counterfactual.ts";
 
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
@@ -2259,6 +2264,15 @@ const GATE_FLAGS: FlagDefinition[] = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api: ExtensionApi): void {
+  api.registerCommand(defineCommand({
+    name: "jev explain",
+    description: "Measure typed decision sensitivity by bounded explicit field removals with opaque evidence receipts",
+    arguments: [{ name: "id", required: true, description: "Item to read without mutation" }],
+    flags: EXPLANATION_FLAGS,
+    examples: ["pm jev explain my-item-1a2b --questions questions.json --fields title,description --max-calls 3 --json"],
+    /** The host owns TOON/JSON output and refusal exit codes. */
+    run: (ctx: CommandHandlerContext) => runExplanationCommand(ctx),
+  }));
   api.registerCommand(defineCommand({
     name: "jev policy",
     description: "Select a measured abstention filter from caller costs and fixed labelled scores without retraining",

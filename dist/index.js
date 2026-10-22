@@ -23,6 +23,7 @@ import { APIConnectionError, APIError, APITimeoutError, APIUserAbortError, TypeS
 import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.js";
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.js";
+import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.js";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.js";
 import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked, readOpaqueJevSettings } from "./decision-calibration.js";
 import { DEPENDENCY_KIND_VALUES, createPmCliExpectedError, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
@@ -34,6 +35,8 @@ export { isPmCliExpectedError };
 export { createPmCliExpectedError };
 /** Fixed-score cost selection and proposal vetoes for SDK consumers. */
 export { COST_POLICY_VERSION, CostPolicyRefusal, parseCostDataset, selectAbstentionPolicy, abstainWithPolicy } from "./cost-policy.js";
+/** Bounded sensitivity comparisons over the existing typed decision interface. */
+export { COUNTERFACTUAL_VERSION, CounterfactualRefusal, explainDecision } from "./counterfactual.js";
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
 // ---------------------------------------------------------------------------
@@ -1751,6 +1754,15 @@ const GATE_FLAGS = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api) {
+    api.registerCommand(defineCommand({
+        name: "jev explain",
+        description: "Measure typed decision sensitivity by bounded explicit field removals with opaque evidence receipts",
+        arguments: [{ name: "id", required: true, description: "Item to read without mutation" }],
+        flags: EXPLANATION_FLAGS,
+        examples: ["pm jev explain my-item-1a2b --questions questions.json --fields title,description --max-calls 3 --json"],
+        /** The host owns TOON/JSON output and refusal exit codes. */
+        run: (ctx) => runExplanationCommand(ctx),
+    }));
     api.registerCommand(defineCommand({
         name: "jev policy",
         description: "Select a measured abstention filter from caller costs and fixed labelled scores without retraining",
