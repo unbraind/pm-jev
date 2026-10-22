@@ -2,12 +2,17 @@ id: pm-jev-0s07
 title: Name evaluation source failures and support local tracker reads without GitHub
 description: "Classify gh source-inspection failures with redacted first-line diagnostics and exact recovery steps; exercise eval and calibrate against eligible local trackers without gh or git, preserve label eligibility and isolated public-source guards. Related implementation: pm-jev-82ip, pm-jev-hx9w, pm-jev-f4ba."
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-20T09:59:36.702Z"
-updated_at: "2026-10-20T13:26:58.449Z"
+updated_at: "2026-10-22T08:55:46.811Z"
+closed_at: "2026-10-22T08:55:46.807Z"
+completed_at: "2026-10-20T14:11:17.000Z"
 author: codex-agent
+resolution: "Delivered by https://github.com/unbraind/pm-jev/pull/34 (merge 99b5f2546557, head 263bd7367f56)"
+expected_result: "Delivered by the linked pull request, merged after its head check gate passed."
+actual_result: "Merged at 2026-10-20T14:11:17Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[22]{created_at,author,text}:
   "2026-10-20T09:59:48.900Z",codex-agent,"Inspected source loading: every accepted --from currently runs git and gh before the SDK read. Implementing named gh failures with recovery guidance and fake-executable regression coverage. Local-source eligibility clarification is pending because the current public-origin and visibility verification requires those tools."
   "2026-10-20T10:01:22.633Z",codex-agent,"Diagnostic regressions pass (2 tests). Behavioral revert of inspectSource alone makes the fake-gh regression fail (1 pass, 1 fail), with the original opaque Public tracker inspection failed (gh) message; restored implementation passes. Typecheck, lint, zero-duplication and docstring checks pass."
@@ -100,4 +105,5 @@ tests[7]:
       source_ref: fix/eval-source-diagnostics
 docs[1]{path,scope}:
   README.md,project
+close_reason: "{\"pr\":34,\"url\":\"https://github.com/unbraind/pm-jev/pull/34\",\"merge_commit_sha\":\"99b5f2546557816719c4c1ea6e28eb17a0d3faa5\",\"head_sha\":\"263bd7367f5609c10b66469a99f0386f9de2454d\",\"merged_at\":\"2026-10-20T14:11:17Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""
