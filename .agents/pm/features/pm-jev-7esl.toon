@@ -1,0 +1,41 @@
+id: pm-jev-7esl
+title: Compare frozen decision proposals before adopting a local policy
+description: "Offline decision-policy replay. Replay recorded minimized inputs against a selected local policy/model version and compare proposal changes before adoption. Acceptance: no live provider calls during replay; missing inputs yield gaps; old/new disagreement and abstention counts are exact. Include typed SDK, CLI TOON/JSON, typed remedies, docs/example, fixture-adapter tests, public-tracker read-only no-git validation, and local tev1:4b agreement/latency evidence. Overlap checked against CLI source/docs, pm-jev evaluation/calibration and cost-policy surfaces, pm-rl training/promotion and evaluation plans, and pm-rlm recursive ledger replay. Existing evaluation targets labelled quality; this adds deployment compatibility inspection. RLM reconstructs recursive execution, a different ledger. Reuse typed decision validation/transport and host command rendering; do not duplicate SDK tracker behavior."
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-23T06:42:53.726Z"
+updated_at: "2026-10-23T07:03:17.398Z"
+author: codex-agent
+parent: pm-jev-0w3q
+comments[8]{created_at,author,text}:
+  "2026-10-23T06:44:24.130Z",codex-agent,"Implementation: frozen JSON with minimized state, exact typed questions, recorded response and original versioned policy. Default score replay makes zero network calls. Explicit Ollama replay is restricted to numeric loopback, installed non-cloud decision models, no redirects/retries and bounded input deadlines. Reuse existing typed validation/transport and native host TOON/JSON output. Missing inputs remain gaps; exact paired-question counts distinguish disagreement and old/new abstentions. Public-copy validation and unchanged npm/Bun CI release gates will supply acceptance evidence. Dev SDK pin remains unchanged."
+  "2026-10-23T06:51:41.006Z",codex-agent,"Targeted fixture-adapter regressions passed 7/7 before the built-parser addition. New engine measured 100% lines/branches/functions; command coverage is being completed without lowering thresholds. First public validation attempt exhausted a 30-second cold-load deadline; added bounded per-input --deadline-ms (default 120000, maximum 300000) with zero retries. A second recording attempt lost the local model endpoint; keep this as failed validation evidence and retry only after read-only reachability returns. No model service changes are part of this task."
+  "2026-10-23T06:54:59.545Z",codex-agent,"Behavioral revert proof: replacing replayDecisions candidate proposals with the recorded old policy/result made the recorded-replay regression fail (exit 1, disagreement observed 0 instead of 3); restored exact source bytes afterward. Eight targeted tests including built parser passed before this mutation. Built host TOON and JSON receipts remained below 1500 bytes, ignored hosted environment overrides, worked with no Git executable and preserved tracker hashes. Isolated-HOME strict health passes; the ordinary shell inherits a newer global pm-github SDK and reports extension version skew (existing pm-jev-v2la), so no feature dependency bump is needed."
+  "2026-10-23T07:00:20.224Z",codex-agent,"Public validation completed: verified public pm-lint commit 6111a2a33c109985057ab65a62e01770f44345b2; certified SDK read 14 items; sampled 12 sorted items; all 34 authoritative file hashes unchanged in a read-only plain tracker with Git unavailable. Recorded 12 local tev1:4b answers, then replayed 12 local calls: agreement 10/12, disagreement 2/12, old abstentions 9, new abstentions 11, mean 13755.904 ms, total 165070.848 ms. Saved-score replay made zero network calls and yielded the same exact counts. One intentionally incomplete 13th record produced one state/result gap. This is compatibility evidence, not labelled accuracy or adoption approval. Evidence: docs/policy-replay-evidence.json. Shared acceptance/parser fixture helpers remove duplication at the unchanged 0% gate."
+  "2026-10-23T07:00:24.586Z",codex-agent,Linked test execution passed 8/8 through pm test --run --progress (exit 0). The tracker disables persistent test-result tracking; command and summarized evidence are retained here instead of changing tracker policy. Targeted source c8 measurement reached 100% statements/branches/functions/lines before the final explicit-empty-option guard; final verification follows.
+  "2026-10-23T07:02:02.860Z",codex-agent,"Final source measurement: targeted c8 on policy-replay.ts and replay-command.ts passed 7/7 fixture/harness tests with 100% statements, branches, functions and lines. Built explanation parser regression also passed 1/1 after extracting shared fixture helpers. Typecheck, test typecheck, lint, docstring gate (748 declarations), duplication gate (0 clone pairs at 0% threshold), and generated changelog check passed. Final linked eight-test run is in progress; CI will supply the full npm and Bun release-gate evidence on the PR head. Example recording independently produced compared=1, disagreement=1, old/new abstentions=0/1 and gaps=1 as documented."
+  "2026-10-23T07:02:35.164Z",codex-agent,"Final linked run passed 8/8 (exit 0), including built CLI TOON/JSON, typed refusals and gap exit behavior in a non-git tracker. Implementation and public validation are complete. Full npm/Bun release checks are delegated to CI because the shared host is CPU saturated; the PR will retain run URLs and exact counts. No merge or release is authorized."
+  "2026-10-23T07:03:10.118Z",codex-agent,"Implementation and verification handoff: all local checks and linked tests pass; public-model measurements are recorded. Releasing the claim for owner review, leaving this item in_progress as required. The ready-for-review PR will report exact-head CI npm/Bun release-gate run links and counts. Remaining limits: single public cohort and one inference sample per state; agreement includes abstentions; Ollama digest is a preflight snapshot, so keep tags stable. Hosted providers and automatic adoption remain outside replay."
+files[12]{path,scope}:
+  CHANGELOG.md,project
+  index.ts,project
+  manifest.json,project
+  package.json,project
+  policy-replay.ts,project
+  replay-command.ts,project
+  test/counterfactual.acceptance.ts,project
+  test/counterfactual.test.ts,project
+  test/policy-replay.acceptance.ts,project
+  test/policy-replay.test.ts,project
+  test/replay-command.test.ts,project
+  test/replay-fixtures.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/policy-replay.test.ts test/replay-command.test.ts,project,codex-agent,"2026-10-23T06:51:24.944Z",local_mutation,feat/offline-policy-replay
+docs[4]{path,scope}:
+  docs/policy-replay-evidence.json,project
+  docs/policy-replay.md,project
+  examples/policy-replay.json,project
+  README.md,project
+body: ""

@@ -1,0 +1,180 @@
+{
+  "version": "pm-jev-replay-public/1",
+  "repository": "unbraind/pm-lint",
+  "commit": "6111a2a33c109985057ab65a62e01770f44345b2",
+  "archive_sha256": "0dd3904227012a7c99f4197626a5a86af2ab1cdf12a6591d7209255615e7ad20",
+  "tracker_items": 14,
+  "sampled_items": 12,
+  "authoritative_files_verified": 34,
+  "tracker_unchanged": true,
+  "git_available_during_replay": false,
+  "model": "tev1:4b",
+  "model_version": "ollama:7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+  "recording_calls": 12,
+  "recording_ms": 191877.23877300002,
+  "local_replay_calls": 12,
+  "saved_score_network_calls": 0,
+  "saved_score_replay": {
+    "version": "pm-jev-replay/1",
+    "policy": {
+      "version": "candidate-v2",
+      "min_probability": 0.9
+    },
+    "adapter": "recorded",
+    "complete": false,
+    "records": 13,
+    "attempted": 12,
+    "replayed": 12,
+    "gaps": 1,
+    "compared": 12,
+    "agreement": 10,
+    "disagreement": 2,
+    "old_abstentions": 9,
+    "new_abstentions": 11,
+    "latency_ms": {
+      "total": 0.08209899996290915,
+      "mean": 0.006841583330242429
+    },
+    "details": [
+      {
+        "index": 0,
+        "changed": []
+      },
+      {
+        "index": 1,
+        "changed": [
+          "route"
+        ]
+      },
+      {
+        "index": 2,
+        "changed": []
+      },
+      {
+        "index": 3,
+        "changed": []
+      },
+      {
+        "index": 4,
+        "changed": []
+      },
+      {
+        "index": 5,
+        "changed": []
+      },
+      {
+        "index": 6,
+        "changed": []
+      },
+      {
+        "index": 7,
+        "changed": []
+      },
+      {
+        "index": 8,
+        "changed": [
+          "route"
+        ]
+      },
+      {
+        "index": 9,
+        "changed": []
+      },
+      {
+        "index": 10,
+        "changed": []
+      },
+      {
+        "index": 11,
+        "changed": []
+      },
+      {
+        "index": 12,
+        "gap": "state,result"
+      }
+    ],
+    "omitted_details": 0
+  },
+  "local_model_replay": {
+    "version": "pm-jev-replay/1",
+    "policy": {
+      "version": "candidate-v2",
+      "min_probability": 0.9
+    },
+    "adapter": "ollama:7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+    "complete": false,
+    "records": 13,
+    "attempted": 12,
+    "replayed": 12,
+    "gaps": 1,
+    "compared": 12,
+    "agreement": 10,
+    "disagreement": 2,
+    "old_abstentions": 9,
+    "new_abstentions": 11,
+    "latency_ms": {
+      "total": 165070.84774800003,
+      "mean": 13755.903979000002
+    },
+    "details": [
+      {
+        "index": 0,
+        "changed": []
+      },
+      {
+        "index": 1,
+        "changed": [
+          "route"
+        ]
+      },
+      {
+        "index": 2,
+        "changed": []
+      },
+      {
+        "index": 3,
+        "changed": []
+      },
+      {
+        "index": 4,
+        "changed": []
+      },
+      {
+        "index": 5,
+        "changed": []
+      },
+      {
+        "index": 6,
+        "changed": []
+      },
+      {
+        "index": 7,
+        "changed": []
+      },
+      {
+        "index": 8,
+        "changed": [
+          "route"
+        ]
+      },
+      {
+        "index": 9,
+        "changed": []
+      },
+      {
+        "index": 10,
+        "changed": []
+      },
+      {
+        "index": 11,
+        "changed": []
+      },
+      {
+        "index": 12,
+        "gap": "state,result"
+      }
+    ],
+    "omitted_details": 0
+  },
+  "limitations": "Twelve sorted public items, one choice question, one recorded answer and one local replay per input. One intentionally incomplete record demonstrates gaps. Agreement counts include abstentions and policy threshold changes. This is compatibility evidence, not labelled accuracy, causal evaluation, or adoption approval. Latency includes transport and validation under concurrent host load. No raw inputs, credentials or provider configuration are published."
+}

@@ -5,6 +5,7 @@
 ### Added
 
 - Compact decision output for agent context budgets ([pm-jev-qriu](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-qriu.toon))
+- Compare frozen decision proposals before adopting a local policy ([pm-jev-7esl](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-7esl.toon))
 - Explain typed decisions by bounded evidence removal ([pm-jev-ygvl](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-ygvl.toon))
 - Select measured cost-sensitive abstention policies ([pm-jev-do7y](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-do7y.toon))
 - pm-jev packaging, gates and CI ([pm-jev-0q58](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-0q58.toon))

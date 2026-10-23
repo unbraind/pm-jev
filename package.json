@@ -34,7 +34,10 @@
     "calibration/cost-policy-report-v1.json",
     "docs/counterfactual-explanations.md",
     "examples/explanation-questions.json",
-    "calibration/counterfactual-report-v1.json"
+    "calibration/counterfactual-report-v1.json",
+    "docs/policy-replay.md",
+    "docs/policy-replay-evidence.json",
+    "examples/policy-replay.json"
   ],
   "scripts": {
     "build": "tsc",

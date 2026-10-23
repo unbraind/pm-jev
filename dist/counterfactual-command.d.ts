@@ -3,6 +3,7 @@ import type { CommandHandlerContext, FlagDefinition } from "@unbrained/pm-cli/sd
 export declare const EXPLANATION_FLAGS: FlagDefinition[];
 /** Reuse host routing, reads and rendering; return redacted typed refusals in either format. */
 export declare function runExplanationCommand(ctx: CommandHandlerContext): Promise<{
+    refusal?: undefined;
     version: typeof import("./counterfactual.ts").COUNTERFACTUAL_VERSION;
     complete: boolean;
     model: string | null;
@@ -28,7 +29,6 @@ export declare function runExplanationCommand(ctx: CommandHandlerContext): Promi
     uncertainty: readonly string[];
     ok: boolean;
     exit_code?: number | undefined;
-    refusal?: undefined;
 } | {
     ok: boolean;
     exit_code: number;
