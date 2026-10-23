@@ -484,7 +484,7 @@ test("exemplar evaluation wires budgeted same-tracker exemplars and reports four
   } finally { origin.dispose(); }
 });
 
-test("embedding retrieval ranks through the local embedding endpoint and falls back to lexical deterministically", async () => {
+test("embedding retrieval ranks locally, refuses failed batches and falls back only for unavailable models", async () => {
   const origin = await exemplarCorpus();
   try {
     await scenario(async (fixture, server) => {
@@ -508,12 +508,13 @@ test("embedding retrieval ranks through the local embedding endpoint and falls b
         const eligible = eligibleExemplars(target, units.map((unit, index) => ({ ...unit, vector: vectors[index] })), sampled);
         assert.deepEqual(row.exemplar_ids, embeddingRank(vectors[units.indexOf(target)], eligible).slice(0, 4).map(/** Joined unit ids. */ unit => unit.ids.join("+")));
       }
-      // A failed embedding batch falls back to lexical ranking for that repository.
+      // A failed embedding attempt stops before any decision inference or fallback.
       embedServe(server, { embedModel: true, status: 503 });
-      const failed = await runEvaluationCommand(context(fixture, { ...request, retrieval: "embedding" }), false, source) as ExemplarReport;
-      assert.equal(failed.retrieval.embedding_available, true);
-      assert.equal(failed.retrieval.embedding_fallbacks, 1);
-      assert.deepEqual(failed.exemplar_observations.map(retrievalIdentity), lexical.exemplar_observations.map(retrievalIdentity));
+      const failed = await runEvaluationCommand(context(fixture, { ...request, retrieval: "embedding" }), false, source);
+      assert.ok("receipt" in failed && failed.receipt);
+      assert.equal(failed.receipt.completed_calls, 0);
+      assert.equal(failed.receipt.attempted_calls, 1);
+      assert.equal(failed.receipt.reason, "provider_error");
       // A missing embedding model falls back to lexical for every repository.
       embedServe(server, { embedModel: false });
       const absent = await runEvaluationCommand(context(fixture, { ...request, retrieval: "embedding" }), false, source) as ExemplarReport;

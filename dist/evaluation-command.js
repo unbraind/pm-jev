@@ -77,20 +77,19 @@ function exampleEvidence(example) {
 async function embeddedCorpora(corpora, built, config, run) {
     const available = await embeddingAvailable(config.baseUrl, config.timeoutMs);
     const vectors = new Map();
-    let fallbacks = 0;
     if (available)
         for (const [index, corpus] of corpora.entries()) {
-            const response = await run.call(/** Count each embedding batch as one inference attempt. */ async (signal) => ({ usage: { input_tokens: null, output_tokens: null },
-                embedded: await embedTexts(config.baseUrl, built[index].units.map(/** Embed each unit's retrieval text in stable order. */ /** Embed each unit's retrieval text in stable order. */ unit => retrievalText(unit)), config.timeoutMs, signal) }), false);
-            const embedded = response.embedded;
-            // A failed corpus batch falls back to lexical for that repository; text never crosses a failed request.
-            if (embedded === null) {
-                fallbacks += 1;
-                continue;
-            }
-            vectors.set(corpus.repository, { units: built[index].units, vectors: embedded });
+            const response = await run.call(/** Count an embedding completion only after a valid vector batch returns. */ async (signal) => {
+                const embeddingSignal = AbortSignal.any([signal, AbortSignal.timeout(config.timeoutMs)]);
+                const embedded = await embedTexts(config.baseUrl, built[index].units.map(/** Embed each unit's retrieval text in stable order. */ /** Embed each unit's retrieval text in stable order. */ unit => retrievalText(unit)), config.timeoutMs, embeddingSignal);
+                embeddingSignal.throwIfAborted();
+                if (embedded === null)
+                    throw createPmCliExpectedError("Embedding inference failed; inspect the partial receipt, restore the embedding endpoint and use a new receipt file to retry.", { context: { code: "jev_embedding_failed" } });
+                return { usage: { input_tokens: null, output_tokens: null }, embedded };
+            }, false);
+            vectors.set(corpus.repository, { units: built[index].units, vectors: response.embedded });
         }
-    return { available, fallbacks, vectors };
+    return { available, fallbacks: 0, vectors };
 }
 /** Rank the eligible same-tracker exemplars for one sampled target. */
 function rankExemplars(unit, corpusUnits, sampled, embedded) {

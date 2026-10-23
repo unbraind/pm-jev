@@ -496,8 +496,11 @@ they come only from the target's own repository, so calibration and validation
 repositories never share context. Lexical ranking is deterministic in-process
 BM25 over title and body with stable item-id tie-breaks. `--retrieval embedding`
 uses the local `qwen3-embedding:0.6b` model when it is installed (one batched
-request per repository); a missing model or failed batch falls back to lexical
-and the report records the fallback.
+request per repository). A missing model falls back to lexical retrieval. A failed
+or malformed embedding batch interrupts evaluation and persists one attempted,
+zero completed inference calls for that batch; it never starts decision inference
+or hides the provider failure behind the remaining call budget. Embedding timeouts
+retain the `timeout` interruption reason.
 
 An exemplar run reports four arms for every channel: the majority class of the
 target's eligible same-tracker pool, a kNN vote over the retrieved exemplars

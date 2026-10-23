@@ -6,14 +6,14 @@ status: in_progress
 priority: 2
 tags[3]: deferred,eval,reliability
 created_at: "2026-10-18T03:58:44.531Z"
-updated_at: "2026-10-23T17:57:58.956Z"
+updated_at: "2026-10-23T18:20:09.638Z"
 author: codex-agent
 acceptance_criteria: "A synthetic two-request run failing on the second request reports two attempts and one completed example, preserves hashes and validated observations, makes no configuration write and does not retry; the failure receipt excludes source text and local paths."
 parent: pm-jev-0w3q
 dependencies[2]{id,kind,created_at,author,source_kind,author_source}:
   pm-jev-82ip,related,"2026-10-18T04:17:34.007Z",codex-agent,"cli:update:dep",detected
   pm-jev-hx9w,related,"2026-10-18T04:17:34.007Z",codex-agent,"cli:update:dep",detected
-comments[10]{created_at,author,text}:
+comments[13]{created_at,author,text}:
   "2026-10-19T15:37:28.401Z",codex-agent,"Additional evidence from pm-jev-vouf: a benchmark postprocessor assertion aborted after replacement inference but before report publication, losing one validated probability/latency per model. Both calls are counted in the real-label receipt; replacement persistence was moved before validation. This reinforces the existing need for append-only partial evaluation receipts rather than final-report-only publication."
   "2026-10-23T16:47:29.919Z",codex-agent,"Design: private atomic JSON checkpoints before inference attempts and after validated completions; shared typed accounting for evaluation and replay. SIGINT, run deadline, call budget and provider failures stop incomplete calibration. Existing explicit receipt reports previous work without repeating calls. Monetary cost remains unknown when the local endpoint reports no price. Also reject explicit null replay results even when questions are missing."
   "2026-10-23T16:54:16.006Z",codex-agent,"Implemented shared durable attempt/completion accounting, private receipts, explicit report-on-rerun behavior, call and deadline budgets, and typed null-result replay refusal. Initial isolated receipt regressions passed 3/3, covering provider failure, SIGINT, cancellation, deadline, budget and crash reporting. Completing command integration, public-copy acceptance, behavioral revert proofs and unchanged release gates."
@@ -24,6 +24,9 @@ comments[10]{created_at,author,text}:
   "2026-10-23T17:33:11.679Z",codex-agent,"SDK cancellation is now distinguished from process SIGINT: caller timeout signals retain timeout, other SDK aborts use aborted, and native SIGINT remains sigint. Final receipt-module regressions pass 4/4 with 100% statements/branches/functions/lines; replay-command regressions pass 3/3 at 100% in all dimensions. Earlier in-flight gates are superseded; the frozen implementation is being checked by sequential full npm and Bun gates before publication."
   "2026-10-23T17:43:42.096Z",codex-agent,"Recovery now reports an explicit prior receipt before source reads, recording parsing or provider discovery, including when sources and the model are unavailable. Real public-copy validation confirms zero new provider requests and zero inference on rerun. Focused receipt/replay SDK/CLI regressions pass 14/14 with all three modules at 100% statements/branches/functions/lines; evaluation recovery passes 1/1 and test typecheck passes. Removing only the early replay receipt check makes the unavailable-recording recovery fail as invalid_recording instead of receipt_exists (exit 1); restored. Running final full npm and Bun gates on this implementation."
   "2026-10-23T17:57:56.315Z",codex-agent,"Final full release gates passed under isolated Git identity: npm run release:check and bun run release:check each passed 323/323 tests with zero failures, skipped, cancelled or todo tests. Both measured 100% statements, branches, functions and lines across the complete 30-source inventory, duplication 0%, all declarations documented and production audit 0 vulnerabilities; build, public provenance, pack, changelog and publish-attestation checks passed. Real-data evidence: 14 public tracker items, 34 unchanged artifacts, evaluation/replay 2 attempts and 1 completion, 2 evaluation observations, 50/4 known tokens, one unknown-usage call, no calibration writes; offline rerun makes zero provider requests. Cost remains null when unreported, and reruns report prior work rather than automatically resuming. Preparing a ready-for-review PR; CI must verify both full gates on Node 22 and 26. No item closure, merge or release."
+  "2026-10-23T18:13:40.478Z",codex-agent,"Review BLOCK follow-up: embedding transport errors return null, which the evaluation wrapper incorrectly returned as a successful receipt call. Fix will reject null within the accounted attempt before completion, stop evaluation with its failure reason, preserve the consumed budget and unknown usage, and make zero decision calls. Add a real CLI HTTP 503 regression with retrieval embedding and max-calls 1 in a plain tracker. PR branch pulled cleanly; main has not advanced, so no merge is needed."
+  "2026-10-23T18:18:32.543Z",codex-agent,"Review BLOCK fixed: embeddedCorpora now rejects a null vector batch inside ReceiptRun.call before completion accounting. HTTP 503 or malformed vectors surface provider_error; a per-embedding abort signal preserves timeout. Failed batches consume exactly one inference attempt, zero decision calls, zero completions and no completed cases; unknown usage/cost stays explicit and no settings are written. Built CLI regression passed HTTP 503, malformed vectors and timeout with retrieval embedding and max-calls 1 in a non-git tracker; existing embedding SDK regression also passed. Behavioral revert proof: reverted only embeddedCorpora to the prior PR function, rebuilt dist, and the new CLI test failed with actual completed_calls=1 versus expected 0 (exit 1). Restored the fix and rebuilt. Typecheck, test typecheck, lint, docstrings and duplication pass."
+  "2026-10-23T18:20:07.447Z",codex-agent,"Selected linked regression passed through the pm test runner: 1/1, exit 0, zero failures/skips/cancellations; it exercised HTTP 503, malformed embedding vectors and timeout with max-calls 1, validating one attempt and zero completions/decision calls plus unchanged tracker artifacts. Existing retrieval SDK regression passed 1/1. The failing function-only revert and restored build are verified. Typecheck, test typecheck, lint, docstrings and duplication passed. Pushing the review fix for the CI npm/Bun release matrix; prior completed public-data and replay validation are retained."
 files[14]{path,scope}:
   .gitignore,project
   evaluation-command.ts,project
@@ -39,11 +42,12 @@ files[14]{path,scope}:
   test/partial-receipt.test.ts,project
   test/policy-replay.test.ts,project
   test/replay-command.test.ts,project
-tests[4]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[5]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/partial-receipt.test.ts test/evaluation-command.test.ts test/policy-replay.test.ts test/replay-command.test.ts,project,codex-agent,"2026-10-23T16:56:22.864Z",local_mutation,feat/partial-evaluation-receipts
   node --test test/interrupted-command.test.ts,project,codex-agent,"2026-10-23T16:58:05.787Z",local_mutation,feat/partial-evaluation-receipts
   "npm run release:check",project,codex-agent,"2026-10-23T17:28:32.073Z",local_mutation,feat/partial-evaluation-receipts
   "bun run release:check",project,codex-agent,"2026-10-23T17:28:32.073Z",local_mutation,feat/partial-evaluation-receipts
+  "node --test --test-name-pattern=\"embedding HTTP 503\" test/interrupted-command.test.ts",project,codex-agent,"2026-10-23T18:16:22.904Z",local_mutation,feat/partial-evaluation-receipts
 docs[2]{path,scope}:
   docs/partial-receipt-evidence.json,project
   README.md,project
