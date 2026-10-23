@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { buildUnits, readLocalCorpus } from "../tracker-evaluation.ts";
 import { bm25Rank, cosineSimilarity, EMBEDDING_MODEL, eligibleExemplars, embedTexts, embeddingAvailable, embeddingRank, estimateTokens, exemplarBudget, exemplarContext, knnVote, majorityLabel, tokenize } from "../exemplar-retrieval.ts";
 import type { ExemplarUnit } from "../exemplar-retrieval.ts";
-import { endpoint } from "./fixtures.ts";
+import { endpoint, project, withoutGit } from "./fixtures.ts";
 
 /** Build one exemplar unit with defaults filled for deterministic assertions. */
 function unit(overrides: Partial<ExemplarUnit> & { ids: string[] }): ExemplarUnit {
@@ -15,6 +16,34 @@ test("tokenization lowercases alphanumerics and the token estimate stays conserv
   assert.equal(estimateTokens(""), 0);
   assert.equal(estimateTokens("abcd"), 1);
   assert.equal(estimateTokens("abcde"), 2);
+});
+
+test("Unicode words survive real non-git tracker retrieval with BM25 term frequency", async () => {
+  const fixture = await project();
+  try {
+    await withoutGit(fixture.cwd, async () => {
+      await fixture.pm.create({ id: "a-unrelated", type: "Task", title: "Unrelated ASCII export" });
+      await fixture.pm.create({ id: "z-match", type: "Task", title: "Überprüfung 東京", body: "東京" });
+      const corpus = await readLocalCorpus(fixture.pmRoot);
+      const pool = buildUnits(corpus, "triage").units;
+      assert.equal(bm25Rank("東京", pool)[0].ids[0], "synthetic-z-match");
+      assert.deepEqual(tokenize("Überprüfung 東京 ÜBERPRÜFUNG"), ["überprüfung", "東京", "überprüfung"]);
+      assert.deepEqual(tokenize("crash-crash crash"), ["crash", "crash", "crash"]);
+    });
+  } finally {
+    fixture.dispose();
+  }
+});
+
+test("UTF-8 exemplar packing charges bodies, labels, markers and array separators", () => {
+  assert.equal(estimateTokens("漢".repeat(100)), 75);
+  const pool = [unit({ ids: ["unicode"], title: "東京", body: "漢".repeat(100), labels: { type: "課題" } })];
+  const packed = exemplarContext(pool, 35);
+  assert.equal(packed.length, 1);
+  assert.ok(packed[0].body.endsWith("…[truncated]"));
+  assert.ok(Math.ceil(Buffer.byteLength(JSON.stringify(packed), "utf8") / 4) <= 35);
+  assert.deepEqual(exemplarContext(pool, 5), []);
+  assert.ok(Math.ceil(Buffer.byteLength(JSON.stringify(exemplarContext([...pool, ...pool], 120)), "utf8") / 4) <= 120);
 });
 
 test("exemplar budgets clamp to the prompt headroom the endpoint leaves open", () => {

@@ -11,12 +11,12 @@ import type { CalibrationReceipt, Observation } from "../decision-calibration.ts
 import { activeCalibration, calibrateObservations, calibrationKey, evidenceHash, readCalibration } from "../decision-calibration.ts";
 import { assertPublicProvenance } from "../source-provenance.ts";
 import { verifyPublicArtifacts } from "../scripts/verify-public-provenance.ts";
-import { buildUnits, deterministicSample, readPublicCorpus } from "../tracker-evaluation.ts";
+import { buildUnits, deterministicSample, readLocalCorpus, readPublicCorpus } from "../tracker-evaluation.ts";
 import type { TrackerCorpus } from "../tracker-evaluation.ts";
-import { EMBEDDING_MODEL, eligibleExemplars, embeddingRank, embedTexts, estimateTokens, majorityLabel } from "../exemplar-retrieval.ts";
+import { EMBEDDING_MODEL, PROMPT_TOKEN_LIMIT, eligibleExemplars, embeddingRank, embedTexts, estimateTokens, majorityLabel } from "../exemplar-retrieval.ts";
 import type { ExemplarSetting } from "../exemplar-retrieval.ts";
 import { publicInspection, syntheticCorpus } from "./evaluation-fixtures.ts";
-import { answers, project, scenario, trackerSnapshot } from "./fixtures.ts";
+import { answers, project, scenario, trackerSnapshot, withoutGit } from "./fixtures.ts";
 import type { Questions } from "@typesafe-ai/sdk";
 
 /** Bind evaluator requests to an actual host SDK and an independent synthetic public source. */
@@ -523,6 +523,43 @@ test("embedding retrieval ranks locally, refuses failed batches and falls back o
       assert.deepEqual(absent.exemplar_observations.map(retrievalIdentity), lexical.exemplar_observations.map(retrievalIdentity));
     });
   } finally { origin.dispose(); }
+});
+
+test("multilingual non-git evaluation withholds exemplars before exceeding the complete prompt ceiling", async () => {
+  const origin = await project();
+  try {
+    await withoutGit(origin.cwd, async () => {
+      const exemplar = await origin.pm.create({ id: "exemplar", type: "Task", title: "漢".repeat(800) });
+      const target = await origin.pm.create({ id: "target", type: "Task", title: "東京", description: "漢".repeat(1600) });
+      const units = buildUnits(await readLocalCorpus(origin.pmRoot), "triage").units;
+      const targetUnit = units.find(row => row.ids[0] === target.item.id)!;
+      const seed = Array.from({ length: 100 }, (_, index) => String(index)).find(value => deterministicSample(units.map(row => row.example), 1, value)[0].example_sha256 === targetUnit.example_sha256)!;
+      assert.ok(seed);
+      await scenario(async (fixture, server) => {
+        serve(server);
+        const options = { task: "triage", from: origin.pmRoot, localUnverified: true, sample: "1", seed, retrieval: "lexical", exemplars: "1" };
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const start = server.requests.length;
+          const result = await runEvaluationCommand(context(fixture, options), false) as ExemplarReport;
+          const wire = server.requests.slice(start).filter(row => row.path !== "/api/tags");
+          // Independent accounting of the fully rendered request, including questions and model.
+          for (const request of wire) assert.ok(Math.ceil(Buffer.byteLength(JSON.stringify(request.body), "utf8") / 4) <= PROMPT_TOKEN_LIMIT, "complete prompt exceeds the SDK byte-estimate ceiling");
+          assert.equal(wire.length, 1, "withheld context must never reach the provider");
+          assert.equal(result.model_calls, 1);
+          assert.equal(result.retrieval.reused_baseline_calls, 1);
+          assert.equal(result.retrieval.budget_clamped_examples, 1);
+          for (const receipt of result.exemplar_observations) {
+            assert.deepEqual(receipt.exemplar_ids, [exemplar.item.id]);
+            assert.deepEqual(receipt.context_exemplar_ids, []);
+            assert.equal(receipt.context_sha256, evidenceHash([]));
+            assert.ok(receipt.effective_exemplar_tokens! < 600);
+          }
+        }
+      });
+    });
+  } finally {
+    origin.dispose();
+  }
 });
 
 test("real tracker exemplar context truncates escaped text and refuses prompts without headroom", async () => {

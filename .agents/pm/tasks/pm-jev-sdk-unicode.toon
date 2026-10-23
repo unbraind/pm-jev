@@ -1,0 +1,31 @@
+id: pm-jev-sdk-unicode
+title: Preserve Unicode exemplar retrieval and UTF-8 prompt budgets
+description: Validate and fix SDK audit F13 and F15 against origin/main with SDK text primitives and byte-based estimates.
+type: Task
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-23T21:19:48.794Z"
+updated_at: "2026-10-23T21:50:29.164Z"
+author: codex-agent
+acceptance_criteria: "F13: validate finding, delegate Unicode normalization and tokenization to the SDK while retaining BM25 term frequency, eligibility and deterministic ranking; prove regression from a real non-git tracker.; F15: validate finding, use SDK UTF-8 byte estimates for base and exemplar reservations; prove multilingual complete-prompt withholding and receipts before the exemplar model call."
+parent: pm-jev-0w3q
+comments[6]{created_at,author,text}:
+  "2026-10-23T21:19:51.998Z",codex-agent,"Validated both findings on origin/main 78b01cb: tokenize uses ASCII-only runs; estimateTokens uses ceil(text.length/4), and exemplar packing also counts characters. Installed SDK 2026.10.20 exports tokenizeSimilarityText, normalizeSimilarityText and estimatePmOutputTokens. Preserve BM25 term frequency because the SDK tokenizer returns a set; replace byte arithmetic through entry packing as well as base reservations. Existing historical calibration receipts remain historical evidence; document the changed retrieval contract."
+  "2026-10-23T21:22:03.333Z",codex-agent,"SDK floor verification: the published 2026.10.10 tarball exports all three helpers, so dev pin, peer range and pm_min_version remain unchanged. F13 regression passes from a real plain tracker with git absent from PATH; repeated Unicode and ASCII terms are retained for BM25. F15 multilingual evaluation regression passes twice with deterministic withholding and empty context receipts; rendered request bytes are checked independently of estimateTokens. Historical calibration report is explicitly identified as predating these semantics."
+  "2026-10-23T21:22:15.128Z",codex-agent,"Independent behavioural revert proofs: replacing only tokenize with its origin/main body makes node --test --test-name-pattern=\"Unicode words survive\" test/exemplar-retrieval.test.ts fail 0/1: unrelated ASCII item ranks ahead of the matching CJK item. Restored source passes. Replacing only estimateTokens with its origin/main body makes node --test --test-name-pattern=\"multilingual non-git\" test/evaluation-command.test.ts fail 0/1 at the independent complete-prompt UTF-8 ceiling assertion. Restored source passes. No dist rebuild is needed for these source-importing regressions."
+  "2026-10-23T21:25:04.406Z",codex-agent,"The first release run exposed duplicate cleanup blocks in the new tests; factored a shared withoutGit fixture and restored the unchanged zero-duplication gate (0/15907 lines, 81 sources). The linked-test runner initially refused pm_context=none in source mode; reran with snapshot workspace isolation as required by the host contract. Automatic result tracking is disabled by project policy; retain sanitized results in comments."
+  "2026-10-23T21:40:01.285Z",codex-agent,"npm release:check passed under a disposable HOME with GIT_CONFIG_GLOBAL=/dev/null and GIT_CONFIG_NOSYSTEM=1: 327/327 tests, zero skipped/canceled/failing tests; 100% statements, branches, functions and lines across all 30 authored source files. c8 totals: 6420/6420 lines and statements, 290/290 functions, 2874/2874 branches. Zero duplication across 81 sources, 796 declarations documented, zero production vulnerabilities; provenance, package dry-run, changelog and publish-attestation checks passed. Strict tracker health exits 0. Linked focused tests passed 24/24 using snapshot workspace isolation."
+  "2026-10-23T21:50:27.536Z",codex-agent,"Bun release:check also passed under disposable HOME and isolated git identity configuration: 327/327 tests, zero failures/skips/cancellations; 100% statements/branches/functions/lines across 30 sources with the same 6420 lines/statements, 290 functions and 2874 branches as npm. Zero duplication and production vulnerabilities; provenance, packaging, changelog and attestation passed. Refreshed both behavioural revert proofs after final fixture cleanup: F13 tokenizer-only revert fails 0/1 on CJK ranking, restored passes 1/1; F15 estimator-only revert fails 0/1 on the independently measured full-prompt byte ceiling, restored passes 1/1. Source restored byte-for-byte. Ready for PR and CI; retain in_progress for orchestrator verification. Historical provider calibration remains historical; no new provider tokenizer or inference-quality claim."
+files[4]{path,scope}:
+  exemplar-retrieval.ts,project
+  test/evaluation-command.test.ts,project
+  test/exemplar-retrieval.test.ts,project
+  test/fixtures.ts,project
+tests[3]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/exemplar-retrieval.test.ts test/evaluation-command.test.ts,project,300,codex-agent,"2026-10-23T21:22:34.595Z",local_mutation,refactor/sdk-unicode-tokens-and-budgets
+  "npm run release:check",project,2400,codex-agent,"2026-10-23T21:25:18.608Z",local_mutation,refactor/sdk-unicode-tokens-and-budgets
+  "bun run release:check",project,2400,codex-agent,"2026-10-23T21:25:28.739Z",local_mutation,refactor/sdk-unicode-tokens-and-budgets
+docs[1]{path,scope}:
+  docs/threshold-calibration.md,project
+body: ""
