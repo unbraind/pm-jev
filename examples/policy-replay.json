@@ -1,0 +1,30 @@
+{
+  "version": "pm-jev-replay/1",
+  "records": [
+    {
+      "id": "synthetic-intake-1",
+      "state": { "title": "Add a compact inspection command" },
+      "questions": {
+        "route": {
+          "type": "choice",
+          "instructions": "Classify this proposed work.",
+          "criteria": { "feature": "New capability", "issue": "Broken existing behavior" }
+        }
+      },
+      "result": {
+        "model": "fixture-v1",
+        "answers": {
+          "route": {
+            "type": "choice",
+            "choice": "feature",
+            "probabilities": { "feature": 0.85, "issue": 0.15 },
+            "confidence": 0.85
+          }
+        },
+        "usage": { "input_tokens": null, "output_tokens": null }
+      },
+      "policy": { "version": "intake-v1", "min_probability": 0.8 }
+    },
+    { "id": "synthetic-missing-inputs" }
+  ]
+}

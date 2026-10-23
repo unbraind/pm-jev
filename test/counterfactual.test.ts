@@ -1,9 +1,8 @@
+import { installBuiltExtension, runBuiltCommand } from "./replay-fixtures.ts";
 import assert from "node:assert/strict";
 import test, { mock } from "node:test";
-import { cpSync, mkdirSync, readFileSync, renameSync, rmdirSync, symlinkSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { mkdirSync, readFileSync, renameSync, rmdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import type { Questions } from "@typesafe-ai/sdk";
 import { CounterfactualRefusal, explainDecision, resolveJevEndpoint } from "../index.ts";
 import { runExplanationCommand } from "../counterfactual-command.ts";
@@ -333,29 +332,23 @@ test("CLI uses host SDK reads in a non-git tracker, handles aliases and refuses 
 test("built command runs through the actual host parser in TOON and JSON with no git executable", async () => {
   await scenario(async (fixture) => {
     const item = (await fixture.pm.create({ type: "Task", title: "Synthetic parser evidence" })).item;
-    const directory = join(fixture.pmRoot, "extensions", "pm-jev");
-    mkdirSync(directory, { recursive: true });
-    cpSync(resolve("dist"), join(directory, "dist"), { recursive: true });
-    cpSync(resolve("manifest.json"), join(directory, "manifest.json"));
-    writeFileSync(join(directory, "package.json"), JSON.stringify({ type: "module" }));
-    symlinkSync(resolve("node_modules"), join(directory, "node_modules"));
+    installBuiltExtension(fixture.pmRoot);
     const file = join(fixture.cwd, "questions.json"); writeFileSync(file, JSON.stringify(questions));
     const before = trackerSnapshot(fixture.pmRoot);
-    const base = [resolve("node_modules/@unbrained/pm-cli/dist/cli.js"), "--pm-path", fixture.pmRoot, "jev", "explain", item.id, "--questions", file, "--fields", "title,tags", "--max-calls", "2"];
-    const env = { ...process.env, PATH: "", PM_PATH: fixture.pmRoot, PM_GLOBAL_PATH: join(fixture.cwd, "global"), GIT_CEILING_DIRECTORIES: dirname(fixture.cwd) };
-    const run = promisify(execFile);
-    const json = await run(process.execPath, [...base, "--json"], { cwd: fixture.cwd, env, timeout: 60000 });
+    const base = ["jev", "explain", item.id, "--questions", file, "--fields", "title,tags", "--max-calls", "2"];
+
+    const json = await runBuiltCommand(fixture, [...base, "--json"]);
     const receipt = JSON.parse(json.stdout) as CounterfactualReceipt;
     assert.equal(receipt.calls.attempted, 2); assert.equal(receipt.omitted[0].field, "tags");
-    const toon = await run(process.execPath, base, { cwd: fixture.cwd, env, timeout: 60000 });
+    const toon = await runBuiltCommand(fixture, base);
     assert.match(toon.stdout, /call_limit/); assert.match(toon.stdout, /sensitivity_is_not_causation/);
     assert.ok(Buffer.byteLength(json.stdout) < 6000); assert.ok(Buffer.byteLength(toon.stdout) < 5000);
     const invalid = [...base]; invalid[invalid.indexOf("--fields") + 1] = "comments";
-    await assert.rejects(run(process.execPath, [...invalid, "--json"], { cwd: fixture.cwd, env, timeout: 60000 }), (error: unknown) => {
+    await assert.rejects(runBuiltCommand(fixture, [...invalid, "--json"]), (error: unknown) => {
       const failed = error as { code: number; stdout: string }; assert.equal(failed.code, 2);
       assert.equal((JSON.parse(failed.stdout) as { refusal: { code: string } }).refusal.code, "invalid_request"); return true;
     });
-    await assert.rejects(run(process.execPath, [...base, "--json"], { cwd: fixture.cwd, env: { ...env, PM_JEV_BASE_URL: "not a URL" }, timeout: 60000 }), (error: unknown) => {
+    await assert.rejects(runBuiltCommand(fixture, [...base, "--json"], { PM_JEV_BASE_URL: "not a URL" }), (error: unknown) => {
       const failed = error as { code: number; stdout: string }; assert.equal(failed.code, 2);
       const refusal = (JSON.parse(failed.stdout) as { refusal: { code: string; remedy: string } }).refusal;
       assert.equal(refusal.code, "endpoint_refused"); assert.match(refusal.remedy, /PM_JEV_BASE_URL/); return true;

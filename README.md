@@ -415,7 +415,7 @@ recommending the local flag that is already enabled; neither mode calls the mode
 
 ### Without git
 
-Doctor, model discovery, triage, link, dedupe, ask, gate, explanations and cost-policy selection work in plain trackers.
+Doctor, model discovery, triage, link, dedupe, ask, gate, explanations, cost-policy selection and offline policy replay work in plain trackers.
 Evaluation and calibration work there with `--local-unverified` and explicit local
 source directories; they require neither git nor GitHub. Default public-corpus
 sources still require git, GitHub CLI authentication, verified public visibility
@@ -822,3 +822,25 @@ The opt-in [synthetic calibration harness](docs/threshold-calibration.md) genera
 versioned noul and type-classification corpora and measures local Ollama reliability curves with
 `npm run calibration`; tests require no Ollama. Its model-specific recommendations
 are advisory and do not change the provisional defaults automatically.
+
+## Offline decision-policy replay
+
+Compare frozen minimized inputs before adopting a local policy or model:
+
+```sh
+pm jev replay --recording recording.json --policy-version intake-v2 --min-probability 0.9 --json
+pm jev replay --recording recording.json --policy-version intake-v2 --min-probability 0.9 --model tev1:4b
+```
+
+Default replay uses recorded answers with zero network requests. Explicit model
+selection permits only an installed local Ollama decision model; hosted/cloud
+providers refuse with remedies. Missing inputs and failed decisions are gaps;
+paired-question disagreement and old/new abstention totals stay exact even when
+`--limit 0` omits detail rows. No tracker mutation or automatic adoption occurs.
+
+The typed SDK exports `parseReplayRecording`, `replayDecisions`,
+`createOllamaReplayAdapter`, `ReplayRefusal` and the recording, policy, adapter and
+report contracts. See the [guide](docs/policy-replay.md),
+[example recording](examples/policy-replay.json) (one intentional gap; exits 2),
+and [public tracker validation](docs/policy-replay-evidence.json). Replay also
+works in a plain tracker without Git.

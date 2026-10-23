@@ -22,6 +22,10 @@ export type { DecisionCosts, CostObservation, CostDataset, CostRefusalCode, Abst
 export { COUNTERFACTUAL_VERSION, CounterfactualRefusal, explainDecision } from "./counterfactual.ts";
 /** Typed options, compact proposals and uncertainty-bearing explanation receipts. */
 export type { CounterfactualOptions, CounterfactualReceipt, ExplanationProposal, FieldComparison } from "./counterfactual.ts";
+/** Frozen-input compatibility inspection and loopback-only decision model adapter. */
+export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.ts";
+/** Portable recording, policy, trusted adapter and compact comparison contracts. */
+export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, ReplayReport } from "./policy-replay.ts";
 /** Version of the triage question catalog; surfaced in every triage receipt. */
 export declare const TRIAGE_CATALOG_VERSION = "pm-jev-triage/2";
 /** Explicit non-mutating candidate, distinct from every registered type. */

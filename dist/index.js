@@ -23,6 +23,7 @@ import { APIConnectionError, APIError, APITimeoutError, APIUserAbortError, TypeS
 import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.js";
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.js";
+import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.js";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.js";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.js";
 import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked, readOpaqueJevSettings } from "./decision-calibration.js";
@@ -37,6 +38,8 @@ export { createPmCliExpectedError };
 export { COST_POLICY_VERSION, CostPolicyRefusal, parseCostDataset, selectAbstentionPolicy, abstainWithPolicy } from "./cost-policy.js";
 /** Bounded sensitivity comparisons over the existing typed decision interface. */
 export { COUNTERFACTUAL_VERSION, CounterfactualRefusal, explainDecision } from "./counterfactual.js";
+/** Frozen-input compatibility inspection and loopback-only decision model adapter. */
+export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.js";
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
 // ---------------------------------------------------------------------------
@@ -1754,6 +1757,14 @@ const GATE_FLAGS = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api) {
+    api.registerCommand(defineCommand({
+        name: "jev replay",
+        description: "Compare frozen decision proposals against a selected local policy or model before adoption",
+        flags: REPLAY_FLAGS,
+        examples: ["pm jev replay --recording recording.json --policy-version candidate-v2 --min-probability 0.8 --json"],
+        /** Delegate compact TOON/JSON rendering and refusal exit codes to the host. */
+        run: (ctx) => runReplayCommand(ctx),
+    }));
     api.registerCommand(defineCommand({
         name: "jev explain",
         description: "Measure typed decision sensitivity by bounded explicit field removals with opaque evidence receipts",

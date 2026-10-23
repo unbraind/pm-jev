@@ -32,6 +32,7 @@ import type { EntryType, Questions, ScoreCriteria, SystemOneResult, ChoiceRespon
 import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.ts";
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.ts";
+import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.ts";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.ts";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.ts";
 import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked, readOpaqueJevSettings } from "./decision-calibration.ts";
@@ -73,6 +74,11 @@ export type { DecisionCosts, CostObservation, CostDataset, CostRefusalCode, Abst
 export { COUNTERFACTUAL_VERSION, CounterfactualRefusal, explainDecision } from "./counterfactual.ts";
 /** Typed options, compact proposals and uncertainty-bearing explanation receipts. */
 export type { CounterfactualOptions, CounterfactualReceipt, ExplanationProposal, FieldComparison } from "./counterfactual.ts";
+
+/** Frozen-input compatibility inspection and loopback-only decision model adapter. */
+export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.ts";
+/** Portable recording, policy, trusted adapter and compact comparison contracts. */
+export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, ReplayReport } from "./policy-replay.ts";
 
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
@@ -2264,6 +2270,14 @@ const GATE_FLAGS: FlagDefinition[] = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api: ExtensionApi): void {
+  api.registerCommand(defineCommand({
+    name: "jev replay",
+    description: "Compare frozen decision proposals against a selected local policy or model before adoption",
+    flags: REPLAY_FLAGS,
+    examples: ["pm jev replay --recording recording.json --policy-version candidate-v2 --min-probability 0.8 --json"],
+    /** Delegate compact TOON/JSON rendering and refusal exit codes to the host. */
+    run: (ctx: CommandHandlerContext) => runReplayCommand(ctx),
+  }));
   api.registerCommand(defineCommand({
     name: "jev explain",
     description: "Measure typed decision sensitivity by bounded explicit field removals with opaque evidence receipts",
