@@ -61,7 +61,7 @@ export interface ExemplarEntry {
  * The local System One endpoint refuses prompts above {@link PROMPT_TOKEN_LIMIT}
  * tokens and never truncates input, so the effective exemplar budget is the
  * smaller of the requested budget and the remaining headroom (with a safety
- * divisor for tokenizer inflation beyond the character estimate).
+ * divisor beyond the UTF-8 byte estimate).
  *
  * @param baseRequest - JSON-encoded request without the exemplar section.
  * @param requested - Requested exemplar token budget.
@@ -72,15 +72,15 @@ export declare function exemplarBudget(baseRequest: string, requested: number, m
 /**
  * Deterministic token estimate for budget arithmetic.
  *
- * Uses the conservative four-characters-per-token heuristic; exact tokenizer
- * output is unnecessary because the budget only bounds the composed context.
+ * Uses the host SDK's UTF-8 byte estimate. Provider-reported usage remains a
+ * separate measurement; this estimate is not a provider tokenizer.
  *
  * @param text - Encoded text of any length.
  * @returns The estimated token count, at least one for nonempty text.
  */
 export declare function estimateTokens(text: string): number;
 /**
- * Lowercase alphanumeric tokens for lexical similarity.
+ * Unicode-aware SDK tokens, retaining repeated terms for BM25 weighting.
  *
  * @param text - Free text of any length.
  * @returns The token list, empty when the text has no alphanumeric runs.
@@ -122,7 +122,7 @@ export declare function eligibleExemplars<T extends ExemplarUnit>(target: {
  * Units are consumed in ranked order. A unit whose body does not fit is
  * body-truncated with a marker; when not even its title fits, no further
  * exemplars are included. The budget bounds the JSON-encoded exemplar section
- * using the four-characters-per-token estimate.
+ * using the SDK's UTF-8 byte estimate.
  *
  * @param ranked - Retrieved exemplar units in descending similarity order.
  * @param budget - Token budget for the composed exemplar context.

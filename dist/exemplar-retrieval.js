@@ -9,11 +9,12 @@
  * budget, and majority-class / kNN-vote baselines share the same retrieved
  * evidence so model arms are compared against context-equivalent baselines.
  */
+import { estimatePmOutputTokens, normalizeSimilarityText, tokenizeSimilarityText } from "@unbrained/pm-cli/sdk";
 /** Fixed local embedding model used for optional embedding similarity. */
 export const EMBEDDING_MODEL = "qwen3-embedding:0.6b";
 /** The local System One endpoint refuses prompts above this many tokens; input is never truncated. */
 export const PROMPT_TOKEN_LIMIT = 2050;
-/** Conservative divisor covering tokenizer inflation beyond four characters per token. */
+/** Extra headroom beyond the SDK byte estimate; not a provider tokenizer. */
 const PROMPT_TOKEN_SAFETY = 1.25;
 /** Truncation marker appended to budgeted body excerpts. */
 const TRUNCATED_MARKER = "…[truncated]";
@@ -31,7 +32,7 @@ function similarityOrder(left, right) {
  * The local System One endpoint refuses prompts above {@link PROMPT_TOKEN_LIMIT}
  * tokens and never truncates input, so the effective exemplar budget is the
  * smaller of the requested budget and the remaining headroom (with a safety
- * divisor for tokenizer inflation beyond the character estimate).
+ * divisor beyond the UTF-8 byte estimate).
  *
  * @param baseRequest - JSON-encoded request without the exemplar section.
  * @param requested - Requested exemplar token budget.
@@ -47,23 +48,24 @@ export function exemplarBudget(baseRequest, requested, measuredBaseTokens = 0) {
 /**
  * Deterministic token estimate for budget arithmetic.
  *
- * Uses the conservative four-characters-per-token heuristic; exact tokenizer
- * output is unnecessary because the budget only bounds the composed context.
+ * Uses the host SDK's UTF-8 byte estimate. Provider-reported usage remains a
+ * separate measurement; this estimate is not a provider tokenizer.
  *
  * @param text - Encoded text of any length.
  * @returns The estimated token count, at least one for nonempty text.
  */
 export function estimateTokens(text) {
-    return Math.ceil(text.length / 4);
+    return estimatePmOutputTokens(Buffer.byteLength(text, "utf8"));
 }
 /**
- * Lowercase alphanumeric tokens for lexical similarity.
+ * Unicode-aware SDK tokens, retaining repeated terms for BM25 weighting.
  *
  * @param text - Free text of any length.
  * @returns The token list, empty when the text has no alphanumeric runs.
  */
 export function tokenize(text) {
-    return text.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+    // The SDK returns unique tokens per call; isolate runs so BM25 keeps term frequency.
+    return normalizeSimilarityText(text).split(/[^\p{L}\p{N}]+/u).flatMap(tokenizeSimilarityText);
 }
 /**
  * Rank exemplars by BM25 similarity to the target text.
@@ -128,7 +130,7 @@ export function eligibleExemplars(target, pool, sampled) {
  * Units are consumed in ranked order. A unit whose body does not fit is
  * body-truncated with a marker; when not even its title fits, no further
  * exemplars are included. The budget bounds the JSON-encoded exemplar section
- * using the four-characters-per-token estimate.
+ * using the SDK's UTF-8 byte estimate.
  *
  * @param ranked - Retrieved exemplar units in descending similarity order.
  * @param budget - Token budget for the composed exemplar context.
@@ -143,7 +145,7 @@ export function exemplarContext(ranked, budget) {
         if (body === null)
             break;
         const entry = { title: unit.title, body, ...unit.labels };
-        used += JSON.stringify(entry).length + separator;
+        used += Buffer.byteLength(JSON.stringify(entry), "utf8") + separator;
         entries.push(entry);
     }
     return entries;
@@ -158,20 +160,20 @@ export function exemplarContext(ranked, budget) {
  * exceeds the budget.
  */
 function budgetedBody(unit, remaining) {
-    const skeleton = JSON.stringify({ title: unit.title, body: "", ...unit.labels }).length;
+    const skeleton = Buffer.byteLength(JSON.stringify({ title: unit.title, body: "", ...unit.labels }), "utf8");
     if (skeleton > remaining * 4)
         return null;
-    if (JSON.stringify({ title: unit.title, body: unit.body, ...unit.labels }).length <= remaining * 4)
+    if (Buffer.byteLength(JSON.stringify({ title: unit.title, body: unit.body, ...unit.labels }), "utf8") <= remaining * 4)
         return unit.body;
-    const room = remaining * 4 - skeleton - TRUNCATED_MARKER.length;
+    const room = remaining * 4 - skeleton - Buffer.byteLength(TRUNCATED_MARKER, "utf8");
     let slice = Math.max(0, room);
     let text = `${unit.body.slice(0, slice)}${TRUNCATED_MARKER}`;
     // Escape inflation can push a candidate over the budget; halve deterministically.
-    while (slice > 0 && JSON.stringify({ title: unit.title, body: text, ...unit.labels }).length > remaining * 4) {
+    while (slice > 0 && Buffer.byteLength(JSON.stringify({ title: unit.title, body: text, ...unit.labels }), "utf8") > remaining * 4) {
         slice = Math.floor(slice / 2);
         text = `${unit.body.slice(0, slice)}${TRUNCATED_MARKER}`;
     }
-    return slice === 0 && JSON.stringify({ title: unit.title, body: text, ...unit.labels }).length > remaining * 4 ? "" : text;
+    return slice === 0 && Buffer.byteLength(JSON.stringify({ title: unit.title, body: text, ...unit.labels }), "utf8") > remaining * 4 ? "" : text;
 }
 /**
  * Deterministic majority label of one channel over a pool.

@@ -10,6 +10,20 @@ import { createExtensionTestHarness } from "@unbrained/pm-cli/sdk/testing";
 import extension from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
 
+/** Run a plain-tracker regression with no git executable or enclosing repository discovery. */
+export async function withoutGit<T>(cwd: string, run: () => Promise<T>): Promise<T> {
+  const settings = { PATH: "", GIT_CEILING_DIRECTORIES: path.dirname(cwd) };
+  const previous = Object.keys(settings).map(key => [key, process.env[key]] as const);
+  Object.assign(process.env, settings);
+  try { return await run(); }
+  finally {
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
 /** Create an isolated real tracker through the host SDK and bind its actual client to the harness. */
 export async function project() {
   const cwd = mkdtempSync(join(tmpdir(), "jev-test-"));

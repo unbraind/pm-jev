@@ -334,3 +334,18 @@ incomplete dimension. Calibration reports expose `unknownCalls`,
 actual model calls, excluding reused baseline answers. Missing measured input
 usage leaves no verified exemplar headroom, so evaluation reuses the plain
 answer without adding exemplar context.
+
+Exemplar retrieval uses the pm SDK's Unicode-aware normalization and tokens.
+Repeated terms remain repeated for BM25 term-frequency weighting; eligibility
+and deterministic item-id tie breaks still apply. Prompt reservations and packed
+JSON entries count UTF-8 bytes using the SDK byte/4 estimate, with the existing
+extra headroom divisor. This estimate is separate from provider-reported usage
+and is not a provider tokenizer. Multilingual titles, bodies, labels, truncation
+markers and array separators all count against the declared budget.
+
+The 2026-10-19 `calibration/exemplar-report-v1.json` records the earlier ASCII
+retrieval and character-budget implementation. Its measurements are historical;
+they do not establish Unicode retrieval quality or current packing outcomes.
+Current synthetic regressions read real trackers without git: matching CJK
+vocabulary outranks unrelated ASCII text, and an oversized multilingual exemplar
+is withheld before an exemplar provider call, with an empty context receipt.
