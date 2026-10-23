@@ -37,7 +37,8 @@
     "calibration/counterfactual-report-v1.json",
     "docs/policy-replay.md",
     "docs/policy-replay-evidence.json",
-    "examples/policy-replay.json"
+    "examples/policy-replay.json",
+    "docs/partial-receipt-evidence.json"
   ],
   "scripts": {
     "build": "tsc",

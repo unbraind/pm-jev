@@ -1,0 +1,36 @@
+{
+  "provenance": {
+    "repository": "unbraind/pm-lint",
+    "commit": "8346efab4bb7d778adf3151e442105eb692d3f97",
+    "archive_sha256": "5dab4dacea1c484aa613c98b474e7e004b0ad8183857154b7d7cdcee53a8e663"
+  },
+  "fixture": "deterministic typed local HTTP decisions; failure on second inference; no inference-quality claim",
+  "tracker_items": 14,
+  "sampled_cases": 3,
+  "tracker_artifacts_unchanged": 34,
+  "git_available": false,
+  "evaluation": {
+    "attempts": 2,
+    "completed_calls": 1,
+    "completed_cases": 1,
+    "observations": 2,
+    "known_input_tokens": 50,
+    "known_output_tokens": 4,
+    "unknown_usage_calls": 1,
+    "cost_usd": null,
+    "reason": "provider_error",
+    "rerun_new_calls": 0,
+    "rerun_new_provider_requests": 0,
+    "rerun_with_unavailable_sources_and_model": true
+  },
+  "replay": {
+    "attempts": 2,
+    "completed_calls": 1,
+    "completed_cases": 1,
+    "reason": "provider_error"
+  },
+  "recorded_replay": {
+    "cases": 3,
+    "new_calls": 0
+  }
+}

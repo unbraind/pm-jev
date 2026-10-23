@@ -3,7 +3,8 @@ import test, { mock } from "node:test";
 import type { Questions, SystemOneResult } from "@typesafe-ai/sdk";
 import { createOllamaReplayAdapter, parseReplayRecording, replayDecisions, ReplayRefusal, REPLAY_VERSION } from "../index.ts";
 import type { ReplayRecording, ReplayPolicy, ReplayAdapter } from "../index.ts";
-import { endpoint } from "./fixtures.ts";
+import { join } from "node:path";
+import { endpoint, project } from "./fixtures.ts";
 
 const questions: Questions = { route: { type: "choice", criteria: { keep: null, change: null } }, impact: { type: "score", criteria: ["minor", "major"] }, risk: { type: "noul", instructions: "Is this risky?" } };
 const policy = { version: "v1", min_probability: 0.5 };
@@ -89,7 +90,7 @@ test("malformed recordings and policies refuse before adapter execution", async 
     { questions: { route: { type: "choice", criteria: Object.fromEntries(Array.from({ length: 33 }, (_, i) => [`v${i}`, null])) } } },
     { questions: { route: { type: "choice", criteria: { "bad label": null, good: null } } } },
     { questions: { impact: { type: "score", criteria: Array(33).fill("level") } } },
-    { result: {} }, { policy: null }, { policy: { version: "v", min_probability: -1 } },
+    { result: {} }, { result: [] }, { result: "malformed" }, { policy: null }, { policy: { version: "v", min_probability: -1 } },
   ]) invalid.push({ version: REPLAY_VERSION, records: [{ ...recording().records[0], ...patch }] });
   for (const doc of invalid) assert.throws(() => parseReplayRecording(doc), refusal("invalid_recording"));
   for (const candidate of [null, { version: "bad label", min_probability: 0.5 }, { version: "v", min_probability: NaN }, { version: "v", min_probability: -1 }, { version: "v", min_probability: 2 }]) {
@@ -132,4 +133,29 @@ test("Ollama adapter rejects nonlocal URLs, cloud models, unavailable or non-dec
     try { await assert.rejects(createOllamaReplayAdapter("tev1:4b"), refusal("model_unavailable")); }
     finally { fetchMock.mock.restore(); }
   } finally { await server.close(); }
+});
+
+ test("explicit null replay result refuses even when questions are missing", () => {
+  assert.throws(() => parseReplayRecording({ version: REPLAY_VERSION, records: [{ id: "null-case", result: null }] }), refusal("invalid_recording"));
+});
+
+test("durable replay stops on the second adapter failure and retains comparisons", async () => {
+  const fixture = await project();
+  try {
+    const doc = recording();
+    const two: ReplayRecording = { ...doc, records: [doc.records[0], { ...doc.records[0], id: "case-2" }] };
+    let calls = 0;
+    const report = await replayDecisions(two, policy, { version: "fixture-v2", async decide(row) { calls++; if (calls === 2) throw new Error("PRIVATE"); return row.result; } }, 0, { file: join(fixture.cwd, "receipt.json") });
+    assert.ok("receipt" in report && report.receipt);
+    assert.equal(calls, 2); assert.equal(report.receipt.completed_calls, 1); assert.equal(report.receipt.attempted_calls, 2);
+    assert.deepEqual(report.receipt.completed_cases, ["0"]);
+    assert.equal((report.receipt.evidence as { compared: number }).compared, 3);
+    assert.equal(report.receipt.reason, "provider_error");
+    const prior = await replayDecisions(null as unknown as ReplayRecording, policy, undefined, 0, { file: join(fixture.cwd, "receipt.json") });
+    assert.ok("refusal" in prior); assert.equal(prior.refusal.code, "receipt_exists");
+    const malformed = await replayDecisions(doc, policy, { version: "bad", async decide() { return {} as SystemOneResult<Questions>; } }, 20, { file: join(fixture.cwd, "bad.json") });
+    assert.ok("receipt" in malformed && malformed.receipt); assert.equal(malformed.receipt.completed_calls, 0);
+    const recorded = await replayDecisions(doc, policy, undefined, 20, { file: join(fixture.cwd, "saved.json") });
+    assert.ok("replayed" in recorded); assert.equal(recorded.replayed, 1);
+  } finally { fixture.dispose(); }
 });

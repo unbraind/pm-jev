@@ -166,9 +166,10 @@ export declare function embeddingAvailable(baseUrl: string, timeoutMs: number): 
  * @param baseUrl - Local Ollama base URL.
  * @param texts - Retrieval texts in stable order.
  * @param timeoutMs - Per-attempt timeout in milliseconds.
+ * @param signal - Optional shared interruption signal for the enclosing evaluation.
  * @returns One vector per text, or null on any transport or shape failure.
  */
-export declare function embedTexts(baseUrl: string, texts: readonly string[], timeoutMs: number): Promise<readonly (readonly number[])[] | null>;
+export declare function embedTexts(baseUrl: string, texts: readonly string[], timeoutMs: number, signal?: AbortSignal): Promise<readonly (readonly number[])[] | null>;
 /**
  * Cosine similarity of two vectors.
  *

@@ -295,11 +295,12 @@ export async function embeddingAvailable(baseUrl: string, timeoutMs: number): Pr
  * @param baseUrl - Local Ollama base URL.
  * @param texts - Retrieval texts in stable order.
  * @param timeoutMs - Per-attempt timeout in milliseconds.
+ * @param signal - Optional shared interruption signal for the enclosing evaluation.
  * @returns One vector per text, or null on any transport or shape failure.
  */
-export async function embedTexts(baseUrl: string, texts: readonly string[], timeoutMs: number): Promise<readonly (readonly number[])[] | null> {
+export async function embedTexts(baseUrl: string, texts: readonly string[], timeoutMs: number, signal?: AbortSignal): Promise<readonly (readonly number[])[] | null> {
   try {
-    const response = await fetch(`${baseUrl}/api/embed`, { method: "POST", redirect: "error", signal: AbortSignal.timeout(timeoutMs),
+    const response = await fetch(`${baseUrl}/api/embed`, { method: "POST", redirect: "error", signal: signal === undefined ? AbortSignal.timeout(timeoutMs) : AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]),
       headers: { "content-type": "application/json" }, body: JSON.stringify({ model: EMBEDDING_MODEL, input: texts }) });
     if (!response.ok) return null;
     const payload = await response.json() as { embeddings?: unknown };

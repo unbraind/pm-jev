@@ -1,3 +1,4 @@
+import { reportPriorReceipt, withReceipt } from "./partial-receipt.js";
 import { createHash } from "node:crypto";
 import { createJevClient, parseQuestionsDocument, runDecision, validateAnswers } from "./index.js";
 /** Version of the frozen-input compatibility contract. */
@@ -42,6 +43,8 @@ export function parseReplayRecording(raw) {
             ids.add(row.id);
             if (row.state !== undefined && (!row.state || typeof row.state !== "object" || Array.isArray(row.state) || Buffer.byteLength(JSON.stringify(row.state)) > 32768))
                 throw new Error();
+            if (Object.hasOwn(row, "result") && (!row.result || typeof row.result !== "object" || Array.isArray(row.result)))
+                throw new Error();
             if (row.questions !== undefined) {
                 const questions = parseQuestionsDocument(row.questions);
                 if (Object.keys(questions).length > 8 || Object.keys(questions).some(/** Keep question detail labels bounded. */ /** Keep question detail labels bounded. */ name => !label(name)))
@@ -78,13 +81,34 @@ function proposals(record, result, policy) {
         return distribution[String(value)] >= policy.min_probability ? value : null;
     });
 }
-/** Replay saved scores locally or call a trusted local adapter, never read current tracker state. */
-export async function replayDecisions(recording, policy, adapter, detailLimit = 20) {
+/** Dispatch optional durable accounting without changing recorded-score replay. */
+export async function replayDecisions(recording, policy, adapter, detailLimit = 20, receipt) {
+    if (receipt !== undefined)
+        return interruptedReplay(recording, policy, adapter, detailLimit, receipt);
+    return replayRun(recording, policy, adapter, detailLimit);
+}
+/** Execute a replay with durable accounting when the caller selects private storage. */
+async function interruptedReplay(recording, policy, adapter, detailLimit, receipt) {
+    const previous = reportPriorReceipt(receipt.file);
+    if (previous !== undefined)
+        return previous;
+    parseReplayRecording(recording);
+    checkPolicy(policy);
+    checkReplayOptions(detailLimit, adapter);
+    return withReceipt("replay", receipt, /** Persist replay comparisons as records finish. */ /** Persist replay comparisons as records finish. */ run => replayRun(recording, policy, adapter, detailLimit, run));
+}
+/** Validate replay bounds before creating a private receipt or invoking an adapter. */
+function checkReplayOptions(detailLimit, adapter) {
+    if (!Number.isSafeInteger(detailLimit) || detailLimit < 0 || detailLimit > 100 || (adapter !== undefined && !label(adapter.version)))
+        throw new ReplayRefusal("invalid_policy", "Use a detail limit from 0 to 100 and a bounded adapter version.");
+}
+/** Compare frozen decisions and checkpoint each completed record. */
+async function replayRun(recording, policy, adapter, detailLimit, run) {
     const doc = parseReplayRecording(recording);
     const selected = { ...policy };
     checkPolicy(selected);
-    if (!Number.isSafeInteger(detailLimit) || detailLimit < 0 || detailLimit > 100 || (adapter !== undefined && !label(adapter.version)))
-        throw new ReplayRefusal("invalid_policy", "Use a detail limit from 0 to 100 and a bounded adapter version.");
+    checkReplayOptions(detailLimit, adapter);
+    run?.identify(createHash("sha256").update(JSON.stringify({ doc, selected, adapter: adapter?.version })).digest("hex"), adapter?.version ?? "recorded");
     let attempted = 0, replayed = 0, gaps = 0, compared = 0, agreement = 0, disagreement = 0, oldAbstentions = 0, newAbstentions = 0, elapsed = 0;
     const details = [];
     for (const [index, row] of doc.records.entries()) {
@@ -96,10 +120,16 @@ export async function replayDecisions(recording, policy, adapter, detailLimit = 
             const started = performance.now();
             let next;
             try {
-                next = adapter === undefined ? ready.result : await adapter.decide(structuredClone(ready));
+                next = adapter === undefined ? ready.result : run === undefined ? await adapter.decide(structuredClone(ready)) : await run.call(/** Validate trusted-adapter answers before marking the call complete. */ async (signal) => {
+                    const result = await adapter.decide(structuredClone(ready), signal);
+                    validateAnswers(ready.questions, result);
+                    return result;
+                });
                 validateAnswers(ready.questions, next);
             }
-            catch {
+            catch (error) {
+                if (run !== undefined)
+                    throw error;
                 gap = "decision_failed";
             }
             elapsed += performance.now() - started;
@@ -124,6 +154,8 @@ export async function replayDecisions(recording, policy, adapter, detailLimit = 
         }
         if (gap)
             gaps++;
+        else
+            run?.checkpoint(String(index), { attempted, replayed, compared, agreement, disagreement, old_abstentions: oldAbstentions, new_abstentions: newAbstentions });
         if (details.length < detailLimit)
             details.push(gap ? { index, gap } : { index, changed });
     }
@@ -157,8 +189,8 @@ export async function createOllamaReplayAdapter(model, baseUrl = "http://127.0.0
         const client = createJevClient({ config, hostedBlocked: null }, {}, 0);
         return { version: `ollama:${card.digest}`,
             /** Reuse the existing typed transport with zero retries and a per-input deadline. */
-            async decide(record) {
-                const result = await runDecision(client, config, record.state, record.questions);
+            async decide(record, signal) {
+                const result = await runDecision(client, config, record.state, record.questions, signal === undefined ? undefined : AbortSignal.any([signal, AbortSignal.timeout(deadlineMs)]));
                 if (result.model !== model)
                     throw new Error("Replay model changed");
                 return result;

@@ -420,6 +420,7 @@ Evaluation and calibration work there with `--local-unverified` and explicit loc
 source directories; they require neither git nor GitHub. Default public-corpus
 sources still require git, GitHub CLI authentication, verified public visibility
 and a committed snapshot. The destination tracker itself need not be a git repo.
+Private interruption receipts and local model replay also work with Git absent from `PATH`.
 
 ### Counterfactual decision explanations
 
@@ -495,8 +496,11 @@ they come only from the target's own repository, so calibration and validation
 repositories never share context. Lexical ranking is deterministic in-process
 BM25 over title and body with stable item-id tie-breaks. `--retrieval embedding`
 uses the local `qwen3-embedding:0.6b` model when it is installed (one batched
-request per repository); a missing model or failed batch falls back to lexical
-and the report records the fallback.
+request per repository). A missing model falls back to lexical retrieval. A failed
+or malformed embedding batch interrupts evaluation and persists one attempted,
+zero completed inference calls for that batch; it never starts decision inference
+or hides the provider failure behind the remaining call budget. Embedding timeouts
+retain the `timeout` interruption reason.
 
 An exemplar run reports four arms for every channel: the majority class of the
 target's eligible same-tracker pool, a kNN vote over the retrieved exemplars
@@ -844,3 +848,53 @@ report contracts. See the [guide](docs/policy-replay.md),
 [example recording](examples/policy-replay.json) (one intentional gap; exits 2),
 and [public tracker validation](docs/policy-replay-evidence.json). Replay also
 works in a plain tracker without Git.
+
+### Interrupted evaluations and replays
+
+`jev eval`, `jev calibrate` and `jev replay` checkpoint inference attempts and
+validated completions in private `pm-jev-partial/1` JSON receipts. Choose a stable
+file with `--receipt`; otherwise each invocation uses a new file in
+`.jev-receipts/` under the workspace (or beside the tracker when the host supplies no
+workspace root). Keep that directory ignored and private.
+The checkpoint includes completed case hashes (replay uses recording indices),
+validated evaluation observations or replay comparison totals, separate attempted
+and completed calls, decision-model and total inference calls (including embedding
+batches), and the interruption reason. Inventory requests are not inference calls.
+
+```sh
+pm jev eval --task triage --from tracker/.agents/pm --local-unverified \
+  --sample 10 --receipt .jev-receipts/eval.json --max-calls 5 --run-deadline-ms 60000 --json
+pm jev replay --recording recording.json --policy-version candidate-v2 \
+  --min-probability 0.8 --model tev1:4b --receipt .jev-receipts/replay.json --json
+```
+
+SIGINT, timeout, provider error and call-budget exhaustion return exit 2 with a
+redacted partial receipt and a remedy. Incomplete evaluation never fits or saves
+calibration and never retries an inference. Reusing an explicit receipt file
+returns `receipt_exists` and the previous accounting, making zero new inference
+calls, without reopening sources or contacting the provider. Inspect it, then select
+a new file for an intentional rerun. A checkpoint
+left `running` after an uncatchable process termination reports
+`process_interrupted`; an in-flight attempt has unknown usage.
+
+Known token subtotals remain available; totals become `null` for any unreported
+usage, including failed attempts. Monetary cost is `null` when the endpoint does
+not report prices; zero is used only when no inference occurred. Receipts never
+invent a dollar charge from tokens. Completed receipts remain on disk too.
+Output uses the host's compact TOON or `--json` formatting. Receipts exclude source
+text, source paths and provider error text. Local-unverified evidence stays private.
+Replay recordings with an explicitly null `result` are refused as
+`invalid_recording`, even without questions; omit unavailable fields to report gaps.
+
+SDK callers can use exported `ReceiptOptions`, `PartialReceipt`, `ReceiptFailure`, `ReceiptRefusal`,
+`ReceiptRun` and `withReceipt`. `replayDecisions(recording, policy, adapter, limit,
+{ file, maxCalls, deadlineMs, signal })` opts into durable accounting; an adapter
+receives the abort signal as its second argument. SDK cancellation reports `aborted`;
+a typed timeout signal reports `timeout`, while process SIGINT reports `sigint`. `runEvaluationCommand` exposes
+the typed host-command evaluation result and accepts the same CLI options through
+its command context. The low-level `ReceiptRun` contract requires callers to
+checkpoint minimized evidence only. `reportPriorReceipt(file)` inspects a saved
+checkpoint directly without opening sources or contacting a model.
+
+
+Validation: [public tracker receipt evidence](docs/partial-receipt-evidence.json).
