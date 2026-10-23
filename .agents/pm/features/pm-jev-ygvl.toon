@@ -2,14 +2,19 @@ id: pm-jev-ygvl
 title: Explain typed decisions by bounded evidence removal
 description: Measure typed decision sensitivity with bounded leave-one-field-out comparisons and opaque evidence digests; preserve existing typed questions and exemplars.
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-22T16:06:12.787Z"
-updated_at: "2026-10-22T18:39:29.384Z"
+updated_at: "2026-10-23T09:06:12.464Z"
+closed_at: "2026-10-23T09:06:12.460Z"
+completed_at: "2026-10-22T20:31:07.000Z"
 author: codex-agent
 acceptance_criteria: "Removing unrelated fields leaves stable decisions; Call limits are enforced, including failed attempts and disabled transport retries; Explanation receipts disclose uncertainty and every omitted comparison; Typed SDK and CLI produce compact TOON/JSON with typed refusals and remedies, without git; Validate read-only public tracker copy and pass npm plus Bun CI release gates"
 parent: pm-jev-0w3q
+resolution: "Delivered by https://github.com/unbraind/pm-jev/pull/42 (merge 7122beb9e92e, head 7e512b60ec3f)"
+expected_result: "Removing unrelated fields leaves stable decisions; Call limits are enforced, including failed attempts and disabled transport retries; Explanation receipts disclose uncertainty and every omitted comparison; Typed SDK and CLI produce compact TOON/JSON with typed refusals and remedies, without git; Validate read-only public tracker copy and pass npm plus Bun CI release gates"
+actual_result: "Merged at 2026-10-22T20:31:07Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, cubic · AI code reviewer, test (22), test (26)"
 comments[10]{created_at,author,text}:
   "2026-10-22T16:06:39.287Z",codex-agent,"Overlap check: searched current CLI command/SDK surfaces and pm-context, pm-rl, and pm-jev sources and READMEs for counterfactual, leave-one-field-out, and decision sensitivity; no implementing feature found. Existing pm-jev typed Questions, SystemOneResult, projection, answer validation, and endpoint privacy boundary remain the model interface. pm-context owns evidence packing; pm-rl owns training/evaluation. This feature only measures bounded decision sensitivity and emits opaque receipts, never narrative rationale or tracker mutations. Plan: baseline plus sequential explicit field removals, hard network-call budget with retries disabled, one total deadline, redacted failure/omission receipts, uncertainty disclosure, non-git tests and public-copy validation. CLI registry currently reports 2026.10.22; tracker writes retain the repository-pinned 2026.10.17 SDK."
   "2026-10-22T16:13:40.217Z",codex-agent,"Implemented explainDecision SDK and jev explain command using host SDK item reads, existing projection, existing typed Questions parser/answer validator, official TypeSafe transport and endpoint privacy guard. Calls are sequential, retries disabled, baseline counted, one shared deadline; successes survive interruption and every skipped field is disclosed. Evidence uses fresh per-run HMAC-SHA256 digests. Tests exercise a real non-git SDK tracker and real HTTP transport plus the built extension through the actual host parser in TOON/JSON with an empty PATH. Targeted checks exposed and fixed the host exit-code contract (success omits exit_code) and empty explicit budget handling (must refuse instead of using the SDK option reader default). Public-copy validation is running against verified public committed pm-lint data with immutable copied files and before/after hashes."
@@ -34,4 +39,5 @@ docs[3]{path,scope}:
   docs/counterfactual-explanations.md,project
   examples/explanation-questions.json,project
   README.md,project
+close_reason: "{\"pr\":42,\"url\":\"https://github.com/unbraind/pm-jev/pull/42\",\"merge_commit_sha\":\"7122beb9e92ec1971d270f14af3586e1691947d1\",\"head_sha\":\"7e512b60ec3f3e5bae71a255be3cf6f976be0e64\",\"merged_at\":\"2026-10-22T20:31:07Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"cubic · AI code reviewer\",\"test (22)\",\"test (26)\"]}"
 body: ""
