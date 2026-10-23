@@ -6,8 +6,9 @@ status: open
 priority: 2
 tags: []
 created_at: "2026-10-20T10:25:11.881Z"
-updated_at: "2026-10-22T16:15:54.221Z"
+updated_at: "2026-10-23T18:00:25.600Z"
 author: codex-agent
-comments[1]{created_at,author,text}:
+comments[2]{created_at,author,text}:
   "2026-10-22T16:15:54.220Z",codex-agent,"Counterfactual implementation encountered the same ambient extension SDK skew again: the pinned 2026.10.17 host reports extension_host_pm_cli_version_skew against a global pm-github runtime using 2026.10.22. No project-managed extension is installed in this worktree. Strict health passes with an isolated HOME and global Git configuration disabled, matching a clean CI environment; history integrity also passes. Kept dependency pins and global installations unchanged. Reused this existing follow-up rather than creating a duplicate."
+  "2026-10-23T18:00:25.598Z",codex-agent,"Partial-receipt verification reproduced this known ambient host/managed-extension skew with pinned pm-cli 2026.10.20 and a pm-github runtime using 2026.10.23. No project-managed extension is installed. Strict health with isolated HOME and disabled global/system Git configuration passes (exit 0), including history integrity, matching a clean CI environment. Reused this follow-up; dependency pins and shared installations remain unchanged. Related implementation evidence is in pm-jev-w1zj, whose npm and Bun release gates each passed 323/323 at 100% coverage."
 body: ""

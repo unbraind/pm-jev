@@ -2,7 +2,7 @@ import type { CommandHandlerContext, FlagDefinition } from "@unbrained/pm-cli/sd
 /** Explicit file and version selection; native host formatting handles TOON and JSON. */
 export declare const REPLAY_FLAGS: FlagDefinition[];
 /** Run compatibility inspection without tracker writes, provider settings, or Git subprocesses. */
-export declare function runReplayCommand(ctx: CommandHandlerContext): Promise<{
+export declare function runReplayCommand(ctx: CommandHandlerContext): Promise<import("./partial-receipt.ts").ReceiptFailure | {
     version: typeof import("./policy-replay.ts").REPLAY_VERSION;
     recording_sha256: string;
     policy: import("./policy-replay.ts").ReplayPolicy;

@@ -1882,4 +1882,8 @@ export default defineExtension({
         registerCommands(api);
     },
 });
+/** Durable interrupted-run accounting and typed private receipt contracts. */
+export { ReceiptRefusal, ReceiptRun, withReceipt, reportPriorReceipt } from "./partial-receipt.js";
+/** Run typed evaluation with the host SDK and durable private interruption receipts. */
+export { runEvaluationCommand } from "./evaluation-command.js";
 //# sourceMappingURL=index.js.map

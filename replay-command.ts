@@ -1,3 +1,5 @@
+import { dirname } from "node:path";
+import { RECEIPT_FLAGS, receiptOptions, reportPriorReceipt } from "./partial-receipt.ts";
 import { open } from "node:fs/promises";
 import { constants } from "node:fs";
 import { readStringOption } from "@unbrained/pm-cli/sdk";
@@ -6,6 +8,7 @@ import { createOllamaReplayAdapter, parseReplayRecording, replayDecisions, Repla
 
 /** Explicit file and version selection; native host formatting handles TOON and JSON. */
 export const REPLAY_FLAGS: FlagDefinition[] = [
+  ...RECEIPT_FLAGS,
   { long: "--recording", value_name: "file", value_type: "string", description: "Frozen minimized replay JSON (maximum 4 MiB); never read current items" },
   { long: "--policy-version", value_name: "version", value_type: "string", description: "Candidate local policy version" },
   { long: "--min-probability", value_name: "p", value_type: "string", description: "Inclusive candidate proposal probability threshold in [0,1]" },
@@ -37,6 +40,9 @@ async function readRecording(file: string) {
 /** Run compatibility inspection without tracker writes, provider settings, or Git subprocesses. */
 export async function runReplayCommand(ctx: CommandHandlerContext) {
   try {
+    const storage = receiptOptions(ctx.options, ctx.source_workspace_root ?? dirname(ctx.pm_root), "replay");
+    const previous = reportPriorReceipt(storage.file);
+    if (previous !== undefined) return previous;
     const file = replayOption(ctx, "recording");
     const version = replayOption(ctx, "policyVersion", ["policy-version", "policy_version"]);
     const threshold = replayOption(ctx, "minProbability", ["min-probability", "min_probability"]);
@@ -46,11 +52,12 @@ export async function runReplayCommand(ctx: CommandHandlerContext) {
     const limit = replayOption(ctx, "limit");
     const detailLimit = limit === undefined ? 20 : Number(limit);
     // Validate everything before optional model discovery or inference.
-    const saved = await replayDecisions(recording, policy, undefined, detailLimit);
+    await replayDecisions(recording, policy, undefined, detailLimit);
     const model = replayOption(ctx, "model");
     const deadline = replayOption(ctx, "deadlineMs", ["deadline-ms", "deadline_ms"]);
     const adapter = model === undefined ? undefined : await createOllamaReplayAdapter(model, undefined, deadline === undefined ? undefined : Number(deadline));
-    const report = adapter === undefined ? saved : await replayDecisions(recording, policy, adapter, detailLimit);
+    const report = await replayDecisions(recording, policy, adapter, detailLimit, storage);
+    if ("ok" in report) return report;
     return { ok: report.complete, ...(report.complete ? {} : { exit_code: 2 }), ...report };
   } catch (error) {
     if (!(error instanceof ReplayRefusal)) throw error;

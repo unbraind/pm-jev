@@ -25,7 +25,7 @@ export type { CounterfactualOptions, CounterfactualReceipt, ExplanationProposal,
 /** Frozen-input compatibility inspection and loopback-only decision model adapter. */
 export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.ts";
 /** Portable recording, policy, trusted adapter and compact comparison contracts. */
-export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, ReplayReport } from "./policy-replay.ts";
+export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, ReplayReport, ReplayExecutionResult } from "./policy-replay.ts";
 /** Version of the triage question catalog; surfaced in every triage receipt. */
 export declare const TRIAGE_CATALOG_VERSION = "pm-jev-triage/2";
 /** Explicit non-mutating candidate, distinct from every registered type. */
@@ -536,4 +536,12 @@ declare const _default: {
     activate(api: ExtensionApi): void;
 };
 export default _default;
+/** Durable interrupted-run accounting and typed private receipt contracts. */
+export { ReceiptRefusal, ReceiptRun, withReceipt, reportPriorReceipt } from "./partial-receipt.ts";
+/** Portable accounting types for SDK evaluation and replay consumers. */
+export type { PartialReceipt, ReceiptFailure, ReceiptOptions, InterruptionReason } from "./partial-receipt.ts";
+/** Run typed evaluation with the host SDK and durable private interruption receipts. */
+export { runEvaluationCommand } from "./evaluation-command.ts";
+/** Evaluator result contract for callers that inspect interrupted receipts. */
+export type { EvaluationResult } from "./evaluation-command.ts";
 //# sourceMappingURL=index.d.ts.map

@@ -28,6 +28,8 @@ test("native command handles compact totals, gaps, aliases and typed refusals wi
       assert.equal(report.ok, true); assert.equal(report.disagreement, 0); assert.equal(report.details.length, 0); assert.equal(report.omitted_details, 1);
     }
     const good = { recording: file, "policy-version": "v2", "min-probability": "0.8" };
+    const direct = await runReplayCommand({ command: "jev replay", pm_root: fixture.pmRoot, args: [], options: { ...good, receipt: join(fixture.cwd, "direct.json") }, global: {} });
+    assert.ok(direct.ok);
     const normal = await fixture.harness.runCommand({ command: "jev replay", pmRoot: fixture.pmRoot, options: good });
     assert.equal((normal.result as { agreement: number }).agreement, 1);
     writeFileSync(file, JSON.stringify({ version: REPLAY_VERSION, records: [{ id: "gap" }] }));
@@ -39,7 +41,7 @@ test("native command handles compact totals, gaps, aliases and typed refusals wi
       assert.ok((bad.result as { refusal: { remedy: string } }).refusal.remedy.length > 20);
     }
     const directory = join(fixture.cwd, "directory"); mkdirSync(directory);
-    for (const invalid of ["not JSON", "x".repeat(4194305), JSON.stringify({ version: "bad" })]) {
+    for (const invalid of ["not JSON", "x".repeat(4194305), JSON.stringify({ version: "bad" }), JSON.stringify({ version: REPLAY_VERSION, records: [{ id: "null-case", result: null }] })]) {
       writeFileSync(file, invalid);
       const bad = await fixture.harness.runCommand({ command: "jev replay", pmRoot: fixture.pmRoot, options: good });
       assert.equal((bad.result as { refusal: { code: string } }).refusal.code, "invalid_recording");
@@ -61,14 +63,27 @@ test("native local model selection uses the fixture adapter transport and preser
   const previous = globalThis.fetch;
   const fetchMock = mock.method(globalThis, "fetch", (input: Parameters<typeof fetch>[0], init: Parameters<typeof fetch>[1]) => previous(String(input).replace("http://127.0.0.1:11434", server.url), init));
   try {
+    let failDecision = false;
     server.setReply((req, res, body) => {
       if (req.url === "/api/tags") res.end(JSON.stringify({ models: [{ name: "tev1:4b", digest: "b".repeat(64), capabilities: ["decision"] }] }));
+      else if (failDecision) { res.statusCode = 503; res.end('{"error":"PRIVATE_TRANSPORT_TEXT"}'); }
       else res.end(JSON.stringify(answers((body as { questions: Parameters<typeof answers>[0] }).questions)));
     });
     const file = join(fixture.cwd, "recording.json"); writeFileSync(file, JSON.stringify(recording()));
     const options = { recording: file, policy_version: "v2", min_probability: "0.8", model: "tev1:4b" };
     const good = await fixture.harness.runCommand({ command: "jev replay", pmRoot: fixture.pmRoot, options });
     assert.equal((good.result as { agreement: number }).agreement, 1);
+    failDecision = true;
+    const stopped = await fixture.harness.runCommand({ command: "jev replay", pmRoot: fixture.pmRoot, options: { ...options, receipt: join(fixture.cwd, "failed-replay.json") } });
+    const interrupted = stopped.result as { ok: boolean; exit_code: number; receipt: { attempted_calls: number; completed_calls: number; reason: string } };
+    assert.equal(interrupted.ok, false); assert.equal(interrupted.exit_code, 2);
+    assert.equal(interrupted.receipt.attempted_calls, 1); assert.equal(interrupted.receipt.completed_calls, 0);
+    assert.equal(interrupted.receipt.reason, "provider_error");
+    assert.doesNotMatch(JSON.stringify(interrupted), /PRIVATE_TRANSPORT_TEXT/);
+    const requestsBeforeReport = server.requests.length;
+    const prior = await fixture.harness.runCommand({ command: "jev replay", pmRoot: fixture.pmRoot, options: { ...options, recording: join(fixture.cwd, "unavailable-recording.json"), model: "unavailable-model", receipt: join(fixture.cwd, "failed-replay.json") } });
+    assert.equal((prior.result as { refusal: { code: string } }).refusal.code, "receipt_exists");
+    assert.equal(server.requests.length, requestsBeforeReport);
     const bad = await fixture.harness.runCommand({ command: "jev replay", pmRoot: fixture.pmRoot, options: { ...options, model: "absent", deadlineMs: "5000" } });
     assert.equal((bad.result as { refusal: { code: string } }).refusal.code, "model_unavailable");
     // Unexpected host failures remain visible rather than becoming success-shaped receipts.

@@ -1,3 +1,4 @@
+import type { PartialReceipt } from "../partial-receipt.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -219,7 +220,8 @@ test("calibrate persists audited task/model receipts through the SDK while prese
       assert.equal(duplicates.calibration.channels.duplicate_of.threshold, null);
       assert.equal(duplicates.calibration.channels.duplicate_of.reason, "duplicate_retrieval_misses");
       serve(server, true);
-      await assert.rejects(runEvaluationCommand(ctx, true, source), /digest changed/);
+      const changed = await runEvaluationCommand(ctx, true, source) as { ok: boolean; receipt: PartialReceipt };
+      assert.equal(changed.ok, false); assert.equal(changed.receipt.reason, "provider_error");
     });
   } finally { alpha.dispose(); beta.dispose(); }
 });
@@ -335,7 +337,7 @@ interface ExemplarReport {
   retrieval: { mode: string; count: number; token_budget: number; embedding_model: string | null; embedding_available: boolean | null; embedding_fallbacks: number; empty_retrievals: number; reused_baseline_calls: number; budget_clamped_examples: number; mean_exemplars: number };
   exemplar_metrics: Record<string, { count: number; accuracy: number | null }>;
   baselines: Record<string, { majority: { abstained: number; reliability: { count: number } }; knn: { abstained: number; reliability: { count: number } } }>;
-  exemplar_observations: (Observation & { exemplar_ids: string[]; exemplar_digests: string[] })[];
+  exemplar_observations: (Observation & { exemplar_ids: readonly string[]; exemplar_digests: readonly string[] })[];
   metrics: Record<string, { count: number; accuracy: number | null }>;
 }
 /** Build the richer committed corpus used by the exemplar regressions. */
@@ -363,7 +365,7 @@ function contextSampleSeed(units: ReturnType<typeof buildUnits>["units"]): strin
 }
 
 /** Content-free retrieval identity of one exemplar observation. */
-function retrievalIdentity(row: { example_sha256: string; exemplar_ids: string[]; exemplar_digests: string[] }): (string | string[])[] {
+function retrievalIdentity(row: { example_sha256: string; exemplar_ids: readonly string[]; exemplar_digests: readonly string[] }): (string | readonly string[])[] {
   return [row.example_sha256, row.exemplar_ids, row.exemplar_digests];
 }
 
@@ -638,4 +640,36 @@ test("evaluation retains unknown usage per observation, total and mean across re
       }
     });
   } finally { origin.dispose(); }
+});
+
+test("second evaluation failure preserves one case, two attempts and no calibration writes", async () => {
+  const alpha = await syntheticCorpus();
+  const beta = await syntheticCorpus("pm-beta");
+  try {
+    await scenario(async (fixture, server) => {
+      let calls = 0;
+      server.setReply((request, response, body) => {
+        if (body === null) { assert.equal(request.url, "/api/tags"); response.end(JSON.stringify({ models: [{ digest: "c".repeat(64), name: "tev1:4b" }] })); return; }
+        calls++;
+        if (calls === 2) { response.statusCode = 503; response.end('{"error":"PRIVATE_FAILURE"}'); return; }
+        response.end(JSON.stringify(answers((body as { questions: Questions }).questions)));
+      });
+      const file = join(fixture.cwd, "partial.json");
+      const before = trackerSnapshot(fixture.pmRoot);
+      const report = await runEvaluationCommand(context(fixture, { task: "triage", from: [alpha.pmRoot, beta.pmRoot], sample: "2", receipt: file }), true, source) as { ok: boolean; receipt: PartialReceipt };
+      assert.equal(report.ok, false); assert.equal(calls, 2);
+      assert.equal(report.receipt.attempted_calls, 2); assert.equal(report.receipt.completed_calls, 1);
+      assert.equal(report.receipt.completed_cases.length, 1); assert.equal(report.receipt.reason, "provider_error");
+      const evidence = report.receipt.evidence as { observations: Observation[] };
+      assert.equal(evidence.observations.length, 2);
+      assert.match(evidence.observations[0].example_sha256, /^[a-f0-9]{64}$/);
+      assert.deepEqual(JSON.parse(readFileSync(file, "utf8")), JSON.parse(JSON.stringify(report.receipt)));
+      assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
+      assert.doesNotMatch(JSON.stringify(report), /PRIVATE_FAILURE|Synthetic|\/tmp\//);
+      const requestsBeforeRerun = server.requests.length;
+      const again = await runEvaluationCommand({ ...context(fixture, { task: "triage", from: join(fixture.cwd, "unavailable-source"), model: "unavailable-model", sample: "2", receipt: file }), source_workspace_root: undefined }, true, source) as { refusal: { code: string } };
+      assert.equal(again.refusal.code, "receipt_exists"); assert.equal(calls, 2);
+      assert.equal(server.requests.length, requestsBeforeRerun);
+    });
+  } finally { alpha.dispose(); beta.dispose(); }
 });

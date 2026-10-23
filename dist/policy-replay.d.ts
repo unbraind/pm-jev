@@ -1,3 +1,4 @@
+import type { ReceiptFailure, ReceiptOptions } from "./partial-receipt.ts";
 import type { Questions, SystemOneResult } from "@typesafe-ai/sdk";
 /** Version of the frozen-input compatibility contract. */
 export declare const REPLAY_VERSION = "pm-jev-replay/1";
@@ -31,7 +32,7 @@ export interface ReplayRecording {
 /** Trusted in-process adapter; only the built-in Ollama adapter makes local HTTP calls. */
 export interface ReplayAdapter {
     readonly version: string;
-    decide(record: Required<ReplayRecord>): Promise<SystemOneResult<Questions>>;
+    decide(record: Required<ReplayRecord>, signal?: AbortSignal): Promise<SystemOneResult<Questions>>;
 }
 /** Compact totals over all questions, independently of the bounded detail rows. */
 export interface ReplayReport {
@@ -60,10 +61,14 @@ export interface ReplayReport {
     }[];
     readonly omitted_details: number;
 }
+/** Successful compatibility totals or an actionable durable-run refusal. */
+export type ReplayExecutionResult = ReplayReport | ReceiptFailure;
 /** Parse and snapshot bounded JSON data; missing fields are allowed, malformed fields refuse. */
 export declare function parseReplayRecording(raw: unknown): ReplayRecording;
 /** Replay saved scores locally or call a trusted local adapter, never read current tracker state. */
 export declare function replayDecisions(recording: ReplayRecording, policy: ReplayPolicy, adapter?: ReplayAdapter, detailLimit?: number): Promise<ReplayReport>;
+/** Replay with a durable private receipt and typed interruption envelope. */
+export declare function replayDecisions(recording: ReplayRecording, policy: ReplayPolicy, adapter: ReplayAdapter | undefined, detailLimit: number, receipt: ReceiptOptions): Promise<ReplayExecutionResult>;
 /** Bind only a loopback, non-cloud, installed Ollama decision model; ignore hosted settings/env. */
 export declare function createOllamaReplayAdapter(model: string, baseUrl?: string, deadlineMs?: number): Promise<ReplayAdapter>;
 //# sourceMappingURL=policy-replay.d.ts.map

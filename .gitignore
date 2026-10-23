@@ -30,3 +30,6 @@ coverage/
 .agents/pm/checkpoints/
 !.agents/pm/search/eval-queries.json
 # pm-cli:runtime-cache:end
+
+# Private inference checkpoints contain local-unverified evidence.
+.jev-receipts/

@@ -2,17 +2,49 @@ id: pm-jev-w1zj
 title: Preserve partial evaluation receipts and call counts on interruption
 description: "An endpoint timeout stops evaluation safely before configuration persistence, but completed observations and the attempted-call count are not returned. A bounded run then needs an external access log to reconstruct its spent budget. Follow-up: emit a redacted partial receipt and explicit attempted/completed counts on failure or interruption, without fitting or saving from incomplete evidence."
 type: Issue
-status: open
+status: in_progress
 priority: 2
 tags[3]: deferred,eval,reliability
 created_at: "2026-10-18T03:58:44.531Z"
-updated_at: "2026-10-19T15:37:28.401Z"
+updated_at: "2026-10-23T17:57:58.956Z"
 author: codex-agent
 acceptance_criteria: "A synthetic two-request run failing on the second request reports two attempts and one completed example, preserves hashes and validated observations, makes no configuration write and does not retry; the failure receipt excludes source text and local paths."
 parent: pm-jev-0w3q
 dependencies[2]{id,kind,created_at,author,source_kind,author_source}:
   pm-jev-82ip,related,"2026-10-18T04:17:34.007Z",codex-agent,"cli:update:dep",detected
   pm-jev-hx9w,related,"2026-10-18T04:17:34.007Z",codex-agent,"cli:update:dep",detected
-comments[1]{created_at,author,text}:
+comments[10]{created_at,author,text}:
   "2026-10-19T15:37:28.401Z",codex-agent,"Additional evidence from pm-jev-vouf: a benchmark postprocessor assertion aborted after replacement inference but before report publication, losing one validated probability/latency per model. Both calls are counted in the real-label receipt; replacement persistence was moved before validation. This reinforces the existing need for append-only partial evaluation receipts rather than final-report-only publication."
+  "2026-10-23T16:47:29.919Z",codex-agent,"Design: private atomic JSON checkpoints before inference attempts and after validated completions; shared typed accounting for evaluation and replay. SIGINT, run deadline, call budget and provider failures stop incomplete calibration. Existing explicit receipt reports previous work without repeating calls. Monetary cost remains unknown when the local endpoint reports no price. Also reject explicit null replay results even when questions are missing."
+  "2026-10-23T16:54:16.006Z",codex-agent,"Implemented shared durable attempt/completion accounting, private receipts, explicit report-on-rerun behavior, call and deadline budgets, and typed null-result replay refusal. Initial isolated receipt regressions passed 3/3, covering provider failure, SIGINT, cancellation, deadline, budget and crash reporting. Completing command integration, public-copy acceptance, behavioral revert proofs and unchanged release gates."
+  "2026-10-23T16:57:34.183Z",codex-agent,"Behavioral revert proof: replacing only runEvaluationCommand with origin/main made the second-request regression fail with the uncaught HTTP 503 (exit 1); restoring the implementation preserves the partial receipt. Removing only the parser's explicit malformed-result guard made the null-without-questions regression fail with Missing expected exception (exit 1). Both functions restored."
+  "2026-10-23T17:10:29.538Z",codex-agent,"Native CLI subprocess acceptance passed 1/1: real SIGINT on inference 2, provider failure, call-budget exhaustion, native JSON/TOON and unchanged plain tracker artifacts with Git absent. The linked SDK suite found a test-only JSON round-trip mismatch: optional undefined provenance is omitted by JSON. The regression now compares serialized receipt values; actual two-attempt/one-completion accounting and preserved observations were correct. PM linked-test result tracking is disabled, so evidence is recorded in this comment without changing project configuration. Public-copy acceptance verified 14 items and 34 unchanged artifacts, 2 attempts/1 completion in eval and replay, 2 observations, 50/4 known tokens, and zero new calls when reporting the prior receipt."
+  "2026-10-23T17:16:52.756Z",codex-agent,"Corrected second-request regression passed 1/1. The final receipt-module suite passed 4/4 with 100% statements, branches, functions and lines in focused c8 coverage. It additionally covers typed transport timeouts, storage failures, explicit blank receipt refusal and crash reporting. Restarted the full npm gate after finalizing these edge cases; the earlier in-flight gate is superseded and is not full-gate evidence."
+  "2026-10-23T17:28:28.972Z",codex-agent,"Final linked targeted commands passed 28/28 SDK/evaluator/replay tests plus 1/1 native CLI test, with zero failures, cancellations or skips. Full npm suite passed 323/323; unchanged coverage refused one previously untested CLI replay partial-return branch. Added provider-failure command regression; focused replay command coverage now passes 3/3 at 100% in all four dimensions. Reverting only runReplayCommand to main makes that regression fail because durable accounting is absent (exit 1), then restored. The installed decision model was cold, so public-copy acceptance retained its deterministic fixture and made zero live model calls."
+  "2026-10-23T17:33:11.679Z",codex-agent,"SDK cancellation is now distinguished from process SIGINT: caller timeout signals retain timeout, other SDK aborts use aborted, and native SIGINT remains sigint. Final receipt-module regressions pass 4/4 with 100% statements/branches/functions/lines; replay-command regressions pass 3/3 at 100% in all dimensions. Earlier in-flight gates are superseded; the frozen implementation is being checked by sequential full npm and Bun gates before publication."
+  "2026-10-23T17:43:42.096Z",codex-agent,"Recovery now reports an explicit prior receipt before source reads, recording parsing or provider discovery, including when sources and the model are unavailable. Real public-copy validation confirms zero new provider requests and zero inference on rerun. Focused receipt/replay SDK/CLI regressions pass 14/14 with all three modules at 100% statements/branches/functions/lines; evaluation recovery passes 1/1 and test typecheck passes. Removing only the early replay receipt check makes the unavailable-recording recovery fail as invalid_recording instead of receipt_exists (exit 1); restored. Running final full npm and Bun gates on this implementation."
+  "2026-10-23T17:57:56.315Z",codex-agent,"Final full release gates passed under isolated Git identity: npm run release:check and bun run release:check each passed 323/323 tests with zero failures, skipped, cancelled or todo tests. Both measured 100% statements, branches, functions and lines across the complete 30-source inventory, duplication 0%, all declarations documented and production audit 0 vulnerabilities; build, public provenance, pack, changelog and publish-attestation checks passed. Real-data evidence: 14 public tracker items, 34 unchanged artifacts, evaluation/replay 2 attempts and 1 completion, 2 evaluation observations, 50/4 known tokens, one unknown-usage call, no calibration writes; offline rerun makes zero provider requests. Cost remains null when unreported, and reruns report prior work rather than automatically resuming. Preparing a ready-for-review PR; CI must verify both full gates on Node 22 and 26. No item closure, merge or release."
+files[14]{path,scope}:
+  .gitignore,project
+  evaluation-command.ts,project
+  exemplar-retrieval.ts,project
+  index.ts,project
+  package.json,project
+  partial-receipt.ts,project
+  policy-replay.ts,project
+  replay-command.ts,project
+  test/evaluation-command.test.ts,project
+  test/interrupted-command.test.ts,project
+  test/partial-receipt.acceptance.ts,project
+  test/partial-receipt.test.ts,project
+  test/policy-replay.test.ts,project
+  test/replay-command.test.ts,project
+tests[4]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/partial-receipt.test.ts test/evaluation-command.test.ts test/policy-replay.test.ts test/replay-command.test.ts,project,codex-agent,"2026-10-23T16:56:22.864Z",local_mutation,feat/partial-evaluation-receipts
+  node --test test/interrupted-command.test.ts,project,codex-agent,"2026-10-23T16:58:05.787Z",local_mutation,feat/partial-evaluation-receipts
+  "npm run release:check",project,codex-agent,"2026-10-23T17:28:32.073Z",local_mutation,feat/partial-evaluation-receipts
+  "bun run release:check",project,codex-agent,"2026-10-23T17:28:32.073Z",local_mutation,feat/partial-evaluation-receipts
+docs[2]{path,scope}:
+  docs/partial-receipt-evidence.json,project
+  README.md,project
 body: ""
