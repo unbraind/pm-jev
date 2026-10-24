@@ -30,10 +30,10 @@
 ### Fixed
 
 - Gate outcomes need explicit proposition and expected-result semantics ([pm-jev-43xa](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-43xa.toon))
-- Preserve partial evaluation receipts and call counts on interruption ([pm-jev-w1zj](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-w1zj.toon))
 - Resolve development glob toolchain audit findings without downgrading fleet gates ([pm-jev-2rp1](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-2rp1.toon))
 - Preserve unknown token usage after TypeSafe SDK update ([pm-jev-ls5n](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-ls5n.toon))
 - Name evaluation source failures and support local tracker reads without GitHub ([pm-jev-0s07](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-0s07.toon))
+- Preserve partial evaluation receipts and call counts on interruption ([pm-jev-w1zj](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-w1zj.toon))
 - Calibrate triage type proposals for projects with many item types ([pm-jev-2mg8](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-2mg8.toon))
 - Synthetic threshold calibration dataset and local harness ([pm-jev-6uoz](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-6uoz.toon))
 - Port best-effort CI approval and release-notes resume into the release workflow (Greptile PR 1) ([pm-jev-uqu6](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-uqu6.toon))
