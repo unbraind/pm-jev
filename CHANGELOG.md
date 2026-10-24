@@ -41,5 +41,5 @@
 
 ### Other
 
-- pm-jev: typed local-first System One decisions for pm items ([pm-jev-0w3q](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/epics/pm-jev-0w3q.toon))
 - Preserve Unicode exemplar retrieval and UTF-8 prompt budgets ([pm-jev-sdk-unicode](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/tasks/pm-jev-sdk-unicode.toon))
+- pm-jev: typed local-first System One decisions for pm items ([pm-jev-0w3q](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/epics/pm-jev-0w3q.toon))
