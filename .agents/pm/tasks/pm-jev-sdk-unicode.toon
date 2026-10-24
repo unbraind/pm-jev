@@ -2,14 +2,19 @@ id: pm-jev-sdk-unicode
 title: Preserve Unicode exemplar retrieval and UTF-8 prompt budgets
 description: Validate and fix SDK audit F13 and F15 against origin/main with SDK text primitives and byte-based estimates.
 type: Task
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-23T21:19:48.794Z"
-updated_at: "2026-10-23T21:50:29.164Z"
+updated_at: "2026-10-24T08:26:14.267Z"
+closed_at: "2026-10-24T08:26:14.262Z"
+completed_at: "2026-10-23T21:57:08.000Z"
 author: codex-agent
 acceptance_criteria: "F13: validate finding, delegate Unicode normalization and tokenization to the SDK while retaining BM25 term frequency, eligibility and deterministic ranking; prove regression from a real non-git tracker.; F15: validate finding, use SDK UTF-8 byte estimates for base and exemplar reservations; prove multilingual complete-prompt withholding and receipts before the exemplar model call."
 parent: pm-jev-0w3q
+resolution: "Delivered by https://github.com/unbraind/pm-jev/pull/47 (merge 58f2fb587443, head 60c7629425cb)"
+expected_result: "F13: validate finding, delegate Unicode normalization and tokenization to the SDK while retaining BM25 term frequency, eligibility and deterministic ranking; prove regression from a real non-git tracker.; F15: validate finding, use SDK UTF-8 byte estimates for base and exemplar reservations; prove multilingual complete-prompt withholding and receipts before the exemplar model call."
+actual_result: "Merged at 2026-10-23T21:57:08Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[6]{created_at,author,text}:
   "2026-10-23T21:19:51.998Z",codex-agent,"Validated both findings on origin/main 78b01cb: tokenize uses ASCII-only runs; estimateTokens uses ceil(text.length/4), and exemplar packing also counts characters. Installed SDK 2026.10.20 exports tokenizeSimilarityText, normalizeSimilarityText and estimatePmOutputTokens. Preserve BM25 term frequency because the SDK tokenizer returns a set; replace byte arithmetic through entry packing as well as base reservations. Existing historical calibration receipts remain historical evidence; document the changed retrieval contract."
   "2026-10-23T21:22:03.333Z",codex-agent,"SDK floor verification: the published 2026.10.10 tarball exports all three helpers, so dev pin, peer range and pm_min_version remain unchanged. F13 regression passes from a real plain tracker with git absent from PATH; repeated Unicode and ASCII terms are retained for BM25. F15 multilingual evaluation regression passes twice with deterministic withholding and empty context receipts; rendered request bytes are checked independently of estimateTokens. Historical calibration report is explicitly identified as predating these semantics."
@@ -28,4 +33,5 @@ tests[3]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,
   "bun run release:check",project,2400,codex-agent,"2026-10-23T21:25:28.739Z",local_mutation,refactor/sdk-unicode-tokens-and-budgets
 docs[1]{path,scope}:
   docs/threshold-calibration.md,project
+close_reason: "{\"pr\":47,\"url\":\"https://github.com/unbraind/pm-jev/pull/47\",\"merge_commit_sha\":\"58f2fb58744388827aa78e711f6bce1b27a3b80e\",\"head_sha\":\"60c7629425cb4d5521157886e6206cf627558fd7\",\"merged_at\":\"2026-10-23T21:57:08Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""
