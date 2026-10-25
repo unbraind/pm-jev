@@ -415,7 +415,7 @@ recommending the local flag that is already enabled; neither mode calls the mode
 
 ### Without git
 
-Doctor, model discovery, triage, link, dedupe, ask, gate, explanations, cost-policy selection offline policy replay and calibration drift checks work in plain trackers.
+Doctor, model discovery, triage, link, dedupe, ask, gate, explanations, cost-policy selection, offline policy replay and calibration drift checks work in plain trackers.
 Evaluation and calibration work there with `--local-unverified` and explicit local
 source directories; they require neither git nor GitHub. Default public-corpus
 sources still require git, GitHub CLI authentication, verified public visibility
