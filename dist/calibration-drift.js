@@ -49,8 +49,8 @@ export function parseDriftInput(raw) {
                 break;
             }
             const ids = new Set();
-            for (const row of rows) {
-                if (!exact(row, ["id", "task", "type", "input_bucket", "predicted", "label"]) || ![row.id, row.task, row.type, row.input_bucket, row.predicted].every(category) || !(row.label === null || category(row.label)) || ids.has(row.id)) {
+            for (const [index, row] of rows.entries()) {
+                if (!Object.hasOwn(rows, index) || !exact(row, ["id", "task", "type", "input_bucket", "predicted", "label"]) || ![row.id, row.task, row.type, row.input_bucket, row.predicted].every(category) || !(row.label === null || category(row.label)) || ids.has(row.id)) {
                     valid = false;
                     break;
                 }

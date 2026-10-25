@@ -109,6 +109,10 @@ test("ONE strict boundary rejects sparse arrays, extra fields, bad domains and e
   const sparseWithExtra = Array(1);
   Object.assign(sparseWithExtra, { extra: row });
   refuses(() => checkCalibrationDrift({ ...data, current: { ...data.current, observations: sparseWithExtra } }));
+  const inherited = Array(1);
+  Object.assign(inherited, { extra: row });
+  Object.setPrototypeOf(inherited, Object.assign(Object.create(Array.prototype) as object, { 0: row }));
+  refuses(() => checkCalibrationDrift({ ...data, current: { ...data.current, observations: inherited } }));
   const extremes = { ...data, thresholds: { population_tv: Number.MIN_VALUE, error_increase: 1, min_population: 2, min_labels: 5000 } };
   assert.equal(checkCalibrationDrift(extremes).status, "insufficient_evidence");
   const large = structuredClone(data);

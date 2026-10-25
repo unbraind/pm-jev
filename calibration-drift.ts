@@ -72,8 +72,8 @@ export function parseDriftInput(raw: unknown): DriftInput {
       const rows = cohort.observations;
       if (!Array.isArray(rows) || rows.length > 5000 || Object.keys(rows).length !== rows.length) { valid = false; break; }
       const ids = new Set<string>();
-      for (const row of rows) {
-        if (!exact(row, ["id", "task", "type", "input_bucket", "predicted", "label"]) || ![row.id, row.task, row.type, row.input_bucket, row.predicted].every(category) || !(row.label === null || category(row.label)) || ids.has(row.id)) { valid = false; break; }
+      for (const [index, row] of rows.entries()) {
+        if (!Object.hasOwn(rows, index) || !exact(row, ["id", "task", "type", "input_bucket", "predicted", "label"]) || ![row.id, row.task, row.type, row.input_bucket, row.predicted].every(category) || !(row.label === null || category(row.label)) || ids.has(row.id)) { valid = false; break; }
         ids.add(row.id);
       }
     }
