@@ -23,6 +23,7 @@ import { APIConnectionError, APIError, APITimeoutError, APIUserAbortError, TypeS
 import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.js";
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.js";
+import { DRIFT_FLAGS, runDriftCommand } from "./drift-command.js";
 import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.js";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.js";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.js";
@@ -40,6 +41,8 @@ export { COST_POLICY_VERSION, CostPolicyRefusal, parseCostDataset, selectAbstent
 export { COUNTERFACTUAL_VERSION, CounterfactualRefusal, explainDecision } from "./counterfactual.js";
 /** Frozen-input compatibility inspection and loopback-only decision model adapter. */
 export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.js";
+/** Frozen-cohort operating-population diagnostics without inference or mutations. */
+export { DRIFT_VERSION, DriftRefusal, parseDriftInput, checkCalibrationDrift, validateDriftReportNumbers } from "./calibration-drift.js";
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
 // ---------------------------------------------------------------------------
@@ -1757,6 +1760,14 @@ const GATE_FLAGS = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api) {
+    api.registerCommand(defineCommand({
+        name: "jev drift",
+        description: "Detect changed calibration populations and explicit-label error rates without inference",
+        flags: DRIFT_FLAGS,
+        examples: ["pm jev drift --cohorts cohorts.json --json"],
+        /** Delegate receipt formatting and typed refusal exits to the host. */
+        run: (ctx) => runDriftCommand(ctx),
+    }));
     api.registerCommand(defineCommand({
         name: "jev replay",
         description: "Compare frozen decision proposals against a selected local policy or model before adoption",

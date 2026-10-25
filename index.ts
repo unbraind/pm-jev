@@ -32,6 +32,7 @@ import type { EntryType, Questions, ScoreCriteria, SystemOneResult, ChoiceRespon
 import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.ts";
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.ts";
+import { DRIFT_FLAGS, runDriftCommand } from "./drift-command.ts";
 import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.ts";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.ts";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.ts";
@@ -79,6 +80,11 @@ export type { CounterfactualOptions, CounterfactualReceipt, ExplanationProposal,
 export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.ts";
 /** Portable recording, policy, trusted adapter and compact comparison contracts. */
 export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, ReplayReport, ReplayExecutionResult } from "./policy-replay.ts";
+
+/** Frozen-cohort operating-population diagnostics without inference or mutations. */
+export { DRIFT_VERSION, DriftRefusal, parseDriftInput, checkCalibrationDrift, validateDriftReportNumbers } from "./calibration-drift.ts";
+/** Exact identity, strict evidence, frozen thresholds and compact diagnostic contracts. */
+export type { DriftIdentity, DriftObservation, DriftCohort, DriftThresholds, DriftInput, DriftRefusalCode, DriftStatus, DriftReport } from "./calibration-drift.ts";
 
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
@@ -2270,6 +2276,14 @@ const GATE_FLAGS: FlagDefinition[] = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api: ExtensionApi): void {
+  api.registerCommand(defineCommand({
+    name: "jev drift",
+    description: "Detect changed calibration populations and explicit-label error rates without inference",
+    flags: DRIFT_FLAGS,
+    examples: ["pm jev drift --cohorts cohorts.json --json"],
+    /** Delegate receipt formatting and typed refusal exits to the host. */
+    run: (ctx: CommandHandlerContext) => runDriftCommand(ctx),
+  }));
   api.registerCommand(defineCommand({
     name: "jev replay",
     description: "Compare frozen decision proposals against a selected local policy or model before adoption",

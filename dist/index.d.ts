@@ -26,6 +26,10 @@ export type { CounterfactualOptions, CounterfactualReceipt, ExplanationProposal,
 export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.ts";
 /** Portable recording, policy, trusted adapter and compact comparison contracts. */
 export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, ReplayReport, ReplayExecutionResult } from "./policy-replay.ts";
+/** Frozen-cohort operating-population diagnostics without inference or mutations. */
+export { DRIFT_VERSION, DriftRefusal, parseDriftInput, checkCalibrationDrift, validateDriftReportNumbers } from "./calibration-drift.ts";
+/** Exact identity, strict evidence, frozen thresholds and compact diagnostic contracts. */
+export type { DriftIdentity, DriftObservation, DriftCohort, DriftThresholds, DriftInput, DriftRefusalCode, DriftStatus, DriftReport } from "./calibration-drift.ts";
 /** Version of the triage question catalog; surfaced in every triage receipt. */
 export declare const TRIAGE_CATALOG_VERSION = "pm-jev-triage/2";
 /** Explicit non-mutating candidate, distinct from every registered type. */

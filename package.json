@@ -38,7 +38,10 @@
     "docs/policy-replay.md",
     "docs/policy-replay-evidence.json",
     "examples/policy-replay.json",
-    "docs/partial-receipt-evidence.json"
+    "docs/partial-receipt-evidence.json",
+    "docs/calibration-drift.md",
+    "docs/calibration-drift-evidence.json",
+    "examples/calibration-drift.json"
   ],
   "scripts": {
     "build": "tsc",

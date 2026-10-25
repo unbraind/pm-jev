@@ -1,0 +1,30 @@
+id: pm-jev-t1h1
+title: Detect calibration population and explicit-label drift without inference
+description: "Compare current task/type/input-bucket distributions and later explicit labels against a frozen calibration cohort. Acceptance: unchanged cohort stays below predeclared thresholds; shifted fixture trips them; sparse labels report insufficient evidence; zero inference calls; exact model/question digest binding; bounded typed SDK and CLI with remedies; non-git public-copy validation."
+type: Feature
+status: in_progress
+priority: 2
+tags[3]: calibration,drift,read-only
+created_at: "2026-10-25T22:50:26.011Z"
+updated_at: "2026-10-25T22:59:23.955Z"
+author: codex-agent
+comments[4]{created_at,author,text}:
+  "2026-10-25T22:50:42.351Z",codex-agent,"Overlap rechecked against installed CLI 2026.10.25 and pinned SDK 2026.10.20, sibling README surfaces and pm-jev calibration/replay implementations. CLI owns tracker reads, authoring, formatting and status roles; no calibration-population sentry found. Calibration binds model/question identity; replay compares policies; pm-rl owns training and promotion. This feature only computes read-only cohort distribution/error diagnostics. No imports, exports, sync, journal, claims, checkpoint or shared-state mutations are introduced, so retry/CAS and native-state migration contracts are not on its path. Strict versioned input carries frozen thresholds and exact identity; no provider adapter. Planned checks: shifted/unchanged/sparse-label fixtures, digest mismatch, dense finite bounded schema fuzz, 500 seeded replay/serialization operation sequences, non-git CLI with no git in PATH, SDK-read public tracker copy with unchanged artifact hash. Full npm/Bun release gates will run in CI at unchanged thresholds."
+  "2026-10-25T22:57:41.764Z",codex-agent,"Implemented strict frozen-cohort SDK and jev drift command. Focused checks pass (5 tests; 500 seeded sequences, 4000 steps); new source targeted coverage is 100% statements/branches/functions/lines. Public-copy acceptance: 18 items, 42 verified authoritative files, task/type/input TV all 0 unchanged, controlled input TV 1 versus threshold 0.25, zero explicit labels therefore insufficient label evidence, zero inference/network calls. Second certified complete SDK read and artifact hashes unchanged. Public source and limitations are recorded in docs/calibration-drift-evidence.json. No native state is transformed; no import/export/sync or journal/concurrency path is added."
+  "2026-10-25T22:58:35.823Z",codex-agent,"Behavioral revert proof: temporarily disabled only population/error threshold crossings inside checkCalibrationDrift, leaving validation and output intact. node --test --test-name-pattern=\"predeclared sentries\" test/calibration-drift.test.ts failed with stable versus expected drift (exit 1). Restoring the implementation passes. Targeted adjacent run node --test test/calibration-drift.test.ts test/cost-policy.test.ts test/replay-command.test.ts passed 16/16 with no skips; typecheck, test typecheck, lint, docstrings and duplication passed. Schema boundaries include inclusive cutoffs and shipped example validation."
+  "2026-10-25T22:59:22.492Z",codex-agent,"Pinned pm test runner executed the registered command successfully: 5 passed, 0 failed/skipped. Strict tracker health passes with isolated HOME and disabled global/system Git configuration. Ambient health reproduces existing pm-jev-v2la (pinned host 2026.10.20 versus global GitHub extension SDK 2026.10.25); no project extension, dependency pin or global installation was changed. Ordinary linked-file additions require repeated --add flags; links are now recorded. Implementation and local validation are complete; release verification is delegated to the unchanged CI npm/Bun matrix."
+files[6]{path,scope}:
+  calibration-drift.ts,project
+  drift-command.ts,project
+  index.ts,project
+  manifest.json,project
+  test/calibration-drift.acceptance.ts,project
+  test/calibration-drift.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/calibration-drift.test.ts,project,codex-agent,"2026-10-25T22:57:39.698Z",local_mutation,feat/calibration-drift-sentries
+docs[4]{path,scope}:
+  docs/calibration-drift-evidence.json,project
+  docs/calibration-drift.md,project
+  examples/calibration-drift.json,project
+  README.md,project
+body: ""
