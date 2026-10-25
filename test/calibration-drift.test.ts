@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import fs, { readFileSync, writeFileSync } from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
 import { checkCalibrationDrift, parseDriftInput, DRIFT_VERSION, DriftRefusal, validateDriftReportNumbers } from "../index.ts";
 import type { DriftInput, DriftReport } from "../index.ts";
@@ -184,6 +185,14 @@ test("registered command runs on a real non-git tracker with no inference, no wr
       assert.equal((result.result as DriftReport).status, "stable");
       assert.equal((result.result as DriftReport).inference_calls, 0);
     });
+    const originalRead = fs.readSync;
+    try {
+      // Inject short filesystem reads only; all bytes still come from the real regular file.
+      fs.readSync = ((descriptor: number, buffer: NodeJS.ArrayBufferView, offset: number, length: number, position: number) => originalRead(descriptor, buffer, offset, Math.min(length, 17), position)) as typeof fs.readSync;
+      syncBuiltinESMExports();
+      const shortRead = runDriftCommand({ command: "jev drift", pm_root: p.pmRoot, args: [], global: {}, options: { cohorts: file } });
+      assert.equal((shortRead as DriftReport).status, "stable", "accumulate real short reads through EOF");
+    } finally { fs.readSync = originalRead; syncBuiltinESMExports(); }
     assert.deepEqual(await p.pm.get(item.item.id), before, "authoritative state read back through SDK");
     assert.deepEqual(trackerSnapshot(p.pmRoot), snapshot);
     installBuiltExtension(p.pmRoot);

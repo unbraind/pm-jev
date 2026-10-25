@@ -15,7 +15,12 @@ function cohortDocument(file: string | undefined): unknown {
     try {
       if (!fstatSync(descriptor).isFile()) throw new Error();
       const buffer = Buffer.alloc(8 * 1024 * 1024 + 1);
-      const length = readSync(descriptor, buffer, 0, buffer.length, 0);
+      let length = 0;
+      let bytes: number;
+      do {
+        bytes = readSync(descriptor, buffer, length, buffer.length - length, length);
+        length += bytes;
+      } while (bytes !== 0 && length < buffer.length);
       if (length === buffer.length) throw new Error();
       return JSON.parse(buffer.toString("utf8", 0, length)) as unknown;
     } finally { closeSync(descriptor); }
