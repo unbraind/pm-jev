@@ -1,6 +1,8 @@
 # Exact policy cutoffs
 
-Count-derived policy decisions use `compareExact` from `exact.ts`. Fractions
+Count-derived policy decisions use the single comparator from `threshold.ts`,
+also re-exported as `compareExact` from `exact.ts`. See the
+[fit/apply domain, compatibility states and laws](threshold-domain.md). Fractions
 retain integer numerators and denominators as BigInts, reduce intermediate
 arithmetic, and compare by cross multiplication. There is no epsilon or rounded
 percentage in a decision. Decimal thresholds are parsed as decimal rationals,

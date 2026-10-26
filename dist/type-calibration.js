@@ -1,3 +1,4 @@
+import { marginValue, threshold as asThreshold } from "./threshold.js";
 import { compareExact, countRatio, displayRatio } from "./exact.js";
 import { TokenUsageTotals } from "./token-usage.js";
 import { createHash } from "node:crypto";
@@ -48,10 +49,11 @@ export function typeMetrics(rows, variant, marginThreshold) {
 export function fitTypeMargin(rows, targetPrecision = 0.95) {
     const fit = deriveThreshold(rows.filter(/** Freeze the threshold before looking at evaluation labels. */ /** Freeze the threshold before looking at evaluation labels. */ row => row.split === "calibration").map(/** Map margins to the existing empirical cutoff fitter. */ /** Map margins to the existing empirical cutoff fitter. */ row => {
         const decision = resolveTriageType(row.after, row.current, {}, 0);
-        return { confidence: decision.margin, correct: decision.value === row.expected };
+        return { confidence: marginValue(row.after.probabilities), correct: decision.value === row.expected };
     }), targetPrecision, 4);
     // A positive observed cutoff enforces tie abstention without an invented epsilon.
-    return { ...fit, threshold: fit.curve.find(/** Pick the lowest supported positive margin reaching the empirical target. */ /** Pick the lowest supported positive margin reaching the empirical target. */ point => compareExact(point.threshold, 0) > 0 && compareExact(point.accepted, fit.minAccepted) >= 0 && compareExact(countRatio(point.correct, point.accepted), targetPrecision) >= 0)?.threshold ?? null };
+    const chosen = fit.curve.find(/** Select a positive round-tripping boundary using exact margin counts. */ /** Select a positive round-tripping boundary using exact margin counts. */ point => compareExact(point.threshold, 0) > 0 && compareExact(point.accepted, fit.minAccepted) >= 0 && compareExact(countRatio(point.correct, point.accepted), targetPrecision) >= 0);
+    return { ...fit, threshold: chosen?.threshold ?? null, cutoff: asThreshold(chosen?.threshold ?? null) };
 }
 /** Measure old and new prompts on real scratch items with all built-ins and two registered custom types. */
 export async function calibrateTypes(baseUrl, model, targetPrecision = 0.95) {

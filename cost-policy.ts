@@ -1,3 +1,4 @@
+import { acceptsThreshold } from "./threshold.ts";
 import { addExact, compareExact, displayExact, displayRatio, fraction, multiplyExact } from "./exact.ts";
 import { evidenceHash } from "./decision-calibration.ts";
 
@@ -79,14 +80,14 @@ export function abstainWithPolicy(policy: AbstentionPolicy, confidence: number, 
   }
   if (!mandatoryChecksPassed) return { propose: false, reason: "mandatory_checks_failed" };
   if (!eligible) return { propose: false, reason: "ineligible" };
-  if (policy.threshold === null || compareExact(confidence, policy.threshold) < 0) return { propose: false, reason: "abstained" };
+  if (policy.threshold === null || !acceptsThreshold(confidence, policy.threshold)) return { propose: false, reason: "abstained" };
   return { propose: true, reason: "proposal_only" };
 }
 /** Measure fixed-score proposals; abstaining on a negative duplicate incurs no missed-candidate cost. */
 function measure(rows: readonly CostObservation[], threshold: number | null, costs: DecisionCosts): CostMetrics {
   let proposed = 0, falseDuplicates = 0, wrongTypes = 0, missedCandidates = 0;
   for (const row of rows) {
-    const accepted = row.eligible && threshold !== null && compareExact(row.confidence, threshold) >= 0;
+    const accepted = row.eligible && threshold !== null && acceptsThreshold(row.confidence, threshold);
     if (accepted) {
       proposed++;
       if (row.task === "duplicate") { if (!row.label) falseDuplicates++; }

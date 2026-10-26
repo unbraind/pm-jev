@@ -1,3 +1,4 @@
+import { acceptsThreshold } from "./threshold.ts";
 import { compareExact, displayRatio, precisionMeets } from "./exact.ts";
 import { createHash } from "node:crypto";
 import { getSettingsPath, readFileIfExists } from "@unbrained/pm-cli/sdk";
@@ -130,14 +131,14 @@ export function precisionLower(correct: number, count: number): number {
 }
 /** Threshold coverage and precision, including a conservative uncertainty bound. */
 export function atThreshold(rows: readonly Observation[], threshold: number) {
-  const accepted = rows.filter(/** Include equality at the authorization boundary. */ row => compareExact(ranked(row.probabilities)[0][1], threshold) >= 0);
+  const accepted = rows.filter(/** Include equality at the authorization boundary. */ row => acceptsThreshold(ranked(row.probabilities)[0][1], threshold));
   const correct = accepted.filter(/** Score the probability winner, never the model choice string. */ row => ranked(row.probabilities)[0][0] === row.label).length;
   return { threshold, count: accepted.length, coverage: rows.length === 0 ? 0 : displayRatio(accepted.length, rows.length),
     precision: accepted.length === 0 ? null : displayRatio(correct, accepted.length), precision_lower_95: precisionLower(correct, accepted.length) };
 }
 /** Recount accepted labels and use the exact Wilson score inequality for authorization. */
 function precisionAtThreshold(rows: readonly Observation[], threshold: number, target: number): boolean {
-  const accepted = rows.filter(/** Use the same exact inclusive score cutoff as the displayed curve. */ row => compareExact(ranked(row.probabilities)[0][1], threshold) >= 0);
+  const accepted = rows.filter(/** Use the same exact inclusive score cutoff as the displayed curve. */ row => acceptsThreshold(ranked(row.probabilities)[0][1], threshold));
   return precisionMeets(accepted.filter(/** Preserve integer correctness counts until qualification. */ row => ranked(row.probabilities)[0][0] === row.label).length, accepted.length, target);
 }
 /** Compute categorical accuracy, per-class metrics, ten-bin ECE, NLL and threshold curves. */

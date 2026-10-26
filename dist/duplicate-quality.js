@@ -1,3 +1,4 @@
+import { acceptsThreshold } from "./threshold.js";
 import { addExact, compareExact, countRatio, displayExact, displayRatio, multiplyExact } from "./exact.js";
 import { evidenceHash } from "./decision-calibration.js";
 /** Repository-only assignment frozen before labels, scores or model outcomes. */
@@ -25,8 +26,8 @@ export function duplicateSimilarity(pair) { return displayExact(duplicateSimilar
 /** Positive decisions require every enabled channel; all remaining rows explicitly abstain. */
 export function qualityProposes(row, arm, policy) {
     return (arm === "model-only" || row.retrieved) &&
-        (arm === "lexical-only" || policy.model !== null && compareExact(row.probability, policy.model) >= 0) &&
-        (arm === "model-only" || policy.lexical !== null && compareExact(row.lexical, policy.lexical) >= 0);
+        (arm === "lexical-only" || policy.model !== null && acceptsThreshold(row.probability, policy.model)) &&
+        (arm === "model-only" || policy.lexical !== null && acceptsThreshold(row.lexical, policy.lexical));
 }
 /** Unretrieved positives stay in recall; every withheld proposal is an unsure decision. */
 export function qualityMetrics(rows, arm, policy) {

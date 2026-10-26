@@ -1,4 +1,5 @@
-import { compareExact, countRatio, displayExact, subtractExact } from "./exact.js";
+import { acceptsThreshold, belowComplement } from "./threshold.js";
+import { compareExact, countRatio, displayExact } from "./exact.js";
 import { createHash } from "node:crypto";
 import { PmClient, createPmCliExpectedError, readBooleanOption, readStringOption, readSettings, resolveRuntimeStatusRegistry } from "@unbrained/pm-cli/sdk";
 import { certifyCompleteListResult } from "@unbrained/pm-cli/sdk/runtime";
@@ -128,9 +129,9 @@ export function pairState(pair) {
 }
 /** Inclusive positive and negative cutoffs per typed question, with an explicit central abstention band. */
 export function pairVerdict(pair, probability, relatedProbability, threshold, relatedThreshold) {
-    const decision = compareExact(probability, threshold) >= 0 && compareExact(probability, 0.5) > 0 ? "duplicate"
-        : compareExact(relatedProbability, relatedThreshold) >= 0 && compareExact(relatedProbability, 0.5) > 0 ? "related"
-            : compareExact(probability, subtractExact(1, threshold)) <= 0 && compareExact(probability, 0.5) < 0 && compareExact(relatedProbability, subtractExact(1, relatedThreshold)) <= 0 && compareExact(relatedProbability, 0.5) < 0 ? "distinct"
+    const decision = acceptsThreshold(probability, threshold) && compareExact(probability, 0.5) > 0 ? "duplicate"
+        : acceptsThreshold(relatedProbability, relatedThreshold) && compareExact(relatedProbability, 0.5) > 0 ? "related"
+            : belowComplement(probability, threshold) && compareExact(probability, 0.5) < 0 && belowComplement(relatedProbability, relatedThreshold) && compareExact(relatedProbability, 0.5) < 0 ? "distinct"
                 : "abstain";
     const reason = decision === "duplicate" ? "same_work_above_threshold" : decision === "related" ? "related_above_threshold" : decision === "distinct" ? "below_negative_thresholds" : "probability_in_abstain_band";
     return { a: pair.a.id, b: pair.b.id, probability, related_probability: relatedProbability, decision, reason };
@@ -202,7 +203,8 @@ export async function runPairDedupe(ctx) {
     if (rawConfidence !== undefined && (!Number.isFinite(requested) || requested < 0.5 || requested > 1))
         throw createPmCliExpectedError("--min-confidence must be between 0.5 and 1 for pair decisions.");
     const calibration = config.provider === "ollama" ? DUPLICATE_QUALITY_CALIBRATION[config.model] : undefined;
-    const threshold = Math.max(requested, calibration?.policy.model ?? Infinity);
+    const calibratedCutoff = calibration?.policy.model ?? Infinity;
+    const threshold = compareExact(requested, calibratedCutoff) >= 0 ? requested : calibratedCutoff;
     const pm = ctx.sdk?.client ?? new PmClient({ pmRoot: ctx.pm_root, cwd: ctx.source_workspace_root, author: ctx.global.author });
     const corpus = certifyCompleteListResult(await pm.listAllComplete({ includeBody: true })).items;
     const statuses = resolveRuntimeStatusRegistry((await readSettings(ctx.pm_root)).schema);
@@ -238,7 +240,7 @@ export async function runPairDedupe(ctx) {
         }
         const result = await runDecision(client, config, pairState(pair), DUPLICATE_QUESTIONS, signal);
         const probability = result.answers.same_work.noul;
-        const approved = compareExact(probability, threshold) >= 0;
+        const approved = acceptsThreshold(probability, threshold);
         const row = { a: pair.a.id, b: pair.b.id, probability, decision: approved ? "duplicate" : "abstain", reason: approved ? "calibrated_duplicate" : "unsure_below_calibrated_confidence" };
         rows.push(row);
     }

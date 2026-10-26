@@ -1,3 +1,4 @@
+import { acceptsThreshold, threshold as asThreshold, legacyThreshold } from "./threshold.js";
 import { compareExact, countRatio, displayExact, displayRatio } from "./exact.js";
 import { candidatePairs, orderedPair, pairKey, pairState, pairVerdict } from "./dedupe.js";
 import { duplicateSplit, wilson } from "./duplicate-quality.js";
@@ -135,7 +136,7 @@ const scoredPair = { a: { id: "a" }, b: { id: "b" } };
 export function pairMetrics(rows, target, thresholds, lexical = false) {
     let tp = 0, fp = 0, fn = 0, abstained = 0;
     for (const row of rows) {
-        const decision = !row.retrieved ? "distinct" : lexical ? (compareExact(row.probability, thresholds.threshold) >= 0 ? target : "distinct") : pairVerdict(scoredPair, row.probability, row.related_probability ?? 0, thresholds.threshold, thresholds.relatedThreshold).decision;
+        const decision = !row.retrieved ? "distinct" : lexical ? (acceptsThreshold(row.probability, thresholds.threshold) ? target : "distinct") : pairVerdict(scoredPair, row.probability, row.related_probability ?? 0, thresholds.threshold, thresholds.relatedThreshold).decision;
         if (decision === "abstain")
             abstained++;
         if (decision === target) {
@@ -157,10 +158,10 @@ export function pairMetrics(rows, target, thresholds, lexical = false) {
         abstain_rate: rows.length === 0 ? null : displayRatio(abstained, rows.length), abstain_ci95: wilson(abstained, rows.length) };
 }
 /** Tune F1 on dev observations only, retaining the existing 0.8 model safety floor. */
-export function fitPairThreshold(rows, target, base, lexical) {
+export function fitPairCutoff(rows, target, base, lexical) {
     const observed = rows.map(/** Fit the channel of the requested target class. */ /** Fit the channel of the requested target class. */ row => target === "related" && !lexical ? row.related_probability ?? 0 : row.probability);
     const cutoffs = [...new Set([lexical ? 0 : 0.8, 1, ...observed])].filter(/** Preserve the existing 0.8 safety floor for model decisions. */ /** Preserve the existing 0.8 safety floor for model decisions. */ p => lexical || compareExact(p, 0.8) >= 0).sort(/** Prefer the lower cutoff on equal F1. */ (a, b) => compareExact(a, b));
-    let best = Infinity;
+    let best = asThreshold(null);
     let f1 = countRatio(-1, 1);
     for (const cutoff of cutoffs) {
         const thresholds = target === "related" && !lexical ? { ...base, relatedThreshold: cutoff } : { ...base, threshold: cutoff };
@@ -169,11 +170,15 @@ export function fitPairThreshold(rows, target, base, lexical) {
             continue;
         const exactF1 = countRatio(2 * metrics.tp, 2 * metrics.tp + metrics.fp + metrics.fn);
         if (compareExact(exactF1, f1) > 0) {
-            best = cutoff;
+            best = asThreshold(cutoff);
             f1 = exactF1;
         }
     }
     return best;
+}
+/** Last-release numeric fitting API delegates to the typed exact cutoff, preserving Infinity when unsupported. */
+export function fitPairThreshold(rows, target, base, lexical) {
+    return legacyThreshold(fitPairCutoff(rows, target, base, lexical));
 }
 /** Replay historical single-question receipts through the preserved public helper. */
 export function duplicateMetrics(rows, threshold, lexical = false) {

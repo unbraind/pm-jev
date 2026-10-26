@@ -6,9 +6,9 @@ status: in_progress
 priority: 2
 tags[3]: calibration,drift,read-only
 created_at: "2026-10-25T22:50:26.011Z"
-updated_at: "2026-10-26T06:01:18.859Z"
+updated_at: "2026-10-26T07:18:44.587Z"
 author: codex-agent
-comments[13]{created_at,author,text}:
+comments[17]{created_at,author,text}:
   "2026-10-25T22:50:42.351Z",codex-agent,"Overlap rechecked against installed CLI 2026.10.25 and pinned SDK 2026.10.20, sibling README surfaces and pm-jev calibration/replay implementations. CLI owns tracker reads, authoring, formatting and status roles; no calibration-population sentry found. Calibration binds model/question identity; replay compares policies; pm-rl owns training and promotion. This feature only computes read-only cohort distribution/error diagnostics. No imports, exports, sync, journal, claims, checkpoint or shared-state mutations are introduced, so retry/CAS and native-state migration contracts are not on its path. Strict versioned input carries frozen thresholds and exact identity; no provider adapter. Planned checks: shifted/unchanged/sparse-label fixtures, digest mismatch, dense finite bounded schema fuzz, 500 seeded replay/serialization operation sequences, non-git CLI with no git in PATH, SDK-read public tracker copy with unchanged artifact hash. Full npm/Bun release gates will run in CI at unchanged thresholds."
   "2026-10-25T22:57:41.764Z",codex-agent,"Implemented strict frozen-cohort SDK and jev drift command. Focused checks pass (5 tests; 500 seeded sequences, 4000 steps); new source targeted coverage is 100% statements/branches/functions/lines. Public-copy acceptance: 18 items, 42 verified authoritative files, task/type/input TV all 0 unchanged, controlled input TV 1 versus threshold 0.25, zero explicit labels therefore insufficient label evidence, zero inference/network calls. Second certified complete SDK read and artifact hashes unchanged. Public source and limitations are recorded in docs/calibration-drift-evidence.json. No native state is transformed; no import/export/sync or journal/concurrency path is added."
   "2026-10-25T22:58:35.823Z",codex-agent,"Behavioral revert proof: temporarily disabled only population/error threshold crossings inside checkCalibrationDrift, leaving validation and output intact. node --test --test-name-pattern=\"predeclared sentries\" test/calibration-drift.test.ts failed with stable versus expected drift (exit 1). Restoring the implementation passes. Targeted adjacent run node --test test/calibration-drift.test.ts test/cost-policy.test.ts test/replay-command.test.ts passed 16/16 with no skips; typecheck, test typecheck, lint, docstrings and duplication passed. Schema boundaries include inclusive cutoffs and shipped example validation."
@@ -22,9 +22,15 @@ comments[13]{created_at,author,text}:
   "2026-10-26T05:37:10.721Z",codex-agent,"Read-only review blocks PR 50: binary floating arithmetic misses inclusive count-derived drift boundaries (1/10 to 3/10 at 0.2; binary TV 1/10 at 0.1). Extending the existing item, not duplicating it. Plan: one BigInt rational comparator and decimal parser; exact count ratios/differences/TV, empirical precision/recall/F1/cost selection and Wilson qualification without comparing rounded bounds; route package cutoff decisions through the comparator. Add both review regressions, at least 5000 seeded independent-reference cases with inclusive/exclusive exact boundaries, a cutoff audit, and behavioral revert proof. Keep floats only at numeric report/model-real-value boundaries. Targeted local tests/types/lint and unchanged full CI matrix on the pushed head."
   "2026-10-26T05:55:02.028Z",codex-agent,"Exact arithmetic implemented across drift, empirical precision, F1, precision/recall frontier ranking, weighted costs, lexical Dice/weighted-token cutoffs and scalar policy cutoffs. 6000 seeded end-to-end cases pass against independent unreduced BigInt references, including 1500 exact-TV inclusive/exclusive boundaries and wide vectors with cross-products beyond safe integers. Both review cases now trip. Targeted adjacent run passed 50/51; frozen type-report replay expected two old floating margin coordinates. Recomputed only that report diagnostics from unchanged saved observations (no inference; selected threshold and all other fields unchanged), and its focused replay passes. Revert proof: restoring only calibration-drift.ts from the pre-fix head fails the numeric review test; replacing only the shared comparator with floating comparisons fails long-decimal arithmetic tests. Both exit 1, then restored exact implementation. Full gate counts remain pending for the new head."
   "2026-10-26T06:01:16.985Z",codex-agent,"Pinned pm test runner passes both registered suites: drift 5/5 and exact arithmetic 4/4, including 6000 seeded cases and 1500 exact boundaries. Targeted historical duplicate replay passes 2/2 after re-rendering five F1 displays from unchanged saved TP/FP/FN counts; both historical fitted cutoffs remain unchanged. Frozen type replay passes 1/1 after two margin display-coordinate updates. Typecheck, test typecheck, lint, docstrings, duplication and public provenance pass. Exact-vs-float revert proofs and the cutoff audit are documented in docs/exact-cutoffs.md. No inference, state migration, new checkpoint or journal path was added. Releasing the item for orchestrator verification while awaiting full CI on the pushed head."
-files[19]{path,scope}:
+  "2026-10-26T06:28:45.248Z",codex-agent,"Re-review blocks PR 50 on a partial numeric-domain transition: Infinity disabled cutoffs reach exact subtraction, and fitted numeric margin 0.6 is above the exact stored-probability margin for 0.8 minus 0.20000000000000004. Extending the existing item. Plan: a single threshold representation/comparison module, explicit serializable disabled state with legacy Infinity/null boundary compatibility, exact fitting and application with round-tripping numeric boundaries, and seeded fit/apply, JSON/TOON persistence and disabled-policy laws. Add both fixed review cases, per-finding revert proofs, targeted checks and final npm/Bun CI."
+  "2026-10-26T07:00:44.606Z",codex-agent,"Revert proof for disabled sentinel finding: restored only the pre-fix pairVerdict function plus its required subtractExact import. node --test --test-name-pattern=\"released unsupported-fit\" test/threshold-laws.test.ts fails with RangeError when the last-release fitDuplicateThreshold/duplicateMetrics Infinity call form reaches exact subtraction (exit 1). Restored the fixed function; sentinel normalization and negative-evidence handling are centralized in threshold.ts."
+  "2026-10-26T07:00:47.194Z",codex-agent,"Revert proof for fit/apply finding: restored only the pre-fix fitTypeMargin function. The four correct stored-probability review rows again fit numeric threshold 0.6 and all four numeric reapplications abstain. node --test --test-name-pattern=\"noisy stored probabilities\" test/threshold-laws.test.ts fails (exit 1). Restored the fixed fitter: it derives exact margins, constructs a round-tripping numeric boundary, and counts with the same predicate used by application."
+  "2026-10-26T07:18:43.298Z",codex-agent,"Final domain implementation is centralized in threshold.ts: exact decimal rationals, one cross-multiplying comparator, explicit enabled/disabled/unbounded states, shared exact margin derivation, sentinel-aware acceptance/complement logic and round-tripping fitted numeric boundaries. exact.ts is now only a compatibility re-export. Last-release Infinity fit/metrics forms are preserved; lossy conversion of arbitrary tagged rationals to legacy scalars refuses. Law suites pass 6/6: 2000 fit/apply JSON/TOON sets (seed 0x26f17a, including keep-current labels), 1000 unsupported policies (0x26d15a), 500 pair/quality/cost sets (0x26c07f). Existing exact-count suite passes 4/4 and drift suite 5/5; pinned pm runner recorded all 15 tests passing. Both individual revert proofs are recorded above. Targeted shared-module coverage reached 100% statements/branches/functions/lines; typecheck, test typecheck, lint, docs, duplication and provenance pass. Saved report observations/labels and shipped selected type margin are unchanged; only derived boundary/cutoff metadata was replayed. Production dependencies and PM SDK pin are unchanged; the already-installed TOON codec is now directly pinned for test round trips. Awaiting full npm/Bun CI on the pushed head."
+files[23]{path,scope}:
   calibration-drift.ts,project
   calibration.ts,project
+  calibration/report-v1.json,project
+  calibration/type-report-v1.json,project
   cost-policy.ts,project
   counterfactual.ts,project
   decision-calibration.ts,project
@@ -41,14 +47,18 @@ files[19]{path,scope}:
   test/calibration-drift.acceptance.ts,project
   test/calibration-drift.test.ts,project
   test/exact.test.ts,project
+  test/threshold-laws.test.ts,project
+  threshold.ts,project
   type-calibration.ts,project
-tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[3]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/calibration-drift.test.ts,project,codex-agent,"2026-10-25T22:57:39.698Z",local_mutation,feat/calibration-drift-sentries
   node --test test/exact.test.ts,project,codex-agent,"2026-10-26T05:58:47.296Z",local_mutation,feat/calibration-drift-sentries
-docs[5]{path,scope}:
+  node --test test/threshold-laws.test.ts,project,codex-agent,"2026-10-26T07:04:32.678Z",local_mutation,feat/calibration-drift-sentries
+docs[6]{path,scope}:
   docs/calibration-drift-evidence.json,project
   docs/calibration-drift.md,project
   docs/exact-cutoffs.md,project
+  docs/threshold-domain.md,project
   examples/calibration-drift.json,project
   README.md,project
 body: ""

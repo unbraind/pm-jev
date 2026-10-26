@@ -1,3 +1,5 @@
+import { acceptsThreshold, marginValue, threshold as thresholdState } from "./threshold.ts";
+import type { ThresholdInput } from "./threshold.ts";
 import { compareExact, displayExact, subtractExact } from "./exact.ts";
 import { TokenUsageTotals } from "./token-usage.ts";
 import type { TokenUsage } from "./token-usage.ts";
@@ -81,6 +83,14 @@ export type { CounterfactualOptions, CounterfactualReceipt, ExplanationProposal,
 export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.ts";
 /** Portable recording, policy, trusted adapter and compact comparison contracts. */
 export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, ReplayReport, ReplayExecutionResult } from "./policy-replay.ts";
+
+/** Typed pair fitting keeps unsupported policies explicitly disabled while the legacy scalar wrapper remains available. */
+export { fitPairCutoff } from "./dedupe-evaluation.ts";
+
+/** Portable thresholds, sentinel normalization and the comparator shared by fitting and application. */
+export { threshold, compareThreshold, acceptsThreshold, thresholdRatio, belowComplement, numericBoundary, legacyThreshold, marginValue } from "./threshold.ts";
+/** Exact serialized boundary and accepted legacy cutoff forms. */
+export type { Threshold, ThresholdInput } from "./threshold.ts";
 
 /** Shared exact arithmetic for policy cutoffs and count-derived diagnostics. */
 export { fraction, decimal, compareExact, addExact, subtractExact, multiplyExact, displayExact, displayRatio, countRatio, populationDistance, precisionMeets } from "./exact.ts";
@@ -1041,7 +1051,7 @@ export interface TriageProposals {
     readonly kept_current: boolean;
     readonly reason: string | null;
     readonly margin: number;
-    readonly margin_threshold: number;
+    readonly margin_threshold: ThresholdInput;
   };
   /** Proposed priority with the level distribution over the 0..4 rubric. */
   readonly priority: {
@@ -1168,18 +1178,18 @@ function triageTypeQuestionHash(questions: Questions): string {
 }
 
 /** Resolve a validated label distribution in code: ambiguity abstains, weak changes retain the current type. */
-export function resolveTriageType(answer: ChoiceResponse, current: string, definitions: Record<string, string>, marginThreshold = TYPE_MARGIN_THRESHOLD, changeProbability = TYPE_CHANGE_PROBABILITY): TriageProposals["type"] {
+export function resolveTriageType(answer: ChoiceResponse, current: string, definitions: Record<string, string>, marginThreshold: ThresholdInput = TYPE_MARGIN_THRESHOLD, changeProbability = TYPE_CHANGE_PROBABILITY): TriageProposals["type"] {
   const ranked = Object.entries(answer.probabilities).sort(/** Preserve registry order for tied labels. */ ([, a], [, b]) => b - a);
   const [selected, top] = ranked[0];
-  const exactMargin = subtractExact(top, ranked[1][1]);
+  const exactMargin = marginValue(answer.probabilities);
   const margin = displayExact(exactMargin);
-  const abstained = compareExact(exactMargin, marginThreshold) < 0;
+  const abstained = !acceptsThreshold(exactMargin, marginThreshold);
   const kept = !abstained && (selected === KEEP_CURRENT_TYPE || compareExact(top, changeProbability) < 0);
   const label = kept ? KEEP_CURRENT_TYPE : selected;
   return { kind: "choice", value: abstained ? null : kept ? current : selected,
     selected_label: label, probability: answer.probabilities[kept ? current : selected] ?? 0, probabilities: answer.probabilities, confidence: answer.confidence,
     definitions, abstained, kept_current: kept, reason: abstained ? "top_two_margin_below_threshold" : kept ? "keep_current_under_weak_evidence" : null,
-    margin, margin_threshold: marginThreshold };
+    margin, margin_threshold: typeof marginThreshold === "number" && Number.isFinite(marginThreshold) || typeof marginThreshold === "string" ? marginThreshold : thresholdState(marginThreshold) };
 }
 
 /**
@@ -1330,12 +1340,12 @@ async function decideTriage(boundary: DecisionWorkspace, item: TriageSource, que
   };
   const written: string[] = [];
   const changes: { type?: string; priority?: number } = {};
-  if (proposals.type.value !== null && compareExact(proposals.type.probability, typeFit.threshold) >= 0 && proposals.type.value !== item.type) {
+  if (proposals.type.value !== null && acceptsThreshold(proposals.type.probability, typeFit.threshold) && proposals.type.value !== item.type) {
     changes.type = proposals.type.value;
     written.push(`type=${proposals.type.value}`);
   }
   const levelProbability = proposals.priority.probabilities[String(proposals.priority.level)];
-  if (compareExact(levelProbability, priorityFit.threshold) >= 0 && proposals.priority.level !== item.priority) {
+  if (acceptsThreshold(levelProbability, priorityFit.threshold) && proposals.priority.level !== item.priority) {
     changes.priority = proposals.priority.level;
     written.push(`priority=${proposals.priority.level}`);
   }
@@ -1503,8 +1513,8 @@ async function runBacklogTriage(ctx: CommandHandlerContext, boundary: DecisionWo
         const fit = result.calibration;
         const typeThreshold = fit?.type === null || fit?.type === undefined ? threshold : fit.type.threshold ?? Infinity;
         const priorityThreshold = fit?.priority === null || fit?.priority === undefined ? threshold : fit.priority.threshold ?? Infinity;
-        const wouldChange = (p.type.value !== null && compareExact(p.type.probability, typeThreshold) >= 0 && p.type.value !== item.type) ||
-          (compareExact(p.priority.probabilities[String(p.priority.level)], priorityThreshold) >= 0 && p.priority.level !== item.priority);
+        const wouldChange = (p.type.value !== null && acceptsThreshold(p.type.probability, typeThreshold) && p.type.value !== item.type) ||
+          (acceptsThreshold(p.priority.probabilities[String(p.priority.level)], priorityThreshold) && p.priority.level !== item.priority);
         row = { item: id, outcome: wouldChange ? apply ? "changed" : "would_change" : "skipped",
           type: p.type.value, type_probability: p.type.abstained ? null : p.type.probability, priority: p.priority.level,
           priority_probability: p.priority.probabilities[String(p.priority.level)], needs_human: p.needs_human.probability,
@@ -1631,7 +1641,7 @@ async function runDedupeCommand(ctx: CommandHandlerContext): Promise<DedupeDecis
     duplicate_of: selected === "none" ? null : selected,
     probability: fit.probabilities[selected],
     probabilities: fit.probabilities,
-    ...(fit.calibration === null ? {} : { calibration: { ...fit.calibration, raw_probability: answer.probabilities[selected], qualifies: selected !== "none" && compareExact(fit.probabilities[selected], fit.threshold) >= 0 } }),
+    ...(fit.calibration === null ? {} : { calibration: { ...fit.calibration, raw_probability: answer.probabilities[selected], qualifies: selected !== "none" && acceptsThreshold(fit.probabilities[selected], fit.threshold) } }),
     confidence: answer.confidence,
     candidates,
     model: result.model,
@@ -1775,7 +1785,7 @@ async function decideLinks(boundary: DecisionWorkspace, id: string, limit: numbe
     const fit = calibratedAnswer(boundary.calibration, `candidate_${index}`, questions[`candidate_${index}`], answer.probabilities, threshold, boundary.explicitConfidence ? threshold : 0);
     const ordered = ranked(fit.probabilities);
     const [selected, probability] = ordered[0];
-    const exactMargin = subtractExact(probability, ordered[1][1]);
+    const exactMargin = marginValue(fit.probabilities);
     const margin = displayExact(exactMargin);
     const abstained = compareExact(exactMargin, TYPE_MARGIN_THRESHOLD) < 0;
     const existing = existingLinkKinds(graph, source.id, candidate.id).has(selected);
@@ -1786,7 +1796,7 @@ async function decideLinks(boundary: DecisionWorkspace, id: string, limit: numbe
       reason: abstained ? "top_two_margin_below_threshold" : existing ? "existing_edge" : parentRefused ? "parent_requires_allow_parent" : selected === "none" ? "none" : null };
   });
   await verifyCalibrationModel(boundary);
-  const qualifying = proposals.filter(/** Only new, unambiguous, permitted edges can clear the apply threshold. */ proposal => proposal.kind !== null && compareExact(proposal.probability, proposal.calibration === undefined ? threshold : proposal.calibration.threshold ?? Infinity) >= 0 && proposal.reason === null)
+  const qualifying = proposals.filter(/** Only new, unambiguous, permitted edges can clear the apply threshold. */ proposal => proposal.kind !== null && acceptsThreshold(proposal.probability, proposal.calibration === undefined ? threshold : proposal.calibration.threshold ?? Infinity) && proposal.reason === null)
     .map(/** Use the exact host --dep spelling. */ proposal => `id=${proposal.candidate},kind=${proposal.kind}`);
   for (const item of [source, ...targets]) {
     if (linkInputHash(item) !== linkInputHash(await loadLinkSource(boundary, item.id))) {
@@ -1943,7 +1953,7 @@ export interface GateDecision {
   readonly probability: number;
   /** Threshold the probability was compared against. */
   readonly threshold: number;
-  /** Whether the proposition holds (`compareExact(probability, threshold) >= 0`, inclusive). */
+  /** Whether the proposition holds (`acceptsThreshold(probability, threshold)`, inclusive). */
   readonly holds: boolean;
   /** Expected proposition outcome; defaults to true, false for safety gates. */
   readonly expected: boolean;
@@ -1998,9 +2008,9 @@ async function runGateCommand(ctx: CommandHandlerContext): Promise<GateDecision>
     proposition,
     probability,
     threshold,
-    holds: compareExact(probability, threshold) >= 0,
+    holds: acceptsThreshold(probability, threshold),
     expected,
-    ok: (compareExact(probability, threshold) >= 0) === expected,
+    ok: (acceptsThreshold(probability, threshold)) === expected,
     source: text !== undefined ? "text" : "item",
     model: result.model,
     usage: result.usage,

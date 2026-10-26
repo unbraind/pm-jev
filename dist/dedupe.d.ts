@@ -1,3 +1,4 @@
+import type { ThresholdInput } from "./threshold.ts";
 import type { ItemMetadata } from "@unbrained/pm-cli/sdk";
 import type { CommandHandlerContext, BeforeMutationHookContext, BeforeMutationHookDecision } from "@unbrained/pm-cli/sdk/authoring";
 import type { Questions } from "@typesafe-ai/sdk";
@@ -50,7 +51,7 @@ export declare function pairState(pair: DuplicatePair): {
     };
 };
 /** Inclusive positive and negative cutoffs per typed question, with an explicit central abstention band. */
-export declare function pairVerdict(pair: DuplicatePair, probability: number, relatedProbability: number, threshold: number, relatedThreshold: number): PairVerdict;
+export declare function pairVerdict(pair: DuplicatePair, probability: number, relatedProbability: number, threshold: ThresholdInput, relatedThreshold: ThresholdInput): PairVerdict;
 /** Reject an expired or stale duplicate receipt under the SDK's item mutation lock. */
 export declare function guardDedupeMutation(ctx: BeforeMutationHookContext): BeforeMutationHookDecision | void;
 /** Scan complete tracker copies sequentially, then optionally persist calibrated links; stale pair evidence becomes a skipped row instead of aborting the batch after earlier writes. */

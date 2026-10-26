@@ -1,3 +1,4 @@
+import type { ThresholdInput } from "./threshold.ts";
 import { TokenUsageTotals } from "./token-usage.ts";
 import type { ChoiceResponse } from "@typesafe-ai/sdk";
 /** One labelled sample with controlled correct or misrouted current type. */
@@ -24,7 +25,7 @@ export declare function typeDataset(): {
     samples: TypeSample[];
 };
 /** Count selective precision by predicted type and abstentions by ground-truth type. */
-export declare function typeMetrics(rows: readonly TypeObservation[], variant: "before" | "after", marginThreshold: number | null): {
+export declare function typeMetrics(rows: readonly TypeObservation[], variant: "before" | "after", marginThreshold: ThresholdInput): {
     count: number;
     accepted: number;
     correct: number;
@@ -45,6 +46,7 @@ export declare function fitTypeMargin(rows: readonly TypeObservation[], targetPr
     minAccepted: number;
     curve: readonly import("./calibration.ts").ReliabilityPoint[];
     threshold: number | null;
+    cutoff: import("./threshold.ts").Threshold;
 };
 /** Measure old and new prompts on real scratch items with all built-ins and two registered custom types. */
 export declare function calibrateTypes(baseUrl: string, model: string, targetPrecision?: number): Promise<{
@@ -79,6 +81,7 @@ export declare function calibrateTypes(baseUrl: string, model: string, targetPre
         minAccepted: number;
         curve: readonly import("./calibration.ts").ReliabilityPoint[];
         threshold: number | null;
+        cutoff: import("./threshold.ts").Threshold;
     };
     before: {
         count: number;

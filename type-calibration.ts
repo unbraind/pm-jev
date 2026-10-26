@@ -1,3 +1,5 @@
+import { marginValue, threshold as asThreshold } from "./threshold.ts";
+import type { ThresholdInput } from "./threshold.ts";
 import { compareExact, countRatio, displayRatio } from "./exact.ts";
 import { TokenUsageTotals } from "./token-usage.ts";
 import { createHash } from "node:crypto";
@@ -45,7 +47,7 @@ export function typeDataset() {
   }))) };
 }
 /** Count selective precision by predicted type and abstentions by ground-truth type. */
-export function typeMetrics(rows: readonly TypeObservation[], variant: "before" | "after", marginThreshold: number | null) {
+export function typeMetrics(rows: readonly TypeObservation[], variant: "before" | "after", marginThreshold: ThresholdInput) {
   const decisions = rows.map(/** Retain the baseline choice or apply the production policy. */ row => ({ row, value: marginThreshold === null ? variant === "after" && row.after.choice === KEEP_CURRENT_TYPE ? row.current : row[variant].choice : resolveTriageType(row[variant], row.current, {}, marginThreshold).value }));
   const accepted = decisions.filter(/** Exclude explicit margin abstentions. */ entry => entry.value !== null);
   const correct = accepted.filter(/** Score against the hand-labelled semantic type. */ entry => entry.value === entry.row.expected).length;
@@ -63,11 +65,12 @@ export function typeMetrics(rows: readonly TypeObservation[], variant: "before" 
 export function fitTypeMargin(rows: readonly TypeObservation[], targetPrecision = 0.95) {
   const fit = deriveThreshold(rows.filter(/** Freeze the threshold before looking at evaluation labels. */ row => row.split === "calibration").map(/** Map margins to the existing empirical cutoff fitter. */ row => {
     const decision = resolveTriageType(row.after, row.current, {}, 0);
-    return { confidence: decision.margin, correct: decision.value === row.expected };
+    return { confidence: marginValue(row.after.probabilities), correct: decision.value === row.expected };
   }), targetPrecision, 4);
   // A positive observed cutoff enforces tie abstention without an invented epsilon.
-  return { ...fit, threshold: fit.curve.find(/** Pick the lowest supported positive margin reaching the empirical target. */ point =>
-    compareExact(point.threshold, 0) > 0 && compareExact(point.accepted, fit.minAccepted) >= 0 && compareExact(countRatio(point.correct, point.accepted), targetPrecision) >= 0)?.threshold ?? null };
+  const chosen = fit.curve.find(/** Select a positive round-tripping boundary using exact margin counts. */ point =>
+    compareExact(point.threshold, 0) > 0 && compareExact(point.accepted, fit.minAccepted) >= 0 && compareExact(countRatio(point.correct, point.accepted), targetPrecision) >= 0);
+  return { ...fit, threshold: chosen?.threshold ?? null, cutoff: asThreshold(chosen?.threshold ?? null) };
 }
 /** Measure old and new prompts on real scratch items with all built-ins and two registered custom types. */
 export async function calibrateTypes(baseUrl: string, model: string, targetPrecision = 0.95) {

@@ -1,3 +1,5 @@
+import { acceptsThreshold, threshold as asThreshold, legacyThreshold } from "./threshold.ts";
+import type { Threshold, ThresholdInput } from "./threshold.ts";
 import { compareExact, countRatio, displayExact, displayRatio } from "./exact.ts";
 import { candidatePairs, orderedPair, pairKey, pairState, pairVerdict } from "./dedupe.ts";
 import type { PairItem, DuplicatePair } from "./dedupe.ts";
@@ -12,7 +14,7 @@ export interface LabelledPair { pair_id: string; repository: string; pair: Dupli
 /** Benchmark observation retains scores and probabilities without copied tracker text. */
 export interface PairObservation { label: boolean; probability: number; related_probability?: number | null; retrieved: boolean }
 /** Operating points for both typed questions; the lexical arm ignores the related channel. */
-export interface PairThresholds { threshold: number; relatedThreshold: number }
+export interface PairThresholds { threshold: ThresholdInput; relatedThreshold: ThresholdInput }
 
 /** Recognize explicit duplicate consolidation receipts as well as standard duplicate closures. */
 export function closureTarget(item: PairItem): string | undefined {
@@ -137,7 +139,7 @@ const scoredPair = { a: { id: "a" }, b: { id: "b" } } as DuplicatePair;
 export function pairMetrics(rows: readonly PairObservation[], target: "duplicate" | "related", thresholds: PairThresholds, lexical = false) {
   let tp = 0, fp = 0, fn = 0, abstained = 0;
   for (const row of rows) {
-    const decision = !row.retrieved ? "distinct" as const : lexical ? (compareExact(row.probability, thresholds.threshold) >= 0 ? target : "distinct" as const) : pairVerdict(scoredPair, row.probability, row.related_probability ?? 0, thresholds.threshold, thresholds.relatedThreshold).decision;
+    const decision = !row.retrieved ? "distinct" as const : lexical ? (acceptsThreshold(row.probability, thresholds.threshold) ? target : "distinct" as const) : pairVerdict(scoredPair, row.probability, row.related_probability ?? 0, thresholds.threshold, thresholds.relatedThreshold).decision;
     if (decision === "abstain") abstained++;
     if (decision === target) { if (row.label) tp++; else fp++; }
     else if (row.label) fn++;
@@ -152,23 +154,28 @@ export function pairMetrics(rows: readonly PairObservation[], target: "duplicate
     abstain_rate: rows.length === 0 ? null : displayRatio(abstained, rows.length), abstain_ci95: wilson(abstained, rows.length) };
 }
 /** Tune F1 on dev observations only, retaining the existing 0.8 model safety floor. */
-export function fitPairThreshold(rows: readonly PairObservation[], target: "duplicate" | "related", base: PairThresholds, lexical: boolean): number {
+export function fitPairCutoff(rows: readonly PairObservation[], target: "duplicate" | "related", base: PairThresholds, lexical: boolean): Threshold {
   const observed = rows.map(/** Fit the channel of the requested target class. */ row => target === "related" && !lexical ? row.related_probability ?? 0 : row.probability);
   const cutoffs = [...new Set([lexical ? 0 : 0.8, 1, ...observed])].filter(/** Preserve the existing 0.8 safety floor for model decisions. */ p => lexical || compareExact(p, 0.8) >= 0).sort(/** Prefer the lower cutoff on equal F1. */ (a, b) => compareExact(a, b));
-  let best = Infinity;
+  let best = asThreshold(null);
   let f1 = countRatio(-1, 1);
   for (const cutoff of cutoffs) {
     const thresholds = target === "related" && !lexical ? { ...base, relatedThreshold: cutoff } : { ...base, threshold: cutoff };
     const metrics = pairMetrics(rows, target, thresholds, lexical);
     if (!lexical && (metrics.tp === 0 || compareExact(metrics.tp + metrics.fp, 3) < 0)) continue;
     const exactF1 = countRatio(2 * metrics.tp, 2 * metrics.tp + metrics.fp + metrics.fn);
-    if (compareExact(exactF1, f1) > 0) { best = cutoff; f1 = exactF1; }
+    if (compareExact(exactF1, f1) > 0) { best = asThreshold(cutoff); f1 = exactF1; }
   }
   return best;
 }
 
+/** Last-release numeric fitting API delegates to the typed exact cutoff, preserving Infinity when unsupported. */
+export function fitPairThreshold(rows: readonly PairObservation[], target: "duplicate" | "related", base: PairThresholds, lexical: boolean): number {
+  return legacyThreshold(fitPairCutoff(rows, target, base, lexical));
+}
+
 /** Replay historical single-question receipts through the preserved public helper. */
-export function duplicateMetrics(rows: readonly PairObservation[], threshold: number, lexical = false) {
+export function duplicateMetrics(rows: readonly PairObservation[], threshold: ThresholdInput, lexical = false) {
   return pairMetrics(rows, "duplicate", { threshold, relatedThreshold: 0.8 }, lexical);
 }
 /** Preserve the documented dev-only fitting entry point for single-question callers. */

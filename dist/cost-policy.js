@@ -1,3 +1,4 @@
+import { acceptsThreshold } from "./threshold.js";
 import { addExact, compareExact, displayExact, displayRatio, fraction, multiplyExact } from "./exact.js";
 import { evidenceHash } from "./decision-calibration.js";
 /** Version of fixed-score policy datasets and content-free receipts. */
@@ -56,7 +57,7 @@ export function abstainWithPolicy(policy, confidence, eligible, mandatoryChecksP
         return { propose: false, reason: "mandatory_checks_failed" };
     if (!eligible)
         return { propose: false, reason: "ineligible" };
-    if (policy.threshold === null || compareExact(confidence, policy.threshold) < 0)
+    if (policy.threshold === null || !acceptsThreshold(confidence, policy.threshold))
         return { propose: false, reason: "abstained" };
     return { propose: true, reason: "proposal_only" };
 }
@@ -64,7 +65,7 @@ export function abstainWithPolicy(policy, confidence, eligible, mandatoryChecksP
 function measure(rows, threshold, costs) {
     let proposed = 0, falseDuplicates = 0, wrongTypes = 0, missedCandidates = 0;
     for (const row of rows) {
-        const accepted = row.eligible && threshold !== null && compareExact(row.confidence, threshold) >= 0;
+        const accepted = row.eligible && threshold !== null && acceptsThreshold(row.confidence, threshold);
         if (accepted) {
             proposed++;
             if (row.task === "duplicate") {
