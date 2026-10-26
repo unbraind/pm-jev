@@ -87,6 +87,11 @@ export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, Replay
 /** Typed pair fitting keeps unsupported policies explicitly disabled while the legacy scalar wrapper remains available. */
 export { fitPairCutoff } from "./dedupe-evaluation.ts";
 
+/** Raw-pair lexical evidence and production comparison retain exact portable fitted boundaries. */
+export { duplicateSimilarityRatio, qualityObservation, qualityLexicalAccepts, fitQualityPolicy, qualityMetrics, qualityProposes } from "./duplicate-quality.ts";
+/** Typed quality evidence supports exact raw-pair ratios and historical scalar observations. */
+export type { QualityObservation, QualityPolicy, QualityArm } from "./duplicate-quality.ts";
+
 /** Portable thresholds, sentinel normalization and the comparator shared by fitting and application. */
 export { threshold, compareThreshold, acceptsThreshold, thresholdRatio, belowComplement, numericBoundary, legacyThreshold, marginValue } from "./threshold.ts";
 /** Exact serialized boundary and accepted legacy cutoff forms. */
@@ -1587,10 +1592,10 @@ export function rankDedupeCandidates(items: readonly ItemMetadata[], title: stri
   const scored: DedupeCandidate[] = [];
   for (const item of items) {
     const { score } = scoreItemSimilarity(title, item.title);
-    if (score <= 0) continue;
+    if (!acceptsThreshold(score, 0, true)) continue;
     scored.push({ id: item.id, title: item.title, type: item.type, status: item.status, score });
   }
-  scored.sort(/** Break equal rank ties by stable item id. */ (left, right) => right.score - left.score || left.id.localeCompare(right.id));
+  scored.sort(/** Break equal rank ties by stable item id. */ (left, right) => compareExact(right.score, left.score) || left.id.localeCompare(right.id));
   return scored.slice(0, limit);
 }
 

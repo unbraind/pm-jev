@@ -1,4 +1,4 @@
-import { acceptsThreshold } from "./threshold.js";
+import { acceptsThreshold, threshold } from "./threshold.js";
 import { addExact, compareExact, countRatio, displayExact, displayRatio, multiplyExact } from "./exact.js";
 import { evidenceHash } from "./decision-calibration.js";
 /** Repository-only assignment frozen before labels, scores or model outcomes. */
@@ -23,6 +23,14 @@ export function duplicateSimilarityRatio(pair) {
 }
 /** Numeric compatibility view of the exact lexical count score, for report display only. */
 export function duplicateSimilarity(pair) { return displayExact(duplicateSimilarityRatio(pair)); }
+/** Produce content-free fitting evidence directly from raw items, retaining the exact weighted ratio. */
+export function qualityObservation(pair, probability, label, retrieved) {
+    return { label, retrieved, lexical: threshold(duplicateSimilarityRatio(pair)), probability };
+}
+/** The production lexical guard recomputes the same ratio used by raw-input fitting, without a display conversion. */
+export function qualityLexicalAccepts(pair, cutoff) {
+    return acceptsThreshold(duplicateSimilarityRatio(pair), cutoff);
+}
 /** Positive decisions require every enabled channel; all remaining rows explicitly abstain. */
 export function qualityProposes(row, arm, policy) {
     return (arm === "model-only" || row.retrieved) &&
@@ -56,7 +64,7 @@ function ratioKey(numerator, denominator) {
 /** Enumerate train-observed cutoffs and retain the precision/recall frontier plus a disable point. */
 export function qualityFrontier(train, arm) {
     const models = arm === "lexical-only" ? [null] : [...new Set(train.map(/** Raw model scores are not calibrated precision; search the full train range. */ /** Raw model scores are not calibrated precision; search the full train range. */ row => row.probability))].sort(/** Stable cutoff order. */ (a, b) => compareExact(a, b));
-    const lexical = arm === "model-only" ? [null] : [...new Set(train.map(/** Lexical evidence is a score, not a probability. */ /** Lexical evidence is a score, not a probability. */ row => row.lexical))].sort(/** Stable cutoff order. */ (a, b) => compareExact(a, b));
+    const lexical = arm === "model-only" ? [null] : [...new Map(train.map(/** Exact equivalent boundaries share a frontier point; scalar receipts retain their literal decimal domain. */ /** Exact equivalent boundaries share a frontier point; scalar receipts retain their literal decimal domain. */ row => [JSON.stringify(threshold(row.lexical)), row.lexical])).values()].sort(/** Stable cutoff order. */ (a, b) => compareExact(a, b));
     const points = [{ policy: { model: null, lexical: null }, train: qualityMetrics(train, arm, { model: null, lexical: null }) }];
     for (const model of models)
         for (const score of lexical) {

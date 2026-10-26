@@ -87,3 +87,65 @@ remain. Frozen synthetic/type reports are regenerated only from their unchanged
 saved observations to include cutoff state and coherent numeric curve boundaries.
 No model inference or label changes are involved; the selected shipped type
 margin remains unchanged.
+
+## Raw producers are part of the fitting contract
+
+Use `qualityObservation(pair, probability, label, retrieved)` to collect quality
+calibration evidence. It computes the real title, distinct description/body,
+tag and file overlaps, applies the exact decimal weights, and stores the lexical
+score as a portable exact ratio. `qualityFrontier` and `fitQualityPolicy` retain
+that observed ratio as the boundary. The command uses `qualityLexicalAccepts`
+to recompute the same ratio and call `acceptsThreshold`; neither side converts
+the ratio through a display number. The collection harness also uses this path.
+
+```ts
+const train = pairs.map(pair => qualityObservation(pair, 0.9, true, true));
+const policy = fitQualityPolicy(train, "combined");
+const accepted = pairs.filter(pair => qualityLexicalAccepts(pair, policy.lexical));
+```
+
+For `alpha` / `alpha beta` with empty descriptions and tags, the lexical score is
+exactly `13/30`. Its numeric display is `0.43333333333333335`, which is strictly
+above the ratio. Three correct raw pairs fit the exact tagged `13/30` boundary
+and reapply with three true positives. Passing a rounded display number back as
+an explicit cutoff instead requests that stricter decimal cutoff.
+
+Historical scalar `QualityObservation.lexical` and numeric `QualityPolicy.lexical`
+values remain accepted as literal decimal values for receipt replay. A saved
+scalar cannot recover an original nondecimal ratio. New raw-pair fits must use
+the exact observation factory; `duplicateSimilarity` is a display/legacy view.
+Previously published receipts and frozen numeric production settings are not
+silently reinterpreted or refitted without their original raw evidence.
+
+`test/producer-reapplication.test.ts` goes through actual producers from raw
+items, labels and probability distributions, then fits and reapplies each policy
+before/after JSON and TOON serialization. Its inventory is also recorded on
+pm item `pm-jev-t1h1`:
+
+- Seed `0x27e2e1`: 500 raw lexical populations, every quality frontier point and
+  fitted policy across all three arms, plus regenerated raw candidate retrieval
+  and exact retrieval benchmark cutoffs. Empty evidence, bodies, tags,
+  file links, Unicode and punctuation are included.
+- Seed `0x27e2e2`: 1000 raw distributions exercise duplicate and related pair
+  fits, type margins, Noul chosen-label confidence and gates, and mixed
+  duplicate/type cost policies. Both enabled and disabled results occur.
+- Seed `0x27e2e3`: 100 raw channel populations pass through actual temperature
+  fitting/scaling and `calibratedAnswer`, with fitting/application counts checked
+  on both repository splits and supported/unsupported fits.
+
+The registered command fixed case uses a real SDK tracker outside git and a
+loopback scripted model response. The earlier noisy margin, Infinity disabled
+metrics, and inclusive drift review cases remain fixed raw-input regressions.
+Drift thresholds and link margins are predeclared rather than fitted. Replay,
+BM25/embedding retrieval and integer safety limits have no learned cutoff;
+their existing raw-input tests remain alongside these fitting laws. Historical
+scalar fitting unit tests remain separate from the raw-producer laws.
+
+Candidate retrieval also retains a portable `score_cutoff` beside its numeric
+`score` display. The corpus label builders preserve that exact channel score;
+new lexical benchmark observations pass it as `lexical_score` to `fitPairCutoff`
+and `pairMetrics`. Both fitting and application prefer that coordinate, so a
+nondecimal retrieval ratio is never reconstructed from the rounded display.
+Scalar-only historical observations retain their original literal-decimal
+replay semantics. Use the typed fitter for these nondecimal exact boundaries;
+the legacy numeric wrapper cannot represent an arbitrary rational losslessly.

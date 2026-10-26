@@ -5,7 +5,7 @@
 import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { NoulResponse } from "@typesafe-ai/sdk";
-import { labelledPairs, labelledRelatedPairs, fitPairThreshold, pairMetrics } from "../dedupe-evaluation.ts";
+import { labelledPairs, labelledRelatedPairs, fitPairCutoff, fitPairThreshold, pairMetrics } from "../dedupe-evaluation.ts";
 import type { PairObservation, LabelledPair } from "../dedupe-evaluation.ts";
 import { PAIR_QUESTIONS, pairState } from "../dedupe.ts";
 import { createJevClient, resolveJevEndpoint, runDecision } from "../index.ts";
@@ -25,12 +25,12 @@ const duplicates = labelledPairs(corpora, 30), related = labelledRelatedPairs(co
 if (duplicates.length + related.length > 200) throw new Error("Benchmark exceeds 200 calls; reduce label sample limits before inference");
 /** Serialize stable identity at inference time; never backfill it by array position. */
 function sample(row: LabelledPair, set: string) {
-  return { set, pair_id: row.pair_id, repository: row.repository, a: row.pair.a.id, b: row.pair.b.id, label: row.label, retrieved: row.retrieved, split: row.split, lexical: row.pair.score, example_sha256: evidenceHash(pairState(row.pair)) };
+  return { set, pair_id: row.pair_id, repository: row.repository, a: row.pair.a.id, b: row.pair.b.id, label: row.label, retrieved: row.retrieved, split: row.split, lexical: row.pair.score, lexical_score: row.pair.score_cutoff, example_sha256: evidenceHash(pairState(row.pair)) };
 }
 /** Keep the preassigned dev or held-out population. */
 function partition(rows: Observation[], labels: LabelledPair[], split: string): Observation[] { return rows.filter((_, i) => labels[i].split === split); }
-const lexical = duplicates.map(row => ({ pair_id: row.pair_id, label: row.label, probability: row.pair.score, related_probability: 0, retrieved: row.retrieved, latency_ms: 0 }));
-const lexicalThreshold = fitPairThreshold(partition(lexical, duplicates, "dev"), "duplicate", { threshold: 0.8, relatedThreshold: 0.8 }, true);
+const lexical = duplicates.map(row => ({ pair_id: row.pair_id, label: row.label, probability: row.pair.score, lexical_score: row.pair.score_cutoff, related_probability: 0, retrieved: row.retrieved, latency_ms: 0 }));
+const lexicalThreshold = fitPairCutoff(partition(lexical, duplicates, "dev"), "duplicate", { threshold: 0.8, relatedThreshold: 0.8 }, true);
 const report = {
   version: "pm-jev-duplicate-labels/2", wall_scope: "snapshot collection, label generation and inference in this invocation", recorded_at: new Date().toISOString(),
   source_method: "PUBLIC visibility, origin and public commit reachability verified; committed git archives extracted to scratch; certified complete SDK reads without extensions",

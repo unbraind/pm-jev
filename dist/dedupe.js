@@ -1,10 +1,10 @@
-import { acceptsThreshold, belowComplement } from "./threshold.js";
+import { acceptsThreshold, belowComplement, threshold as asThreshold } from "./threshold.js";
 import { compareExact, countRatio, displayExact } from "./exact.js";
 import { createHash } from "node:crypto";
 import { PmClient, createPmCliExpectedError, readBooleanOption, readStringOption, readSettings, resolveRuntimeStatusRegistry } from "@unbrained/pm-cli/sdk";
 import { certifyCompleteListResult } from "@unbrained/pm-cli/sdk/runtime";
 import { createJevClient, resolveJevEndpoint, requireCallableEndpoint, runDecision, translateDecisionError } from "./index.js";
-import { duplicateSimilarity, duplicateSimilarityRatio } from "./duplicate-quality.js";
+import { duplicateSimilarity, qualityLexicalAccepts } from "./duplicate-quality.js";
 import { modelDigest, readOpaqueJevSettings } from "./decision-calibration.js";
 /** Historical typed pair propositions retained for versioned benchmark replay. */
 export const PAIR_QUESTIONS = {
@@ -121,7 +121,7 @@ export function candidatePairs(items, limit, topK = 8) {
         for (const pair of ranked)
             selected.set(pairKey(pair.a.id, pair.b.id), pair);
     }
-    return [...selected.values()].sort(pairOrder).slice(0, limit).map(/** Never expose internal BigInts in serialized pair reports. */ ({ exact_score: _score, ...pair }) => pair);
+    return [...selected.values()].sort(pairOrder).slice(0, limit).map(/** Never expose internal BigInts in serialized pair reports. */ ({ exact_score, ...pair }) => ({ ...pair, score_cutoff: asThreshold(exact_score) }));
 }
 /** Least-privilege, prompt-bounded pair evidence excludes closure labels, ids and receipts. */
 export function pairState(pair) {
@@ -233,8 +233,7 @@ export async function runPairDedupe(ctx) {
             rows.push({ a: pair.a.id, b: pair.b.id, probability: 0, decision: "abstain", reason: "unsure_uncalibrated_model" });
             continue;
         }
-        const lexical = duplicateSimilarityRatio(pair);
-        if (compareExact(lexical, calibration.policy.lexical) < 0) {
+        if (!qualityLexicalAccepts(pair, calibration.policy.lexical)) {
             rows.push({ a: pair.a.id, b: pair.b.id, probability: 0, decision: "abstain", reason: "unsure_below_lexical_cutoff" });
             continue;
         }
@@ -269,7 +268,7 @@ export async function runPairDedupe(ctx) {
             continue;
         }
         signal.throwIfAborted();
-        const receipt = `pm-jev dedupe pair receipt: input_sha256=${pairRevision(pair.a)}, deadline_ms=${deadline}, model=${config.model}, catalog=pm-jev-duplicate-quality/3, verdict=${verdict}, canonical=${row.b}, probability=${row.probability}, threshold=${threshold}, lexical_score=${duplicateSimilarity(pair)}, lexical_threshold=${calibration?.policy.lexical}, model_digest=${calibration?.digest}, relation=${kind}, close=false.`;
+        const receipt = `pm-jev dedupe pair receipt: input_sha256=${pairRevision(pair.a)}, deadline_ms=${deadline}, model=${config.model}, catalog=pm-jev-duplicate-quality/3, verdict=${verdict}, canonical=${row.b}, probability=${row.probability}, threshold=${threshold}, lexical_score=${duplicateSimilarity(pair)}, lexical_threshold=${JSON.stringify(calibration?.policy.lexical)}, model_digest=${calibration?.digest}, relation=${kind}, close=false.`;
         try {
             await pm.update(row.a, { dep: [`id=${row.b},kind=${kind}`], comment: [receipt], message: "pm-jev calibrated duplicate link and receipt" });
         }

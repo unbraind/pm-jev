@@ -21,6 +21,7 @@ export interface PairObservation {
     probability: number;
     related_probability?: number | null;
     retrieved: boolean;
+    lexical_score?: Threshold;
 }
 /** Operating points for both typed questions; the lexical arm ignores the related channel. */
 export interface PairThresholds {

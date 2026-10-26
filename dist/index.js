@@ -45,6 +45,8 @@ export { COUNTERFACTUAL_VERSION, CounterfactualRefusal, explainDecision } from "
 export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.js";
 /** Typed pair fitting keeps unsupported policies explicitly disabled while the legacy scalar wrapper remains available. */
 export { fitPairCutoff } from "./dedupe-evaluation.js";
+/** Raw-pair lexical evidence and production comparison retain exact portable fitted boundaries. */
+export { duplicateSimilarityRatio, qualityObservation, qualityLexicalAccepts, fitQualityPolicy, qualityMetrics, qualityProposes } from "./duplicate-quality.js";
 /** Portable thresholds, sentinel normalization and the comparator shared by fitting and application. */
 export { threshold, compareThreshold, acceptsThreshold, thresholdRatio, belowComplement, numericBoundary, legacyThreshold, marginValue } from "./threshold.js";
 /** Shared exact arithmetic for policy cutoffs and count-derived diagnostics. */
@@ -1211,11 +1213,11 @@ export function rankDedupeCandidates(items, title, limit) {
     const scored = [];
     for (const item of items) {
         const { score } = scoreItemSimilarity(title, item.title);
-        if (score <= 0)
+        if (!acceptsThreshold(score, 0, true))
             continue;
         scored.push({ id: item.id, title: item.title, type: item.type, status: item.status, score });
     }
-    scored.sort(/** Break equal rank ties by stable item id. */ (left, right) => right.score - left.score || left.id.localeCompare(right.id));
+    scored.sort(/** Break equal rank ties by stable item id. */ (left, right) => compareExact(right.score, left.score) || left.id.localeCompare(right.id));
     return scored.slice(0, limit);
 }
 /**

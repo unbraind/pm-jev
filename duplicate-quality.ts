@@ -1,7 +1,8 @@
-import { acceptsThreshold } from "./threshold.ts";
+import { acceptsThreshold, threshold } from "./threshold.ts";
 import { addExact, compareExact, countRatio, displayExact, displayRatio, multiplyExact } from "./exact.ts";
 import { evidenceHash } from "./decision-calibration.ts";
 import type { Rational } from "./exact.ts";
+import type { Threshold } from "./threshold.ts";
 import type { DuplicatePair, PairItem } from "./dedupe.ts";
 
 /** Repository-only assignment frozen before labels, scores or model outcomes. */
@@ -27,9 +28,17 @@ export function duplicateSimilarityRatio(pair: DuplicatePair): Rational {
 /** Numeric compatibility view of the exact lexical count score, for report display only. */
 export function duplicateSimilarity(pair: DuplicatePair): number { return displayExact(duplicateSimilarityRatio(pair)); }
 /** Raw benchmark evidence shared by every arm; model-only bypasses candidate retrieval. */
-export interface QualityObservation { label: boolean; retrieved: boolean; lexical: number; probability: number }
+export interface QualityObservation { label: boolean; retrieved: boolean; lexical: number | Threshold; probability: number }
+/** Produce content-free fitting evidence directly from raw items, retaining the exact weighted ratio. */
+export function qualityObservation(pair: DuplicatePair, probability: number, label: boolean, retrieved: boolean): QualityObservation {
+  return { label, retrieved, lexical: threshold(duplicateSimilarityRatio(pair)), probability };
+}
+/** The production lexical guard recomputes the same ratio used by raw-input fitting, without a display conversion. */
+export function qualityLexicalAccepts(pair: DuplicatePair, cutoff: QualityPolicy["lexical"]): boolean {
+  return acceptsThreshold(duplicateSimilarityRatio(pair), cutoff);
+}
 /** Frozen train operating point. Null disables positive proposals, including probability one. */
-export interface QualityPolicy { model: number | null; lexical: number | null }
+export interface QualityPolicy { model: number | null; lexical: number | Threshold | null }
 /** The three ablations use exactly the same labelled population. */
 export type QualityArm = "lexical-only" | "model-only" | "combined";
 /** Positive decisions require every enabled channel; all remaining rows explicitly abstain. */
@@ -56,7 +65,7 @@ function ratioKey(numerator: number, denominator: number): string {
 /** Enumerate train-observed cutoffs and retain the precision/recall frontier plus a disable point. */
 export function qualityFrontier(train: readonly QualityObservation[], arm: QualityArm) {
   const models = arm === "lexical-only" ? [null] : [...new Set(train.map(/** Raw model scores are not calibrated precision; search the full train range. */ row => row.probability))].sort(/** Stable cutoff order. */ (a, b) => compareExact(a, b));
-  const lexical = arm === "model-only" ? [null] : [...new Set(train.map(/** Lexical evidence is a score, not a probability. */ row => row.lexical))].sort(/** Stable cutoff order. */ (a, b) => compareExact(a, b));
+  const lexical = arm === "model-only" ? [null] : [...new Map(train.map(/** Exact equivalent boundaries share a frontier point; scalar receipts retain their literal decimal domain. */ row => [JSON.stringify(threshold(row.lexical)), row.lexical])).values()].sort(/** Stable cutoff order. */ (a, b) => compareExact(a, b));
   const points = [{ policy: { model: null, lexical: null } as QualityPolicy, train: qualityMetrics(train, arm, { model: null, lexical: null }) }];
   for (const model of models) for (const score of lexical) {
     const policy = { model, lexical: score };

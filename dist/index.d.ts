@@ -29,6 +29,10 @@ export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, c
 export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, ReplayReport, ReplayExecutionResult } from "./policy-replay.ts";
 /** Typed pair fitting keeps unsupported policies explicitly disabled while the legacy scalar wrapper remains available. */
 export { fitPairCutoff } from "./dedupe-evaluation.ts";
+/** Raw-pair lexical evidence and production comparison retain exact portable fitted boundaries. */
+export { duplicateSimilarityRatio, qualityObservation, qualityLexicalAccepts, fitQualityPolicy, qualityMetrics, qualityProposes } from "./duplicate-quality.ts";
+/** Typed quality evidence supports exact raw-pair ratios and historical scalar observations. */
+export type { QualityObservation, QualityPolicy, QualityArm } from "./duplicate-quality.ts";
 /** Portable thresholds, sentinel normalization and the comparator shared by fitting and application. */
 export { threshold, compareThreshold, acceptsThreshold, thresholdRatio, belowComplement, numericBoundary, legacyThreshold, marginValue } from "./threshold.ts";
 /** Exact serialized boundary and accepted legacy cutoff forms. */

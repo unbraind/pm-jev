@@ -919,4 +919,4 @@ without Git. See the [strict schema, remedies and limitations](docs/calibration-
 
 Count-derived policy cutoffs use [shared exact rational arithmetic](docs/exact-cutoffs.md), including drift, empirical precision, F1 and cost selection. Drift threshold strings preserve the exact supplied decimal digits.
 
-Fitted and applied cutoffs share [one threshold domain](docs/threshold-domain.md), with explicit disabled states, legacy Infinity compatibility and JSON/TOON reapplication laws.
+Fitted and applied cutoffs share [one threshold domain](docs/threshold-domain.md), with explicit disabled states, legacy Infinity compatibility and JSON/TOON reapplication laws. Fit lexical policies from raw pairs with `qualityObservation`; its exact portable ratio is also the runtime lexical guard input.

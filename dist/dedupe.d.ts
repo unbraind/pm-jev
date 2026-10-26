@@ -1,4 +1,4 @@
-import type { ThresholdInput } from "./threshold.ts";
+import type { Threshold, ThresholdInput } from "./threshold.ts";
 import type { ItemMetadata } from "@unbrained/pm-cli/sdk";
 import type { CommandHandlerContext, BeforeMutationHookContext, BeforeMutationHookDecision } from "@unbrained/pm-cli/sdk/authoring";
 import type { Questions } from "@typesafe-ai/sdk";
@@ -12,6 +12,7 @@ export interface DuplicatePair {
     a: PairItem;
     b: PairItem;
     score: number;
+    score_cutoff?: Threshold;
 }
 /** Token-lean typed pair verdict; probability zero is unscored when the reason skips inference. */
 export interface PairVerdict {
