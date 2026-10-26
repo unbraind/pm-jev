@@ -1,3 +1,4 @@
+import { compareExact, countRatio, displayExact, displayRatio } from "./exact.js";
 import { candidatePairs, orderedPair, pairKey, pairState, pairVerdict } from "./dedupe.js";
 import { duplicateSplit, wilson } from "./duplicate-quality.js";
 import { duplicateTarget } from "./tracker-evaluation.js";
@@ -134,7 +135,7 @@ const scoredPair = { a: { id: "a" }, b: { id: "b" } };
 export function pairMetrics(rows, target, thresholds, lexical = false) {
     let tp = 0, fp = 0, fn = 0, abstained = 0;
     for (const row of rows) {
-        const decision = !row.retrieved ? "distinct" : lexical ? (row.probability >= thresholds.threshold ? target : "distinct") : pairVerdict(scoredPair, row.probability, row.related_probability ?? 0, thresholds.threshold, thresholds.relatedThreshold).decision;
+        const decision = !row.retrieved ? "distinct" : lexical ? (compareExact(row.probability, thresholds.threshold) >= 0 ? target : "distinct") : pairVerdict(scoredPair, row.probability, row.related_probability ?? 0, thresholds.threshold, thresholds.relatedThreshold).decision;
         if (decision === "abstain")
             abstained++;
         if (decision === target) {
@@ -146,28 +147,30 @@ export function pairMetrics(rows, target, thresholds, lexical = false) {
         else if (row.label)
             fn++;
     }
-    const precision = tp + fp === 0 ? null : tp / (tp + fp);
-    const recall = tp + fn === 0 ? null : tp / (tp + fn);
+    const precision = tp + fp === 0 ? null : displayRatio(tp, tp + fp);
+    const recall = tp + fn === 0 ? null : displayRatio(tp, tp + fn);
     const pBounds = wilson(tp, tp + fp, 2.241402727604947);
     const rBounds = wilson(tp, tp + fn, 2.241402727604947);
-    return { count: rows.length, tp, fp, fn, precision, recall, f1: precision === null || recall === null ? 0 : harmonic(precision, recall),
+    return { count: rows.length, tp, fp, fn, precision, recall, f1: displayExact(countRatio(2 * tp, 2 * tp + fp + fn)),
         precision_ci95: wilson(tp, tp + fp), recall_ci95: wilson(tp, tp + fn),
         f1_wilson_envelope95: pBounds === null || rBounds === null ? null : [harmonic(pBounds[0], rBounds[0]), harmonic(pBounds[1], rBounds[1])],
-        abstain_rate: rows.length === 0 ? null : abstained / rows.length, abstain_ci95: wilson(abstained, rows.length) };
+        abstain_rate: rows.length === 0 ? null : displayRatio(abstained, rows.length), abstain_ci95: wilson(abstained, rows.length) };
 }
 /** Tune F1 on dev observations only, retaining the existing 0.8 model safety floor. */
 export function fitPairThreshold(rows, target, base, lexical) {
     const observed = rows.map(/** Fit the channel of the requested target class. */ /** Fit the channel of the requested target class. */ row => target === "related" && !lexical ? row.related_probability ?? 0 : row.probability);
-    const cutoffs = [...new Set([lexical ? 0 : 0.8, 1, ...observed])].filter(/** Preserve the existing 0.8 safety floor for model decisions. */ /** Preserve the existing 0.8 safety floor for model decisions. */ p => lexical || p >= 0.8).sort(/** Prefer the lower cutoff on equal F1. */ (a, b) => a - b);
-    let best = Infinity, f1 = -1;
+    const cutoffs = [...new Set([lexical ? 0 : 0.8, 1, ...observed])].filter(/** Preserve the existing 0.8 safety floor for model decisions. */ /** Preserve the existing 0.8 safety floor for model decisions. */ p => lexical || compareExact(p, 0.8) >= 0).sort(/** Prefer the lower cutoff on equal F1. */ (a, b) => compareExact(a, b));
+    let best = Infinity;
+    let f1 = countRatio(-1, 1);
     for (const cutoff of cutoffs) {
         const thresholds = target === "related" && !lexical ? { ...base, relatedThreshold: cutoff } : { ...base, threshold: cutoff };
         const metrics = pairMetrics(rows, target, thresholds, lexical);
-        if (!lexical && (metrics.tp === 0 || metrics.tp + metrics.fp < 3))
+        if (!lexical && (metrics.tp === 0 || compareExact(metrics.tp + metrics.fp, 3) < 0))
             continue;
-        if (metrics.f1 > f1) {
+        const exactF1 = countRatio(2 * metrics.tp, 2 * metrics.tp + metrics.fp + metrics.fn);
+        if (compareExact(exactF1, f1) > 0) {
             best = cutoff;
-            f1 = metrics.f1;
+            f1 = exactF1;
         }
     }
     return best;

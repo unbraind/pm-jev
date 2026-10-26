@@ -1,3 +1,4 @@
+import { displayRatio } from "./exact.ts";
 /**
  * Same-tracker exemplar retrieval for retrieval-augmented decisions.
  *
@@ -273,7 +274,7 @@ export function knnVote(retrieved: readonly ExemplarUnit[], channel: string): Re
     if (!counts.has(label)) order.push(label);
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
-  return Object.fromEntries(order.map(/** Share of the vote for each retrieved label. */ label => [label, (counts.get(label) as number) / retrieved.length]));
+  return Object.fromEntries(order.map(/** Share of the vote for each retrieved label. */ label => [label, displayRatio(counts.get(label) as number, retrieved.length)]));
 }
 
 /**

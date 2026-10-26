@@ -1,3 +1,4 @@
+import { compareExact, countRatio, displayRatio } from "./exact.ts";
 import { TokenUsageTotals } from "./token-usage.ts";
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -48,14 +49,14 @@ export function typeMetrics(rows: readonly TypeObservation[], variant: "before" 
   const decisions = rows.map(/** Retain the baseline choice or apply the production policy. */ row => ({ row, value: marginThreshold === null ? variant === "after" && row.after.choice === KEEP_CURRENT_TYPE ? row.current : row[variant].choice : resolveTriageType(row[variant], row.current, {}, marginThreshold).value }));
   const accepted = decisions.filter(/** Exclude explicit margin abstentions. */ entry => entry.value !== null);
   const correct = accepted.filter(/** Score against the hand-labelled semantic type. */ entry => entry.value === entry.row.expected).length;
-  return { count: rows.length, accepted: accepted.length, correct, precision: accepted.length ? correct / accepted.length : null,
-    abstentionRate: rows.length ? 1 - accepted.length / rows.length : 0,
+  return { count: rows.length, accepted: accepted.length, correct, precision: accepted.length ? displayRatio(correct, accepted.length) : null,
+    abstentionRate: rows.length ? displayRatio(rows.length - accepted.length, rows.length) : 0,
     perType: Object.fromEntries(Object.keys(EXAMPLES).map(/** Precision denominator is predictions, abstention denominator is labelled examples. */ type => {
       const predictions = accepted.filter(/** Select predictions of this type. */ entry => entry.value === type);
       const labelled = decisions.filter(/** Select the ground-truth type. */ entry => entry.row.expected === type);
       return [type, { support: labelled.length, predicted: predictions.length,
-        precision: predictions.length ? predictions.filter(/** Count true positives for this label. */ entry => entry.row.expected === type).length / predictions.length : null,
-        abstentionRate: labelled.length ? labelled.filter(/** Count labelled items receiving no type proposal. */ entry => entry.value === null).length / labelled.length : 0 }];
+        precision: predictions.length ? displayRatio(predictions.filter(/** Count true positives for this label. */ entry => entry.row.expected === type).length, predictions.length) : null,
+        abstentionRate: labelled.length ? displayRatio(labelled.filter(/** Count labelled items receiving no type proposal. */ entry => entry.value === null).length, labelled.length) : 0 }];
     })) };
 }
 /** Fit only calibration rows, using the margin and the production keep-current rule. */
@@ -66,7 +67,7 @@ export function fitTypeMargin(rows: readonly TypeObservation[], targetPrecision 
   }), targetPrecision, 4);
   // A positive observed cutoff enforces tie abstention without an invented epsilon.
   return { ...fit, threshold: fit.curve.find(/** Pick the lowest supported positive margin reaching the empirical target. */ point =>
-    point.threshold > 0 && point.accepted >= fit.minAccepted && Number(point.precision) >= targetPrecision)?.threshold ?? null };
+    compareExact(point.threshold, 0) > 0 && compareExact(point.accepted, fit.minAccepted) >= 0 && compareExact(countRatio(point.correct, point.accepted), targetPrecision) >= 0)?.threshold ?? null };
 }
 /** Measure old and new prompts on real scratch items with all built-ins and two registered custom types. */
 export async function calibrateTypes(baseUrl: string, model: string, targetPrecision = 0.95) {

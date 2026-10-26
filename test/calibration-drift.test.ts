@@ -98,7 +98,7 @@ test("ONE strict boundary rejects sparse arrays, extra fields, bad domains and e
   const data = fixture();
   for (const raw of [null, undefined, 3, {}, [], { ...data, extra: true }, { ...data, version: "old" }, { ...data, provenance: "secret" }, { ...data, thresholds: null }, { ...data, calibration: null }]) refuses(() => checkCalibrationDrift(raw));
   for (const key of Object.keys(data.thresholds)) for (const value of [null, undefined, NaN, Infinity, -Infinity, -1, 0, 1e-300, 1e300, "1"]) {
-    if (key === "population_tv" || key === "error_increase") { if (value === 1e-300) continue; }
+    if (key === "population_tv" || key === "error_increase") { if (value === 1e-300 || value === "1") continue; }
     refuses(() => checkCalibrationDrift({ ...data, thresholds: { ...data.thresholds, [key]: value } }));
   }
   for (const key of ["population_tv", "error_increase"]) refuses(() => checkCalibrationDrift({ ...data, thresholds: { ...data.thresholds, [key]: 1.01 } }));
@@ -161,7 +161,7 @@ test("500 seeded model-based operation sequences include old replays, later labe
       assert.equal(result.labels.calibration_count, baseline.length);
       const error = current.length ? current.filter(row => row.predicted !== row.label).length / current.length : null;
       assert.equal(result.labels.current_error, error);
-      const shifted = Math.max(referenceDistance(state, "task"), referenceDistance(state, "type"), referenceDistance(state, "input_bucket")) >= state.thresholds.population_tv || current.length >= 10 && error! >= 0.2;
+      const shifted = Math.max(referenceDistance(state, "task"), referenceDistance(state, "type"), referenceDistance(state, "input_bucket")) >= Number(state.thresholds.population_tv) || current.length >= 10 && error! >= 0.2;
       assert.equal(result.status, shifted ? "drift" : current.length < 10 ? "insufficient_evidence" : "stable");
       const reordered = JSON.parse(JSON.stringify(state, (_key, value: unknown) => value !== null && typeof value === "object" && !Array.isArray(value) ? Object.fromEntries(Object.entries(value).reverse()) : value)) as unknown;
       assert.deepEqual(checkCalibrationDrift(reordered), result);

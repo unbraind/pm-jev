@@ -1,3 +1,4 @@
+import { displayRatio } from "./exact.js";
 /**
  * Same-tracker exemplar retrieval for retrieval-augmented decisions.
  *
@@ -226,7 +227,7 @@ export function knnVote(retrieved, channel) {
             order.push(label);
         counts.set(label, (counts.get(label) ?? 0) + 1);
     }
-    return Object.fromEntries(order.map(/** Share of the vote for each retrieved label. */ /** Share of the vote for each retrieved label. */ label => [label, counts.get(label) / retrieved.length]));
+    return Object.fromEntries(order.map(/** Share of the vote for each retrieved label. */ /** Share of the vote for each retrieved label. */ label => [label, displayRatio(counts.get(label), retrieved.length)]));
 }
 /**
  * Report whether the fixed local embedding model is installed.

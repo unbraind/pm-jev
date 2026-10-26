@@ -21,8 +21,8 @@ export interface DriftCohort {
 }
 /** Freeze these inclusive thresholds before inspecting the current cohort. */
 export interface DriftThresholds {
-    population_tv: number;
-    error_increase: number;
+    population_tv: number | string;
+    error_increase: number | string;
     min_population: number;
     min_labels: number;
 }

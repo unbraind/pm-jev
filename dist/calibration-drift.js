@@ -1,3 +1,4 @@
+import { compareExact, decimal, displayExact, displayRatio, fraction, populationDistance, subtractExact } from "./exact.js";
 import { evidenceHash } from "./decision-calibration.js";
 /** Versioned population diagnostic; no provider or tracker mutation is involved. */
 export const DRIFT_VERSION = "pm-jev-drift/1";
@@ -21,6 +22,17 @@ function exact(value, keys) {
 }
 /** Bound categories without silently trimming or normalizing caller evidence. */
 function category(value) { return typeof value === "string" && value.length > 0 && value.length <= 96 && value.trim() === value; }
+/** Validate exact decimal thresholds without converting a supplied lexeme to binary. */
+function validThreshold(value) {
+    if (!(typeof value === "number" && Number.isFinite(value) || typeof value === "string"))
+        return false;
+    try {
+        return compareExact(decimal(value), 0) > 0 && compareExact(decimal(value), 1) <= 0;
+    }
+    catch {
+        return false;
+    }
+}
 /** One strict boundary schema for both SDK inputs and command JSON; return a detached validated snapshot. */
 export function parseDriftInput(raw) {
     const data = raw;
@@ -30,7 +42,7 @@ export function parseDriftInput(raw) {
         const policy = input.thresholds;
         valid = input.version === DRIFT_VERSION && ["synthetic", "public", "local-unverified"].includes(input.provenance) && exact(policy, ["population_tv", "error_increase", "min_population", "min_labels"]);
         if (valid) {
-            valid = [policy.population_tv, policy.error_increase].every(/** Positive cutoffs avoid flagging unchanged cohorts at zero. */ /** Positive cutoffs avoid flagging unchanged cohorts at zero. */ value => typeof value === "number" && Number.isFinite(value) && value > 0 && value <= 1) &&
+            valid = [policy.population_tv, policy.error_increase].every(/** Positive cutoffs avoid flagging unchanged cohorts at zero. */ /** Positive cutoffs avoid flagging unchanged cohorts at zero. */ value => validThreshold(value)) &&
                 [policy.min_population, policy.min_labels].every(/** Both populations require meaningful bounded denominators. */ /** Both populations require meaningful bounded denominators. */ value => Number.isSafeInteger(value) && value >= 2 && value <= 5000);
         }
         for (const cohort of [input.calibration, input.current]) {
@@ -83,13 +95,13 @@ function totalVariation(a, b, key) {
             counts.set(row[key], pair);
         }
     }
-    return Math.min(1, [...counts.values()].reduce(/** Integer category counts preserve exact zero for an unchanged cohort. */ (sum, pair) => sum + Math.abs(pair[0] / a.length - pair[1] / b.length), 0) / 2);
+    return populationDistance([...counts.values()].map(/** Keep calibration category counts exact. */ /** Keep calibration category counts exact. */ pair => pair[0]), [...counts.values()].map(/** Keep current category counts exact. */ /** Keep current category counts exact. */ pair => pair[1]));
 }
 /** Observe only explicit labels; predictions and status names never supply ground truth. */
 function labelMetrics(rows) {
     const labelled = rows.filter(/** A missing judgement cannot count as correct. */ /** A missing judgement cannot count as correct. */ row => row.label !== null);
-    return { count: labelled.length, coverage: rows.length === 0 ? 0 : labelled.length / rows.length,
-        error: labelled.length === 0 ? null : labelled.filter(/** Compare caller's explicit outcome with its recorded prediction. */ /** Compare caller's explicit outcome with its recorded prediction. */ row => row.label !== row.predicted).length / labelled.length };
+    return { count: labelled.length, coverage: rows.length === 0 ? 0 : displayRatio(labelled.length, rows.length),
+        error: labelled.length === 0 ? null : fraction(labelled.filter(/** Compare caller's explicit outcome with its recorded prediction. */ /** Compare caller's explicit outcome with its recorded prediction. */ row => row.label !== row.predicted).length, labelled.length) };
 }
 /** Assert all emitted numbers have documented finite domains before exposing an ok result. */
 export function validateDriftReportNumbers(report) {
@@ -110,14 +122,14 @@ export function checkCalibrationDrift(raw) {
     const task = totalVariation(a.observations, b.observations, "task");
     const type = totalVariation(a.observations, b.observations, "type");
     const input = totalVariation(a.observations, b.observations, "input_bucket");
-    const populationStatus = Math.min(a.observations.length, b.observations.length) < t.min_population ? "insufficient_evidence" : [task, type, input].some(/** Thresholds are inclusive and frozen in the input. */ /** Thresholds are inclusive and frozen in the input. */ value => value >= t.population_tv) ? "drift" : "stable";
+    const populationStatus = compareExact(Math.min(a.observations.length, b.observations.length), t.min_population) < 0 ? "insufficient_evidence" : [task, type, input].some(/** Thresholds are inclusive and frozen in the input. */ /** Thresholds are inclusive and frozen in the input. */ value => compareExact(value, t.population_tv) >= 0) ? "drift" : "stable";
     const ca = labelMetrics(a.observations), cb = labelMetrics(b.observations);
-    const increase = ca.error === null || cb.error === null ? null : cb.error - ca.error;
-    const labelStatus = Math.min(ca.count, cb.count) < t.min_labels ? "insufficient_evidence" : increase >= t.error_increase ? "drift" : "stable";
+    const increase = ca.error === null || cb.error === null ? null : subtractExact(cb.error, ca.error);
+    const labelStatus = compareExact(Math.min(ca.count, cb.count), t.min_labels) < 0 ? "insufficient_evidence" : compareExact(increase, t.error_increase) >= 0 ? "drift" : "stable";
     const status = populationStatus === "drift" || labelStatus === "drift" ? "drift" : populationStatus === "insufficient_evidence" || labelStatus === "insufficient_evidence" ? "insufficient_evidence" : "stable";
     return validateDriftReportNumbers({ ok: true, version: DRIFT_VERSION, provenance: data.provenance, identity: a.identity, evidence_sha256: evidenceHash(data), calibration_sha256: evidenceHash(a), thresholds: t, status,
-        population: { status: populationStatus, calibration_count: a.observations.length, current_count: b.observations.length, task_tv: task, type_tv: type, input_tv: input },
-        labels: { status: labelStatus, calibration_count: ca.count, current_count: cb.count, calibration_coverage: ca.coverage, current_coverage: cb.coverage, calibration_error: ca.error, current_error: cb.error, error_increase: increase },
+        population: { status: populationStatus, calibration_count: a.observations.length, current_count: b.observations.length, task_tv: task === null ? null : displayExact(task), type_tv: type === null ? null : displayExact(type), input_tv: input === null ? null : displayExact(input) },
+        labels: { status: labelStatus, calibration_count: ca.count, current_count: cb.count, calibration_coverage: ca.coverage, current_coverage: cb.coverage, calibration_error: ca.error === null ? null : displayExact(ca.error), current_error: cb.error === null ? null : displayExact(cb.error), error_increase: increase === null ? null : displayExact(increase) },
         recommendation: status === "drift" ? "abstain_and_recalibrate" : status === "insufficient_evidence" ? "abstain_pending_evidence" : "retain_policy_and_monitor", inference_calls: 0, mutation_authority: "none" });
 }
 //# sourceMappingURL=calibration-drift.js.map

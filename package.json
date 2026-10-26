@@ -41,7 +41,8 @@
     "docs/partial-receipt-evidence.json",
     "docs/calibration-drift.md",
     "docs/calibration-drift-evidence.json",
-    "examples/calibration-drift.json"
+    "examples/calibration-drift.json",
+    "docs/exact-cutoffs.md"
   ],
   "scripts": {
     "build": "tsc",

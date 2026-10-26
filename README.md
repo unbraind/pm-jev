@@ -916,3 +916,5 @@ labels. The compact TOON/JSON receipt omits observation details. This works
 without Git. See the [strict schema, remedies and limitations](docs/calibration-drift.md),
 [example](examples/calibration-drift.json), and
 [read-only public-copy evidence](docs/calibration-drift-evidence.json).
+
+Count-derived policy cutoffs use [shared exact rational arithmetic](docs/exact-cutoffs.md), including drift, empirical precision, F1 and cost selection. Drift threshold strings preserve the exact supplied decimal digits.

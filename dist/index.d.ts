@@ -26,6 +26,10 @@ export type { CounterfactualOptions, CounterfactualReceipt, ExplanationProposal,
 export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.ts";
 /** Portable recording, policy, trusted adapter and compact comparison contracts. */
 export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, ReplayReport, ReplayExecutionResult } from "./policy-replay.ts";
+/** Shared exact arithmetic for policy cutoffs and count-derived diagnostics. */
+export { fraction, decimal, compareExact, addExact, subtractExact, multiplyExact, displayExact, displayRatio, countRatio, populationDistance, precisionMeets } from "./exact.ts";
+/** Rational values remain internal arithmetic; numeric displays never drive a count decision. */
+export type { Rational, ExactValue } from "./exact.ts";
 /** Frozen-cohort operating-population diagnostics without inference or mutations. */
 export { DRIFT_VERSION, DriftRefusal, parseDriftInput, checkCalibrationDrift, validateDriftReportNumbers } from "./calibration-drift.ts";
 /** Exact identity, strict evidence, frozen thresholds and compact diagnostic contracts. */
@@ -467,7 +471,7 @@ export interface GateDecision {
     readonly probability: number;
     /** Threshold the probability was compared against. */
     readonly threshold: number;
-    /** Whether the proposition holds (`probability >= threshold`, inclusive). */
+    /** Whether the proposition holds (`compareExact(probability, threshold) >= 0`, inclusive). */
     readonly holds: boolean;
     /** Expected proposition outcome; defaults to true, false for safety gates. */
     readonly expected: boolean;

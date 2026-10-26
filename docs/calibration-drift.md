@@ -55,6 +55,9 @@ The top-level `provenance` is `synthetic`, `public`, or `local-unverified`.
 It is a caller assertion. Neither it nor an output digest grants permission to
 publish private data. Output omits ids, categories, raw inputs and labels.
 `identity` is echoed to bind recommendations to that model/question pair.
+Threshold decimals are parsed into exact rational values. Count-derived rates,
+rate differences and total variation are compared by BigInt cross multiplication;
+only report displays use floating point. See [the package cutoff audit](exact-cutoffs.md).
 Canonical field order and sorting rows by exact id make evidence hashes stable
 across JSON layout, property order and row enumeration. Input objects are never
 modified. `calibration_sha256` binds the frozen cohort; `evidence_sha256` also
@@ -68,8 +71,8 @@ Replaying an older document recomputes that document's diagnostic only.
 
 | Field | Domain | Meaning |
 | --- | --- | --- |
-| `population_tv` | finite `(0,1]` | Inclusive categorical total-variation cutoff |
-| `error_increase` | finite `(0,1]` | Inclusive increase in explicit-label error rate |
+| `population_tv` | decimal number/string in `(0,1]` | Inclusive categorical total-variation cutoff |
+| `error_increase` | decimal number/string in `(0,1]` | Inclusive increase in explicit-label error rate |
 | `min_population` | integer `[2,5000]` | Required observations in each cohort |
 | `min_labels` | integer `[2,5000]` | Required explicit labels in each cohort |
 

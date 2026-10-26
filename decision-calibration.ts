@@ -1,3 +1,4 @@
+import { compareExact, displayRatio, precisionMeets } from "./exact.ts";
 import { createHash } from "node:crypto";
 import { getSettingsPath, readFileIfExists } from "@unbrained/pm-cli/sdk";
 import type { ExemplarSetting } from "./exemplar-retrieval.ts";
@@ -129,10 +130,15 @@ export function precisionLower(correct: number, count: number): number {
 }
 /** Threshold coverage and precision, including a conservative uncertainty bound. */
 export function atThreshold(rows: readonly Observation[], threshold: number) {
-  const accepted = rows.filter(/** Include equality at the authorization boundary. */ row => ranked(row.probabilities)[0][1] >= threshold);
+  const accepted = rows.filter(/** Include equality at the authorization boundary. */ row => compareExact(ranked(row.probabilities)[0][1], threshold) >= 0);
   const correct = accepted.filter(/** Score the probability winner, never the model choice string. */ row => ranked(row.probabilities)[0][0] === row.label).length;
-  return { threshold, count: accepted.length, coverage: rows.length === 0 ? 0 : accepted.length / rows.length,
-    precision: accepted.length === 0 ? null : correct / accepted.length, precision_lower_95: precisionLower(correct, accepted.length) };
+  return { threshold, count: accepted.length, coverage: rows.length === 0 ? 0 : displayRatio(accepted.length, rows.length),
+    precision: accepted.length === 0 ? null : displayRatio(correct, accepted.length), precision_lower_95: precisionLower(correct, accepted.length) };
+}
+/** Recount accepted labels and use the exact Wilson score inequality for authorization. */
+function precisionAtThreshold(rows: readonly Observation[], threshold: number, target: number): boolean {
+  const accepted = rows.filter(/** Use the same exact inclusive score cutoff as the displayed curve. */ row => compareExact(ranked(row.probabilities)[0][1], threshold) >= 0);
+  return precisionMeets(accepted.filter(/** Preserve integer correctness counts until qualification. */ row => ranked(row.probabilities)[0][0] === row.label).length, accepted.length, target);
 }
 /** Compute categorical accuracy, per-class metrics, ten-bin ECE, NLL and threshold curves. */
 export function reliability(rows: readonly Observation[]): Reliability {
@@ -143,16 +149,16 @@ export function reliability(rows: readonly Observation[]): Reliability {
     const members = predictions.filter(/** Put exactly-one confidence in bin nine. */ p => Math.min(9, Math.floor(p.top[1] * 10)) === index);
     return { lower: index / 10, upper: (index + 1) / 10, count: members.length,
       confidence: members.length === 0 ? null : members.reduce(/** Sum model confidence. */ (sum, p) => sum + p.top[1], 0) / members.length,
-      accuracy: members.length === 0 ? null : members.filter(/** Count correct predictions in this bin. */ p => p.top[0] === p.row.label).length / members.length };
+      accuracy: members.length === 0 ? null : displayRatio(members.filter(/** Count correct predictions in this bin. */ p => p.top[0] === p.row.label).length, members.length) };
   });
-  return { count: rows.length, accuracy: rows.length === 0 ? null : correct / rows.length,
+  return { count: rows.length, accuracy: rows.length === 0 ? null : displayRatio(correct, rows.length),
     ece: rows.length === 0 ? null : bins.reduce(/** Weight absolute reliability gaps by population. */ (sum, bin) => sum + bin.count * Math.abs((bin.confidence ?? 0) - (bin.accuracy ?? 0)), 0) / rows.length,
     nll: rows.length === 0 ? null : rows.reduce(/** Clip zero only for a finite log-loss diagnostic. */ (sum, row) => sum - Math.log(Math.max(1e-15, row.probabilities[row.label] ?? 0)), 0) / rows.length,
     bins, classes: labels.map(/** Report null precision/recall when the denominator has no evidence. */ label => {
       const support = rows.filter(/** Count ground truth class membership. */ row => row.label === label).length;
       const predicted = predictions.filter(/** Count predicted class membership. */ p => p.top[0] === label);
       const tp = predicted.filter(/** Count true positives for this class. */ p => p.row.label === label).length;
-      return { label, support, precision: predicted.length === 0 ? null : tp / predicted.length, recall: support === 0 ? null : tp / support };
+      return { label, support, precision: predicted.length === 0 ? null : displayRatio(tp, predicted.length), recall: support === 0 ? null : displayRatio(tp, support) };
     }), thresholds: Array.from({ length: 11 }, /** Report coverage at fixed decile boundaries, including the legacy 0.8. */ (_, index) => atThreshold(rows, index / 10)) };
 }
 /** Fit one parameter on calibration labels only using a fixed log-spaced NLL grid. */
@@ -189,10 +195,10 @@ export function calibrateObservations(task: EvaluationTask, model: string, diges
     const validation = scaledRows(val, temperature);
     const actionableCal = calibrated.filter(/** Abstention predictions cannot establish proposal precision. */ row => ranked(row.probabilities)[0][0] !== "none");
     const actionableVal = validation.filter(/** Validate actual proposals separately from confident no-op decisions. */ row => ranked(row.probabilities)[0][0] !== "none");
-    const thresholds = [...new Set(actionableCal.map(/** Candidate thresholds originate exclusively in calibration predictions. */ row => ranked(row.probabilities)[0][1]))].sort(/** Prefer the highest coverage that meets the bound. */ (a, b) => a - b);
-    const candidate = thresholds.find(/** Require uncertainty-aware precision before validation. */ threshold => atThreshold(actionableCal, threshold).precision_lower_95 >= target);
+    const thresholds = [...new Set(actionableCal.map(/** Candidate thresholds originate exclusively in calibration predictions. */ row => ranked(row.probabilities)[0][1]))].sort(/** Prefer the highest coverage that meets the bound. */ (a, b) => compareExact(a, b));
+    const candidate = thresholds.find(/** Require uncertainty-aware precision before validation. */ threshold => precisionAtThreshold(actionableCal, threshold, target));
     const checked = candidate === undefined ? null : atThreshold(actionableVal, candidate);
-    const qualified = checked !== null && checked.precision_lower_95 >= target;
+    const qualified = checked !== null && precisionAtThreshold(actionableVal, candidate as number, target);
     channels[channel] = { temperature, threshold: qualified ? candidate as number : null,
       reason: candidate === undefined ? "insufficient_calibration_precision_evidence" : qualified ? "qualified_on_held_out_repositories" : "held_out_precision_not_met",
       question_sha256: [...new Set(cal.map(/** Restrict reuse to question schemas observed during fitting. */ row => row.question_sha256))].sort(),
@@ -224,7 +230,7 @@ export async function readCalibration(pmRoot: string, task: EvaluationTask, mode
   if (calibrationKey(task, model, record.exemplars) !== calibrationKey(task, model, exemplars)) return undefined;
   if (typeof record.channels !== "object" || record.channels === null || !/^[a-f0-9]{64}$/.test(record.model_digest) ||
       Object.values(record.channels).some(/** Malformed persisted arithmetic must never authorize writes. */ fit => !fit || !Number.isFinite(fit.temperature) || fit.temperature < 0.05 || fit.temperature > 20 ||
-        (fit.threshold !== null && (!Number.isFinite(fit.threshold) || fit.threshold < 0 || fit.threshold > 1)) ||
+        (fit.threshold !== null && (!Number.isFinite(fit.threshold) || compareExact(fit.threshold, 0) < 0 || compareExact(fit.threshold, 1) > 0)) ||
         !Array.isArray(fit.question_sha256) || !fit.question_sha256.every(/** Require stable schema fingerprints. */ hash => typeof hash === "string" && /^[a-f0-9]{64}$/.test(hash)))) throw new Error("Saved calibration is invalid; rerun jev calibrate");
   return record;
 }
@@ -254,7 +260,7 @@ export async function activeCalibration(pmRoot: string, task: EvaluationTask, co
 export function calibratedAnswer(active: ActiveCalibration | undefined, channel: string, questions: unknown, probabilities: Record<string, number>, fallback: number, minimum = 0) {
   const fit = active?.record.channels[channel.startsWith("candidate_") ? "candidate_0" : channel];
   if (fit === undefined || !fit.question_sha256.includes(questionFingerprint(channel, questions))) return { probabilities, threshold: fallback, calibration: null };
-  const threshold = fit.threshold === null ? null : Math.max(fit.threshold, minimum);
+  const threshold = fit.threshold === null ? null : (compareExact(fit.threshold, minimum) >= 0 ? fit.threshold : minimum);
   return { probabilities: scaleProbabilities(probabilities, fit.temperature), threshold: threshold ?? Infinity,
     calibration: { receipt_sha256: (active as ActiveCalibration).receipt_sha256, temperature: fit.temperature, threshold, fitted_threshold: fit.threshold, qualified: fit.threshold !== null, reason: fit.reason } };
 }

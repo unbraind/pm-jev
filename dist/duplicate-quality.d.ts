@@ -1,7 +1,10 @@
+import type { Rational } from "./exact.ts";
 import type { DuplicatePair } from "./dedupe.ts";
 /** Repository-only assignment frozen before labels, scores or model outcomes. */
 export declare function duplicateSplit(repository: string): "train" | "heldout";
 /** Title-focused semantic evidence; generic shared tags alone cannot score as duplicates. */
+export declare function duplicateSimilarityRatio(pair: DuplicatePair): Rational;
+/** Numeric compatibility view of the exact lexical count score, for report display only. */
 export declare function duplicateSimilarity(pair: DuplicatePair): number;
 /** Raw benchmark evidence shared by every arm; model-only bypasses candidate retrieval. */
 export interface QualityObservation {

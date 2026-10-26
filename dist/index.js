@@ -1,3 +1,4 @@
+import { compareExact, displayExact, subtractExact } from "./exact.js";
 import { TokenUsageTotals } from "./token-usage.js";
 // pm-jev — typed, local-first System One decisions for pm items.
 //
@@ -41,6 +42,8 @@ export { COST_POLICY_VERSION, CostPolicyRefusal, parseCostDataset, selectAbstent
 export { COUNTERFACTUAL_VERSION, CounterfactualRefusal, explainDecision } from "./counterfactual.js";
 /** Frozen-input compatibility inspection and loopback-only decision model adapter. */
 export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.js";
+/** Shared exact arithmetic for policy cutoffs and count-derived diagnostics. */
+export { fraction, decimal, compareExact, addExact, subtractExact, multiplyExact, displayExact, displayRatio, countRatio, populationDistance, precisionMeets } from "./exact.js";
 /** Frozen-cohort operating-population diagnostics without inference or mutations. */
 export { DRIFT_VERSION, DriftRefusal, parseDriftInput, checkCalibrationDrift, validateDriftReportNumbers } from "./calibration-drift.js";
 // ---------------------------------------------------------------------------
@@ -721,7 +724,7 @@ function probabilityOption(options, key, aliases, fallback) {
     if (raw === undefined)
         return fallback;
     const parsed = Number(raw);
-    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1)
+    if (!Number.isFinite(parsed) || compareExact(parsed, 0) < 0 || compareExact(parsed, 1) > 0)
         throw createPmCliExpectedError(`--${key} must be a probability in [0,1].`);
     return parsed;
 }
@@ -876,9 +879,10 @@ function triageTypeQuestionHash(questions) {
 export function resolveTriageType(answer, current, definitions, marginThreshold = TYPE_MARGIN_THRESHOLD, changeProbability = TYPE_CHANGE_PROBABILITY) {
     const ranked = Object.entries(answer.probabilities).sort(/** Preserve registry order for tied labels. */ ([, a], [, b]) => b - a);
     const [selected, top] = ranked[0];
-    const margin = top - ranked[1][1];
-    const abstained = margin < marginThreshold;
-    const kept = !abstained && (selected === KEEP_CURRENT_TYPE || top < changeProbability);
+    const exactMargin = subtractExact(top, ranked[1][1]);
+    const margin = displayExact(exactMargin);
+    const abstained = compareExact(exactMargin, marginThreshold) < 0;
+    const kept = !abstained && (selected === KEEP_CURRENT_TYPE || compareExact(top, changeProbability) < 0);
     const label = kept ? KEEP_CURRENT_TYPE : selected;
     return { kind: "choice", value: abstained ? null : kept ? current : selected,
         selected_label: label, probability: answer.probabilities[kept ? current : selected] ?? 0, probabilities: answer.probabilities, confidence: answer.confidence,
@@ -909,7 +913,7 @@ function winningLevel(probabilities, rubricSize) {
     let bestProbability = 0;
     for (let level = 0; level < rubricSize; level += 1) {
         const probability = probabilities[String(level)];
-        if (probability > bestProbability + 1e-9) {
+        if (compareExact(subtractExact(probability, bestProbability), "1e-9") > 0) {
             bestProbability = probability;
             best = level;
         }
@@ -1026,12 +1030,12 @@ async function decideTriage(boundary, item, questions, classification, threshold
     };
     const written = [];
     const changes = {};
-    if (proposals.type.value !== null && proposals.type.probability >= typeFit.threshold && proposals.type.value !== item.type) {
+    if (proposals.type.value !== null && compareExact(proposals.type.probability, typeFit.threshold) >= 0 && proposals.type.value !== item.type) {
         changes.type = proposals.type.value;
         written.push(`type=${proposals.type.value}`);
     }
     const levelProbability = proposals.priority.probabilities[String(proposals.priority.level)];
-    if (levelProbability >= priorityFit.threshold && proposals.priority.level !== item.priority) {
+    if (compareExact(levelProbability, priorityFit.threshold) >= 0 && proposals.priority.level !== item.priority) {
         changes.priority = proposals.priority.level;
         written.push(`priority=${proposals.priority.level}`);
     }
@@ -1141,7 +1145,7 @@ function hasTriageReceipt(item, questions, threshold) {
         if (!/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(recorded))
             return false;
         const value = Number(recorded);
-        return value >= 0 && value <= 1 && value <= threshold;
+        return value >= 0 && value <= 1 && compareExact(value, threshold) <= 0;
     });
 }
 /** Infer a bounded host-selected backlog with shared client, questions, and one abort deadline. */
@@ -1168,8 +1172,8 @@ async function runBacklogTriage(ctx, boundary, questions, classification, thresh
                 const fit = result.calibration;
                 const typeThreshold = fit?.type === null || fit?.type === undefined ? threshold : fit.type.threshold ?? Infinity;
                 const priorityThreshold = fit?.priority === null || fit?.priority === undefined ? threshold : fit.priority.threshold ?? Infinity;
-                const wouldChange = (p.type.value !== null && p.type.probability >= typeThreshold && p.type.value !== item.type) ||
-                    (p.priority.probabilities[String(p.priority.level)] >= priorityThreshold && p.priority.level !== item.priority);
+                const wouldChange = (p.type.value !== null && compareExact(p.type.probability, typeThreshold) >= 0 && p.type.value !== item.type) ||
+                    (compareExact(p.priority.probabilities[String(p.priority.level)], priorityThreshold) >= 0 && p.priority.level !== item.priority);
                 row = { item: id, outcome: wouldChange ? apply ? "changed" : "would_change" : "skipped",
                     type: p.type.value, type_probability: p.type.abstained ? null : p.type.probability, priority: p.priority.level,
                     priority_probability: p.priority.probabilities[String(p.priority.level)], needs_human: p.needs_human.probability,
@@ -1257,7 +1261,7 @@ async function runDedupeCommand(ctx) {
         duplicate_of: selected === "none" ? null : selected,
         probability: fit.probabilities[selected],
         probabilities: fit.probabilities,
-        ...(fit.calibration === null ? {} : { calibration: { ...fit.calibration, raw_probability: answer.probabilities[selected], qualifies: selected !== "none" && fit.probabilities[selected] >= fit.threshold } }),
+        ...(fit.calibration === null ? {} : { calibration: { ...fit.calibration, raw_probability: answer.probabilities[selected], qualifies: selected !== "none" && compareExact(fit.probabilities[selected], fit.threshold) >= 0 } }),
         confidence: answer.confidence,
         candidates,
         model: result.model,
@@ -1356,8 +1360,9 @@ async function decideLinks(boundary, id, limit, threshold, apply, allowParent, s
         const fit = calibratedAnswer(boundary.calibration, `candidate_${index}`, questions[`candidate_${index}`], answer.probabilities, threshold, boundary.explicitConfidence ? threshold : 0);
         const ordered = ranked(fit.probabilities);
         const [selected, probability] = ordered[0];
-        const margin = probability - ordered[1][1];
-        const abstained = margin < TYPE_MARGIN_THRESHOLD;
+        const exactMargin = subtractExact(probability, ordered[1][1]);
+        const margin = displayExact(exactMargin);
+        const abstained = compareExact(exactMargin, TYPE_MARGIN_THRESHOLD) < 0;
         const existing = existingLinkKinds(graph, source.id, candidate.id).has(selected);
         const parentRefused = registry.resolve(selected)?.hierarchy === true && !allowParent;
         return { candidate: candidate.id, score: candidate.score, kind: abstained || existing || selected === "none" ? null : selected, selected_kind: selected,
@@ -1366,7 +1371,7 @@ async function decideLinks(boundary, id, limit, threshold, apply, allowParent, s
             reason: abstained ? "top_two_margin_below_threshold" : existing ? "existing_edge" : parentRefused ? "parent_requires_allow_parent" : selected === "none" ? "none" : null };
     });
     await verifyCalibrationModel(boundary);
-    const qualifying = proposals.filter(/** Only new, unambiguous, permitted edges can clear the apply threshold. */ /** Only new, unambiguous, permitted edges can clear the apply threshold. */ proposal => proposal.kind !== null && proposal.probability >= (proposal.calibration === undefined ? threshold : proposal.calibration.threshold ?? Infinity) && proposal.reason === null)
+    const qualifying = proposals.filter(/** Only new, unambiguous, permitted edges can clear the apply threshold. */ /** Only new, unambiguous, permitted edges can clear the apply threshold. */ proposal => proposal.kind !== null && compareExact(proposal.probability, proposal.calibration === undefined ? threshold : proposal.calibration.threshold ?? Infinity) >= 0 && proposal.reason === null)
         .map(/** Use the exact host --dep spelling. */ /** Use the exact host --dep spelling. */ proposal => `id=${proposal.candidate},kind=${proposal.kind}`);
     for (const item of [source, ...targets]) {
         if (linkInputHash(item) !== linkInputHash(await loadLinkSource(boundary, item.id))) {
@@ -1528,9 +1533,9 @@ async function runGateCommand(ctx) {
         proposition,
         probability,
         threshold,
-        holds: probability >= threshold,
+        holds: compareExact(probability, threshold) >= 0,
         expected,
-        ok: (probability >= threshold) === expected,
+        ok: (compareExact(probability, threshold) >= 0) === expected,
         source: text !== undefined ? "text" : "item",
         model: result.model,
         usage: result.usage,

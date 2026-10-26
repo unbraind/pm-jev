@@ -417,7 +417,7 @@
         "precision": 0.9583333333333334
       },
       {
-        "threshold": 0.18923902111589697,
+        "threshold": 0.18923902111589694,
         "accepted": 23,
         "correct": 23,
         "coverage": 0.9583333333333334,
@@ -452,7 +452,7 @@
         "precision": 1
       },
       {
-        "threshold": 0.4210200229231657,
+        "threshold": 0.42102002292316576,
         "accepted": 18,
         "correct": 18,
         "coverage": 0.75,
