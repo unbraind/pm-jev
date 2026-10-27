@@ -1,3 +1,4 @@
+import { compareExact, subtractExact } from "./exact.ts";
 import { reportPriorReceipt, withReceipt } from "./partial-receipt.ts";
 import type { ReceiptFailure, ReceiptOptions, ReceiptRun } from "./partial-receipt.ts";
 import { createHash } from "node:crypto";
@@ -81,7 +82,7 @@ function label(value: unknown): value is string {
 
 /** Check versioned policies at both the recording and candidate boundaries. */
 function checkPolicy(policy: ReplayPolicy): void {
-  if (!policy || !label(policy.version) || !Number.isFinite(policy.min_probability) || policy.min_probability < 0 || policy.min_probability > 1) {
+  if (!policy || !label(policy.version) || !Number.isFinite(policy.min_probability) || compareExact(policy.min_probability, 0) < 0 || compareExact(policy.min_probability, 1) > 0) {
     throw new ReplayRefusal("invalid_policy", "Supply a policy version and min_probability between 0 and 1.");
   }
 }
@@ -121,13 +122,13 @@ function proposals(record: Required<ReplayRecord>, result: SystemOneResult<Quest
   return Object.entries(record.questions).map(/** Compare the selected value; score uses the stable winning rubric level. */ ([name, question]) => {
     if (question.type === "noul") {
       const p = (result.answers[name] as NoulResponse).noul;
-      return Math.max(p, 1 - p) >= policy.min_probability ? p >= 0.5 : null;
+      return compareExact(compareExact(p, 0.5) >= 0 ? p : subtractExact(1, p), policy.min_probability) >= 0 ? compareExact(p, 0.5) >= 0 : null;
     }
     const answer = result.answers[name] as ChoiceResponse | ScoreResponse;
     const distribution = answer.probabilities as Record<string, number>;
     const winner = Object.keys(distribution).reduce(/** Stable label-order ties match the existing explanation adapter. */ (best, key) => distribution[key] > distribution[best] ? key : best);
     const value = answer.type === "choice" ? answer.choice : Number(winner);
-    return distribution[String(value)] >= policy.min_probability ? value : null;
+    return compareExact(distribution[String(value)], policy.min_probability) >= 0 ? value : null;
   });
 }
 

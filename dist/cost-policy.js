@@ -1,3 +1,5 @@
+import { acceptsThreshold } from "./threshold.js";
+import { addExact, compareExact, displayExact, displayRatio, fraction, multiplyExact } from "./exact.js";
 import { evidenceHash } from "./decision-calibration.js";
 /** Version of fixed-score policy datasets and content-free receipts. */
 export const COST_POLICY_VERSION = "pm-jev-cost/1";
@@ -48,14 +50,14 @@ export function parseCostDataset(raw) {
 }
 /** Apply a veto to an existing proposal; this function cannot authorize or perform a mutation. */
 export function abstainWithPolicy(policy, confidence, eligible, mandatoryChecksPassed) {
-    if (!policy || policy.version !== COST_POLICY_VERSION || policy.mutation_authority !== "none" || !(policy.threshold === null || typeof policy.threshold === "number" && Number.isFinite(policy.threshold) && policy.threshold >= 0 && policy.threshold <= 1) || !Number.isFinite(confidence) || confidence < 0 || confidence > 1 || typeof eligible !== "boolean" || typeof mandatoryChecksPassed !== "boolean") {
+    if (!policy || policy.version !== COST_POLICY_VERSION || policy.mutation_authority !== "none" || !(policy.threshold === null || typeof policy.threshold === "number" && Number.isFinite(policy.threshold) && compareExact(policy.threshold, 0) >= 0 && compareExact(policy.threshold, 1) <= 0) || !Number.isFinite(confidence) || confidence < 0 || confidence > 1 || typeof eligible !== "boolean" || typeof mandatoryChecksPassed !== "boolean") {
         throw new CostPolicyRefusal("invalid_policy", "Invalid proposal filter or decision evidence.", "Use a selected policy, confidence in [0,1], and explicit eligibility and mandatory-check verdicts.");
     }
     if (!mandatoryChecksPassed)
         return { propose: false, reason: "mandatory_checks_failed" };
     if (!eligible)
         return { propose: false, reason: "ineligible" };
-    if (policy.threshold === null || confidence < policy.threshold)
+    if (policy.threshold === null || !acceptsThreshold(confidence, policy.threshold))
         return { propose: false, reason: "abstained" };
     return { propose: true, reason: "proposal_only" };
 }
@@ -63,7 +65,7 @@ export function abstainWithPolicy(policy, confidence, eligible, mandatoryChecksP
 function measure(rows, threshold, costs) {
     let proposed = 0, falseDuplicates = 0, wrongTypes = 0, missedCandidates = 0;
     for (const row of rows) {
-        const accepted = row.eligible && threshold !== null && row.confidence >= threshold;
+        const accepted = row.eligible && threshold !== null && acceptsThreshold(row.confidence, threshold);
         if (accepted) {
             proposed++;
             if (row.task === "duplicate") {
@@ -76,15 +78,16 @@ function measure(rows, threshold, costs) {
         else if (row.task === "type" || row.label)
             missedCandidates++;
     }
-    const cost = falseDuplicates * costs.false_duplicate + wrongTypes * costs.wrong_type + missedCandidates * costs.missed_candidate;
+    const exact = weightedCost({ false_duplicates: falseDuplicates, wrong_types: wrongTypes, missed_candidates: missedCandidates }, costs);
+    const cost = displayExact(exact);
     // The validated dataset guarantees nonempty populations for both splits.
-    return { count: rows.length, proposed, false_duplicates: falseDuplicates, wrong_types: wrongTypes, missed_candidates: missedCandidates, coverage: proposed / rows.length, cost, cost_per_example: cost / rows.length };
+    return { count: rows.length, proposed, false_duplicates: falseDuplicates, wrong_types: wrongTypes, missed_candidates: missedCandidates, coverage: displayRatio(proposed, rows.length), cost, cost_per_example: displayExact(multiplyExact(exact, fraction(1, rows.length))) };
 }
 /** Rank explicit disable as stricter than every inclusive numeric threshold. */
 function strictness(threshold) { return threshold ?? 2; }
-/** Compare costs within arithmetic rounding error without making tiny penalties absolute ties. */
-function compareCosts(x, y) {
-    return x === y || Math.abs(x - y) / Math.max(x, y) <= 4 * Number.EPSILON ? 0 : x - y;
+/** Preserve weighted count costs exactly, including decimal penalties and subnormal scales. */
+function weightedCost(counts, costs) {
+    return addExact(addExact(multiplyExact(counts.false_duplicates, costs.false_duplicate), multiplyExact(counts.wrong_types, costs.wrong_type)), multiplyExact(counts.missed_candidates, costs.missed_candidate));
 }
 /** Select on selection labels only; held-out costs are diagnostics and never influence ties or thresholds. */
 export function selectAbstentionPolicy(input, costs) {
@@ -100,8 +103,8 @@ export function selectAbstentionPolicy(input, costs) {
     // A fixed 0.05 grid bounds compute/output and avoids deriving candidates from held-out scores.
     const thresholds = [null, ...Array.from({ length: 21 }, /** Include zero and one exactly. */ (_, index) => index / 20)];
     const curve = thresholds.map(/** Compare policies on the identical population, including retrieval misses. */ /** Compare policies on the identical population, including retrieval misses. */ threshold => ({ threshold, selection: measure(selection, threshold, costs), heldout: measure(heldout, threshold, costs) }));
-    const selected = [...curve].sort(/** Lowest empirical cost, then fewer errors, higher coverage, then stricter cutoff. */ (a, b) => compareCosts(a.selection.cost, b.selection.cost) ||
-        a.selection.false_duplicates + a.selection.wrong_types - b.selection.false_duplicates - b.selection.wrong_types || b.selection.proposed - a.selection.proposed || strictness(b.threshold) - strictness(a.threshold))[0];
+    const selected = [...curve].sort(/** Lowest empirical cost, then fewer errors, higher coverage, then stricter cutoff. */ (a, b) => compareExact(weightedCost(a.selection, costs), weightedCost(b.selection, costs)) ||
+        compareExact(a.selection.false_duplicates + a.selection.wrong_types, b.selection.false_duplicates + b.selection.wrong_types) || compareExact(b.selection.proposed, a.selection.proposed) || compareExact(strictness(b.threshold), strictness(a.threshold)))[0];
     const policy = { version: COST_POLICY_VERSION, threshold: selected.threshold, mutation_authority: "none" };
     const evidence = { version: data.version, provenance: data.provenance, observations: rows };
     const declared = { false_duplicate: costs.false_duplicate, wrong_type: costs.wrong_type, missed_candidate: costs.missed_candidate };

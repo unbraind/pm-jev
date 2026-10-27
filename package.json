@@ -38,7 +38,12 @@
     "docs/policy-replay.md",
     "docs/policy-replay-evidence.json",
     "examples/policy-replay.json",
-    "docs/partial-receipt-evidence.json"
+    "docs/partial-receipt-evidence.json",
+    "docs/calibration-drift.md",
+    "docs/calibration-drift-evidence.json",
+    "examples/calibration-drift.json",
+    "docs/exact-cutoffs.md",
+    "docs/threshold-domain.md"
   ],
   "scripts": {
     "build": "tsc",
@@ -80,6 +85,7 @@
     "@babel/parser": "^8.0.7",
     "@babel/plugin-syntax-typescript": "8.0.3",
     "@babel/types": "^8.0.6",
+    "@toon-format/toon": "4.1.1",
     "@types/node": "26.6.5",
     "@unbrained/pm-cli": "2026.10.23",
     "c8": "^12.0.0",

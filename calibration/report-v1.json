@@ -23,6 +23,11 @@
         "targetPrecision": 0.95,
         "minAccepted": 4,
         "threshold": 0,
+        "cutoff": {
+          "state": "enabled",
+          "numerator": "0",
+          "denominator": "1"
+        },
         "curve": [
           {
             "threshold": 0,
@@ -241,6 +246,11 @@
         "targetPrecision": 0.95,
         "minAccepted": 4,
         "threshold": 0,
+        "cutoff": {
+          "state": "enabled",
+          "numerator": "0",
+          "denominator": "1"
+        },
         "curve": [
           {
             "threshold": 0,
@@ -459,6 +469,11 @@
         "targetPrecision": 0.95,
         "minAccepted": 4,
         "threshold": 0,
+        "cutoff": {
+          "state": "enabled",
+          "numerator": "0",
+          "denominator": "1"
+        },
         "curve": [
           {
             "threshold": 0,
@@ -677,6 +692,11 @@
         "targetPrecision": 0.95,
         "minAccepted": 4,
         "threshold": 0,
+        "cutoff": {
+          "state": "enabled",
+          "numerator": "0",
+          "denominator": "1"
+        },
         "curve": [
           {
             "threshold": 0,
@@ -896,6 +916,11 @@
       "targetPrecision": 0.95,
       "minAccepted": 4,
       "threshold": 0,
+      "cutoff": {
+        "state": "enabled",
+        "numerator": "0",
+        "denominator": "1"
+      },
       "curve": [
         {
           "threshold": 0,

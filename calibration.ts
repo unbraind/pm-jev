@@ -1,3 +1,7 @@
+import { acceptsThreshold, threshold, numericBoundary } from "./threshold.ts";
+import type { Threshold } from "./threshold.ts";
+import type { ExactValue } from "./exact.ts";
+import { compareExact, countRatio, displayRatio } from "./exact.ts";
 import { TokenUsageTotals } from "./token-usage.ts";
 import type { TokenUsage } from "./token-usage.ts";
 import { createHash } from "node:crypto";
@@ -102,35 +106,39 @@ export interface ThresholdDerivation {
   readonly targetPrecision: number;
   readonly minAccepted: number;
   readonly threshold: number | null;
+  readonly cutoff: Threshold;
   readonly curve: readonly ReliabilityPoint[];
 }
 
 /** Reject invalid numeric inputs rather than deriving thresholds from NaNs. */
-function probability(value: number): void {
-  if (!Number.isFinite(value) || value < 0 || value > 1) throw new Error("Probability must be in [0,1]");
+function probability(value: ExactValue): void {
+  try {
+    if (threshold(value).state === "enabled" && compareExact(value, 0) >= 0 && compareExact(value, 1) <= 0) return;
+  } catch { /* Preserve the released probability-domain refusal for malformed exact values. */ }
+  throw new Error("Probability must be in [0,1]");
 }
 
 /** Predict noul inclusively; confidence measures the probability of that label. */
 export function observe(question: CalibrationQuestion, value: number, gateThreshold = 0.5): Observation {
   probability(value);
   probability(gateThreshold);
-  const predicted = value >= gateThreshold;
+  const predicted = compareExact(value, gateThreshold) >= 0;
   return { ...question, probability: value, predicted, confidence: predicted ? value : 1 - value, correct: predicted === question.expected };
 }
 
 /** Compute all attainable confidence cutoffs, retaining tied observations together. */
-export function deriveThreshold(rows: readonly Pick<Observation, "confidence" | "correct">[], targetPrecision = 0.95, minAccepted = 4): ThresholdDerivation {
+export function deriveThreshold(rows: readonly { readonly confidence: ExactValue; readonly correct: boolean }[], targetPrecision = 0.95, minAccepted = 4): ThresholdDerivation {
   probability(targetPrecision);
   if (!Number.isSafeInteger(minAccepted) || minAccepted < 1) throw new Error("minAccepted must be a positive integer");
   for (const row of rows) probability(row.confidence);
-  const candidates = [...new Set([0, 1, ...rows.map(/** Preserve full precision for threshold selection. */ row => row.confidence)])].sort(/** Inspect inclusive cutoffs in increasing order. */ (a, b) => a - b);
+  const candidates = [...new Set([0, 1, ...rows.map(/** Preserve full precision for threshold selection. */ row => numericBoundary(row.confidence))])].sort(/** Inspect inclusive cutoffs in increasing order. */ (a, b) => compareExact(a, b));
   const curve = candidates.map(/** Report the evidence at each attainable cutoff. */ threshold => {
-    const selected = rows.filter(/** Keep tied values in the same acceptance set. */ row => row.confidence >= threshold);
+    const selected = rows.filter(/** Keep tied values in the same acceptance set. */ row => acceptsThreshold(row.confidence, threshold));
     const correct = selected.filter(/** Count correct accepted predictions. */ row => row.correct).length;
-    return { threshold, accepted: selected.length, correct, coverage: rows.length === 0 ? 0 : selected.length / rows.length, precision: selected.length === 0 ? null : correct / selected.length };
+    return { threshold, accepted: selected.length, correct, coverage: rows.length === 0 ? 0 : displayRatio(selected.length, rows.length), precision: selected.length === 0 ? null : displayRatio(correct, selected.length) };
   });
-  const qualifying = curve.find(/** Zero coverage and tiny lucky subsets never qualify. */ point => point.accepted >= minAccepted && point.precision! >= targetPrecision);
-  return { targetPrecision, minAccepted, threshold: qualifying === undefined ? null : qualifying.threshold, curve };
+  const qualifying = curve.find(/** Zero coverage and tiny lucky subsets never qualify. */ point => compareExact(point.accepted, minAccepted) >= 0 && compareExact(countRatio(point.correct, point.accepted), targetPrecision) >= 0);
+  return { targetPrecision, minAccepted, threshold: qualifying === undefined ? null : qualifying.threshold, cutoff: threshold(qualifying === undefined ? null : qualifying.threshold), curve };
 }
 
 /** Positive-class gate metrics differ from selective prediction correctness. */
@@ -153,14 +161,14 @@ export function gatePoint(rows: readonly Observation[], threshold: number): Gate
   let falseNegative = 0;
   for (const row of rows) {
     probability(row.probability);
-    if (row.probability >= threshold) {
+    if (compareExact(row.probability, threshold) >= 0) {
       if (row.expected) truePositive++;
       else falsePositive++;
     } else if (row.expected) falseNegative++;
   }
   const positive = truePositive + falsePositive;
   const actualPositive = truePositive + falseNegative;
-  return { threshold, positive, truePositive, falsePositive, falseNegative, precision: positive === 0 ? null : truePositive / positive, recall: actualPositive === 0 ? null : truePositive / actualPositive, accuracy: rows.length === 0 ? null : 1 - (falsePositive + falseNegative) / rows.length };
+  return { threshold, positive, truePositive, falsePositive, falseNegative, precision: positive === 0 ? null : displayRatio(truePositive, positive), recall: actualPositive === 0 ? null : displayRatio(truePositive, actualPositive), accuracy: rows.length === 0 ? null : displayRatio(rows.length - falsePositive - falseNegative, rows.length) };
 }
 
 /** Freeze a family's confidence and positive-class thresholds before evaluation. */
@@ -168,16 +176,16 @@ export function familyMetrics(rows: readonly Observation[], targetPrecision: num
   const calibration = rows.filter(/** Use only development observations for fitting. */ row => row.split === "calibration");
   const evaluation = rows.filter(/** Keep held-out labels out of threshold selection. */ row => row.split === "evaluation");
   const confidence = deriveThreshold(calibration, targetPrecision, minAccepted);
-  const cutoffs = [...new Set([0, 0.5, 1, ...calibration.map(/** Enumerate attainable gate cutoffs. */ row => row.probability)])].sort(/** Prefer the lowest qualifying probability. */ (a, b) => a - b);
+  const cutoffs = [...new Set([0, 0.5, 1, ...calibration.map(/** Enumerate attainable gate cutoffs. */ row => row.probability)])].sort(/** Prefer the lowest qualifying probability. */ (a, b) => compareExact(a, b));
   const gateCurve = cutoffs.map(/** Measure gate precision and recall at each cutoff. */ threshold => gatePoint(calibration, threshold));
-  const qualifying = gateCurve.find(/** Require a nontrivial positive acceptance set. */ point => point.positive >= minAccepted && point.precision! >= targetPrecision);
+  const qualifying = gateCurve.find(/** Require a nontrivial positive acceptance set. */ point => compareExact(point.positive, minAccepted) >= 0 && compareExact(countRatio(point.truePositive, point.positive), targetPrecision) >= 0);
   const gateThreshold = qualifying === undefined ? null : qualifying.threshold;
-  const acceptedEvaluation = confidence.threshold === null ? [] : evaluation.filter(/** Apply the frozen confidence cutoff. */ row => row.confidence >= confidence.threshold!);
+  const acceptedEvaluation = confidence.threshold === null ? [] : evaluation.filter(/** Apply the frozen confidence cutoff. */ row => acceptsThreshold(row.confidence, confidence.cutoff));
   return { confidence, gateThreshold, gateCurve, evaluation: {
     count: evaluation.length,
     accepted: acceptedEvaluation.length,
-    coverage: evaluation.length === 0 ? 0 : acceptedEvaluation.length / evaluation.length,
-    precision: acceptedEvaluation.length === 0 ? null : acceptedEvaluation.filter(/** Score accepted held-out decisions. */ row => row.correct).length / acceptedEvaluation.length,
+    coverage: evaluation.length === 0 ? 0 : displayRatio(acceptedEvaluation.length, evaluation.length),
+    precision: acceptedEvaluation.length === 0 ? null : displayRatio(acceptedEvaluation.filter(/** Score accepted held-out decisions. */ row => row.correct).length, acceptedEvaluation.length),
     gate: gateThreshold === null ? null : gatePoint(evaluation, gateThreshold),
     baselineGate: gatePoint(evaluation, 0.5),
   } };

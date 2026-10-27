@@ -1,19 +1,27 @@
+import type { Rational } from "./exact.ts";
+import type { Threshold } from "./threshold.ts";
 import type { DuplicatePair } from "./dedupe.ts";
 /** Repository-only assignment frozen before labels, scores or model outcomes. */
 export declare function duplicateSplit(repository: string): "train" | "heldout";
 /** Title-focused semantic evidence; generic shared tags alone cannot score as duplicates. */
+export declare function duplicateSimilarityRatio(pair: DuplicatePair): Rational;
+/** Numeric compatibility view of the exact lexical count score, for report display only. */
 export declare function duplicateSimilarity(pair: DuplicatePair): number;
 /** Raw benchmark evidence shared by every arm; model-only bypasses candidate retrieval. */
 export interface QualityObservation {
     label: boolean;
     retrieved: boolean;
-    lexical: number;
+    lexical: number | Threshold;
     probability: number;
 }
+/** Produce content-free fitting evidence directly from raw items, retaining the exact weighted ratio. */
+export declare function qualityObservation(pair: DuplicatePair, probability: number, label: boolean, retrieved: boolean): QualityObservation;
+/** The production lexical guard recomputes the same ratio used by raw-input fitting, without a display conversion. */
+export declare function qualityLexicalAccepts(pair: DuplicatePair, cutoff: QualityPolicy["lexical"]): boolean;
 /** Frozen train operating point. Null disables positive proposals, including probability one. */
 export interface QualityPolicy {
     model: number | null;
-    lexical: number | null;
+    lexical: number | Threshold | null;
 }
 /** The three ablations use exactly the same labelled population. */
 export type QualityArm = "lexical-only" | "model-only" | "combined";

@@ -1,3 +1,4 @@
+import { compareExact } from "./exact.js";
 import { createHmac, randomBytes, createHash } from "node:crypto";
 import { createJevClient, isPmCliExpectedError, parseQuestionsDocument, runDecision } from "./index.js";
 import { TokenUsageTotals } from "./token-usage.js";
@@ -68,7 +69,7 @@ function outcomes(result, questions) {
     for (const [name, question] of Object.entries(questions)) {
         if (question.type === "noul") {
             const p = result.answers[name].noul;
-            proposals[name] = { kind: "noul", value: p >= 0.5, probability: p >= 0.5 ? p : 1 - p };
+            proposals[name] = { kind: "noul", value: compareExact(p, 0.5) >= 0, probability: compareExact(p, 0.5) >= 0 ? p : 1 - p };
             distributions[name] = { true: p, false: 1 - p };
         }
         else {

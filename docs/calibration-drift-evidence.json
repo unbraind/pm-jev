@@ -1,0 +1,95 @@
+{
+  "version": "pm-jev-drift-public/1",
+  "repository": "unbraind/pm-lint",
+  "commit": "34d3ba5784e75d7d78a16b680326382511d05b73",
+  "archive_sha256": "4fb0e015b58eb4a924ec8f5e819de5ffa491b99d452bc9839550d85e16b072d5",
+  "tracker_items": 18,
+  "authoritative_files_verified": 42,
+  "tracker_unchanged": true,
+  "git_available_during_check": false,
+  "input_buckets": {
+    "short": 18,
+    "long": 0
+  },
+  "explicit_labels": 0,
+  "inference_calls": 0,
+  "unchanged": {
+    "ok": true,
+    "version": "pm-jev-drift/1",
+    "provenance": "public",
+    "identity": {
+      "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+      "question_digest": "10a236388896b7721ff48aac35eed73cd0853bffb953105080b7307c386e5964"
+    },
+    "evidence_sha256": "859bf7754d7758392627356eb7f1c59cc95000cfeba0a05aeffe96dbcec1eb24",
+    "calibration_sha256": "5d8cdb1badb23b4b4bc521f58240e9875e1b1d272f55443936f61d8528b57f14",
+    "thresholds": {
+      "population_tv": 0.25,
+      "error_increase": 0.2,
+      "min_population": 10,
+      "min_labels": 10
+    },
+    "status": "insufficient_evidence",
+    "population": {
+      "status": "stable",
+      "calibration_count": 18,
+      "current_count": 18,
+      "task_tv": 0,
+      "type_tv": 0,
+      "input_tv": 0
+    },
+    "labels": {
+      "status": "insufficient_evidence",
+      "calibration_count": 0,
+      "current_count": 0,
+      "calibration_coverage": 0,
+      "current_coverage": 0,
+      "calibration_error": null,
+      "current_error": null,
+      "error_increase": null
+    },
+    "recommendation": "abstain_pending_evidence",
+    "inference_calls": 0,
+    "mutation_authority": "none"
+  },
+  "controlled_shift": {
+    "ok": true,
+    "version": "pm-jev-drift/1",
+    "provenance": "public",
+    "identity": {
+      "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+      "question_digest": "10a236388896b7721ff48aac35eed73cd0853bffb953105080b7307c386e5964"
+    },
+    "evidence_sha256": "5997c67ddb0372f22946f82efbaa37846a253724edc6d21d114c28a73e8b0e3e",
+    "calibration_sha256": "5d8cdb1badb23b4b4bc521f58240e9875e1b1d272f55443936f61d8528b57f14",
+    "thresholds": {
+      "population_tv": 0.25,
+      "error_increase": 0.2,
+      "min_population": 10,
+      "min_labels": 10
+    },
+    "status": "drift",
+    "population": {
+      "status": "drift",
+      "calibration_count": 18,
+      "current_count": 18,
+      "task_tv": 0,
+      "type_tv": 0,
+      "input_tv": 1
+    },
+    "labels": {
+      "status": "insufficient_evidence",
+      "calibration_count": 0,
+      "current_count": 0,
+      "calibration_coverage": 0,
+      "current_coverage": 0,
+      "calibration_error": null,
+      "current_error": null,
+      "error_increase": null
+    },
+    "recommendation": "abstain_and_recalibrate",
+    "inference_calls": 0,
+    "mutation_authority": "none"
+  },
+  "limitations": "Operating-population mechanics on one public tracker, read through the SDK twice. Identity references a frozen public decision receipt; these items were not inferred and are not a newly calibrated production cohort. The shift is an injected input-bucket control, not observed live drift. No explicit later labels are available; label status remains insufficient evidence. Synthetic tests separately cover explicit-label degradation. No raw item text, ids or private configuration are published."
+}

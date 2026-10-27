@@ -1,3 +1,4 @@
+import { compareExact } from "./exact.ts";
 import { createHmac, randomBytes, createHash } from "node:crypto";
 import type { Questions, SystemOneResult, ChoiceResponse, ScoreResponse, NoulResponse } from "@typesafe-ai/sdk";
 import { createJevClient, isPmCliExpectedError, parseQuestionsDocument, runDecision } from "./index.ts";
@@ -119,7 +120,7 @@ function outcomes(result: SystemOneResult<Questions>, questions: Questions) {
   for (const [name, question] of Object.entries(questions)) {
     if (question.type === "noul") {
       const p = (result.answers[name] as NoulResponse).noul;
-      proposals[name] = { kind: "noul", value: p >= 0.5, probability: p >= 0.5 ? p : 1 - p };
+      proposals[name] = { kind: "noul", value: compareExact(p, 0.5) >= 0, probability: compareExact(p, 0.5) >= 0 ? p : 1 - p };
       distributions[name] = { true: p, false: 1 - p };
     } else {
       const answer = result.answers[name] as ChoiceResponse | ScoreResponse;

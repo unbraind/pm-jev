@@ -5,7 +5,7 @@ import type { NoulResponse } from "@typesafe-ai/sdk";
 import { repositoryDuplicatePairs, historicalDuplicate } from "../dedupe-evaluation.ts";
 import { snapshotPublicFleet } from "./public-duplicate-fixtures.ts";
 import type { PublicDuplicateCorpus } from "./public-duplicate-fixtures.ts";
-import { duplicateSimilarity, duplicateSplit, fitQualityPolicy, qualityMetrics, qualityFrontier } from "../duplicate-quality.ts";
+import { qualityObservation, duplicateSplit, fitQualityPolicy, qualityMetrics, qualityFrontier } from "../duplicate-quality.ts";
 import type { QualityObservation, QualityArm } from "../duplicate-quality.ts";
 import { DUPLICATE_QUESTIONS, pairState } from "../dedupe.ts";
 import { createJevClient, resolveJevEndpoint, runDecision } from "../index.ts";
@@ -33,7 +33,7 @@ if (mode === "collect") {
   }
   const labels = repositoryDuplicatePairs(corpora);
   const samples = labels.map(row => ({ pair_id: row.pair_id, repository: row.repository, a: row.pair.a.id, b: row.pair.b.id, label: row.label, retrieved: row.retrieved,
-    split: duplicateSplit(row.repository), lexical: duplicateSimilarity(row.pair), example_sha256: evidenceHash(pairState(row.pair)) }));
+    split: duplicateSplit(row.repository), lexical: qualityObservation(row.pair, 0, row.label, row.retrieved).lexical, example_sha256: evidenceHash(pairState(row.pair)) }));
   await writeFile(join(scratch, "inference/samples.json"), JSON.stringify(samples, null, 2));
   const endpoint = await resolveJevEndpoint(join(scratch, "unused-settings"), { PM_JEV_MODEL: "tev1:4b" });
   const resolved = { ...endpoint, config: { ...endpoint.config, timeoutMs: 360_000, totalDeadlineMs: 600_000, keepAlive: "30m" } };

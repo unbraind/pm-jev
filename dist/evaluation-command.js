@@ -1,3 +1,4 @@
+import { compareExact, displayRatio } from "./exact.js";
 import { dirname } from "node:path";
 import { RECEIPT_FLAGS, receiptOptions, reportPriorReceipt, withReceipt } from "./partial-receipt.js";
 import { TokenUsageTotals } from "./token-usage.js";
@@ -121,7 +122,7 @@ async function evaluate(ctx, calibrate, readCorpus, storage) {
     const sample = sampleOption(readStringOption(ctx.options, "sample"), calibrate ? 100 : 40);
     const seed = readStringOption(ctx.options, "seed") ?? "0";
     const target = Number(readStringOption(ctx.options, "targetPrecision", ["target_precision"]) ?? 0.9);
-    if (!Number.isFinite(target) || target <= 0 || target > 1)
+    if (!Number.isFinite(target) || compareExact(target, 0) <= 0 || compareExact(target, 1) > 0)
         throw createPmCliExpectedError("--target-precision must be in (0,1]");
     const exemplars = exemplarSetting(ctx.options, task);
     if (calibrate && ctx.sdk === undefined)
@@ -254,7 +255,7 @@ async function evaluate(ctx, calibrate, readCorpus, storage) {
             retrieval_misses: built.reduce(/** Keep failed duplicate retrieval visible. */ (sum, result) => sum + result.retrieval_misses, 0), skipped,
             mean_latency_ms: elapsed / calls,
             tokens: { input: usage.inputTokens, output: usage.outputTokens,
-                mean_input: usage.inputTokens === null ? null : usage.inputTokens / calls, mean_output: usage.outputTokens === null ? null : usage.outputTokens / calls,
+                mean_input: usage.inputTokens === null ? null : displayRatio(usage.inputTokens, calls), mean_output: usage.outputTokens === null ? null : displayRatio(usage.outputTokens, calls),
                 unknown_calls: usage.unknownCalls, unknown_input_calls: usage.unknownInputCalls, unknown_output_calls: usage.unknownOutputCalls },
             metrics: Object.fromEntries(channels.map(/** Preserve type/priority label spaces rather than mixing them. */ /** Preserve type/priority label spaces rather than mixing them. */ channel => [channel, reliability(observations.filter(/** Select this channel's population. */ /** Select this channel's population. */ row => row.channel === channel))])),
             observations,
@@ -262,7 +263,7 @@ async function evaluate(ctx, calibrate, readCorpus, storage) {
                 retrieval: { mode: exemplars.retrieval, count: exemplars.count, token_budget: exemplars.token_budget,
                     embedding_model: exemplars.retrieval === "embedding" ? EMBEDDING_MODEL : null,
                     embedding_available: embedded === null ? null : embedded.available, embedding_fallbacks: embedded?.fallbacks ?? 0,
-                    empty_retrievals: emptyRetrievals, reused_baseline_calls: reusedBaseline, budget_clamped_examples: budgetClamped, mean_exemplars: retrievedTotal / sampled.length },
+                    empty_retrievals: emptyRetrievals, reused_baseline_calls: reusedBaseline, budget_clamped_examples: budgetClamped, mean_exemplars: displayRatio(retrievedTotal, sampled.length) },
                 exemplar_metrics: Object.fromEntries(channels.map(/** The model with exemplars, measured on the same sample. */ /** The model with exemplars, measured on the same sample. */ channel => [channel, reliability(exemplarObservations.filter(/** Select this channel's population. */ /** Select this channel's population. */ row => row.channel === channel))])),
                 baselines: Object.fromEntries(channels.map(/** Context-equivalent baselines share the same retrieved evidence. */ /** Context-equivalent baselines share the same retrieved evidence. */ channel => {
                     /** Summarize one baseline arm over this channel's population. */

@@ -5,6 +5,7 @@
 ### Added
 
 - Compact decision output for agent context budgets ([pm-jev-qriu](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-qriu.toon))
+- Detect calibration population and explicit-label drift without inference ([pm-jev-t1h1](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-t1h1.toon))
 - Compare frozen decision proposals before adopting a local policy ([pm-jev-7esl](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-7esl.toon))
 - Explain typed decisions by bounded evidence removal ([pm-jev-ygvl](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-ygvl.toon))
 - Select measured cost-sensitive abstention policies ([pm-jev-do7y](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-do7y.toon))

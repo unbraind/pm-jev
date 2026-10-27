@@ -401,6 +401,11 @@
     "targetPrecision": 0.95,
     "minAccepted": 4,
     "threshold": 0.05136322250317049,
+    "cutoff": {
+      "state": "enabled",
+      "numerator": "5136322250317049",
+      "denominator": "100000000000000000"
+    },
     "curve": [
       {
         "threshold": 0,
@@ -417,7 +422,7 @@
         "precision": 0.9583333333333334
       },
       {
-        "threshold": 0.18923902111589697,
+        "threshold": 0.18923902111589694,
         "accepted": 23,
         "correct": 23,
         "coverage": 0.9583333333333334,
@@ -431,7 +436,7 @@
         "precision": 1
       },
       {
-        "threshold": 0.28928974182057987,
+        "threshold": 0.2892897418205798,
         "accepted": 21,
         "correct": 21,
         "coverage": 0.875,
@@ -487,7 +492,7 @@
         "precision": 1
       },
       {
-        "threshold": 0.7087908530213012,
+        "threshold": 0.7087908530213011,
         "accepted": 13,
         "correct": 13,
         "coverage": 0.5416666666666666,
@@ -508,7 +513,7 @@
         "precision": 1
       },
       {
-        "threshold": 0.8148794285341368,
+        "threshold": 0.8148794285341366,
         "accepted": 10,
         "correct": 10,
         "coverage": 0.4166666666666667,
@@ -522,21 +527,21 @@
         "precision": 1
       },
       {
-        "threshold": 0.8793367740289736,
+        "threshold": 0.8793367740289735,
         "accepted": 8,
         "correct": 8,
         "coverage": 0.3333333333333333,
         "precision": 1
       },
       {
-        "threshold": 0.9072796440901533,
+        "threshold": 0.9072796440901532,
         "accepted": 7,
         "correct": 7,
         "coverage": 0.2916666666666667,
         "precision": 1
       },
       {
-        "threshold": 0.9526519677632183,
+        "threshold": 0.9526519677632181,
         "accepted": 6,
         "correct": 6,
         "coverage": 0.25,

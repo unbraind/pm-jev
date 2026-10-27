@@ -1,3 +1,4 @@
+import type { Threshold, ThresholdInput } from "./threshold.ts";
 import type { PairItem, DuplicatePair } from "./dedupe.ts";
 /** Public, complete tracker-copy evidence accepted by the label builder. */
 export interface DuplicateCorpus {
@@ -20,11 +21,12 @@ export interface PairObservation {
     probability: number;
     related_probability?: number | null;
     retrieved: boolean;
+    lexical_score?: Threshold;
 }
 /** Operating points for both typed questions; the lexical arm ignores the related channel. */
 export interface PairThresholds {
-    threshold: number;
-    relatedThreshold: number;
+    threshold: ThresholdInput;
+    relatedThreshold: ThresholdInput;
 }
 /** Recognize explicit duplicate consolidation receipts as well as standard duplicate closures. */
 export declare function closureTarget(item: PairItem): string | undefined;
@@ -50,9 +52,11 @@ export declare function pairMetrics(rows: readonly PairObservation[], target: "d
     abstain_ci95: [number, number] | null;
 };
 /** Tune F1 on dev observations only, retaining the existing 0.8 model safety floor. */
+export declare function fitPairCutoff(rows: readonly PairObservation[], target: "duplicate" | "related", base: PairThresholds, lexical: boolean): Threshold;
+/** Last-release numeric fitting API delegates to the typed exact cutoff, preserving Infinity when unsupported. */
 export declare function fitPairThreshold(rows: readonly PairObservation[], target: "duplicate" | "related", base: PairThresholds, lexical: boolean): number;
 /** Replay historical single-question receipts through the preserved public helper. */
-export declare function duplicateMetrics(rows: readonly PairObservation[], threshold: number, lexical?: boolean): {
+export declare function duplicateMetrics(rows: readonly PairObservation[], threshold: ThresholdInput, lexical?: boolean): {
     count: number;
     tp: number;
     fp: number;
