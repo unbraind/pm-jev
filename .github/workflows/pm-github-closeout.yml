@@ -17,7 +17,7 @@ permissions:
 jobs:
   gated-closeout:
     if: github.repository == 'unbraind/pm-jev'
-    uses: unbraind/pm-github/.github/workflows/pm-github-closeout.yml@67a5e3e1514fddeeae29951da00513f06f7aa0ab # pm-github 2026.10.16
+    uses: unbraind/pm-github/.github/workflows/pm-github-closeout.yml@83bb51a2490f40c6a975c288447b28ea39d65825 # pm-github 2026.10.24
     with:
       pm-github-version: "2026.10.16"
       npm-project-dir: "." # Use tools/oracle or another contained npm project when needed.
