@@ -11,6 +11,32 @@ model, not a coding or text-generation model. Code handles candidate ranking, pr
 mapping, probability thresholds, retries, deadlines and pm history. TypeSafe's RLCD
 training is separate from the pm-rl evaluation work.
 
+## Install and release approval
+
+The first npm release is pending the maintainer's interactive bootstrap. After
+that first publish, the maintainer configures npm trusted publishing for
+`release.yml` and sets the repository variable `PM_RELEASE_APPROVED` to `true`.
+The daily workflow and manual dispatch both require this variable and `main`.
+Publishing uses OIDC with provenance; no stored npm token is needed.
+
+Once published, install the package and compatible pm host, then activate the
+extension in an initialized pm project:
+
+```sh
+npm install pm-jev @unbrained/pm-cli
+npx --no-install pm package install ./node_modules/pm-jev
+
+bun add pm-jev @unbrained/pm-cli
+bunx --bun --no-install pm package install ./node_modules/pm-jev
+
+pm package install npm:pm-jev
+pm jev --help
+```
+
+The package exports its SDK through `main` and `types` and registers commands
+with pm. It has no standalone `bin`: use `npx pm` or `bunx --bun pm` through
+the installed host. npm/Bun dependency installation alone does not activate it.
+
 ## Install and check
 
 Requirements: Node 22.18 or newer, pm-cli 2026.10.10 or newer, and Ollama with a
@@ -808,7 +834,7 @@ Generation and drift checks include closed and in-progress implementations;
 tracker closure remains the orchestrator's verification step.
 Scheduled and manual release runs are disabled in code by default. After approving the
 first publish and configuring npm trusted publishing, the owner enables releases by
-setting the repository variable `PM_JEV_RELEASE_ENABLED` to `true`. The main-branch
+setting the repository variable `PM_RELEASE_APPROVED` to `true`. The main-branch
 gate remains required. Dependency installation, builds, checks and packing run with
 `contents: read` and no persisted checkout credentials. The publishing job downloads
 the verified tarball, runs no repository scripts or package dependency installation,
@@ -898,6 +924,16 @@ checkpoint directly without opening sources or contacting a model.
 
 
 Validation: [public tracker receipt evidence](docs/partial-receipt-evidence.json).
+
+Every workflow job granted write permissions, including CodeQL, Dependabot and
+reusable workflow calls, requires the exact repository `unbraind/pm-jev`.
+The approval variable controls GitHub releases; it does not impose a local npm
+publishing hold. Maintainers run the prepublish checks and authenticate with npm
+for local publication. The first local publish uses `--provenance=false`; daily
+GitHub OIDC releases keep provenance enabled.
+A maintainer enables the disabled workflow after merge with
+`gh workflow enable release.yml --repo unbraind/pm-jev`. Workflow activation is
+manual; the package does not install an automatic setup workflow.
 
 ## Calibration drift sentries
 

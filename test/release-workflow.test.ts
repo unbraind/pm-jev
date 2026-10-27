@@ -360,7 +360,7 @@ test("OIDC identity is checked before any remote metadata is mutated", () => {
   // A step check alone allows earlier tooling to request an OIDC credential.
   // Ref and owner opt-in checks must gate the entire publishing job.
   assert.match(executable(jobSource("release")),
-    /^ {4}if: github\.ref == 'refs\/heads\/main' && vars\.PM_JEV_RELEASE_ENABLED == 'true' && needs\.prepare\.outputs\.should_release == 'true'$/m);
+    /^ {4}if: github\.repository == 'unbraind\/pm-jev' && github\.ref == 'refs\/heads\/main' && vars\.PM_RELEASE_APPROVED == 'true' && needs\.prepare\.outputs\.should_release == 'true'$/m);
   assert.match(executable(stepSource("Check release ref")), /refs\/heads\/main/);
   const commit = stepIndex("Merge release metadata through protected PR");
   const publish = stepIndex("Publish npm package");
@@ -463,11 +463,11 @@ test("OIDC identity is checked before any remote metadata is mutated", () => {
 
 test("release opt-in defaults off on both preparation and publishing", () => {
   for (const name of ["prepare", "release"]) {
-    assert.match(executable(jobSource(name)), /^ {4}if: .*github\.ref == 'refs\/heads\/main'.*vars\.PM_JEV_RELEASE_ENABLED == 'true'/m);
+    assert.match(executable(jobSource(name)), /^ {4}if: .*github\.ref == 'refs\/heads\/main'.*vars\.PM_RELEASE_APPROVED == 'true'/m);
   }
   const readme = readFileSync(resolve(import.meta.dirname, "../README.md"), "utf8");
   assert.match(readme, /owner enables releases/);
-  assert.match(readme, /`PM_JEV_RELEASE_ENABLED` to `true`/);
+  assert.match(readme, /`PM_RELEASE_APPROVED` to `true`/);
 });
 
 test("all actions are pinned and checkouts never persist credentials", () => {
@@ -654,7 +654,7 @@ test("a tag without its GitHub release resumes notes creation only", () => {
   const resume = executable(jobSource("resume_release"));
   // Same main-only, opt-in gate as the other publishing jobs, plus the resume
   // flag: without the flag this job must never run.
-  assert.match(resume, /^ {4}if: github\.ref == 'refs\/heads\/main' && vars\.PM_JEV_RELEASE_ENABLED == 'true' && needs\.prepare\.outputs\.resume_release_notes == 'true'$/m);
+  assert.match(resume, /^ {4}if: github\.repository == 'unbraind\/pm-jev' && github\.ref == 'refs\/heads\/main' && vars\.PM_RELEASE_APPROVED == 'true' && needs\.prepare\.outputs\.resume_release_notes == 'true'$/m);
   assert.match(resume, /^ {4}needs: prepare$/m);
   // No checkout in this job, so the repository is passed explicitly.
   assert.match(resume, /gh release create "\$\{RELEASE_TAG\}" --repo "\$\{GITHUB_REPOSITORY\}" --title "\$\{REPO_NAME\} \$\{RELEASE_TAG\}" --notes-file RELEASE_NOTES\.md --verify-tag/);
@@ -666,7 +666,7 @@ test("a tag without its GitHub release resumes notes creation only", () => {
   assert.doesNotMatch(resume, /npm publish|git tag|npm version|npm ci|git push/);
   // And the publishing job stays gated on should_release alone, so a resume
   // can never republish an immutable version.
-  assert.match(executable(jobSource("release")), /^ {4}if: github\.ref == 'refs\/heads\/main' && vars\.PM_JEV_RELEASE_ENABLED == 'true' && needs\.prepare\.outputs\.should_release == 'true'$/m);
+  assert.match(executable(jobSource("release")), /^ {4}if: github\.repository == 'unbraind\/pm-jev' && github\.ref == 'refs\/heads\/main' && vars\.PM_RELEASE_APPROVED == 'true' && needs\.prepare\.outputs\.should_release == 'true'$/m);
 });
 
 test("artifact handoff rejects changed bytes, commit, tree and base before loading metadata", () => {
