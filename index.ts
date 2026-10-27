@@ -1,3 +1,6 @@
+import { acceptsThreshold, marginValue, threshold as thresholdState } from "./threshold.ts";
+import type { ThresholdInput } from "./threshold.ts";
+import { compareExact, displayExact, subtractExact } from "./exact.ts";
 import { TokenUsageTotals } from "./token-usage.ts";
 import type { TokenUsage } from "./token-usage.ts";
 // pm-jev — typed, local-first System One decisions for pm items.
@@ -32,6 +35,7 @@ import type { EntryType, Questions, ScoreCriteria, SystemOneResult, ChoiceRespon
 import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.ts";
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.ts";
+import { DRIFT_FLAGS, runDriftCommand } from "./drift-command.ts";
 import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.ts";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.ts";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.ts";
@@ -79,6 +83,29 @@ export type { CounterfactualOptions, CounterfactualReceipt, ExplanationProposal,
 export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.ts";
 /** Portable recording, policy, trusted adapter and compact comparison contracts. */
 export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, ReplayReport, ReplayExecutionResult } from "./policy-replay.ts";
+
+/** Typed pair fitting keeps unsupported policies explicitly disabled while the legacy scalar wrapper remains available. */
+export { fitPairCutoff } from "./dedupe-evaluation.ts";
+
+/** Raw-pair lexical evidence and production comparison retain exact portable fitted boundaries. */
+export { duplicateSimilarityRatio, qualityObservation, qualityLexicalAccepts, fitQualityPolicy, qualityMetrics, qualityProposes } from "./duplicate-quality.ts";
+/** Typed quality evidence supports exact raw-pair ratios and historical scalar observations. */
+export type { QualityObservation, QualityPolicy, QualityArm } from "./duplicate-quality.ts";
+
+/** Portable thresholds, sentinel normalization and the comparator shared by fitting and application. */
+export { threshold, compareThreshold, acceptsThreshold, thresholdRatio, belowComplement, numericBoundary, legacyThreshold, marginValue } from "./threshold.ts";
+/** Exact serialized boundary and accepted legacy cutoff forms. */
+export type { Threshold, ThresholdInput } from "./threshold.ts";
+
+/** Shared exact arithmetic for policy cutoffs and count-derived diagnostics. */
+export { fraction, decimal, compareExact, addExact, subtractExact, multiplyExact, displayExact, displayRatio, countRatio, populationDistance, precisionMeets } from "./exact.ts";
+/** Rational values remain internal arithmetic; numeric displays never drive a count decision. */
+export type { Rational, ExactValue } from "./exact.ts";
+
+/** Frozen-cohort operating-population diagnostics without inference or mutations. */
+export { DRIFT_VERSION, DriftRefusal, parseDriftInput, checkCalibrationDrift, validateDriftReportNumbers } from "./calibration-drift.ts";
+/** Exact identity, strict evidence, frozen thresholds and compact diagnostic contracts. */
+export type { DriftIdentity, DriftObservation, DriftCohort, DriftThresholds, DriftInput, DriftRefusalCode, DriftStatus, DriftReport } from "./calibration-drift.ts";
 
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
@@ -944,7 +971,7 @@ function probabilityOption(options: Record<string, unknown>, key: string, aliase
   const raw = readStringOption(options, key, aliases);
   if (raw === undefined) return fallback;
   const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) throw createPmCliExpectedError(`--${key} must be a probability in [0,1].`);
+  if (!Number.isFinite(parsed) || compareExact(parsed, 0) < 0 || compareExact(parsed, 1) > 0) throw createPmCliExpectedError(`--${key} must be a probability in [0,1].`);
   return parsed;
 }
 
@@ -1029,7 +1056,7 @@ export interface TriageProposals {
     readonly kept_current: boolean;
     readonly reason: string | null;
     readonly margin: number;
-    readonly margin_threshold: number;
+    readonly margin_threshold: ThresholdInput;
   };
   /** Proposed priority with the level distribution over the 0..4 rubric. */
   readonly priority: {
@@ -1156,17 +1183,18 @@ function triageTypeQuestionHash(questions: Questions): string {
 }
 
 /** Resolve a validated label distribution in code: ambiguity abstains, weak changes retain the current type. */
-export function resolveTriageType(answer: ChoiceResponse, current: string, definitions: Record<string, string>, marginThreshold = TYPE_MARGIN_THRESHOLD, changeProbability = TYPE_CHANGE_PROBABILITY): TriageProposals["type"] {
+export function resolveTriageType(answer: ChoiceResponse, current: string, definitions: Record<string, string>, marginThreshold: ThresholdInput = TYPE_MARGIN_THRESHOLD, changeProbability = TYPE_CHANGE_PROBABILITY): TriageProposals["type"] {
   const ranked = Object.entries(answer.probabilities).sort(/** Preserve registry order for tied labels. */ ([, a], [, b]) => b - a);
   const [selected, top] = ranked[0];
-  const margin = top - ranked[1][1];
-  const abstained = margin < marginThreshold;
-  const kept = !abstained && (selected === KEEP_CURRENT_TYPE || top < changeProbability);
+  const exactMargin = marginValue(answer.probabilities);
+  const margin = displayExact(exactMargin);
+  const abstained = !acceptsThreshold(exactMargin, marginThreshold);
+  const kept = !abstained && (selected === KEEP_CURRENT_TYPE || compareExact(top, changeProbability) < 0);
   const label = kept ? KEEP_CURRENT_TYPE : selected;
   return { kind: "choice", value: abstained ? null : kept ? current : selected,
     selected_label: label, probability: answer.probabilities[kept ? current : selected] ?? 0, probabilities: answer.probabilities, confidence: answer.confidence,
     definitions, abstained, kept_current: kept, reason: abstained ? "top_two_margin_below_threshold" : kept ? "keep_current_under_weak_evidence" : null,
-    margin, margin_threshold: marginThreshold };
+    margin, margin_threshold: typeof marginThreshold === "number" && Number.isFinite(marginThreshold) || typeof marginThreshold === "string" ? marginThreshold : thresholdState(marginThreshold) };
 }
 
 /**
@@ -1194,7 +1222,7 @@ function winningLevel(probabilities: Record<string, number>, rubricSize: number)
   let bestProbability = 0;
   for (let level = 0; level < rubricSize; level += 1) {
     const probability = probabilities[String(level)];
-    if (probability > bestProbability + 1e-9) {
+    if (compareExact(subtractExact(probability, bestProbability), "1e-9") > 0) {
       bestProbability = probability;
       best = level;
     }
@@ -1317,12 +1345,12 @@ async function decideTriage(boundary: DecisionWorkspace, item: TriageSource, que
   };
   const written: string[] = [];
   const changes: { type?: string; priority?: number } = {};
-  if (proposals.type.value !== null && proposals.type.probability >= typeFit.threshold && proposals.type.value !== item.type) {
+  if (proposals.type.value !== null && acceptsThreshold(proposals.type.probability, typeFit.threshold) && proposals.type.value !== item.type) {
     changes.type = proposals.type.value;
     written.push(`type=${proposals.type.value}`);
   }
   const levelProbability = proposals.priority.probabilities[String(proposals.priority.level)];
-  if (levelProbability >= priorityFit.threshold && proposals.priority.level !== item.priority) {
+  if (acceptsThreshold(levelProbability, priorityFit.threshold) && proposals.priority.level !== item.priority) {
     changes.priority = proposals.priority.level;
     written.push(`priority=${proposals.priority.level}`);
   }
@@ -1463,7 +1491,7 @@ function hasTriageReceipt(item: TriageSource, questions: Questions, threshold: n
     // Number(" ") is 0, so only a nonempty decimal literal counts as a recorded threshold.
     if (!/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(recorded)) return false;
     const value = Number(recorded);
-    return value >= 0 && value <= 1 && value <= threshold;
+    return value >= 0 && value <= 1 && compareExact(value, threshold) <= 0;
   });
 }
 
@@ -1490,8 +1518,8 @@ async function runBacklogTriage(ctx: CommandHandlerContext, boundary: DecisionWo
         const fit = result.calibration;
         const typeThreshold = fit?.type === null || fit?.type === undefined ? threshold : fit.type.threshold ?? Infinity;
         const priorityThreshold = fit?.priority === null || fit?.priority === undefined ? threshold : fit.priority.threshold ?? Infinity;
-        const wouldChange = (p.type.value !== null && p.type.probability >= typeThreshold && p.type.value !== item.type) ||
-          (p.priority.probabilities[String(p.priority.level)] >= priorityThreshold && p.priority.level !== item.priority);
+        const wouldChange = (p.type.value !== null && acceptsThreshold(p.type.probability, typeThreshold) && p.type.value !== item.type) ||
+          (acceptsThreshold(p.priority.probabilities[String(p.priority.level)], priorityThreshold) && p.priority.level !== item.priority);
         row = { item: id, outcome: wouldChange ? apply ? "changed" : "would_change" : "skipped",
           type: p.type.value, type_probability: p.type.abstained ? null : p.type.probability, priority: p.priority.level,
           priority_probability: p.priority.probabilities[String(p.priority.level)], needs_human: p.needs_human.probability,
@@ -1564,10 +1592,10 @@ export function rankDedupeCandidates(items: readonly ItemMetadata[], title: stri
   const scored: DedupeCandidate[] = [];
   for (const item of items) {
     const { score } = scoreItemSimilarity(title, item.title);
-    if (score <= 0) continue;
+    if (!acceptsThreshold(score, 0, true)) continue;
     scored.push({ id: item.id, title: item.title, type: item.type, status: item.status, score });
   }
-  scored.sort(/** Break equal rank ties by stable item id. */ (left, right) => right.score - left.score || left.id.localeCompare(right.id));
+  scored.sort(/** Break equal rank ties by stable item id. */ (left, right) => compareExact(right.score, left.score) || left.id.localeCompare(right.id));
   return scored.slice(0, limit);
 }
 
@@ -1618,7 +1646,7 @@ async function runDedupeCommand(ctx: CommandHandlerContext): Promise<DedupeDecis
     duplicate_of: selected === "none" ? null : selected,
     probability: fit.probabilities[selected],
     probabilities: fit.probabilities,
-    ...(fit.calibration === null ? {} : { calibration: { ...fit.calibration, raw_probability: answer.probabilities[selected], qualifies: selected !== "none" && fit.probabilities[selected] >= fit.threshold } }),
+    ...(fit.calibration === null ? {} : { calibration: { ...fit.calibration, raw_probability: answer.probabilities[selected], qualifies: selected !== "none" && acceptsThreshold(fit.probabilities[selected], fit.threshold) } }),
     confidence: answer.confidence,
     candidates,
     model: result.model,
@@ -1762,8 +1790,9 @@ async function decideLinks(boundary: DecisionWorkspace, id: string, limit: numbe
     const fit = calibratedAnswer(boundary.calibration, `candidate_${index}`, questions[`candidate_${index}`], answer.probabilities, threshold, boundary.explicitConfidence ? threshold : 0);
     const ordered = ranked(fit.probabilities);
     const [selected, probability] = ordered[0];
-    const margin = probability - ordered[1][1];
-    const abstained = margin < TYPE_MARGIN_THRESHOLD;
+    const exactMargin = marginValue(fit.probabilities);
+    const margin = displayExact(exactMargin);
+    const abstained = compareExact(exactMargin, TYPE_MARGIN_THRESHOLD) < 0;
     const existing = existingLinkKinds(graph, source.id, candidate.id).has(selected);
     const parentRefused = registry.resolve(selected)?.hierarchy === true && !allowParent;
     return { candidate: candidate.id, score: candidate.score, kind: abstained || existing || selected === "none" ? null : selected, selected_kind: selected,
@@ -1772,7 +1801,7 @@ async function decideLinks(boundary: DecisionWorkspace, id: string, limit: numbe
       reason: abstained ? "top_two_margin_below_threshold" : existing ? "existing_edge" : parentRefused ? "parent_requires_allow_parent" : selected === "none" ? "none" : null };
   });
   await verifyCalibrationModel(boundary);
-  const qualifying = proposals.filter(/** Only new, unambiguous, permitted edges can clear the apply threshold. */ proposal => proposal.kind !== null && proposal.probability >= (proposal.calibration === undefined ? threshold : proposal.calibration.threshold ?? Infinity) && proposal.reason === null)
+  const qualifying = proposals.filter(/** Only new, unambiguous, permitted edges can clear the apply threshold. */ proposal => proposal.kind !== null && acceptsThreshold(proposal.probability, proposal.calibration === undefined ? threshold : proposal.calibration.threshold ?? Infinity) && proposal.reason === null)
     .map(/** Use the exact host --dep spelling. */ proposal => `id=${proposal.candidate},kind=${proposal.kind}`);
   for (const item of [source, ...targets]) {
     if (linkInputHash(item) !== linkInputHash(await loadLinkSource(boundary, item.id))) {
@@ -1929,7 +1958,7 @@ export interface GateDecision {
   readonly probability: number;
   /** Threshold the probability was compared against. */
   readonly threshold: number;
-  /** Whether the proposition holds (`probability >= threshold`, inclusive). */
+  /** Whether the proposition holds (`acceptsThreshold(probability, threshold)`, inclusive). */
   readonly holds: boolean;
   /** Expected proposition outcome; defaults to true, false for safety gates. */
   readonly expected: boolean;
@@ -1984,9 +2013,9 @@ async function runGateCommand(ctx: CommandHandlerContext): Promise<GateDecision>
     proposition,
     probability,
     threshold,
-    holds: probability >= threshold,
+    holds: acceptsThreshold(probability, threshold),
     expected,
-    ok: (probability >= threshold) === expected,
+    ok: (acceptsThreshold(probability, threshold)) === expected,
     source: text !== undefined ? "text" : "item",
     model: result.model,
     usage: result.usage,
@@ -2270,6 +2299,14 @@ const GATE_FLAGS: FlagDefinition[] = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api: ExtensionApi): void {
+  api.registerCommand(defineCommand({
+    name: "jev drift",
+    description: "Detect changed calibration populations and explicit-label error rates without inference",
+    flags: DRIFT_FLAGS,
+    examples: ["pm jev drift --cohorts cohorts.json --json"],
+    /** Delegate receipt formatting and typed refusal exits to the host. */
+    run: (ctx: CommandHandlerContext) => runDriftCommand(ctx),
+  }));
   api.registerCommand(defineCommand({
     name: "jev replay",
     description: "Compare frozen decision proposals against a selected local policy or model before adoption",

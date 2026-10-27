@@ -1,3 +1,4 @@
+import type { ThresholdInput } from "./threshold.ts";
 import type { TokenUsage } from "./token-usage.ts";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import type { Questions, SystemOneResult, ChoiceResponse } from "@typesafe-ai/sdk";
@@ -26,6 +27,24 @@ export type { CounterfactualOptions, CounterfactualReceipt, ExplanationProposal,
 export { REPLAY_VERSION, ReplayRefusal, parseReplayRecording, replayDecisions, createOllamaReplayAdapter } from "./policy-replay.ts";
 /** Portable recording, policy, trusted adapter and compact comparison contracts. */
 export type { ReplayPolicy, ReplayRecord, ReplayRecording, ReplayAdapter, ReplayReport, ReplayExecutionResult } from "./policy-replay.ts";
+/** Typed pair fitting keeps unsupported policies explicitly disabled while the legacy scalar wrapper remains available. */
+export { fitPairCutoff } from "./dedupe-evaluation.ts";
+/** Raw-pair lexical evidence and production comparison retain exact portable fitted boundaries. */
+export { duplicateSimilarityRatio, qualityObservation, qualityLexicalAccepts, fitQualityPolicy, qualityMetrics, qualityProposes } from "./duplicate-quality.ts";
+/** Typed quality evidence supports exact raw-pair ratios and historical scalar observations. */
+export type { QualityObservation, QualityPolicy, QualityArm } from "./duplicate-quality.ts";
+/** Portable thresholds, sentinel normalization and the comparator shared by fitting and application. */
+export { threshold, compareThreshold, acceptsThreshold, thresholdRatio, belowComplement, numericBoundary, legacyThreshold, marginValue } from "./threshold.ts";
+/** Exact serialized boundary and accepted legacy cutoff forms. */
+export type { Threshold, ThresholdInput } from "./threshold.ts";
+/** Shared exact arithmetic for policy cutoffs and count-derived diagnostics. */
+export { fraction, decimal, compareExact, addExact, subtractExact, multiplyExact, displayExact, displayRatio, countRatio, populationDistance, precisionMeets } from "./exact.ts";
+/** Rational values remain internal arithmetic; numeric displays never drive a count decision. */
+export type { Rational, ExactValue } from "./exact.ts";
+/** Frozen-cohort operating-population diagnostics without inference or mutations. */
+export { DRIFT_VERSION, DriftRefusal, parseDriftInput, checkCalibrationDrift, validateDriftReportNumbers } from "./calibration-drift.ts";
+/** Exact identity, strict evidence, frozen thresholds and compact diagnostic contracts. */
+export type { DriftIdentity, DriftObservation, DriftCohort, DriftThresholds, DriftInput, DriftRefusalCode, DriftStatus, DriftReport } from "./calibration-drift.ts";
 /** Version of the triage question catalog; surfaced in every triage receipt. */
 export declare const TRIAGE_CATALOG_VERSION = "pm-jev-triage/2";
 /** Explicit non-mutating candidate, distinct from every registered type. */
@@ -232,7 +251,7 @@ export interface TriageProposals {
         readonly kept_current: boolean;
         readonly reason: string | null;
         readonly margin: number;
-        readonly margin_threshold: number;
+        readonly margin_threshold: ThresholdInput;
     };
     /** Proposed priority with the level distribution over the 0..4 rubric. */
     readonly priority: {
@@ -312,7 +331,7 @@ export declare function buildDedupeRequest(title: string, body: string, candidat
 /** Bind the non-mutating candidate to the current type without adding routing fields to evidence. */
 export declare function withCurrentType(questions: Questions, current: string): Questions;
 /** Resolve a validated label distribution in code: ambiguity abstains, weak changes retain the current type. */
-export declare function resolveTriageType(answer: ChoiceResponse, current: string, definitions: Record<string, string>, marginThreshold?: number, changeProbability?: number): TriageProposals["type"];
+export declare function resolveTriageType(answer: ChoiceResponse, current: string, definitions: Record<string, string>, marginThreshold?: ThresholdInput, changeProbability?: number): TriageProposals["type"];
 /** One compact batch row, intentionally excluding source text and answer distributions. */
 export interface BacklogTriageRow {
     readonly item: string;
@@ -463,7 +482,7 @@ export interface GateDecision {
     readonly probability: number;
     /** Threshold the probability was compared against. */
     readonly threshold: number;
-    /** Whether the proposition holds (`probability >= threshold`, inclusive). */
+    /** Whether the proposition holds (`acceptsThreshold(probability, threshold)`, inclusive). */
     readonly holds: boolean;
     /** Expected proposition outcome; defaults to true, false for safety gates. */
     readonly expected: boolean;

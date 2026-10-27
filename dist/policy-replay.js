@@ -1,3 +1,4 @@
+import { compareExact, subtractExact } from "./exact.js";
 import { reportPriorReceipt, withReceipt } from "./partial-receipt.js";
 import { createHash } from "node:crypto";
 import { createJevClient, parseQuestionsDocument, runDecision, validateAnswers } from "./index.js";
@@ -23,7 +24,7 @@ function label(value) {
 }
 /** Check versioned policies at both the recording and candidate boundaries. */
 function checkPolicy(policy) {
-    if (!policy || !label(policy.version) || !Number.isFinite(policy.min_probability) || policy.min_probability < 0 || policy.min_probability > 1) {
+    if (!policy || !label(policy.version) || !Number.isFinite(policy.min_probability) || compareExact(policy.min_probability, 0) < 0 || compareExact(policy.min_probability, 1) > 0) {
         throw new ReplayRefusal("invalid_policy", "Supply a policy version and min_probability between 0 and 1.");
     }
 }
@@ -72,13 +73,13 @@ function proposals(record, result, policy) {
     return Object.entries(record.questions).map(/** Compare the selected value; score uses the stable winning rubric level. */ ([name, question]) => {
         if (question.type === "noul") {
             const p = result.answers[name].noul;
-            return Math.max(p, 1 - p) >= policy.min_probability ? p >= 0.5 : null;
+            return compareExact(compareExact(p, 0.5) >= 0 ? p : subtractExact(1, p), policy.min_probability) >= 0 ? compareExact(p, 0.5) >= 0 : null;
         }
         const answer = result.answers[name];
         const distribution = answer.probabilities;
         const winner = Object.keys(distribution).reduce(/** Stable label-order ties match the existing explanation adapter. */ (best, key) => distribution[key] > distribution[best] ? key : best);
         const value = answer.type === "choice" ? answer.choice : Number(winner);
-        return distribution[String(value)] >= policy.min_probability ? value : null;
+        return compareExact(distribution[String(value)], policy.min_probability) >= 0 ? value : null;
     });
 }
 /** Dispatch optional durable accounting without changing recorded-score replay. */

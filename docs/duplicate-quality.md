@@ -138,3 +138,10 @@ as the compact frontier. Behavioral reverts of title-only retrieval, close refus
 and the precision-first fitting objective fail their fixed regressions; restored
 sources pass. Real SDK plain-directory tests use an empty executable PATH and a
 Git ceiling. Historical receipt replay remains unchanged.
+
+New calibration collection retains lexical scores as exact tagged ratios using
+`qualityObservation`; production recomputes them with `qualityLexicalAccepts`.
+Use these SDK functions when fitting from raw pairs. `duplicateSimilarity`
+remains the numeric display view; a rounded score is insufficient to reconstruct
+its original boundary. See [the shared threshold domain](threshold-domain.md#raw-producers-are-part-of-the-fitting-contract)
+for the `13/30` example, compatibility rules and end-to-end laws.

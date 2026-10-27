@@ -121,7 +121,7 @@ test("calibration chooses precision over a higher-F1 low-precision operating poi
 });
 
 /** Public receipt rows bind observations by pair identity, never by probability or outcome. */
-interface ReceiptSample { pair_id: string; repository: string; a: string; b: string; split: "train" | "heldout"; label: boolean; retrieved: boolean; lexical: number }
+interface ReceiptSample { pair_id: string; repository: string; a: string; b: string; split: "train" | "heldout"; label: boolean; retrieved: boolean; lexical: QualityObservation["lexical"] }
 /** Replayable report shape without source tracker text. */
 interface QualityReceipt {
   question_sha256: string; model: string; model_digest: string; samples: ReceiptSample[];
@@ -143,7 +143,7 @@ test("public quality receipt replays repository separation, train fitting and ev
     assert.equal(observation.pair_id, row.pair_id);
     assert.equal(observation.label, row.label);
     assert.equal(observation.retrieved, row.retrieved);
-    assert.equal(observation.lexical, row.lexical);
+    assert.deepEqual(observation.lexical, row.lexical);
     assert.ok(observation.probability >= 0 && observation.probability <= 1);
   }
   const train = report.observations.filter((_, i) => report.samples[i].split === "train");

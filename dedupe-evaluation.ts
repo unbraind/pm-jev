@@ -1,3 +1,6 @@
+import { acceptsThreshold, threshold as asThreshold, legacyThreshold } from "./threshold.ts";
+import type { Threshold, ThresholdInput } from "./threshold.ts";
+import { compareExact, countRatio, displayExact, displayRatio } from "./exact.ts";
 import { candidatePairs, orderedPair, pairKey, pairState, pairVerdict } from "./dedupe.ts";
 import type { PairItem, DuplicatePair } from "./dedupe.ts";
 import { duplicateSplit, wilson } from "./duplicate-quality.ts";
@@ -9,9 +12,9 @@ export interface DuplicateCorpus { repository: string; commit: string; items: Pa
 /** A real duplicate closure, dependency edge or lexical hard control, with no labels sent to inference. */
 export interface LabelledPair { pair_id: string; repository: string; pair: DuplicatePair; label: boolean; retrieved: boolean; split: "dev" | "heldout" }
 /** Benchmark observation retains scores and probabilities without copied tracker text. */
-export interface PairObservation { label: boolean; probability: number; related_probability?: number | null; retrieved: boolean }
+export interface PairObservation { label: boolean; probability: number; related_probability?: number | null; retrieved: boolean; lexical_score?: Threshold }
 /** Operating points for both typed questions; the lexical arm ignores the related channel. */
-export interface PairThresholds { threshold: number; relatedThreshold: number }
+export interface PairThresholds { threshold: ThresholdInput; relatedThreshold: ThresholdInput }
 
 /** Recognize explicit duplicate consolidation receipts as well as standard duplicate closures. */
 export function closureTarget(item: PairItem): string | undefined {
@@ -38,8 +41,14 @@ function corpusIndex(corpus: DuplicateCorpus) {
     if (target !== undefined) targets.set(item.id, target);
   }
   const ranked = candidatePairs(corpus.items, corpus.items.length * 8);
+  const cutoffs = new Map(ranked.map(/** Keep exact retrieval ratios beside compatibility display scores. */ pair => [pairKey(pair.a.id, pair.b.id), pair.score_cutoff!]));
   const scores = new Map(ranked.map(/** Preserve production channel scores. */ pair => [pairKey(pair.a.id, pair.b.id), pair.score]));
-  return { byId, ids, targets, ranked, scores };
+  return { byId, ids, targets, ranked, scores, cutoffs };
+}
+/** Preserve the exact retrieval coordinate when orienting labelled positives, including unretrieved zero scores. */
+function indexedPair(a: PairItem, b: PairItem, scores: Map<string, number>, cutoffs: Map<string, Threshold>): DuplicatePair {
+  const key = pairKey(a.id, b.id);
+  return { ...orderedPair(a, b, scores.get(key) ?? 0), score_cutoff: cutoffs.get(key) ?? asThreshold(0) };
 }
 /** Store ordered pair identity immediately, including retrieval misses. */
 function labelPair(repository: string, pair: DuplicatePair, label: boolean, retrieved: boolean, split: "dev" | "heldout"): LabelledPair {
@@ -74,7 +83,7 @@ export function labelledPairs(corpora: readonly DuplicateCorpus[], positivesPerS
     .sort(/** Seeded ordering cannot depend on inference. */ (a, b) => evidenceHash(["dedupe-20261019", a.repository]).localeCompare(evidenceHash(["dedupe-20261019", b.repository])));
   const positives: LabelledPair[] = [], controls: LabelledPair[] = [];
   for (const corpus of repositories) {
-    const { byId, ids, targets, ranked, scores } = corpusIndex(corpus);
+    const { byId, ids, targets, ranked, scores, cutoffs } = corpusIndex(corpus);
     const known = new Set<string>();
     /** Entire resolved duplicate groups share a preassigned split. */
     const splitOf = (id: string): "dev" | "heldout" => evidenceHash(["dedupe-20261019", corpus.repository, canonical(id, targets, ids)])[0] < "8" ? "dev" : "heldout";
@@ -85,7 +94,7 @@ export function labelledPairs(corpora: readonly DuplicateCorpus[], positivesPerS
       const key = pairKey(item.id, target);
       if (known.has(key)) continue;
       known.add(key);
-      const pair = orderedPair(item, byId.get(target) as PairItem, scores.get(key) ?? 0);
+      const pair = indexedPair(item, byId.get(target) as PairItem, scores, cutoffs);
       positives.push(labelPair(corpus.repository, pair, true, scores.has(key), splitOf(item.id)));
     }
     for (const pair of ranked) {
@@ -100,7 +109,7 @@ export function labelledPairs(corpora: readonly DuplicateCorpus[], positivesPerS
 export function labelledRelatedPairs(corpora: readonly DuplicateCorpus[], positivesPerSplit = 15): LabelledPair[] {
   const positives: LabelledPair[] = [], controls: LabelledPair[] = [];
   for (const corpus of corpora) {
-    const { byId, ids, targets, ranked, scores } = corpusIndex(corpus);
+    const { byId, ids, targets, ranked, scores, cutoffs } = corpusIndex(corpus);
     /** Exclude entire duplicate groups, cycles and unresolved targets. */
     const separateWork = (a: string, b: string): boolean => {
       const left = canonical(a, targets, ids), right = canonical(b, targets, ids);
@@ -115,7 +124,7 @@ export function labelledRelatedPairs(corpora: readonly DuplicateCorpus[], positi
         edges.add(key);
         if (!separateWork(item.id, dep.id) || seen.has(key)) continue;
         seen.add(key);
-        const pair = orderedPair(item, byId.get(dep.id) as PairItem, scores.get(key) ?? 0);
+        const pair = indexedPair(item, byId.get(dep.id) as PairItem, scores, cutoffs);
         positives.push(labelPair(corpus.repository, pair, true, scores.has(key), split));
       }
     }
@@ -136,36 +145,43 @@ const scoredPair = { a: { id: "a" }, b: { id: "b" } } as DuplicatePair;
 export function pairMetrics(rows: readonly PairObservation[], target: "duplicate" | "related", thresholds: PairThresholds, lexical = false) {
   let tp = 0, fp = 0, fn = 0, abstained = 0;
   for (const row of rows) {
-    const decision = !row.retrieved ? "distinct" as const : lexical ? (row.probability >= thresholds.threshold ? target : "distinct" as const) : pairVerdict(scoredPair, row.probability, row.related_probability ?? 0, thresholds.threshold, thresholds.relatedThreshold).decision;
+    const decision = !row.retrieved ? "distinct" as const : lexical ? (acceptsThreshold(row.lexical_score ?? row.probability, thresholds.threshold) ? target : "distinct" as const) : pairVerdict(scoredPair, row.probability, row.related_probability ?? 0, thresholds.threshold, thresholds.relatedThreshold).decision;
     if (decision === "abstain") abstained++;
     if (decision === target) { if (row.label) tp++; else fp++; }
     else if (row.label) fn++;
   }
-  const precision = tp + fp === 0 ? null : tp / (tp + fp);
-  const recall = tp + fn === 0 ? null : tp / (tp + fn);
+  const precision = tp + fp === 0 ? null : displayRatio(tp, tp + fp);
+  const recall = tp + fn === 0 ? null : displayRatio(tp, tp + fn);
   const pBounds = wilson(tp, tp + fp, 2.241402727604947);
   const rBounds = wilson(tp, tp + fn, 2.241402727604947);
-  return { count: rows.length, tp, fp, fn, precision, recall, f1: precision === null || recall === null ? 0 : harmonic(precision, recall),
+  return { count: rows.length, tp, fp, fn, precision, recall, f1: displayExact(countRatio(2 * tp, 2 * tp + fp + fn)),
     precision_ci95: wilson(tp, tp + fp), recall_ci95: wilson(tp, tp + fn),
     f1_wilson_envelope95: pBounds === null || rBounds === null ? null : [harmonic(pBounds[0], rBounds[0]), harmonic(pBounds[1], rBounds[1])],
-    abstain_rate: rows.length === 0 ? null : abstained / rows.length, abstain_ci95: wilson(abstained, rows.length) };
+    abstain_rate: rows.length === 0 ? null : displayRatio(abstained, rows.length), abstain_ci95: wilson(abstained, rows.length) };
 }
 /** Tune F1 on dev observations only, retaining the existing 0.8 model safety floor. */
-export function fitPairThreshold(rows: readonly PairObservation[], target: "duplicate" | "related", base: PairThresholds, lexical: boolean): number {
-  const observed = rows.map(/** Fit the channel of the requested target class. */ row => target === "related" && !lexical ? row.related_probability ?? 0 : row.probability);
-  const cutoffs = [...new Set([lexical ? 0 : 0.8, 1, ...observed])].filter(/** Preserve the existing 0.8 safety floor for model decisions. */ p => lexical || p >= 0.8).sort(/** Prefer the lower cutoff on equal F1. */ (a, b) => a - b);
-  let best = Infinity, f1 = -1;
+export function fitPairCutoff(rows: readonly PairObservation[], target: "duplicate" | "related", base: PairThresholds, lexical: boolean): Threshold {
+  const observed = rows.map(/** Fit the channel of the requested target class. */ row => lexical ? row.lexical_score ?? row.probability : target === "related" ? row.related_probability ?? 0 : row.probability);
+  const cutoffs = [...new Set([lexical ? 0 : 0.8, 1, ...observed])].filter(/** Preserve the existing 0.8 safety floor for model decisions. */ p => lexical || compareExact(p, 0.8) >= 0).sort(/** Prefer the lower cutoff on equal F1. */ (a, b) => compareExact(a, b));
+  let best = asThreshold(null);
+  let f1 = countRatio(-1, 1);
   for (const cutoff of cutoffs) {
     const thresholds = target === "related" && !lexical ? { ...base, relatedThreshold: cutoff } : { ...base, threshold: cutoff };
     const metrics = pairMetrics(rows, target, thresholds, lexical);
-    if (!lexical && (metrics.tp === 0 || metrics.tp + metrics.fp < 3)) continue;
-    if (metrics.f1 > f1) { best = cutoff; f1 = metrics.f1; }
+    if (!lexical && (metrics.tp === 0 || compareExact(metrics.tp + metrics.fp, 3) < 0)) continue;
+    const exactF1 = countRatio(2 * metrics.tp, 2 * metrics.tp + metrics.fp + metrics.fn);
+    if (compareExact(exactF1, f1) > 0) { best = asThreshold(cutoff); f1 = exactF1; }
   }
   return best;
 }
 
+/** Last-release numeric fitting API delegates to the typed exact cutoff, preserving Infinity when unsupported. */
+export function fitPairThreshold(rows: readonly PairObservation[], target: "duplicate" | "related", base: PairThresholds, lexical: boolean): number {
+  return legacyThreshold(fitPairCutoff(rows, target, base, lexical));
+}
+
 /** Replay historical single-question receipts through the preserved public helper. */
-export function duplicateMetrics(rows: readonly PairObservation[], threshold: number, lexical = false) {
+export function duplicateMetrics(rows: readonly PairObservation[], threshold: ThresholdInput, lexical = false) {
   return pairMetrics(rows, "duplicate", { threshold, relatedThreshold: 0.8 }, lexical);
 }
 /** Preserve the documented dev-only fitting entry point for single-question callers. */
@@ -198,7 +214,7 @@ export function repositoryDuplicatePairs(corpora: readonly DuplicateCorpus[], po
   const positives: LabelledPair[] = [], controls: LabelledPair[] = [];
   for (const corpus of corpora) {
     if (!corpus.items.some(/** No positive closure means no controls from this repository are sampled. */ item => (item.status === "closed" || item.status === "canceled") && closureTarget(item) !== undefined)) continue;
-    const { byId, targets, ranked, scores } = corpusIndex(corpus);
+    const { byId, targets, ranked, scores, cutoffs } = corpusIndex(corpus);
     const split = duplicateSplit(corpus.repository) === "train" ? "dev" : "heldout";
     const groups = new Map(corpus.items.map(/** Start each item as a singleton equivalence group. */ item => [item.id, new Set([item.id])]));
     for (const item of corpus.items) {
@@ -211,7 +227,7 @@ export function repositoryDuplicatePairs(corpora: readonly DuplicateCorpus[], po
       const members = [...group].sort();
       for (let i = 0; i < members.length; i++) for (let j = i + 1; j < members.length; j++) {
         const key = pairKey(members[i], members[j]);
-        positives.push(labelPair(corpus.repository, orderedPair(byId.get(members[i]) as PairItem, byId.get(members[j]) as PairItem, scores.get(key) ?? 0), true, scores.has(key), split));
+        positives.push(labelPair(corpus.repository, indexedPair(byId.get(members[i]) as PairItem, byId.get(members[j]) as PairItem, scores, cutoffs), true, scores.has(key), split));
       }
     }
     for (const pair of ranked) {

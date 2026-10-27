@@ -441,7 +441,7 @@ recommending the local flag that is already enabled; neither mode calls the mode
 
 ### Without git
 
-Doctor, model discovery, triage, link, dedupe, ask, gate, explanations, cost-policy selection and offline policy replay work in plain trackers.
+Doctor, model discovery, triage, link, dedupe, ask, gate, explanations, cost-policy selection, offline policy replay and calibration drift checks work in plain trackers.
 Evaluation and calibration work there with `--local-unverified` and explicit local
 source directories; they require neither git nor GitHub. Default public-corpus
 sources still require git, GitHub CLI authentication, verified public visibility
@@ -930,3 +930,25 @@ level, so a fork cannot run publication with its own approval variable.
 A maintainer enables the disabled workflow after merge with
 `gh workflow enable release.yml --repo unbraind/pm-jev`. Workflow activation is
 manual; the package does not install an automatic setup workflow.
+
+## Calibration drift sentries
+
+Compare operating populations and later explicit labels with a frozen calibration
+cohort, without inference or tracker writes:
+
+```sh
+pm jev drift --cohorts examples/calibration-drift.json --json
+```
+
+The typed SDK exports `checkCalibrationDrift`, `parseDriftInput`,
+`validateDriftReportNumbers`, `DriftRefusal` and their contracts. Reports bind the
+exact model/question digests and predeclared thresholds, compare task/type/input
+category distributions, and recommend abstention for drift or insufficient
+labels. The compact TOON/JSON receipt omits observation details. This works
+without Git. See the [strict schema, remedies and limitations](docs/calibration-drift.md),
+[example](examples/calibration-drift.json), and
+[read-only public-copy evidence](docs/calibration-drift-evidence.json).
+
+Count-derived policy cutoffs use [shared exact rational arithmetic](docs/exact-cutoffs.md), including drift, empirical precision, F1 and cost selection. Drift threshold strings preserve the exact supplied decimal digits.
+
+Fitted and applied cutoffs share [one threshold domain](docs/threshold-domain.md), with explicit disabled states, legacy Infinity compatibility and JSON/TOON reapplication laws. Fit lexical policies from raw pairs with `qualityObservation`; its exact portable ratio is also the runtime lexical guard input.

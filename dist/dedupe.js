@@ -1,8 +1,10 @@
+import { acceptsThreshold, belowComplement, threshold as asThreshold } from "./threshold.js";
+import { compareExact, countRatio, displayExact } from "./exact.js";
 import { createHash } from "node:crypto";
 import { PmClient, createPmCliExpectedError, readBooleanOption, readStringOption, readSettings, resolveRuntimeStatusRegistry } from "@unbrained/pm-cli/sdk";
 import { certifyCompleteListResult } from "@unbrained/pm-cli/sdk/runtime";
 import { createJevClient, resolveJevEndpoint, requireCallableEndpoint, runDecision, translateDecisionError } from "./index.js";
-import { duplicateSimilarity, qualityProposes } from "./duplicate-quality.js";
+import { duplicateSimilarity, qualityLexicalAccepts } from "./duplicate-quality.js";
 import { modelDigest, readOpaqueJevSettings } from "./decision-calibration.js";
 /** Historical typed pair propositions retained for versioned benchmark replay. */
 export const PAIR_QUESTIONS = {
@@ -38,8 +40,8 @@ function fileTokens(item) {
 }
 /** Stable unordered pair identity used for de-duplication and labelled controls. */
 export function pairKey(a, b) { return [a, b].sort().join("\u0000"); }
-/** Highest lexical similarity first, then stable unordered item ids. */
-function pairOrder(a, b) { return b.score - a.score || pairKey(a.a.id, a.b.id).localeCompare(pairKey(b.a.id, b.b.id)); }
+/** Compare count-derived retrieval scores before converting them for display. */
+function pairOrder(a, b) { return compareExact(b.exact_score, a.exact_score) || pairKey(a.a.id, a.b.id).localeCompare(pairKey(b.a.id, b.b.id)); }
 /** Orient ties deterministically; chronology is handled in code, never by the model. */
 export function orderedPair(a, b, score) {
     return a.created_at > b.created_at || (a.created_at === b.created_at && a.id > b.id) ? { a, b, score } : { a: b, b: a, score };
@@ -75,7 +77,7 @@ export function candidatePairs(items, limit, topK = 8) {
         group.sort(/** Stable semantic/title neighbors independent of SDK enumeration order. */ (a, b) => items[a].id.localeCompare(items[b].id));
     // Very common trigrams and tags contribute little retrieval evidence and make the inverted indexes quadratic.
     // Keep all signals in small trackers; large trackers drop corpus-frequency stopgrams.
-    const maxPosting = Math.max(64, Math.ceil(items.length * 0.02));
+    const maxPosting = Math.max(64, Number((BigInt(items.length) + 49n) / 50n));
     for (const [gram, posting] of index)
         if (posting.length > maxPosting) {
             index.delete(gram);
@@ -105,12 +107,21 @@ export function candidatePairs(items, limit, topK = 8) {
                 if (j !== i)
                     shared.set(j, (shared.get(j) ?? 0) + 1);
         /** Each channel must independently resemble the pair; the strongest channel sets the candidate score. */
-        const channelScore = (j) => identities[i] === identities[j] ? 1 : Math.max(document.size + documents[j].size > 0 ? 2 * (lexical.get(j) ?? 0) / (document.size + documents[j].size) : 0, titles[i].size + titles[j].size > 0 ? 2 * [...titles[i]].filter(/** Title-only overlap cannot be diluted by a long body. */ /** Title-only overlap cannot be diluted by a long body. */ gram => titles[j].has(gram)).length / (titles[i].size + titles[j].size) : 0, structural[i].size > 0 && structural[j].size > 0 ? 2 * (shared.get(j) ?? 0) / (structural[i].size + structural[j].size) : 0);
-        const ranked = [...new Set([...lexical.keys(), ...shared.keys()])].map(/** Exact semantic matches survive stopgrams; other pairs use channel-filtered Dice. */ /** Exact semantic matches survive stopgrams; other pairs use channel-filtered Dice. */ j => orderedPair(items[i], items[j], channelScore(j))).sort(pairOrder).slice(0, topK);
+        const channelScore = (j) => {
+            if (identities[i] === identities[j])
+                return countRatio(1, 1);
+            return [countRatio(2 * (lexical.get(j) ?? 0), document.size + documents[j].size),
+                countRatio(2 * [...titles[i]].filter(/** Title evidence uses integer intersection counts. */ /** Title evidence uses integer intersection counts. */ gram => titles[j].has(gram)).length, titles[i].size + titles[j].size),
+                countRatio(2 * (shared.get(j) ?? 0), structural[i].size + structural[j].size)].sort(/** Retain the strongest exact channel, including equality. */ (a, b) => compareExact(b, a))[0];
+        };
+        const ranked = [...new Set([...lexical.keys(), ...shared.keys()])].map(/** Exact scores stay attached until all retrieval ranking is complete. */ /** Exact scores stay attached until all retrieval ranking is complete. */ j => {
+            const exact_score = channelScore(j);
+            return { ...orderedPair(items[i], items[j], displayExact(exact_score)), exact_score };
+        }).sort(pairOrder).slice(0, topK);
         for (const pair of ranked)
             selected.set(pairKey(pair.a.id, pair.b.id), pair);
     }
-    return [...selected.values()].sort(pairOrder).slice(0, limit);
+    return [...selected.values()].sort(pairOrder).slice(0, limit).map(/** Never expose internal BigInts in serialized pair reports. */ ({ exact_score, ...pair }) => ({ ...pair, score_cutoff: asThreshold(exact_score) }));
 }
 /** Least-privilege, prompt-bounded pair evidence excludes closure labels, ids and receipts. */
 export function pairState(pair) {
@@ -118,9 +129,9 @@ export function pairState(pair) {
 }
 /** Inclusive positive and negative cutoffs per typed question, with an explicit central abstention band. */
 export function pairVerdict(pair, probability, relatedProbability, threshold, relatedThreshold) {
-    const decision = probability >= threshold && probability > 0.5 ? "duplicate"
-        : relatedProbability >= relatedThreshold && relatedProbability > 0.5 ? "related"
-            : probability <= 1 - threshold && probability < 0.5 && relatedProbability <= 1 - relatedThreshold && relatedProbability < 0.5 ? "distinct"
+    const decision = acceptsThreshold(probability, threshold) && compareExact(probability, 0.5) > 0 ? "duplicate"
+        : acceptsThreshold(relatedProbability, relatedThreshold) && compareExact(relatedProbability, 0.5) > 0 ? "related"
+            : belowComplement(probability, threshold) && compareExact(probability, 0.5) < 0 && belowComplement(relatedProbability, relatedThreshold) && compareExact(relatedProbability, 0.5) < 0 ? "distinct"
                 : "abstain";
     const reason = decision === "duplicate" ? "same_work_above_threshold" : decision === "related" ? "related_above_threshold" : decision === "distinct" ? "below_negative_thresholds" : "probability_in_abstain_band";
     return { a: pair.a.id, b: pair.b.id, probability, related_probability: relatedProbability, decision, reason };
@@ -192,7 +203,8 @@ export async function runPairDedupe(ctx) {
     if (rawConfidence !== undefined && (!Number.isFinite(requested) || requested < 0.5 || requested > 1))
         throw createPmCliExpectedError("--min-confidence must be between 0.5 and 1 for pair decisions.");
     const calibration = config.provider === "ollama" ? DUPLICATE_QUALITY_CALIBRATION[config.model] : undefined;
-    const threshold = Math.max(requested, calibration?.policy.model ?? Infinity);
+    const calibratedCutoff = calibration?.policy.model ?? Infinity;
+    const threshold = compareExact(requested, calibratedCutoff) >= 0 ? requested : calibratedCutoff;
     const pm = ctx.sdk?.client ?? new PmClient({ pmRoot: ctx.pm_root, cwd: ctx.source_workspace_root, author: ctx.global.author });
     const corpus = certifyCompleteListResult(await pm.listAllComplete({ includeBody: true })).items;
     const statuses = resolveRuntimeStatusRegistry((await readSettings(ctx.pm_root)).schema);
@@ -221,14 +233,13 @@ export async function runPairDedupe(ctx) {
             rows.push({ a: pair.a.id, b: pair.b.id, probability: 0, decision: "abstain", reason: "unsure_uncalibrated_model" });
             continue;
         }
-        const lexical = duplicateSimilarity(pair);
-        if (lexical < calibration.policy.lexical) {
+        if (!qualityLexicalAccepts(pair, calibration.policy.lexical)) {
             rows.push({ a: pair.a.id, b: pair.b.id, probability: 0, decision: "abstain", reason: "unsure_below_lexical_cutoff" });
             continue;
         }
         const result = await runDecision(client, config, pairState(pair), DUPLICATE_QUESTIONS, signal);
         const probability = result.answers.same_work.noul;
-        const approved = qualityProposes({ label: false, retrieved: true, probability, lexical }, "combined", { model: threshold, lexical: calibration.policy.lexical });
+        const approved = acceptsThreshold(probability, threshold);
         const row = { a: pair.a.id, b: pair.b.id, probability, decision: approved ? "duplicate" : "abstain", reason: approved ? "calibrated_duplicate" : "unsure_below_calibrated_confidence" };
         rows.push(row);
     }
@@ -257,7 +268,7 @@ export async function runPairDedupe(ctx) {
             continue;
         }
         signal.throwIfAborted();
-        const receipt = `pm-jev dedupe pair receipt: input_sha256=${pairRevision(pair.a)}, deadline_ms=${deadline}, model=${config.model}, catalog=pm-jev-duplicate-quality/3, verdict=${verdict}, canonical=${row.b}, probability=${row.probability}, threshold=${threshold}, lexical_score=${duplicateSimilarity(pair)}, lexical_threshold=${calibration?.policy.lexical}, model_digest=${calibration?.digest}, relation=${kind}, close=false.`;
+        const receipt = `pm-jev dedupe pair receipt: input_sha256=${pairRevision(pair.a)}, deadline_ms=${deadline}, model=${config.model}, catalog=pm-jev-duplicate-quality/3, verdict=${verdict}, canonical=${row.b}, probability=${row.probability}, threshold=${threshold}, lexical_score=${duplicateSimilarity(pair)}, lexical_threshold=${JSON.stringify(calibration?.policy.lexical)}, model_digest=${calibration?.digest}, relation=${kind}, close=false.`;
         try {
             await pm.update(row.a, { dep: [`id=${row.b},kind=${kind}`], comment: [receipt], message: "pm-jev calibrated duplicate link and receipt" });
         }

@@ -1,3 +1,5 @@
+import type { Threshold } from "./threshold.ts";
+import type { ExactValue } from "./exact.ts";
 import { TokenUsageTotals } from "./token-usage.ts";
 import type { TokenUsage } from "./token-usage.ts";
 import type { JevConfig } from "./index.ts";
@@ -49,12 +51,16 @@ export interface ThresholdDerivation {
     readonly targetPrecision: number;
     readonly minAccepted: number;
     readonly threshold: number | null;
+    readonly cutoff: Threshold;
     readonly curve: readonly ReliabilityPoint[];
 }
 /** Predict noul inclusively; confidence measures the probability of that label. */
 export declare function observe(question: CalibrationQuestion, value: number, gateThreshold?: number): Observation;
 /** Compute all attainable confidence cutoffs, retaining tied observations together. */
-export declare function deriveThreshold(rows: readonly Pick<Observation, "confidence" | "correct">[], targetPrecision?: number, minAccepted?: number): ThresholdDerivation;
+export declare function deriveThreshold(rows: readonly {
+    readonly confidence: ExactValue;
+    readonly correct: boolean;
+}[], targetPrecision?: number, minAccepted?: number): ThresholdDerivation;
 /** Positive-class gate metrics differ from selective prediction correctness. */
 export interface GatePoint {
     readonly threshold: number;

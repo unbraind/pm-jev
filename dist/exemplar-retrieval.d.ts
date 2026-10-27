@@ -1,14 +1,3 @@
-/**
- * Same-tracker exemplar retrieval for retrieval-augmented decisions.
- *
- * Exemplars are labelled examples from the SAME tracker as the target item,
- * never the target itself and never items created after it. Ranking is
- * deterministic in-process BM25 over title and body, with optional local
- * Ollama embedding similarity that falls back to lexical when unavailable.
- * Selected exemplars are composed into typed prompt context under a token
- * budget, and majority-class / kNN-vote baselines share the same retrieved
- * evidence so model arms are compared against context-equivalent baselines.
- */
 /** Similarity source used to rank same-tracker exemplars. */
 export type RetrievalMode = "lexical" | "embedding";
 /** Calibrated exemplar context identity: the retrieval setting in force. */

@@ -1,0 +1,186 @@
+{
+  "version": "pm-jev-drift/1",
+  "provenance": "synthetic",
+  "thresholds": {
+    "population_tv": 0.25,
+    "error_increase": 0.2,
+    "min_population": 10,
+    "min_labels": 10
+  },
+  "calibration": {
+    "identity": {
+      "model_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "question_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "observations": [
+      {
+        "id": "0",
+        "task": "triage",
+        "type": "Task",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "1",
+        "task": "triage",
+        "type": "Issue",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "2",
+        "task": "triage",
+        "type": "Task",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "3",
+        "task": "triage",
+        "type": "Issue",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "4",
+        "task": "triage",
+        "type": "Task",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "5",
+        "task": "triage",
+        "type": "Issue",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "6",
+        "task": "triage",
+        "type": "Task",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "7",
+        "task": "triage",
+        "type": "Issue",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "8",
+        "task": "triage",
+        "type": "Task",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "9",
+        "task": "triage",
+        "type": "Issue",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      }
+    ]
+  },
+  "current": {
+    "identity": {
+      "model_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "question_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "observations": [
+      {
+        "id": "0",
+        "task": "triage",
+        "type": "Task",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "1",
+        "task": "triage",
+        "type": "Issue",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "2",
+        "task": "triage",
+        "type": "Task",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "3",
+        "task": "triage",
+        "type": "Issue",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "4",
+        "task": "triage",
+        "type": "Task",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "5",
+        "task": "triage",
+        "type": "Issue",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "6",
+        "task": "triage",
+        "type": "Task",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "7",
+        "task": "triage",
+        "type": "Issue",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "8",
+        "task": "triage",
+        "type": "Task",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      },
+      {
+        "id": "9",
+        "task": "triage",
+        "type": "Issue",
+        "input_bucket": "short",
+        "predicted": "Issue",
+        "label": "Issue"
+      }
+    ]
+  }
+}
