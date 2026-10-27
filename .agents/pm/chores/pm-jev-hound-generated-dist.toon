@@ -2,23 +2,32 @@ id: pm-jev-hound-generated-dist
 title: Stop Hound from linting generated dist/ output
 description: "Disable Hound JSHint using the pm-slack and pm-web precedent: committed dist/ JavaScript targets ES2022, while Hound defaults to ES5 and produces false positives."
 type: Chore
-status: in_progress
+status: closed
 priority: 2
 tags[2]: ci,review-bots
 created_at: "2026-10-27T06:05:39.212Z"
-updated_at: "2026-10-27T06:25:34.318Z"
+updated_at: "2026-10-27T09:10:56.826Z"
+closed_at: "2026-10-27T09:10:55.972Z"
+completed_at: "2026-10-27T07:25:35.000Z"
 author: codex-agent
 acceptance_criteria: Hound no longer lints generated dist/ output; no other lint or gate changes
-comments[3]{created_at,author,text}:
+resolution: "Merged PR #57 at f19f7e7bae362b0c56d68bb4bc6bb5ac3bd80ec1; inspected .hound.yml and ran node -e \"require('node:assert/strict').match(require('node:fs').readFileSync('.hound.yml','utf8'), /^jshint:\\n  enabled: false\\s*$/m)\" on main. Hound JSHint is explicitly disabled for generated ES2022 output. The merged configuration leaves package lint and release gates unchanged."
+expected_result: Hound no longer lints generated dist/ output; no other lint or gate changes
+actual_result: Hound JSHint is explicitly disabled for generated ES2022 output. The merged configuration leaves package lint and release gates unchanged.
+comments[5]{created_at,author,text}:
   "2026-10-27T06:05:51.347Z",codex-agent,"Plan: copy the documented pm-slack .hound.yml configuration, disabling only Hound JSHint. Preserve package lint and release gates. Verify the configuration fails when reverted, run both release gates with isolated Git identity and at most two test workers, regenerate the changelog, and open an unmerged PR. Item remains open for orchestrator verification."
   "2026-10-27T06:06:02.481Z",codex-agent,"Configuration revert proof: the focused Node assertion passes with .hound.yml present, fails when the new file is removed, then passes after restoring its exact bytes. No source behavior or package gates change."
   "2026-10-27T06:25:32.802Z",codex-agent,"Validation complete: focused configuration assertion and both unchanged release:check gates passed under isolated Git identity with at most two test workers. Changelog regenerated from fetched tags; final changelog:check follows all tracker writes. No lint, gate, source, dependency or generated dist changes. Hound service behavior will be observable on the PR; no merge authorized. Measured test counts: npm: 377 tests in each full suite; gate exit 0; bun: 377 tests in each full suite; gate exit 0."
+  "2026-10-27T09:10:51.179Z",codex-agent,"Closure audit: verify every acceptance criterion on current main against merged PR #57 (f19f7e7bae362b0c56d68bb4bc6bb5ac3bd80ec1), inspect .hound.yml, and run the focused linked check before closing. Completion will be the merge timestamp 2026-10-27T07:25:35Z."
+  "2026-10-27T09:10:55.262Z",codex-agent,"Merged PR #57 at f19f7e7bae362b0c56d68bb4bc6bb5ac3bd80ec1; inspected .hound.yml and ran node -e \"require('node:assert/strict').match(require('node:fs').readFileSync('.hound.yml','utf8'), /^jshint:\\n  enabled: false\\s*$/m)\" on main. Hound JSHint is explicitly disabled for generated ES2022 output. The merged configuration leaves package lint and release gates unchanged. Full unchanged npm and Bun release gates run in CI for this tracker-only closure PR; prior behavioral revert evidence remains in the merged implementation history."
 files[1]{path,scope}:
   .hound.yml,project
-tests[3]{command,scope,timeout_seconds,pm_context_mode,workspace_context_mode,provenance{author,created_at,source_kind,source_ref}}:
+tests[4]{command,scope,timeout_seconds,pm_context_mode,workspace_context_mode,provenance{author,created_at,source_kind,source_ref}}:
   "node -e \"require('node:assert/strict').match(require('node:fs').readFileSync('.hound.yml','utf8'), /^jshint:\\n  enabled: false\\s*$/m)\"",project,7200,tracker,source,codex-agent,"2026-10-27T06:06:04.915Z",local_mutation,chore/hound-generated-dist
   "HOME=\"$(mktemp -d)\" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 taskset -c 0,1,2 npm run release:check",project,7200,tracker,source,codex-agent,"2026-10-27T06:06:08.002Z",local_mutation,chore/hound-generated-dist
   "HOME=\"$(mktemp -d)\" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 taskset -c 0,1,2 bun run release:check",project,7200,tracker,source,codex-agent,"2026-10-27T06:06:11.746Z",local_mutation,chore/hound-generated-dist
+  "NPM_CONFIG_USERCONFIG=/dev/null node -e \"require('node:assert/strict').match(require('node:fs').readFileSync('.hound.yml','utf8'), /^jshint:\\n  enabled: false\\s*$/m)\"",project,600,tracker,source,codex-agent,"2026-10-27T08:49:10.681Z",local_mutation,chore/close-delivered-1027
 docs[1]{path,scope}:
   CHANGELOG.md,project
+close_reason: Delivered on main by merged PR #57
 body: ""
