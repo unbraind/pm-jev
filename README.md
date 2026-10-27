@@ -924,3 +924,9 @@ checkpoint directly without opening sources or contacting a model.
 
 
 Validation: [public tracker receipt evidence](docs/partial-receipt-evidence.json).
+
+Release jobs with write permissions are restricted to `unbraind/pm-jev` at job
+level, so a fork cannot run publication with its own approval variable.
+A maintainer enables the disabled workflow after merge with
+`gh workflow enable release.yml --repo unbraind/pm-jev`. Workflow activation is
+manual; the package does not install an automatic setup workflow.

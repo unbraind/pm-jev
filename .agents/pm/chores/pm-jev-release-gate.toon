@@ -6,22 +6,25 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-25T23:21:14.854Z"
-updated_at: "2026-10-26T01:36:59.682Z"
+updated_at: "2026-10-27T00:08:53.836Z"
 author: codex-agent
-comments[4]{created_at,author,text}:
+comments[8]{created_at,author,text}:
   "2026-10-25T23:21:18.069Z",codex-agent,"Normalize daily scheduling and PM_RELEASE_APPROVED job gates while preserving release decisions, generated changelogs and release notes. Verify OIDC publishing without a stored npm token, manifest metadata, packed allowlists and private-data scans. No open homepage/author PR was found during orientation. No publishing, trust setup, approval variable changes or merges are authorized."
   "2026-10-25T23:31:20.653Z",codex-agent,"Pack verification: npm pack --dry-run --json and the actual npm pack --ignore-scripts artifact agree on 106 allowlisted files (calibration: 9; dist: 80; docs: 9; examples: 3; root files: 5). Every packed member was scanned for absolute home paths, npm/GitHub/cloud tokens, private keys, hosted-data locations, private addresses and historical owner email addresses: PASS with zero matches. Regression proof: five independent workflow mutations (approval, provenance, token environment, daily schedule and OR bypass) plus the original manifest each fail the new contract check; restored contract passes 4/4. The linked test also passes through pm test --run --progress. Next gates: npm run release:check and bun run release:check with isolated HOME and Git configuration."
   "2026-10-25T23:36:23.854Z",codex-agent,"Full local gates PASS: npm run release:check and bun run release:check, each with isolated HOME, GIT_CONFIG_GLOBAL=/dev/null and GIT_CONFIG_NOSYSTEM=1. Suite receipts: npm: 1/331 tests; bun: 1/331 tests. No thresholds were relaxed. The package remains unpublished and the approval variable unset; first publication requires the owner login and initial trusted-publisher registration. For the local first publish, explicitly override provenance with --provenance=false because publishConfig enables provenance for cloud CI. CI must confirm the final PR head. The tracker item stays in progress for orchestrator verification."
   "2026-10-26T01:36:49.281Z",codex-agent,"Read-only GitHub workflow inspection found release.yml manually disabled. Added a narrowly scoped setup workflow that runs on main when release workflow files change (or on manual main dispatch), verifies the existing approval/provenance/manifest contract, confirms main has not advanced, and only then enables release.yml. It never publishes, configures npm trust or changes a repository variable. This activates the guarded schedule automatically after the owner merges, without enabling the older main workflow now. Missing the setup workflow or removing its main-only guard fails the regression; restored check passes 1/1."
-files[5]{path,scope}:
-  .github/workflows/release-gate-setup.yml,project
+  "2026-10-27T00:08:13.940Z",codex-agent,"Review follow-up: preserve existing release-readiness work and merged main changes. Remove automatic release-workflow enablement; the orchestrator enables disabled schedules after merge. Require the canonical repository at job level for every write-permission or publishing job in the affected workflows, alongside the existing approval and branch conditions. Prove guard, approval, provenance and token regressions independently, then wait for complete npm and Bun CI on the pushed head."
+  "2026-10-27T00:08:20.332Z",codex-agent,The existing release-workflow regressions also assert exact job conditions. Extend those assertions with the canonical-repository predicate while retaining the existing release decisions and approval checks; keep the file linked as regression evidence.
+  "2026-10-27T00:08:51.134Z",codex-agent,"Packed-artifact verification: 106 allowlisted files; dry-run and actual archive agree, and every packed member has zero private-data findings. Local project health passes with extensions disabled; globally installed extension version skew is outside this package."
+  "2026-10-27T00:08:52.592Z",codex-agent,"Fork-exclusion revert proof: node --test --test-concurrency=2 test/release-approval.test.ts passes 6/6. Independently reverting each job repository guard, reverting all repository guards, allowing an OR bypass, removing approval or provenance, injecting a synthetic npm token environment, adding an unguarded CI write job, inheriting CI write permissions, adding a read-permission CI publisher, and restoring automatic setup all fail (each command exits nonzero; 12 independent mutations rejected). Restoring the workflows passes 6/6. Linked pm tests, test typecheck where present and lint pass. Canonical-repository checks include inherited permissions. Disabled release workflows remain for the orchestrator to enable after merge; no live settings or publishing were changed."
+files[4]{path,scope}:
   .github/workflows/release.yml,project
   package.json,project
   test/release-approval.test.ts,project
-  test/release-setup.test.ts,project
+  test/release-workflow.test.ts,project
 tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/release-approval.test.ts,project,codex-agent,"2026-10-25T23:21:21.666Z",local_mutation,chore/release-gate-approval
-  node --test test/release-setup.test.ts,project,codex-agent,"2026-10-26T01:36:51.672Z",local_mutation,chore/release-gate-approval
+  node --test --test-concurrency=2 test/release-workflow.test.ts,project,codex-agent,"2026-10-27T00:08:24.161Z",local_mutation,chore/release-gate-approval
 docs[1]{path,scope}:
   README.md,project
 body: ""
