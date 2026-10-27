@@ -925,8 +925,12 @@ checkpoint directly without opening sources or contacting a model.
 
 Validation: [public tracker receipt evidence](docs/partial-receipt-evidence.json).
 
-Release jobs with write permissions are restricted to `unbraind/pm-jev` at job
-level, so a fork cannot run publication with its own approval variable.
+Every workflow job granted write permissions, including CodeQL, Dependabot and
+reusable workflow calls, requires the exact repository `unbraind/pm-jev`.
+The approval variable controls GitHub releases; it does not impose a local npm
+publishing hold. Maintainers run the prepublish checks and authenticate with npm
+for local publication. The first local publish uses `--provenance=false`; daily
+GitHub OIDC releases keep provenance enabled.
 A maintainer enables the disabled workflow after merge with
 `gh workflow enable release.yml --repo unbraind/pm-jev`. Workflow activation is
 manual; the package does not install an automatic setup workflow.
