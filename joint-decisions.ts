@@ -1,7 +1,8 @@
 import type { PmClient, ItemMetadata } from "@unbrained/pm-cli/sdk";
+import { resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk";
 import type { NoulResponse } from "@typesafe-ai/sdk";
 import { certifyCompleteListResult } from "@unbrained/pm-cli/sdk/runtime";
-import { RelationshipGraph, assertRelationshipEdgeAllowed, assertHierarchyMutationAllowed, assertNonHierarchyCardinalityMutationAllowed, analyzeRelationshipExecution, resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk/graph";
+import { RelationshipGraph, assertRelationshipEdgeAllowed, assertHierarchyMutationAllowed, assertNonHierarchyCardinalityMutationAllowed, analyzeRelationshipExecution } from "@unbrained/pm-cli/sdk/graph";
 import type { RelationshipEdge, RelationshipKindRegistry } from "@unbrained/pm-cli/sdk/graph";
 import { acceptsThreshold } from "./threshold.ts";
 import { JOINT_VERSION, JOINT_LIMITS, parseJointInput, JointRefusal } from "./joint-schema.ts";
@@ -72,8 +73,8 @@ function graphConflict(items: readonly ItemMetadata[], additions: readonly Relat
   } catch { return "relationship_hierarchy"; }
   try { assertNonHierarchyCardinalityMutationAllowed(items, after, registry); }
   catch { return "relationship_cardinality"; }
-  const beforeCycles = new Set(analyzeRelationshipExecution(RelationshipGraph.fromItems(items, registry)).cycles.map(/** Existing graph debt remains readable. */ cycle => JSON.stringify(cycle)));
-  const newCycles = analyzeRelationshipExecution(RelationshipGraph.fromItems(after, registry)).cycles;
+  const beforeCycles = new Set(analyzeRelationshipExecution(RelationshipGraph.fromItems(items, registry), { registry }).cycles.map(/** Existing graph debt remains readable. */ cycle => JSON.stringify(cycle)));
+  const newCycles = analyzeRelationshipExecution(RelationshipGraph.fromItems(after, registry), { registry }).cycles;
   return newCycles.some(/** Reject only introduced ordering components. */ cycle => !beforeCycles.has(JSON.stringify(cycle))) ? "relationship_ordering" : null;
 }
 /** Check every emitted numeric domain even when a future producer changes report construction. */

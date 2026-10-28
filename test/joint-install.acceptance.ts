@@ -7,6 +7,8 @@ import { join, resolve } from "node:path";
 import { tmpdir, devNull } from "node:os";
 import { promisify } from "node:util";
 import test from "node:test";
+import { decode } from "@toon-format/toon";
+import { REGISTRY_DEFINITIONS, installRegistryFixture, registryBatch } from "./joint-registry-fixtures.ts";
 
 const execute = promisify(execFile);
 
@@ -39,6 +41,8 @@ test("one archive validates through npm global, Bun global, project-local, npx a
       { name: "npx", bin: "npx", args: ["--no-install", "pm"], cwd: local },
       { name: "bunx", bin: "bunx", args: ["--bun", "--no-install", "pm"], cwd: local },
     ];
+    const sdkCases = join(scratch, "sdk-registry-cases.json");
+    let sdkRoot = "";
     for (const mode of modes) {
       mkdirSync(mode.cwd, { recursive: true });
       const tracker = join(scratch, `tracker-${mode.name}`);
@@ -64,11 +68,30 @@ test("one archive validates through npm global, Bun global, project-local, npx a
       writeFileSync(file, JSON.stringify(graph));
       const native = await execute(mode.bin, [...mode.args, "--json", "jev", "validate", "--batch", file], { cwd: mode.cwd, env: runtimeEnv, timeout: 120000 }).then(() => { throw new Error("native cycle passed"); }, error => error as { code: number; stdout: string });
       assert.equal(native.code, 1); assert.equal(JSON.parse(native.stdout).violations[0].code, "relationship_ordering");
+      installRegistryFixture(runtimeEnv.PM_PATH);
+      await execute(mode.bin, [...mode.args, "update", ids[0], "--dep", `id=${ids[1]},kind=fixture_precedes`, "--parent", "none", "--blocked-by", "none", "--goal", "none", "--objective", "none"], { cwd: mode.cwd, env: runtimeEnv, timeout: 120000 });
+      const cases = [
+        { input: registryBatch([{ source: ids[1], target: ids[0], kind: "fixture_before_alias" }]), ok: false },
+        { input: registryBatch([{ source: ids[1], target: ids[0], kind: "fixture_after_alias" }]), ok: true },
+        { input: registryBatch([{ source: ids[1], target: ids[0], kind: "fixture_associates" }]), ok: true },
+      ];
+      for (const row of cases) {
+        writeFileSync(file, JSON.stringify(row.input));
+        for (const json of [true, false]) {
+          const result = await execute(mode.bin, [...mode.args, ...(json ? ["--json"] : []), "jev", "validate", "--batch", file], { cwd: mode.cwd, env: runtimeEnv, timeout: 120000 }).catch(error => error as { code: number; stdout: string });
+          const report = (json ? JSON.parse(result.stdout) : decode(result.stdout)) as { ok: boolean; mutations: number; violations: { code: string }[] };
+          assert.equal(report.ok, row.ok); assert.equal(report.mutations, 0);
+          assert.deepEqual((report.violations ?? []).map(violation => violation.code), row.ok ? [] : ["relationship_ordering"]);
+        }
+      }
+      writeFileSync(sdkCases, JSON.stringify({ definitions: REGISTRY_DEFINITIONS, cases })); sdkRoot = runtimeEnv.PM_PATH;
       assert.equal(createHash("sha512").update(readFileSync(archive)).digest("hex"), digest);
-      console.log(`${mode.name}: packed conflict, compatible batch and host SDK relationship cycle passed`);
+      console.log(`${mode.name}: nine native cases passed, including stored custom kinds in JSON/TOON`);
     }
     const code = 'import {validateJointDecisions} from "pm-jev"; import {readFileSync} from "node:fs"; const raw=JSON.parse(readFileSync(process.argv[1],"utf8")); const r=await validateJointDecisions(raw); if(r.ok || r.violations[0].witness.length!==2) throw new Error("packed SDK failed");';
     await execute(process.execPath, ["--input-type=module", "-e", code, join(root, "examples/joint-decisions.json")], { cwd: local, env, timeout: 120000 });
+    const customCode = 'import {validateJointDecisions} from "pm-jev"; import {PmClient} from "@unbrained/pm-cli/sdk"; import {RelationshipKindRegistry} from "@unbrained/pm-cli/sdk/graph"; import {readFileSync} from "node:fs"; const data=JSON.parse(readFileSync(process.argv[1],"utf8")); const registry=new RelationshipKindRegistry(); for(const d of data.definitions)registry.register(d); const client=new PmClient({pmRoot:process.argv[2],cwd:process.cwd(),noExtensions:true}); for(const row of data.cases){const result=await validateJointDecisions(row.input,{client,registry});if(result.ok!==row.ok || result.mutations!==0)throw new Error("packed custom registry contract failed");}';
+    for (const runtime of [process.execPath, "bun"]) await execute(runtime, ["--input-type=module", "-e", customCode, sdkCases, sdkRoot], { cwd: local, env, timeout: 120000 });
     console.log(`packed SDK: passed; sha512=${digest}`);
   } finally { rmSync(scratch, { recursive: true, force: true }); }
 });

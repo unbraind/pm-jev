@@ -31,8 +31,8 @@ import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.js";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.js";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.js";
 import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked, readOpaqueJevSettings } from "./decision-calibration.js";
-import { DEPENDENCY_KIND_VALUES, createPmCliExpectedError, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
-import { RelationshipGraph, resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk/graph";
+import { DEPENDENCY_KIND_VALUES, createPmCliExpectedError, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveWorkspaceRelationshipKindRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
+import { RelationshipGraph } from "@unbrained/pm-cli/sdk/graph";
 import { defineCommand, defineExtension } from "@unbrained/pm-cli/sdk/authoring";
 /** Re-export the structural expected-error predicate for package consumers. */
 export { isPmCliExpectedError };

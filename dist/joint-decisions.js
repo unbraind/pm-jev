@@ -1,5 +1,6 @@
+import { resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk";
 import { certifyCompleteListResult } from "@unbrained/pm-cli/sdk/runtime";
-import { RelationshipGraph, assertRelationshipEdgeAllowed, assertHierarchyMutationAllowed, assertNonHierarchyCardinalityMutationAllowed, analyzeRelationshipExecution, resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk/graph";
+import { RelationshipGraph, assertRelationshipEdgeAllowed, assertHierarchyMutationAllowed, assertNonHierarchyCardinalityMutationAllowed, analyzeRelationshipExecution } from "@unbrained/pm-cli/sdk/graph";
 import { acceptsThreshold } from "./threshold.js";
 import { JOINT_VERSION, JOINT_LIMITS, parseJointInput, JointRefusal } from "./joint-schema.js";
 /** Retain the selected model answer exactly, including fractional scores and noul probabilities. */
@@ -47,8 +48,8 @@ function graphConflict(items, additions, registry) {
     catch {
         return "relationship_cardinality";
     }
-    const beforeCycles = new Set(analyzeRelationshipExecution(RelationshipGraph.fromItems(items, registry)).cycles.map(/** Existing graph debt remains readable. */ /** Existing graph debt remains readable. */ cycle => JSON.stringify(cycle)));
-    const newCycles = analyzeRelationshipExecution(RelationshipGraph.fromItems(after, registry)).cycles;
+    const beforeCycles = new Set(analyzeRelationshipExecution(RelationshipGraph.fromItems(items, registry), { registry }).cycles.map(/** Existing graph debt remains readable. */ /** Existing graph debt remains readable. */ cycle => JSON.stringify(cycle)));
+    const newCycles = analyzeRelationshipExecution(RelationshipGraph.fromItems(after, registry), { registry }).cycles;
     return newCycles.some(/** Reject only introduced ordering components. */ /** Reject only introduced ordering components. */ cycle => !beforeCycles.has(JSON.stringify(cycle))) ? "relationship_ordering" : null;
 }
 /** Check every emitted numeric domain even when a future producer changes report construction. */

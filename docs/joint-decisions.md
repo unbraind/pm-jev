@@ -83,6 +83,13 @@ validate its endpoint existence. A selected declaration without a client refuses
 with `host_required`. The optional registry is a host `RelationshipKindRegistry`;
 the default is the active workspace registry, including extension kinds.
 
+The same registry is passed explicitly to both existing and proposed graph
+execution analysis as well as edge, hierarchy and cardinality validation.
+Custom ordering directions, aliases and associative kinds therefore keep their
+declared meaning throughout preflight, including when the tracker already
+contains custom edges. The native CLI uses host-contributed kinds in JSON and
+TOON just as SDK callers use `JointContext.registry`.
+
 Complete reads are certified through the SDK. The host graph normalizes endpoint
 whitespace, kind casing and aliases. The host's edge policy, hierarchy integrity,
 non-hierarchy cardinality and execution graph analysis validate the prospective
@@ -139,3 +146,10 @@ classifications measure validation mechanics, not model prediction accuracy.
 `node --test --test-concurrency=1 test/joint-install.acceptance.ts` packs one
 archive and checks those exact bytes with npm global, Bun global, project-local,
 npx and bunx host invocations. It needs public registry access and both runtimes.
+
+`node --test --test-concurrency=2 test/joint-registry.test.ts` exercises 500
+seeded custom-registry and proposal permutations, stored custom edges, aliases,
+both ordering directions and associative cycles on real non-git trackers.
+Packed acceptance additionally checks stored host-contributed custom kinds in
+both output formats and the SDK override under Node and Bun. Full coverage-gate
+test runs use at most two workers without changing coverage thresholds.

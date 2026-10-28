@@ -52,12 +52,13 @@ import {
   readSettings,
   readStringOption,
   resolveItemTypeRegistry,
+  resolveWorkspaceRelationshipKindRegistry,
   resolveTypeName,
   scoreItemSimilarity,
   suppressHostOutput,
   writeStdout,
 } from "@unbrained/pm-cli/sdk";
-import { RelationshipGraph, resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk/graph";
+import { RelationshipGraph } from "@unbrained/pm-cli/sdk/graph";
 import type { RelationshipKindDefinition, RelationshipKindRegistry } from "@unbrained/pm-cli/sdk/graph";
 import { defineCommand, defineExtension } from "@unbrained/pm-cli/sdk/authoring";
 import type { BeforeMutationHookContext, BeforeMutationHookDecision, ExtensionApi, CommandHandlerContext, FlagDefinition } from "@unbrained/pm-cli/sdk/authoring";

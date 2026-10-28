@@ -651,6 +651,7 @@ test("coverage gate normalises absolute SF: paths in the lcov report", async (t)
     'import { writeFileSync } from "node:fs";',
     'import { join } from "node:path";',
     'const prefix = "--test-reporter-destination=";',
+    'if (!process.argv.includes("--test-concurrency=2")) process.exit(3);',
     'const destination = process.argv.find((argument) => argument.startsWith(prefix) && argument !== `${prefix}stdout`);',
     'if (destination) writeFileSync(destination.slice(prefix.length), `SF:${join(process.cwd(), "src.ts")}\\nend_of_record\\n`);',
     "",
