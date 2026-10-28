@@ -26,6 +26,7 @@ import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.js";
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.js";
 import { DRIFT_FLAGS, runDriftCommand } from "./drift-command.js";
+import { JOINT_FLAGS, runJointCommand } from "./joint-command.js";
 import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.js";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.js";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.js";
@@ -53,6 +54,10 @@ export { threshold, compareThreshold, acceptsThreshold, thresholdRatio, belowCom
 export { fraction, decimal, compareExact, addExact, subtractExact, multiplyExact, displayExact, displayRatio, countRatio, populationDistance, precisionMeets } from "./exact.js";
 /** Frozen-cohort operating-population diagnostics without inference or mutations. */
 export { DRIFT_VERSION, DriftRefusal, parseDriftInput, checkCalibrationDrift, validateDriftReportNumbers } from "./calibration-drift.js";
+/** Read-only cross-question preflight with explicit witnesses and host relationship validation. */
+export { JOINT_VERSION, JOINT_LIMITS, JointRefusal, parseJointInput } from "./joint-schema.js";
+/** Validate selected proposals without changing answers or tracker state. */
+export { validateJointDecisions, validateJointReportNumbers } from "./joint-decisions.js";
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
 // ---------------------------------------------------------------------------
@@ -1772,6 +1777,14 @@ const GATE_FLAGS = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api) {
+    api.registerCommand(defineCommand({
+        name: "jev validate",
+        description: "Explain incompatible selected answers against caller-declared joint constraints before apply",
+        flags: JOINT_FLAGS,
+        examples: ["pm jev validate --batch joint-decisions.json --json"],
+        /** Use the same bounded validator for CLI and SDK decisions. */
+        run: (ctx) => runJointCommand(ctx),
+    }));
     api.registerCommand(defineCommand({
         name: "jev drift",
         description: "Detect changed calibration populations and explicit-label error rates without inference",

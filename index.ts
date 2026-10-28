@@ -36,6 +36,7 @@ import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.ts";
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.ts";
 import { DRIFT_FLAGS, runDriftCommand } from "./drift-command.ts";
+import { JOINT_FLAGS, runJointCommand } from "./joint-command.ts";
 import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.ts";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.ts";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.ts";
@@ -106,6 +107,15 @@ export type { Rational, ExactValue } from "./exact.ts";
 export { DRIFT_VERSION, DriftRefusal, parseDriftInput, checkCalibrationDrift, validateDriftReportNumbers } from "./calibration-drift.ts";
 /** Exact identity, strict evidence, frozen thresholds and compact diagnostic contracts. */
 export type { DriftIdentity, DriftObservation, DriftCohort, DriftThresholds, DriftInput, DriftRefusalCode, DriftStatus, DriftReport } from "./calibration-drift.ts";
+
+/** Read-only cross-question preflight with explicit witnesses and host relationship validation. */
+export { JOINT_VERSION, JOINT_LIMITS, JointRefusal, parseJointInput } from "./joint-schema.ts";
+/** Validate selected proposals without changing answers or tracker state. */
+export { validateJointDecisions, validateJointReportNumbers } from "./joint-decisions.ts";
+/** Strict batch, predicate, host context and compact witness contracts. */
+export type { JointInput, JointPredicate, JointConstraint, JointRefusalCode } from "./joint-schema.ts";
+/** Typed reports distinguish malformed inputs from incompatible decisions. */
+export type { JointContext, JointReport, JointViolation, JointViolationCode, JointWitnessAnswer } from "./joint-decisions.ts";
 
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
@@ -2299,6 +2309,14 @@ const GATE_FLAGS: FlagDefinition[] = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api: ExtensionApi): void {
+  api.registerCommand(defineCommand({
+    name: "jev validate",
+    description: "Explain incompatible selected answers against caller-declared joint constraints before apply",
+    flags: JOINT_FLAGS,
+    examples: ["pm jev validate --batch joint-decisions.json --json"],
+    /** Use the same bounded validator for CLI and SDK decisions. */
+    run: (ctx: CommandHandlerContext) => runJointCommand(ctx),
+  }));
   api.registerCommand(defineCommand({
     name: "jev drift",
     description: "Detect changed calibration populations and explicit-label error rates without inference",

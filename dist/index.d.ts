@@ -45,6 +45,14 @@ export type { Rational, ExactValue } from "./exact.ts";
 export { DRIFT_VERSION, DriftRefusal, parseDriftInput, checkCalibrationDrift, validateDriftReportNumbers } from "./calibration-drift.ts";
 /** Exact identity, strict evidence, frozen thresholds and compact diagnostic contracts. */
 export type { DriftIdentity, DriftObservation, DriftCohort, DriftThresholds, DriftInput, DriftRefusalCode, DriftStatus, DriftReport } from "./calibration-drift.ts";
+/** Read-only cross-question preflight with explicit witnesses and host relationship validation. */
+export { JOINT_VERSION, JOINT_LIMITS, JointRefusal, parseJointInput } from "./joint-schema.ts";
+/** Validate selected proposals without changing answers or tracker state. */
+export { validateJointDecisions, validateJointReportNumbers } from "./joint-decisions.ts";
+/** Strict batch, predicate, host context and compact witness contracts. */
+export type { JointInput, JointPredicate, JointConstraint, JointRefusalCode } from "./joint-schema.ts";
+/** Typed reports distinguish malformed inputs from incompatible decisions. */
+export type { JointContext, JointReport, JointViolation, JointViolationCode, JointWitnessAnswer } from "./joint-decisions.ts";
 /** Version of the triage question catalog; surfaced in every triage receipt. */
 export declare const TRIAGE_CATALOG_VERSION = "pm-jev-triage/2";
 /** Explicit non-mutating candidate, distinct from every registered type. */

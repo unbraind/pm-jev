@@ -441,7 +441,7 @@ recommending the local flag that is already enabled; neither mode calls the mode
 
 ### Without git
 
-Doctor, model discovery, triage, link, dedupe, ask, gate, explanations, cost-policy selection, offline policy replay and calibration drift checks work in plain trackers.
+Doctor, model discovery, triage, link, dedupe, ask, gate, explanations, cost-policy selection, offline policy replay, joint constraint validation and calibration drift checks work in plain trackers.
 Evaluation and calibration work there with `--local-unverified` and explicit local
 source directories; they require neither git nor GitHub. Default public-corpus
 sources still require git, GitHub CLI authentication, verified public visibility
@@ -954,5 +954,29 @@ without Git. See the [strict schema, remedies and limitations](docs/calibration-
 [read-only public-copy evidence](docs/calibration-drift-evidence.json).
 
 Count-derived policy cutoffs use [shared exact rational arithmetic](docs/exact-cutoffs.md), including drift, empirical precision, F1 and cost selection. Drift threshold strings preserve the exact supplied decimal digits.
+
+## Joint decision constraint witnesses
+
+Validate selected typed answers together before applying proposals:
+
+```sh
+pm jev validate --batch examples/joint-decisions.json --json
+```
+
+The example produces a two-answer witness for mutually exclusive classifications
+and exits 1. `exclusive`, `requires` and conditional `relationship` constraints
+explain incompatible choices while preserving every model answer. Selected
+relationship additions are checked together through the host SDK's complete
+tracker read and graph integrity APIs. Neither compatible nor failed batches
+mutate the tracker or call a model. A pass describes the current snapshot;
+writers must revalidate revisions inside their apply transaction.
+
+SDK: `await validateJointDecisions(batch, { client })` returns a compact typed
+report. Omit the client for semantic-only checks. The CLI uses compact TOON by
+default or native JSON, exits 0 for compatible batches, 1 for conflicts, and 2
+for typed refusals with remedies. Both paths work without Git.
+See the [schema, bounds and SDK example](docs/joint-decisions.md),
+[runnable batch](examples/joint-decisions.json) and
+[measured public-copy evidence](docs/joint-decisions-evidence.json).
 
 Fitted and applied cutoffs share [one threshold domain](docs/threshold-domain.md), with explicit disabled states, legacy Infinity compatibility and JSON/TOON reapplication laws. Fit lexical policies from raw pairs with `qualityObservation`; its exact portable ratio is also the runtime lexical guard input.

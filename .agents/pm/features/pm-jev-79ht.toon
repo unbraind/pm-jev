@@ -1,0 +1,38 @@
+id: pm-jev-79ht
+title: Explain incompatible joint decision proposals before apply
+description: Validate selected typed answers against caller-declared cross-question constraints and host relationship rules without changing model answers or tracker state.
+type: Feature
+status: in_progress
+priority: 2
+tags[2]: constraints,joint-decisions
+created_at: "2026-10-28T20:38:13.829Z"
+updated_at: "2026-10-28T20:59:40.527Z"
+author: codex-agent
+acceptance_criteria: "A mutually exclusive classification pair produces a two-answer witness; validator never silently edits model answers; a failed constraint produces zero mutations; typed SDK and CLI with compact TOON/JSON, typed refusals and remedies; documented example and measured public tracker validation."
+comments[7]{created_at,author,text}:
+  "2026-10-28T20:38:33.857Z",codex-agent,"Overlap recheck: index.ts parseQuestionsDocument/validateAnswers validate individual typed shapes; triage/link apply individual proposals. Installed host SDK graph exports RelationshipGraph, assertHierarchyMutationAllowed, assertNonHierarchyCardinalityMutationAllowed, validateRelationshipEvents and ordering analysis; core owns mutation validation/transactions. Sibling pm-context next-evidence/witnesses select evidence, pm-review scopes validate review obligations, pm-rl handles evaluation/training; none implements caller-declared cross-question answer constraints. Plan: bounded read-only joint validation with exact choice/score/noul predicates, mutually exclusive/implication rules, compact answer witnesses and host graph checks for conditional relationship additions. No new apply, import/export/sync, journal, lease, checkpoint or status classification path; no model calls or tracker writes. Acceptance and shared safety constraints recorded before implementation."
+  "2026-10-28T20:46:58.603Z",codex-agent,"Implementation: exported joint schema, validator and compact typed reports; jev validate delegates to the same SDK path. Selected choice/score values are preserved even when distributions disagree; noul predicates require exact inclusive cutoffs. Relationship additions are checked as one prospective graph via SDK edge, hierarchy, cardinality and ordering primitives. The new path is read-only and has no persistent package state. Focused tests currently pass 7/7, including 500 seeded sequences / 4000 operations, native no-Git JSON/TOON and SDK read-back preservation. Shipped SDK producer optional fields are accepted; malformed inputs are refused before client acquisition. Additional branch coverage and installation/public-copy acceptance are running."
+  "2026-10-28T20:50:13.832Z",codex-agent,"Public-copy acceptance passed on unbraind/pm-lint committed public tracker: 23 SDK-read items, 52 authoritative files verified, 23 controlled incompatible batches with two-answer witnesses, 23 corrected compatible batches, 14 existing-relationship batches, 23 answer batches unchanged; exact SDK read-back and authoritative bytes unchanged, zero mutations and zero inference calls, Git unavailable during validation. Aggregate provenance and limitations are in docs/joint-decisions-evidence.json. Targeted measurement of the three new modules reached 100% statements/branches/functions/lines; whole-package release evidence remains delegated to CI at final head."
+  "2026-10-28T20:53:40.027Z",codex-agent,"Behavioral revert proof ran in a disposable copy: replacing validateJointDecisions with an always-compatible result fails the exclusive-witness regression; replacing graphConflict with a no-conflict result fails the host batch-graph regression. The package worktree was never modified by either revert. Shared integrity APIs require the verified SDK 2026.10.25 surface, so the declared peer/manifest host floor is now 2026.10.25; the pinned devDependency is unchanged. Global/local package acceptance is being repeated with selected relationship cycles to force host SDK acquisition through every installation mode."
+  "2026-10-28T20:56:30.387Z",codex-agent,"Current-host overlap check also inspected the installed pm-cli 2026.10.28 public SDK and sibling source surfaces. Core tool-schema cross-field rules describe pm action option combinations, not selected inference answers or cross-question semantic witnesses. Other matches were CLI flag exclusivity and training statistics. No duplicate joint-answer validator was found. Strict health passes with isolated HOME and disabled global/system Git configuration; the ordinary-shell warning is the pre-existing ambient global pm-github skew tracked by pm-jev-v2la, with no project extension or dependency-pin change required."
+  "2026-10-28T20:58:24.724Z",codex-agent,"Final focused checks: 8/8 regressions pass, including the expanded 500-sequence/4000-operation model with old-input replay, CRLF variants, native parent/blocker/dependency fields, generated relationship proposals, six custom status remaps and changing ambient focus. Native SDK state is read back after every sequence. The three new modules measure 100% statements, branches, functions and lines. Compatibility floor tests pass 4/4. Typecheck, test typecheck, lint, docstrings and duplication pass (zero clones). The linked command was executed via pm test --run --progress and passed; test result tracking is disabled by existing project policy, so results are recorded here without changing that policy. Final SDK traversal also rejects shared-reference payloads before serialization can expand them."
+  "2026-10-28T20:59:36.478Z",codex-agent,"Final packed acceptance passed: one archive verified by digest and required shipped files; project-local, npm global, Bun global, npx and bunx each passed incompatible classifications, compatible classifications and a selected relationship cycle through the host SDK (15 native CLI cases), plus the packed SDK import/validator case. Archive SHA-512: 2977814b4e005141bbae8bd76685cd029472fa30ef2ab57737bca67b63588bd813c4a51026b6b5688ba526f684dce8b1556a9fbe28f1b6a513dfcc23d1d6055f. No credentials were forwarded to installer children. No outstanding SDK capability gap; existing ambient global extension skew remains separately tracked by pm-jev-v2la. The full npm and Bun release gates will run in CI at the committed PR head; no local full-suite load was added. This item stays in progress for orchestrator verification and closure."
+files[10]{path,scope}:
+  index.ts,project
+  joint-command.ts,project
+  joint-decisions.ts,project
+  joint-schema.ts,project
+  manifest.json,project
+  package-lock.json,project
+  package.json,project
+  test/joint-decisions.acceptance.ts,project
+  test/joint-decisions.test.ts,project
+  test/joint-install.acceptance.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/joint-decisions.test.ts,project,codex-agent,"2026-10-28T20:53:42.192Z",local_mutation,feat/joint-decision-constraint-witnesses
+docs[4]{path,scope}:
+  docs/joint-decisions-evidence.json,project
+  docs/joint-decisions.md,project
+  examples/joint-decisions.json,project
+  README.md,project
+body: ""

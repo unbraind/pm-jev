@@ -1,0 +1,18 @@
+{
+  "version": "pm-jev-joint/1",
+  "questions": {
+    "is_bug": { "type": "choice", "criteria": { "yes": "A defect in existing behavior", "no": "Not a defect" } },
+    "is_feature": { "type": "choice", "criteria": { "yes": "An exclusively new capability", "no": "Not exclusively new" } }
+  },
+  "result": {
+    "model": "recorded-model",
+    "answers": {
+      "is_bug": { "type": "choice", "choice": "yes", "probabilities": { "yes": 0.9, "no": 0.1 }, "confidence": 0.9 },
+      "is_feature": { "type": "choice", "choice": "yes", "probabilities": { "yes": 0.8, "no": 0.2 }, "confidence": 0.8 }
+    },
+    "usage": { "input_tokens": 100, "output_tokens": 20 }
+  },
+  "constraints": [
+    { "id": "classification", "kind": "exclusive", "answers": [ { "question": "is_bug", "value": "yes" }, { "question": "is_feature", "value": "yes" } ] }
+  ]
+}

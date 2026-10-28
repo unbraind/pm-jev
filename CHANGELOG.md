@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Explain incompatible joint decision proposals before apply ([pm-jev-79ht](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-79ht.toon))
+
 ## 2026.10.28 - 2026-10-28
 
 ### Added
