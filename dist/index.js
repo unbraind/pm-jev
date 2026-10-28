@@ -1891,7 +1891,7 @@ function registerCommands(api) {
     }));
 }
 // The extension identity. The version string is release-managed: the daily
-// release workflow rewrites the first `version: "..."` literal in this file.
+// release workflow rewrites the first `version: "2026.10.28"` literal in this file.
 /** Public pm extension activation entry and release-managed identity. */
 export default defineExtension({
     name: "pm-jev",
