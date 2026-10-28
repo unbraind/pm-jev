@@ -511,7 +511,10 @@ test("dependencies and repository scripts run only in read-only jobs", () => {
   assert.match(release, /uses: actions\/download-artifact@[0-9a-f]{40}/);
   assert.match(release, /sha256sum --check --strict/);
   assert.match(release, /HEAD\^\{tree\}/);
-  assert.match(release, /npm publish release-artifact\/package\.tgz --access public --provenance --ignore-scripts/);
+  assert.match(release, /npm publish \.\/release-artifact\/package\.tgz --access public --provenance --ignore-scripts/);
+  // npm reads a bare dir/file.tgz spec as the GitHub shorthand owner/repo (git ls-remote ssh://git@github.com/...),
+  // so every publish of an archive must name it as a local path.
+  for (const spec of release.matchAll(/npm publish (\S+\.(?:tgz|tar\.gz))/g)) assert.match(spec[1] ?? "", /^(?:\.{1,2}\/|\/|"\$)/, spec[0]);
   assert.match(executable(jobSource("verify_bun")), /permissions:\n {6}contents: read/);
   // Scope the directive so diagnostic prose cannot satisfy the count.
   assert.equal((executable(workflow).match(/^ {6}id-token: write$/gm) ?? []).length, 1);
