@@ -1,10 +1,9 @@
 # Changelog
 
-## 2026.10.5 - 2026-10-05
+## 2026.10.28 - 2026-10-28
 
 ### Added
 
-- Compact decision output for agent context budgets ([pm-jev-qriu](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-qriu.toon))
 - Detect calibration population and explicit-label drift without inference ([pm-jev-t1h1](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-t1h1.toon))
 - Compare frozen decision proposals before adopting a local policy ([pm-jev-7esl](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-7esl.toon))
 - Explain typed decisions by bounded evidence removal ([pm-jev-ygvl](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-ygvl.toon))
@@ -21,6 +20,7 @@
 - pm-jev ask command: caller-defined typed questions against an item ([pm-jev-2e0n](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-2e0n.toon))
 - pm-jev gate command: calibrated noul exit gate for agents and CI ([pm-jev-nn3x](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-nn3x.toon))
 - pm-jev models and doctor commands ([pm-jev-f8t5](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-f8t5.toon))
+- Compact decision output for agent context budgets ([pm-jev-qriu](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-qriu.toon))
 - Batch open backlog triage with bounded streaming and stable receipts ([pm-jev-k8qe](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-k8qe.toon))
 
 ### Changed
@@ -30,7 +30,6 @@
 
 ### Fixed
 
-- Gate outcomes need explicit proposition and expected-result semantics ([pm-jev-43xa](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-43xa.toon))
 - Resolve development glob toolchain audit findings without downgrading fleet gates ([pm-jev-2rp1](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-2rp1.toon))
 - Preserve unknown token usage after TypeSafe SDK update ([pm-jev-ls5n](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-ls5n.toon))
 - Name evaluation source failures and support local tracker reads without GitHub ([pm-jev-0s07](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-0s07.toon))
@@ -39,6 +38,7 @@
 - Synthetic threshold calibration dataset and local harness ([pm-jev-6uoz](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-6uoz.toon))
 - Port best-effort CI approval and release-notes resume into the release workflow (Greptile PR 1) ([pm-jev-uqu6](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-uqu6.toon))
 - Address PR 1 eight CodeRabbit review findings ([pm-jev-3zuo](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-3zuo.toon))
+- Gate outcomes need explicit proposition and expected-result semantics ([pm-jev-43xa](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-43xa.toon))
 
 ### Other
 
