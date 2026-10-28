@@ -43,7 +43,10 @@
     "docs/calibration-drift-evidence.json",
     "examples/calibration-drift.json",
     "docs/exact-cutoffs.md",
-    "docs/threshold-domain.md"
+    "docs/threshold-domain.md",
+    "docs/joint-decisions.md",
+    "docs/joint-decisions-evidence.json",
+    "examples/joint-decisions.json"
   ],
   "scripts": {
     "build": "tsc",
@@ -78,7 +81,7 @@
     "@typesafe-ai/sdk": "^0.7.0"
   },
   "peerDependencies": {
-    "@unbrained/pm-cli": ">=2026.10.10"
+    "@unbrained/pm-cli": ">=2026.10.25"
   },
   "devDependencies": {
     "@babel/eslint-parser": "8.0.7",

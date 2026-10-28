@@ -1,0 +1,19 @@
+{
+  "version": "pm-jev-joint-public/1",
+  "repository": "unbraind/pm-lint",
+  "commit": "57a49b5b9e2b4d69f2a80b4b9f1da33af7ef9b0e",
+  "archive_sha256": "d70fd9e952830b899788a83f975d297b71dbf8cd514cb295315cd3ce9fc76691",
+  "tracker_items": 23,
+  "authoritative_files_verified": 52,
+  "incompatible_batches": 23,
+  "compatible_batches": 23,
+  "two_answer_witnesses": 23,
+  "unchanged_answer_batches": 23,
+  "existing_relationship_batches": 14,
+  "tracker_unchanged": true,
+  "sdk_readback_equal": true,
+  "git_available_during_check": false,
+  "inference_calls": 0,
+  "mutations": 0,
+  "limitations": "One committed public fleet tracker; native types and existing relationships read through the SDK. Classification conflicts and their explicit corrections are controlled proposals, not model predictions. This measures validation mechanics and zero mutations, not inference accuracy, hosted backends or concurrent apply safety."
+}
