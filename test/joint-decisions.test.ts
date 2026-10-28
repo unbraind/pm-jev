@@ -150,6 +150,10 @@ test("host graph validates the entire selected batch on one real non-git tracker
     assert.deepEqual((await f.pm.listAllComplete({ includeBody: true })).items, before); assert.deepEqual(trackerSnapshot(f.pmRoot), bytes);
     await f.pm.update(a, { dep: [`id=${b},kind=blocks`] });
     assert.equal((await validateJointDecisions({ ...raw, constraints: [edge("ab", a, b)] }, context)).ok, true, "unchanged is read from the current target");
+    await f.pm.update(b, { dep: [`id=${a},kind=blocks`] });
+    const legacy = (await f.pm.listAllComplete({ includeBody: true })).items;
+    assert.equal((await validateJointDecisions({ ...raw, constraints: [edge("ab", a, b), edge("ac", a, c)] }, context)).ok, true, "pre-existing ordering components remain readable and do not block unrelated additions");
+    assert.deepEqual((await f.pm.listAllComplete({ includeBody: true })).items, legacy);
     const file = join(f.cwd, "not-a-tracker"); writeFileSync(file, "not a directory");
     await assert.rejects(validateJointDecisions(raw, { client: new PmClient({ cwd: f.cwd, pmRoot: file, noExtensions: true }) }), (error: unknown) => error instanceof JointRefusal && error.code === "host_read_failed");
   }); } finally { f.dispose(); }
