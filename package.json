@@ -46,7 +46,10 @@
     "docs/threshold-domain.md",
     "docs/joint-decisions.md",
     "docs/joint-decisions-evidence.json",
-    "examples/joint-decisions.json"
+    "examples/joint-decisions.json",
+    "docs/label-queue.md",
+    "docs/label-queue-evidence.json",
+    "examples/label-queue.json"
   ],
   "scripts": {
     "build": "tsc",

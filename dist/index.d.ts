@@ -53,6 +53,14 @@ export { validateJointDecisions, validateJointReportNumbers } from "./joint-deci
 export type { JointInput, JointPredicate, JointConstraint, JointRefusalCode } from "./joint-schema.ts";
 /** Typed reports distinguish malformed inputs from incompatible decisions. */
 export type { JointContext, JointReport, JointViolation, JointViolationCode, JointWitnessAnswer } from "./joint-decisions.ts";
+/** Budgeted read-only human labeling selection with strict cohort and provenance boundaries. */
+export { LABEL_QUEUE_VERSION, LABEL_QUEUE_LIMITS, LabelQueueRefusal, parseLabelQueueInput } from "./label-schema.ts";
+/** Deterministic queue generation and emitted numeric-domain validation. */
+export { selectLabelQueue, validateLabelQueueReportNumbers } from "./label-queue.ts";
+/** Portable evidence, explicit policy, isolated row failures and compact queue contracts. */
+export type { LabelRatio, LabelProvenance, LabelCohort, LabelCase, LabelPolicy, LabelQueueInput, ParsedLabelQueueInput, LabelCaseRejection, LabelQueueRefusalCode } from "./label-schema.ts";
+/** Selected references retain declared label provenance and count every omitted candidate. */
+export type { LabelOmission, LabelQueueEntry, LabelQueueReport } from "./label-queue.ts";
 /** Version of the triage question catalog; surfaced in every triage receipt. */
 export declare const TRIAGE_CATALOG_VERSION = "pm-jev-triage/2";
 /** Explicit non-mutating candidate, distinct from every registered type. */

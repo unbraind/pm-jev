@@ -27,6 +27,7 @@ import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.js"
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.js";
 import { DRIFT_FLAGS, runDriftCommand } from "./drift-command.js";
 import { JOINT_FLAGS, runJointCommand } from "./joint-command.js";
+import { LABEL_QUEUE_FLAGS, runLabelQueueCommand } from "./label-command.js";
 import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.js";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.js";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.js";
@@ -58,6 +59,10 @@ export { DRIFT_VERSION, DriftRefusal, parseDriftInput, checkCalibrationDrift, va
 export { JOINT_VERSION, JOINT_LIMITS, JointRefusal, parseJointInput } from "./joint-schema.js";
 /** Validate selected proposals without changing answers or tracker state. */
 export { validateJointDecisions, validateJointReportNumbers } from "./joint-decisions.js";
+/** Budgeted read-only human labeling selection with strict cohort and provenance boundaries. */
+export { LABEL_QUEUE_VERSION, LABEL_QUEUE_LIMITS, LabelQueueRefusal, parseLabelQueueInput } from "./label-schema.js";
+/** Deterministic queue generation and emitted numeric-domain validation. */
+export { selectLabelQueue, validateLabelQueueReportNumbers } from "./label-queue.js";
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
 // ---------------------------------------------------------------------------
@@ -1777,6 +1782,14 @@ const GATE_FLAGS = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api) {
+    api.registerCommand(defineCommand({
+        name: "jev label-queue",
+        description: "Select bounded human labeling cases by declared uncertainty, diversity and cost without inference or writes",
+        flags: LABEL_QUEUE_FLAGS,
+        examples: ["pm jev label-queue --input examples/label-queue.json --json"],
+        /** Share the pure SDK selection path and native compact rendering. */
+        run: (ctx) => runLabelQueueCommand(ctx),
+    }));
     api.registerCommand(defineCommand({
         name: "jev validate",
         description: "Explain incompatible selected answers against caller-declared joint constraints before apply",
