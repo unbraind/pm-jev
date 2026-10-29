@@ -29,6 +29,9 @@ try {
   assert.equal(inferred.queue.length, report.queue.length); assert.ok(inferred.queue.every(r => r.label.kind === "inferred" && r.ground_truth === false));
   const human = selectLabelQueue({ ...input, cases: cases.map(r => ({ ...r, label: { kind: "human", value: "controlled-explicit-label", actor: "synthetic-reviewer", evidence: "controlled-review" } })) });
   assert.equal(human.queue.length, 0); assert.equal(human.omissions.human_labeled + human.omissions.below_uncertainty, cases.length);
+  const malformedDuplicates = selectLabelQueue({ ...input, cases: cases.flatMap(r => [r, { ...r, cost: 0, label: { kind: "human", value: "controlled-explicit-label", actor: "synthetic-reviewer", evidence: "controlled-review" } }]) });
+  assert.equal(malformedDuplicates.counts.selected, 0); assert.equal(malformedDuplicates.counts.eligible, 0);
+  assert.equal(malformedDuplicates.omissions.invalid, cases.length * 2); assert.ok(malformedDuplicates.rejected.every(row => row.code === "duplicate_case"));
   const client = new PmClient({ pmRoot: root, cwd: scratch, noExtensions: true });
   assert.deepEqual(certifyCompleteListResult(await client.listAllComplete({ includeBody: true })).items, source.items);
   assert.deepEqual(trackerSnapshot(root), before); assert.equal(inferenceCalls, 0);
@@ -36,6 +39,7 @@ try {
     counts: report.counts, omissions: report.omissions, budget: report.policy.budget, spent: report.spent, remaining: report.remaining,
     selected_buckets: new Set(report.queue.map(r => r.bucket)).size, inferred_provenance_preserved: inferred.queue.length, held_out_controls_omitted: heldOut.omissions.held_out,
     human_controls_omitted: human.omissions.human_labeled, deterministic_reordered_replay: true, tracker_unchanged: true, sdk_readback_equal: true,
+    malformed_duplicate_controls: { ...malformedDuplicates.counts, reported_diagnostics: malformedDuplicates.rejected.length, omitted_diagnostics: malformedDuplicates.rejected_omitted },
     git_available_during_selection: false, inference_calls: inferenceCalls, mutations: 0, report_json_bytes: Buffer.byteLength(JSON.stringify(report)),
     limitations: "One committed public fleet tracker. Native identifiers/types and exact source revision are SDK-read references; pending states, uncertainties, costs and control labels are declared test annotations, not model predictions or source ground truth. Held-out controls are synthetic. This proves deterministic selection mechanics and state preservation, not label quality, source alias verification, live revision freshness or a persistent budget reservation." };
   writeFileSync(output, JSON.stringify(evidence, null, 2) + "\n"); console.log(JSON.stringify(evidence));

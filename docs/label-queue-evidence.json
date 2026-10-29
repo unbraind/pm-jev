@@ -32,6 +32,14 @@
   "deterministic_reordered_replay": true,
   "tracker_unchanged": true,
   "sdk_readback_equal": true,
+  "malformed_duplicate_controls": {
+    "candidates": 50,
+    "eligible": 0,
+    "selected": 0,
+    "omitted": 50,
+    "reported_diagnostics": 10,
+    "omitted_diagnostics": 40
+  },
   "git_available_during_selection": false,
   "inference_calls": 0,
   "mutations": 0,

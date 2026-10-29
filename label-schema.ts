@@ -56,11 +56,16 @@ function record(value: unknown, keys: readonly string[]): Record<string, unknown
   for (const key of keys) requireInput(Object.getOwnPropertyDescriptor(value, key)?.get === undefined);
   return value as Record<string, unknown>;
 }
-/** Array holes, inherited indices and extra keys never disappear through JSON serialization. */
+/** Snapshot validated own elements so inherited iteration cannot hide conflicts or cohort declarations. */
 function dense(value: unknown, maximum: number): unknown[] {
   requireInput(Array.isArray(value) && value.length <= maximum && Reflect.ownKeys(value).length === value.length + 1);
-  for (let i = 0; i < value.length; i++) requireInput(Object.hasOwn(value, i) && Object.getOwnPropertyDescriptor(value, String(i))?.get === undefined);
-  return value;
+  const snapshot: unknown[] = [];
+  for (let i = 0; i < value.length; i++) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(i));
+    requireInput(descriptor !== undefined && descriptor.get === undefined);
+    snapshot.push(descriptor.value);
+  }
+  return snapshot;
 }
 /** Exact identities retain whitespace and Unicode from previously emitted valid documents. */
 function text(value: unknown): string {
@@ -90,6 +95,14 @@ function provenance(value: unknown): LabelProvenance {
 export function labelOrdinal(a: string, b: string): number { return a < b ? -1 : a > b ? 1 : 0; }
 /** Stable composite identity excludes revision so duplicate revisions cannot buy extra queue slots. */
 export function labelCaseKey(row: Pick<LabelCase, "source" | "id" | "task">): string { return JSON.stringify([row.source, row.id, row.task]); }
+/** Read only bounded own data identities, even when the remaining payload is malformed. */
+function caseIdentity(value: unknown): Pick<LabelCase, "source" | "id" | "task"> | null {
+  try {
+    requireInput(value !== null && (typeof value === "object" || typeof value === "function"));
+    return { source: text(Object.getOwnPropertyDescriptor(value, "source")?.value),
+      id: text(Object.getOwnPropertyDescriptor(value, "id")?.value), task: text(Object.getOwnPropertyDescriptor(value, "task")?.value) };
+  } catch { return null; }
+}
 /** Parse once and construct a detached canonical snapshot through the sole strict boundary schema. */
 export function parseLabelQueueInput(raw: unknown): ParsedLabelQueueInput {
   const doc = record(raw, ["version", "policy", "cohorts", "cases"]);
@@ -112,22 +125,24 @@ export function parseLabelQueueInput(raw: unknown): ParsedLabelQueueInput {
   }).sort(/** Canonical cohorts do not depend on object enumeration. */ (a, b) => labelOrdinal(a.id, b.id));
   requireInput(cohorts.some(/** A held-out cohort can never be the acquisition target. */ row => row.id === policy.cohort && row.role === "acquisition"));
   const rejected: LabelCaseRejection[] = []; const rows = dense(doc.cases, LABEL_QUEUE_LIMITS.cases);
-  const valid: { item: LabelCase; index: number }[] = []; const keys = new Map<string, number>();
-  for (const [index, value] of rows.entries()) {
-    try {
-    const row = record(value, ["id", "source", "revision", "cohort", "task", "bucket", "state", "uncertainty", "cost", "label"]);
-    const source = text(row.source), cohort = text(row.cohort);
-    requireInput(sourceCohorts.get(source) === cohort && (row.state === "unlabeled" || row.state === "abstained" || row.state === "decided"));
-    const item: LabelCase = { id: text(row.id), source, revision: text(row.revision), cohort, task: text(row.task), bucket: text(row.bucket), state: row.state,
-      uncertainty: ratio(row.uncertainty), cost: integer(row.cost, 1, LABEL_QUEUE_LIMITS.units), label: provenance(row.label) };
-    const key = labelCaseKey(item); keys.set(key, (keys.get(key) ?? 0) + 1); valid.push({ item, index });
-    } catch {
-      rejected.push({ index, code: "invalid_case" });
-    }
-  }
+  const keys = new Map<string, number>();
+  const identified = rows.map(/** Multiplicity precedes payload validity, cohort eligibility and human-label filtering. */ value => {
+    const identity = caseIdentity(value);
+    const key = identity === null ? null : labelCaseKey(identity);
+    if (key !== null) keys.set(key, (keys.get(key) ?? 0) + 1);
+    return { value, identity, key };
+  });
   const cases: LabelCase[] = [];
-  for (const { item, index } of valid) {
-    if (keys.get(labelCaseKey(item))! > 1) rejected.push({ index, code: "duplicate_case" }); else cases.push(item);
+  for (const [index, { value, identity, key }] of identified.entries()) {
+    if (key !== null && keys.get(key)! > 1) { rejected.push({ index, code: "duplicate_case" }); continue; }
+    try {
+      requireInput(identity !== null);
+      const row = record(value, ["id", "source", "revision", "cohort", "task", "bucket", "state", "uncertainty", "cost", "label"]);
+      const cohort = text(row.cohort);
+      requireInput(sourceCohorts.get(identity.source) === cohort && (row.state === "unlabeled" || row.state === "abstained" || row.state === "decided"));
+      cases.push({ id: identity.id, source: identity.source, revision: text(row.revision), cohort, task: identity.task, bucket: text(row.bucket), state: row.state,
+        uncertainty: ratio(row.uncertainty), cost: integer(row.cost, 1, LABEL_QUEUE_LIMITS.units), label: provenance(row.label) });
+    } catch { rejected.push({ index, code: "invalid_case" }); }
   }
   cases.sort(/** Canonical cases keep content digests stable across layout and row order. */ (a, b) => labelOrdinal(labelCaseKey(a), labelCaseKey(b)));
   const input: LabelQueueInput = { version: LABEL_QUEUE_VERSION, policy, cohorts, cases };

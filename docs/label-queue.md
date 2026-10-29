@@ -92,6 +92,17 @@ remaining eligible cases are counted by `diversity`, then `budget`, then `limit`
 Their counts reflect the final remaining budget and bucket occupancy.
 
 Malformed individual cases and all duplicate identities are skipped alone.
+Multiplicity is counted before payload validation or eligibility filtering:
+every record with bounded own data fields `(source,id,task)` participates, even
+if its cost, revision, label, cohort or other payload fields are invalid. All
+copies of a repeated identity receive `duplicate_case`. For example, a pending
+copy plus a human-labeled copy with `cost:0` quarantines both; the pending copy
+cannot re-enter selection because its conflicting copy failed validation.
+Inherited, accessor, missing or invalid identity fields cannot identify another
+case and yield only `invalid_case`; getters are never evaluated to guess identity.
+The schema snapshots array elements from their own data descriptors before
+iteration. Inherited array methods cannot filter cases or cohort/source
+declarations out of the input seen by validation.
 `rejected` includes up to ten input positions with `invalid_case` or
 `duplicate_case`; `rejected_omitted` counts further diagnostics. Remedy: correct
 that case against the example schema, or supply exactly one revision for its
@@ -148,6 +159,11 @@ operations) against an independent cross-product reference model. Replayed older
 documents and whitespace/CRLF variants retain the same decisions. Real non-git
 SDK trackers retain their native fields, parent/blocker/dependency relationships,
 custom status registries and ambient focus, checked by SDK readback.
+The same 500 sequences also inject malformed duplicate identities and replay
+CRLF/JSON variants, preserving unrelated survivors and SDK-read native state.
+An adversarial corpus corrupts every non-identity case field and reverses record
+order. It runs through the SDK, host-injected command, JSON/TOON CLI and all five
+packed install modes, including packed SDK consumers under Node and Bun.
 
 `test/label-queue.acceptance.ts` measures selection on a verified public fleet
 tracker archived into a read-only non-git scratch project. Aggregate results in

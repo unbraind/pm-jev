@@ -7,12 +7,13 @@ import { decode } from "@toon-format/toon";
 import { decodePmTableRows } from "@unbrained/pm-cli/sdk";
 import type { PmEncodedTableRows } from "@unbrained/pm-cli/sdk";
 import type { CommandHandlerContext } from "@unbrained/pm-cli/sdk/authoring";
-import { LABEL_QUEUE_VERSION, LABEL_QUEUE_LIMITS, LabelQueueRefusal, parseLabelQueueInput, selectLabelQueue, validateLabelQueueReportNumbers } from "../index.ts";
+import { LABEL_QUEUE_VERSION, LABEL_QUEUE_LIMITS, LabelQueueRefusal, parseLabelQueueInput, selectLabelQueue, validateLabelQueueReportNumbers, parseCostDataset, parseDriftInput, parseReplayRecording, parseJointInput } from "../index.ts";
 import type { LabelCase, LabelQueueInput, LabelQueueReport, LabelRatio, LabelOmission } from "../index.ts";
 import { labelOrdinal } from "../label-schema.ts";
 import { runLabelQueueCommand } from "../label-command.ts";
 import { project, withoutGit, trackerSnapshot } from "./fixtures.ts";
 import { installBuiltExtension, runBuiltCommand, cliFailure } from "./replay-fixtures.ts";
+import { malformedLabelCopies, duplicateLabelDocument } from "./label-identity-fixtures.ts";
 
 /** The shipped document also exercises producer and validator agreement. */
 function example(): LabelQueueInput { return JSON.parse(readFileSync(new URL("../examples/label-queue.json", import.meta.url), "utf8")) as LabelQueueInput; }
@@ -63,6 +64,7 @@ test("fixed seed yields a bounded deterministic human-labeling queue and preserv
   assert.equal(report.omissions.held_out, 1); assert.equal(report.spent, 3); assert.equal(report.remaining, 0);
   assert.equal(report.queue[0].uncertainty_display, 0.9); assert.equal(report.mutation_authority, "none");
   assert.equal(LABEL_QUEUE_VERSION, "pm-jev-label-queue/1");
+  assert.equal(report.input_sha256, "01a0d8d62735e8bb012e70f9b98d05df1d357814f86b2338a2658c3d91192154", "valid v1 example retains its pre-repair canonical serialization and evidence digest");
   assert.ok(Buffer.byteLength(JSON.stringify(report)) < 2500);
   const reversed = { ...input, cases: [...input.cases].reverse(), cohorts: [...input.cohorts].reverse() };
   assert.deepEqual(selectLabelQueue(reversed), report);
@@ -112,6 +114,7 @@ test("cohort declarations fail closed and isolated malformed or duplicate cases 
   const hole = Array(2); hole[1] = input.cases[0]; bad.push({ ...input, cases: hole });
   const extra = [...input.cases]; Object.assign(extra, { extra: true }); bad.push({ ...input, cases: extra });
   const hidden = [...input.cases]; delete hidden[0]; Object.assign(hidden, { extra: true }); bad.push({ ...input, cases: hidden });
+  const accessorIndex = [...input.cases]; Object.defineProperty(accessorIndex, "0", { get() { throw new Error("array index getter must not execute"); } }); bad.push({ ...input, cases: accessorIndex });
   bad.push({ ...input, cohorts: [null] }, { ...input, cohorts: [{ ...input.cohorts[0], role: "train" }] }, { ...input, cohorts: [input.cohorts[0], input.cohorts[0]] }, { ...input, cohorts: [{ ...input.cohorts[0], sources: [] }] });
   bad.push({ ...input, cases: Array(5001).fill(input.cases[0]) }, { ...input, cohorts: Array(33).fill(input.cohorts[0]) });
   bad.push(Object.create(input), { ...input, policy: new Date() }, Object.defineProperty({ ...input }, "policy", { get() { throw new Error("must not run"); } }));
@@ -150,6 +153,81 @@ test("allow corpus and maximum output retain exact identities including prototyp
   refuses(() => selectLabelQueue(huge));
 });
 
+test("duplicate quarantine precedes every non-identity payload validation and eligibility rule", () => {
+  const input = example(), original = input.cases[0], survivor = input.cases[1];
+  const copies = malformedLabelCopies(original);
+  for (const copy of copies) for (const reversed of [false, true]) {
+    const cases = reversed ? [copy, original, survivor] : [original, copy, survivor];
+    const raw = { ...input, cases }, report = selectLabelQueue(raw), parsed = parseLabelQueueInput(raw);
+    assert.deepEqual(report.queue.map(row => row.id), [survivor.id]);
+    assert.deepEqual(report.counts, { candidates: 3, eligible: 1, selected: 1, omitted: 2 });
+    assert.deepEqual(report.rejected, [{ index: 0, code: "duplicate_case" }, { index: 1, code: "duplicate_case" }]);
+    assert.equal(report.omissions.invalid, 2); assert.deepEqual(parsed.input.cases, [survivor]);
+    assert.deepEqual(selectLabelQueue(JSON.parse(JSON.stringify(raw))), report);
+  }
+  const aggregate = selectLabelQueue(duplicateLabelDocument(input));
+  assert.equal(aggregate.omissions.invalid, copies.length * 2); assert.equal(aggregate.counts.selected, 1);
+  assert.equal(aggregate.rejected.length, 10); assert.equal(aggregate.rejected_omitted, copies.length * 2 - 10);
+  const identifiedForeign = Object.assign(Object.create({ foreign: true }) as Record<string, unknown>, original, { cost: 0 });
+  const identifiedArray = Object.assign([], { source: original.source, id: original.id, task: original.task });
+  const identifiedCallable = Object.assign(() => { throw new Error("must not execute foreign input"); }, original, { cost: 0 });
+  for (const copy of [identifiedForeign, identifiedArray, identifiedCallable, { ...original, cost: NaN }, { ...original, cost: Infinity }, { ...original, cost: undefined }]) {
+    assert.deepEqual(selectLabelQueue({ ...input, cases: [original, copy, survivor] }).queue.map(row => row.id), [survivor.id]);
+  }
+  for (const field of ["source", "id", "task"]) for (const value of [null, "", " ", "x".repeat(97), 0]) {
+    const report = selectLabelQueue({ ...input, cases: [original, { ...original, [field]: value }, survivor] });
+    assert.equal(report.omissions.invalid, 1); assert.equal(report.counts.selected, 2, "unidentifiable records cannot guess another row's identity");
+  }
+  let calls = 0;
+  const accessor = Object.defineProperty({ ...original }, "id", { get() { calls++; return original.id; } });
+  assert.equal(selectLabelQueue({ ...input, cases: [original, accessor, survivor] }).omissions.invalid, 1); assert.equal(calls, 0);
+  for (const field of ["source", "id", "task"]) {
+    const missing: Record<string, unknown> = { ...original }; delete missing[field];
+    assert.equal(selectLabelQueue({ ...input, cases: [original, missing, survivor] }).omissions.invalid, 1);
+    const withAccessor = Object.defineProperty({ ...original }, field, { get() { calls++; return original.id; } });
+    assert.equal(selectLabelQueue({ ...input, cases: [original, withAccessor, survivor] }).omissions.invalid, 1);
+  }
+  assert.equal(calls, 0);
+  const inherited = Object.create(original) as Record<string, unknown>;
+  assert.equal(selectLabelQueue({ ...input, cases: [original, inherited, survivor] }).omissions.invalid, 1);
+  const payloadAccessor = Object.defineProperty({ ...original }, "cost", { get() { calls++; return 0; } });
+  assert.equal(selectLabelQueue({ ...input, cases: [original, payloadAccessor, survivor] }).omissions.invalid, 2); assert.equal(calls, 0);
+  const distinct = { ...original, task: "another-task", bucket: "another-bucket", cost: 1 };
+  assert.equal(selectLabelQueue({ ...input, cases: [original, distinct] }).omissions.invalid, 0);
+  let hooks = 0;
+  const hostileCases = [{ ...original, cost: 0 }, original, survivor];
+  const prototype = Object.create(Array.prototype) as Record<string, unknown>;
+  Object.defineProperty(prototype, "map", { value(callback: (value: unknown, index: number) => unknown) { hooks++; return Array.prototype.map.call(hostileCases, (value: unknown, index: number) => callback(index === 0 ? null : value, index)); } });
+  Object.setPrototypeOf(hostileCases, prototype);
+  const safeReport = selectLabelQueue({ ...input, cases: [{ ...original, cost: 0 }, original, survivor] });
+  assert.deepEqual(selectLabelQueue({ ...input, cases: hostileCases }), safeReport);
+  assert.equal(hooks, 0, "caller iteration cannot erase a conflicting identity");
+  const neverIterate = Object.create(Array.prototype) as Record<string | symbol, unknown>;
+  for (const method of ["map", "entries", "constructor", Symbol.iterator]) Object.defineProperty(neverIterate, method, { get() { hooks++; throw new Error("must not execute inherited iteration"); } });
+  for (const target of ["cases", "cohorts", "sources"]) {
+    const raw = structuredClone(input);
+    if (target === "cases") Object.setPrototypeOf(raw.cases, neverIterate);
+    else if (target === "cohorts") Object.setPrototypeOf(raw.cohorts, neverIterate);
+    else Object.setPrototypeOf(raw.cohorts[0].sources, neverIterate);
+    assert.deepEqual(selectLabelQueue(raw), selectLabelQueue(input));
+  }
+  assert.equal(hooks, 0);
+});
+
+test("package parsers never admit a valid identity by silently dropping its malformed duplicate", () => {
+  const cost = parseCostDataset(JSON.parse(readFileSync(new URL("../examples/cost-policy.json", import.meta.url), "utf8")));
+  const drift = parseDriftInput(JSON.parse(readFileSync(new URL("../examples/calibration-drift.json", import.meta.url), "utf8")));
+  const replay = parseReplayRecording(JSON.parse(readFileSync(new URL("../examples/policy-replay.json", import.meta.url), "utf8")));
+  const joint = parseJointInput(JSON.parse(readFileSync(new URL("../examples/joint-decisions.json", import.meta.url), "utf8")));
+  const invalid = [
+    () => parseCostDataset({ ...cost, observations: [...cost.observations, { ...cost.observations[0], confidence: -1 }] }),
+    () => parseDriftInput({ ...drift, calibration: { ...drift.calibration, observations: [...drift.calibration.observations, { ...drift.calibration.observations[0], label: {} }] } }),
+    () => parseReplayRecording({ ...replay, records: [...replay.records, { ...replay.records[0], result: null }] }),
+    () => parseJointInput({ ...joint, constraints: [...joint.constraints, { ...joint.constraints[0], kind: "unsupported" }] }),
+  ];
+  for (const parse of invalid) assert.throws(parse, "whole-document parsers must refuse ambiguous malformed input rather than report a partial success");
+});
+
 test("500 seeded operation sequences replay earlier inputs and read unchanged native SDK state", async () => {
   const f = await project(); let seed = 0x5e1ec7;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
@@ -160,6 +238,7 @@ test("500 seeded operation sequences replay earlier inputs and read unchanged na
     for (const status of ["open", "in_progress", "closed", "canceled", "blocked"]) await f.pm.schemaRemapStatus(status, `custom_${random()}`, {});
     const nativeReference = structuredClone((await f.pm.listAllComplete({ includeBody: true })).items);
     const bytes = trackerSnapshot(f.pmRoot); const prior: LabelQueueInput[] = [example()];
+    const adversarialCopies = malformedLabelCopies(example().cases[0]);
     for (let sequence = 0; sequence < 500; sequence++) {
       let input = structuredClone(prior[random() % prior.length]);
       for (let operation = 0; operation < 6; operation++) {
@@ -175,6 +254,13 @@ test("500 seeded operation sequences replay earlier inputs and read unchanged na
         check(input);
       }
       prior.push(structuredClone(input));
+      const pair = [example().cases[0], adversarialCopies[sequence % adversarialCopies.length]];
+      if (random() % 2) pair.reverse();
+      const conflict = { ...example(), cases: [...pair, example().cases[1]] };
+      const quarantined = selectLabelQueue(conflict);
+      assert.deepEqual(quarantined.queue.map(row => row.id), [example().cases[1].id], `duplicate property sequence ${sequence}`);
+      assert.equal(quarantined.omissions.invalid, 2);
+      assert.deepEqual(selectLabelQueue(JSON.parse(JSON.stringify(conflict, null, 2).replaceAll("\n", "\r\n"))), quarantined);
       if (sequence % 25 === 0) await f.pm.focus(random() % 2 ? a : b);
       assert.deepEqual((await f.pm.listAllComplete({ includeBody: true })).items, nativeReference, `SDK readback seed 0x5e1ec7 sequence ${sequence}`);
     }
@@ -214,6 +300,14 @@ test("native JSON/TOON CLI and host-injected command need no Git, model or track
     const run = await f.harness.runCommand({ command: "jev label-queue", options: { input: file }, args: [], pmRoot: f.pmRoot }); assert.deepEqual(run.result, expected);
     const ctx = { options: { input: file }, pm_root: f.pmRoot, source_workspace_root: f.cwd, global: {}, args: [], command: "jev label-queue" } as CommandHandlerContext;
     assert.deepEqual(await runLabelQueueCommand(ctx), expected);
+    const conflict = duplicateLabelDocument(example()); writeFileSync(file, JSON.stringify(conflict));
+    const conflictReport = selectLabelQueue(conflict); assert.equal(conflictReport.counts.selected, 1);
+    assert.deepEqual(JSON.parse((await runBuiltCommand(f, ["--json", "jev", "label-queue", "--input", file])).stdout), conflictReport);
+    const conflictToon = decode((await runBuiltCommand(f, ["jev", "label-queue", "--input", file])).stdout) as unknown as { counts: unknown; omissions: unknown; rejected: unknown; rejected_omitted: number; queue: PmEncodedTableRows["rows"]; queue_encoding: PmEncodedTableRows["encoding"] };
+    assert.deepEqual(conflictToon.counts, conflictReport.counts); assert.deepEqual(conflictToon.omissions, conflictReport.omissions);
+    assert.deepEqual(conflictToon.rejected, conflictReport.rejected); assert.equal(conflictToon.rejected_omitted, conflictReport.rejected_omitted);
+    assert.deepEqual(conflictToon.queue_encoding === undefined ? conflictToon.queue : decodePmTableRows({ rows: conflictToon.queue, encoding: conflictToon.queue_encoding }), conflictReport.queue);
+    assert.deepEqual((await f.harness.runCommand({ command: "jev label-queue", options: { input: file }, args: [], pmRoot: f.pmRoot })).result, conflictReport);
     for (const input of [undefined, " ", f.cwd, join(f.cwd, "missing")]) {
       const result = await runLabelQueueCommand({ ...ctx, options: { input } }); assert.equal(result.ok, false);
       await assert.rejects(runBuiltCommand(f, ["--json", "jev", "label-queue", ...(input === undefined ? [] : ["--input", input])]), cliFailure({ ok: false, exit_code: 2 }));

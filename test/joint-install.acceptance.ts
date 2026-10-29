@@ -11,6 +11,8 @@ import { decode } from "@toon-format/toon";
 import { decodePmTableRows } from "@unbrained/pm-cli/sdk";
 import type { PmEncodedTableRows } from "@unbrained/pm-cli/sdk";
 import { selectLabelQueue } from "../index.ts";
+import type { LabelQueueInput } from "../index.ts";
+import { duplicateLabelDocument } from "./label-identity-fixtures.ts";
 import { REGISTRY_DEFINITIONS, installRegistryFixture, registryBatch } from "./joint-registry-fixtures.ts";
 
 const execute = promisify(execFile);
@@ -45,6 +47,9 @@ test("one archive validates through npm global, Bun global, project-local, npx a
       { name: "bunx", bin: "bunx", args: ["--bun", "--no-install", "pm"], cwd: local },
     ];
     const sdkCases = join(scratch, "sdk-registry-cases.json");
+    const conflictFile = join(scratch, "label-identity-conflicts.json");
+    const conflictInput = duplicateLabelDocument(JSON.parse(readFileSync(join(root, "examples/label-queue.json"), "utf8")) as LabelQueueInput);
+    writeFileSync(conflictFile, JSON.stringify(conflictInput));
     let sdkRoot = "";
     for (const mode of modes) {
       mkdirSync(mode.cwd, { recursive: true });
@@ -62,6 +67,12 @@ test("one archive validates through npm global, Bun global, project-local, npx a
         const queue = (json ? JSON.parse(output.stdout) : decode(output.stdout)) as { counts: unknown; queue: PmEncodedTableRows["rows"]; queue_encoding: PmEncodedTableRows["encoding"] };
         assert.deepEqual(queue.counts, expectedQueue.counts);
         assert.deepEqual(json ? queue.queue : decodePmTableRows({ rows: queue.queue, encoding: queue.queue_encoding }), expectedQueue.queue);
+        const conflictOutput = await execute(mode.bin, [...mode.args, ...(json ? ["--json"] : []), "jev", "label-queue", "--input", conflictFile], { cwd: mode.cwd, env: runtimeEnv, timeout: 120000 });
+        const conflict = (json ? JSON.parse(conflictOutput.stdout) : decode(conflictOutput.stdout)) as { counts: { candidates: number; selected: number }; omissions: { invalid: number }; queue: PmEncodedTableRows["rows"]; queue_encoding: PmEncodedTableRows["encoding"] };
+        const surviving = json || conflict.queue_encoding === undefined ? conflict.queue : decodePmTableRows({ rows: conflict.queue, encoding: conflict.queue_encoding });
+        assert.equal(conflict.counts.candidates, conflictInput.cases.length); assert.equal(conflict.counts.selected, 1);
+        assert.equal(conflict.omissions.invalid, conflictInput.cases.length - 1);
+        assert.deepEqual(surviving.map(row => row.id), [expectedQueue.queue[1].id]);
       }
       const file = join(scratch, "batch.json");
       writeFileSync(file, readFileSync(join(root, "examples/joint-decisions.json")));
@@ -99,14 +110,14 @@ test("one archive validates through npm global, Bun global, project-local, npx a
       }
       writeFileSync(sdkCases, JSON.stringify({ definitions: REGISTRY_DEFINITIONS, cases })); sdkRoot = runtimeEnv.PM_PATH;
       assert.equal(createHash("sha512").update(readFileSync(archive)).digest("hex"), digest);
-      console.log(`${mode.name}: eleven native cases passed, including label queues and stored custom kinds in JSON/TOON`);
+      console.log(`${mode.name}: thirteen native cases passed, including malformed label-identity conflicts and stored custom kinds in JSON/TOON`);
     }
     const code = 'import {validateJointDecisions} from "pm-jev"; import {readFileSync} from "node:fs"; const raw=JSON.parse(readFileSync(process.argv[1],"utf8")); const r=await validateJointDecisions(raw); if(r.ok || r.violations[0].witness.length!==2) throw new Error("packed SDK failed");';
     await execute(process.execPath, ["--input-type=module", "-e", code, join(root, "examples/joint-decisions.json")], { cwd: local, env, timeout: 120000 });
     const customCode = 'import {validateJointDecisions} from "pm-jev"; import {PmClient} from "@unbrained/pm-cli/sdk"; import {RelationshipKindRegistry} from "@unbrained/pm-cli/sdk/graph"; import {readFileSync} from "node:fs"; const data=JSON.parse(readFileSync(process.argv[1],"utf8")); const registry=new RelationshipKindRegistry(); for(const d of data.definitions)registry.register(d); const client=new PmClient({pmRoot:process.argv[2],cwd:process.cwd(),noExtensions:true}); for(const row of data.cases){const result=await validateJointDecisions(row.input,{client,registry});if(result.ok!==row.ok || result.mutations!==0)throw new Error("packed custom registry contract failed");}';
     for (const runtime of [process.execPath, "bun"]) await execute(runtime, ["--input-type=module", "-e", customCode, sdkCases, sdkRoot], { cwd: local, env, timeout: 120000 });
-    const queueCode = 'import {selectLabelQueue,parseLabelQueueInput} from "pm-jev"; import {readFileSync} from "node:fs"; globalThis.fetch=()=>{throw new Error("unexpected network");}; const input=JSON.parse(readFileSync(process.argv[1],"utf8")); const a=selectLabelQueue(input),b=selectLabelQueue(parseLabelQueueInput(input).input); if(JSON.stringify(a)!==JSON.stringify(b)||a.counts.selected!==2||a.omissions.held_out!==1||a.queue[0].ground_truth!==false||a.queue[0].label.kind!=="inferred")throw new Error("packed queue contract failed");';
-    for (const runtime of [process.execPath, "bun"]) await execute(runtime, ["--input-type=module", "-e", queueCode, join(root, "examples/label-queue.json")], { cwd: local, env, timeout: 120000 });
+    const queueCode = 'import {selectLabelQueue,parseLabelQueueInput} from "pm-jev"; import {readFileSync} from "node:fs"; globalThis.fetch=()=>{throw new Error("unexpected network");}; const input=JSON.parse(readFileSync(process.argv[1],"utf8")); const a=selectLabelQueue(input),b=selectLabelQueue(parseLabelQueueInput(input).input); if(JSON.stringify(a)!==JSON.stringify(b)||a.counts.selected!==2||a.omissions.held_out!==1||a.queue[0].ground_truth!==false||a.queue[0].label.kind!=="inferred")throw new Error("packed queue contract failed"); const conflict=JSON.parse(readFileSync(process.argv[2],"utf8")); const c=selectLabelQueue(conflict); if(c.counts.selected!==1||c.omissions.invalid!==conflict.cases.length-1||c.queue[0].id!==input.cases[1].id)throw new Error("packed duplicate quarantine failed");';
+    for (const runtime of [process.execPath, "bun"]) await execute(runtime, ["--input-type=module", "-e", queueCode, join(root, "examples/label-queue.json"), conflictFile], { cwd: local, env, timeout: 120000 });
     console.log(`packed SDK: passed; sha512=${digest}`);
   } finally { rmSync(scratch, { recursive: true, force: true }); }
 });
