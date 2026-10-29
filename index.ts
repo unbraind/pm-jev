@@ -37,6 +37,7 @@ import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.ts"
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.ts";
 import { DRIFT_FLAGS, runDriftCommand } from "./drift-command.ts";
 import { JOINT_FLAGS, runJointCommand } from "./joint-command.ts";
+import { LABEL_QUEUE_FLAGS, runLabelQueueCommand } from "./label-command.ts";
 import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.ts";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.ts";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.ts";
@@ -117,6 +118,15 @@ export { validateJointDecisions, validateJointReportNumbers } from "./joint-deci
 export type { JointInput, JointPredicate, JointConstraint, JointRefusalCode } from "./joint-schema.ts";
 /** Typed reports distinguish malformed inputs from incompatible decisions. */
 export type { JointContext, JointReport, JointViolation, JointViolationCode, JointWitnessAnswer } from "./joint-decisions.ts";
+
+/** Budgeted read-only human labeling selection with strict cohort and provenance boundaries. */
+export { LABEL_QUEUE_VERSION, LABEL_QUEUE_LIMITS, LabelQueueRefusal, parseLabelQueueInput } from "./label-schema.ts";
+/** Deterministic queue generation and emitted numeric-domain validation. */
+export { selectLabelQueue, validateLabelQueueReportNumbers } from "./label-queue.ts";
+/** Portable evidence, explicit policy, isolated row failures and compact queue contracts. */
+export type { LabelRatio, LabelProvenance, LabelCohort, LabelCase, LabelPolicy, LabelQueueInput, ParsedLabelQueueInput, LabelCaseRejection, LabelQueueRefusalCode } from "./label-schema.ts";
+/** Selected references retain declared label provenance and count every omitted candidate. */
+export type { LabelOmission, LabelQueueEntry, LabelQueueReport } from "./label-queue.ts";
 
 // ---------------------------------------------------------------------------
 // Versioned question catalogs
@@ -2310,6 +2320,14 @@ const GATE_FLAGS: FlagDefinition[] = [
  * @param api - Activation API surface provided by the host.
  */
 function registerCommands(api: ExtensionApi): void {
+  api.registerCommand(defineCommand({
+    name: "jev label-queue",
+    description: "Select bounded human labeling cases by declared uncertainty, diversity and cost without inference or writes",
+    flags: LABEL_QUEUE_FLAGS,
+    examples: ["pm jev label-queue --input examples/label-queue.json --json"],
+    /** Share the pure SDK selection path and native compact rendering. */
+    run: (ctx: CommandHandlerContext) => runLabelQueueCommand(ctx),
+  }));
   api.registerCommand(defineCommand({
     name: "jev validate",
     description: "Explain incompatible selected answers against caller-declared joint constraints before apply",

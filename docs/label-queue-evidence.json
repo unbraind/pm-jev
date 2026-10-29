@@ -1,0 +1,40 @@
+{
+  "version": "pm-jev-label-queue-public/1",
+  "repository": "unbraind/pm-lint",
+  "commit": "ac5429690dc75bd047605a8d6ac8c53416aa4061",
+  "archive_sha256": "49b7246d40aa24400610c0532d73b0ae6feceb7d778633baf301945e4deae53f",
+  "tracker_items": 25,
+  "authoritative_files_verified": 56,
+  "counts": {
+    "candidates": 25,
+    "eligible": 13,
+    "selected": 11,
+    "omitted": 14
+  },
+  "omissions": {
+    "invalid": 0,
+    "held_out": 0,
+    "other_cohort": 0,
+    "human_labeled": 0,
+    "not_pending": 0,
+    "below_uncertainty": 12,
+    "diversity": 2,
+    "budget": 0,
+    "limit": 0
+  },
+  "budget": 30,
+  "spent": 22,
+  "remaining": 8,
+  "selected_buckets": 3,
+  "inferred_provenance_preserved": 11,
+  "held_out_controls_omitted": 1,
+  "human_controls_omitted": 25,
+  "deterministic_reordered_replay": true,
+  "tracker_unchanged": true,
+  "sdk_readback_equal": true,
+  "git_available_during_selection": false,
+  "inference_calls": 0,
+  "mutations": 0,
+  "report_json_bytes": 4333,
+  "limitations": "One committed public fleet tracker. Native identifiers/types and exact source revision are SDK-read references; pending states, uncertainties, costs and control labels are declared test annotations, not model predictions or source ground truth. Held-out controls are synthetic. This proves deterministic selection mechanics and state preservation, not label quality, source alias verification, live revision freshness or a persistent budget reservation."
+}

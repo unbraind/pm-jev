@@ -1,0 +1,27 @@
+{
+  "version": "pm-jev-label-queue/1",
+  "policy": {
+    "cohort": "intake", "seed": "review-42", "budget": 3, "limit": 2,
+    "uncertainty": "declared_ratio_desc", "min_uncertainty": {"numerator": 1, "denominator": 2},
+    "diversity": "balanced", "max_per_bucket": 1
+  },
+  "cohorts": [
+    {"id": "intake", "role": "acquisition", "sources": ["public-intake"]},
+    {"id": "validation", "role": "held_out", "sources": ["public-held-out"]}
+  ],
+  "cases": [
+    {
+      "id": "case-a", "source": "public-intake", "revision": "r1", "cohort": "intake", "task": "classify", "bucket": "bug",
+      "state": "abstained", "uncertainty": {"numerator": 9, "denominator": 10}, "cost": 2,
+      "label": {"kind": "inferred", "value": "bug", "actor": "model-v1", "evidence": "decision-a"}
+    },
+    {
+      "id": "case-b", "source": "public-intake", "revision": "r2", "cohort": "intake", "task": "classify", "bucket": "feature",
+      "state": "unlabeled", "uncertainty": {"numerator": 3, "denominator": 4}, "cost": 1, "label": {"kind": "none"}
+    },
+    {
+      "id": "case-c", "source": "public-held-out", "revision": "r3", "cohort": "validation", "task": "classify", "bucket": "bug",
+      "state": "unlabeled", "uncertainty": {"numerator": 1, "denominator": 1}, "cost": 1, "label": {"kind": "none"}
+    }
+  ]
+}

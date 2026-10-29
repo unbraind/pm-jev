@@ -441,7 +441,7 @@ recommending the local flag that is already enabled; neither mode calls the mode
 
 ### Without git
 
-Doctor, model discovery, triage, link, dedupe, ask, gate, explanations, cost-policy selection, offline policy replay, joint constraint validation and calibration drift checks work in plain trackers.
+Doctor, model discovery, triage, link, dedupe, ask, gate, explanations, cost-policy selection, offline policy replay, joint constraint validation, human labeling queues and calibration drift checks work in plain trackers.
 Evaluation and calibration work there with `--local-unverified` and explicit local
 source directories; they require neither git nor GitHub. Default public-corpus
 sources still require git, GitHub CLI authentication, verified public visibility
@@ -980,3 +980,21 @@ See the [schema, bounds and SDK example](docs/joint-decisions.md),
 [measured public-copy evidence](docs/joint-decisions-evidence.json).
 
 Fitted and applied cutoffs share [one threshold domain](docs/threshold-domain.md), with explicit disabled states, legacy Infinity compatibility and JSON/TOON reapplication laws. Fit lexical policies from raw pairs with `qualityObservation`; its exact portable ratio is also the runtime lexical guard input.
+
+## Budgeted human labeling queues
+
+```sh
+pm jev label-queue --input examples/label-queue.json
+pm jev label-queue --input examples/label-queue.json --json
+```
+
+`selectLabelQueue(input)` and the CLI rank explicitly abstained/unlabeled case
+references using exact declared uncertainty ratios, seeded ties, labeling costs,
+and a declared diversity policy. Receipts count every selected or omitted case,
+retain source revisions and label provenance, and exclude held-out cohorts.
+Inferred labels remain proposals with `ground_truth:false`; no inference or
+tracker mutation occurs. Budgets apply per invocation and reserve no shared work.
+
+See the [contract and SDK guide](docs/label-queue.md),
+[portable example](examples/label-queue.json) and
+[public tracker measurements](docs/label-queue-evidence.json).

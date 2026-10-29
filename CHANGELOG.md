@@ -4,6 +4,7 @@
 
 ### Added
 
+- Queue budgeted human labeling with deterministic uncertainty and diversity selection ([pm-jev-h8hx](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-h8hx.toon))
 - Explain incompatible joint decision proposals before apply ([pm-jev-79ht](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-79ht.toon))
 
 ## 2026.10.28 - 2026-10-28
