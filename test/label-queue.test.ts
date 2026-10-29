@@ -141,6 +141,10 @@ test("allow corpus and maximum output retain exact identities including prototyp
   const maximum = selectLabelQueue({ ...example(), policy: { ...example().policy, budget: 1000000, limit: 100, max_per_bucket: 100 }, cases: Array.from({ length: 5000 }, (_, i) => row(`case-${i}`, { cost: 1, bucket: `bucket-${i % 10}` })) });
   assert.equal(maximum.queue.length, 100); assert.equal(maximum.omissions.limit, 4900); assert.ok(Buffer.byteLength(JSON.stringify(maximum)) < 65536);
   const nullPrototype = Object.assign(Object.create(null) as Record<string, unknown>, example()); check(nullPrototype as unknown as LabelQueueInput);
+  const signedZero = { ...example(), policy: { ...example().policy, budget: -0, limit: -0, min_uncertainty: { numerator: -0, denominator: 1 } }, cases: [row("zero", { uncertainty: { numerator: -0, denominator: 1 } })] };
+  const zeroReport = check(signedZero);
+  assert.equal(Object.is(zeroReport.policy.budget, -0), false); assert.equal(Object.is(zeroReport.policy.limit, -0), false);
+  assert.equal(Object.is(parseLabelQueueInput(signedZero).input.cases[0].uncertainty.numerator, -0), false);
   const huge = { ...example(), cohorts: Array.from({ length: 32 }, (_, i) => ({ id: `c${i}`, role: "acquisition" as const, sources: Array.from({ length: 128 }, (_, j) => `s${i}-${j}`) })),
     policy: { ...example().policy, cohort: "c0" }, cases: Array.from({ length: 5000 }, (_, i) => row(`${i}${"x".repeat(90)}`, { source: "s0-0", cohort: "c0", revision: "r".repeat(96), task: "t".repeat(96), bucket: "b".repeat(96), label: { kind: "inferred" as const, value: "v".repeat(96), actor: "a".repeat(96), evidence: "e".repeat(96) } })) };
   refuses(() => selectLabelQueue(huge));

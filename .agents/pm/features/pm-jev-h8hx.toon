@@ -2,19 +2,22 @@ id: pm-jev-h8hx
 title: Queue budgeted human labeling with deterministic uncertainty and diversity selection
 description: "Read-only reusable label acquisition workflow over declared abstained and unlabeled cases, preserving source/cohort boundaries and explicit label provenance. Overlap recheck: core SDK owns certified tracker reads and native mutations; existing evaluation ground truth and same-tracker exemplars supply data/context; pm-rl owns training and promotion. No equivalent acquisition queue found in the inspected CLI declarations, pm-jev, pm-context or pm-rl surfaces. This does not enlarge the benchmark or introduce a training backend."
 type: Feature
+pm_format_version: 2
 status: in_progress
 priority: 2
 tags[2]: human-labeling,label-acquisition
 created_at: "2026-10-29T00:34:43.284Z"
-updated_at: "2026-10-29T00:50:51.434Z"
+updated_at: "2026-10-29T01:04:40.271Z"
 author: codex-agent
 acceptance_criteria: "A fixed seed yields the same bounded queue; Held-out sources remain separated; No inferred label becomes ground truth; Selection emits measured candidate and omission counts; Typed SDK and CLI share one strict bounded schema, exact ratio decisions and compact JSON/TOON output with typed refusals and remedies; Seeded 500-sequence model test covers older replays, CRLF, native relationships, SDK state readback and ambient focus; public read-only non-git tracker validation reports measured counts"
-comments[5]{created_at,author,text}:
+comments[7]{created_at,author,text}:
   "2026-10-29T00:36:01.488Z",codex-agent,"Overlap recheck completed against the installed CLI SDK declaration index, CLI extension surfaces, pm-jev evaluation/exemplar paths, pm-context evidence packing and pm-rl corpus/evaluation plans. Existing pm-jev-xgo9 expands independent ground truth; pm-jev-f4ba supplies same-tracker exemplars. This feature supplies a reusable human-label selection workflow only. Plan: one strict portable schema, exact count ratios, seeded deterministic uncertainty ranking plus declared diversity/cost limits, immutable cohort source membership, explicit human/inferred/absent provenance, compact measured omissions. Queue is pure and read-only: no import/sync, native mutation, durable budget, claims, reservation, journal or transaction-isolation claim. Consumers must revalidate live revisions before any later labeling write; commitWorkspaceTransaction alone does not isolate ordinary writers (upstream #1620). Verification: boundary/extreme corpora, 500 model-based sequences and SDK native-state readback in non-git trackers, behavioral revert proof, packed install modes, public read-only tracker measurements; local focused tests/typecheck/lint and CI npm+Bun full release gates."
   "2026-10-29T00:43:40.549Z",codex-agent,"Focused queue verification passed 8/8 tests, including 500 seeded operation sequences (3000 operations), 500 exact-ratio boundary cases, isolated invalid/duplicate cases, maximum 5000-case/100-slot output and native no-git JSON/TOON. Targeted coverage reports 100% lines/branches/functions for label-schema.ts, label-queue.ts, label-command.ts and bounded-json.ts. Public acceptance on committed unbraind/pm-lint data: 25 items, 56 authoritative files; 13 eligible, 11 selected, 14 omitted (12 below minimum, 2 diversity), 22/30 labeling units spent, 8 remaining, 3 buckets. Separate controls preserved 11 inferred labels, omitted 1 held-out case and 25 human-labeled cases. SDK readback and all authoritative hashes unchanged; zero inference and mutation calls. These annotations measure queue mechanics, not inference quality or native ground truth. Packed acceptance and behavioral revert proof remain before PR."
   "2026-10-29T00:45:33.890Z",codex-agent,"Behavioral revert proof ran only in a disposable copy: replacing selectLabelQueue eligibility filtering with candidate pass-through caused the fixed-seed regression to fail (held-out case-c selected instead of case-a), exit 1. Restoring the fixed function passed the same regression, exit 0. The package worktree remained fixed. The native compact output test now uses the supported SDK decodePmTableRows helper for nested provenance/ratio cells rather than a package normalization copy."
   "2026-10-29T00:48:42.918Z",codex-agent,"pm test pm-jev-h8hx --run --progress passed the registered focused command: 8 tests, 8 passed, 0 failed/skipped/canceled; result tracking is disabled by existing tracker policy, so the measured receipt is recorded here without changing settings. Typecheck, test typecheck, lint, zero-duplication (105 sources; 0 clone pairs) and docstring audit (41 files, 1035 declarations) passed. Shared bounded JSON reader regression passed 1/1 existing native joint-command CLI test. Local strict health found only the already-tracked managed extension skew (pm-jev-v2la); no provisioning changes are in scope."
   "2026-10-29T00:50:49.083Z",codex-agent,"Packed acceptance passed: one captured npm archive, five install modes (project-local, npm global, Bun global, npx, bunx), eleven native cases per mode (55 total; ten label-queue JSON/TOON cases), plus packed queue SDK replay under Node and Bun. SHA-512 of that tested archive: 30d58abf2ce014bda3328232a105f6dc9b7367edd10fac068fa4d0713f7918d3e2a5bf557862a723163f3e3e06e707bce0ec8a1a062856f44a4ea677dac6b998. Contents include all queue runtime modules, guide, example and public evidence; no binary is tracked. Isolated-global-context strict health passed all ten gating checks; the ordinary-context skew remains pm-jev-v2la. Final documentation/changelog artifact acceptance and exact-head CI will be linked in the PR. CI is the full npm run release:check and bun run release:check authority on Node 22 and 26, with unchanged 100% coverage and 0% duplication thresholds. Scope limitations: per-invocation advisory budgets, caller-governed source aliases and declared provenance, no live freshness guarantee, shared reservation or native write path. No merge or release is authorized."
+  "2026-10-29T01:02:32.568Z",codex-agent,"Final producer round-trip review found a signed-zero corner case: JavaScript accepts -0 within integer zero bounds but JSON emits 0. Canonicalize zero in the sole integer schema normalizer, preserving documented mathematical domains; add a regression covering budget, limit, minimum ratio and case ratio across parse/export/replay. This touches only portable queue numbers, never native tracker normalization. The prior final-artifact install attempt had a clean-cache dependency-resolution failure before consumers; the unchanged retry passed its first four install modes. Final code/head acceptance is repeated after this small schema correction."
+  "2026-10-29T01:04:36.936Z",codex-agent,"Signed-zero correction passed the complete focused file again: 8/8 tests, 0 skipped/canceled; 100% lines/branches/functions across all four new runtime files. Build, source/test typechecks, lint, zero duplication and all 1035 function/export docstrings passed. A second disposable behavioral revert replaced only the integer zero canonicalizer with its original return: the producer JSON round-trip regression failed on -0 versus 0 (exit 1), and restoring that function passed (exit 0). The unchanged retry of the prior-head final documentation artifact passed all 55 native install cases and Node/Bun SDK checks (SHA-512 06cc86ba4a2511ff08d952fed316b7e830a1488bd09ec45bfe8ddfaef159cb15f03155e27a81e1d53059ceac2c5327a00b0c9a399f2ef1d27d75b6671b59f492). Packed metadata now allows 900 seconds for that intentionally longer acceptance command. PR #66 is ready for review; original-head CI remains queued at https://github.com/unbraind/pm-jev/actions/runs/40797269718 and is not approval. Final-head package acceptance and npm/Bun release gates remain required; PR validation notes will carry their exact run/digest. No native tracker write, lock isolation, shared budget or inferred-ground-truth claim is added."
 files[9]{path,scope}:
   bounded-json.ts,project
   index.ts,project
@@ -25,9 +28,24 @@ files[9]{path,scope}:
   test/joint-install.acceptance.ts,project
   test/label-queue.acceptance.ts,project
   test/label-queue.test.ts,project
-tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
-  node --test --test-concurrency=2 test/label-queue.test.ts,project,codex-agent,"2026-10-29T00:44:25.060Z",local_mutation,feat/budgeted-label-acquisition-queues
-  node --test --test-concurrency=1 test/joint-install.acceptance.ts,project,codex-agent,"2026-10-29T00:50:45.476Z",local_mutation,feat/budgeted-label-acquisition-queues
+tests[2]:
+  - command: node --test --test-concurrency=2 test/label-queue.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-29T00:44:25.060Z"
+      source_kind: local_mutation
+      source_ref: feat/budgeted-label-acquisition-queues
+  - command: node --test --test-concurrency=1 test/joint-install.acceptance.ts
+    scope: project
+    timeout_seconds: 900
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-29T00:50:45.476Z"
+      source_kind: local_mutation
+      source_ref: feat/budgeted-label-acquisition-queues
+    updated_by: codex-agent
+    updated_at: "2026-10-29T01:03:32.360Z"
 docs[4]{path,scope}:
   docs/label-queue-evidence.json,project
   docs/label-queue.md,project

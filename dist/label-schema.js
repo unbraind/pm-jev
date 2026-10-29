@@ -45,7 +45,7 @@ function text(value) {
 /** Labeling costs and bounds use safe integer arithmetic exclusively. */
 function integer(value, minimum, maximum) {
     requireInput(typeof value === "number" && Number.isSafeInteger(value) && value >= minimum && value <= maximum);
-    return value;
+    return value === 0 ? 0 : value;
 }
 /** Validate a declared count ratio without rounding or silently repairing its denominator. */
 function ratio(value) {

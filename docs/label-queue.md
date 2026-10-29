@@ -62,6 +62,8 @@ defaults, status-name heuristics, or ambient project/parent/session values.
   annotator's identity or turn declarations into certified ground truth.
 
 Strings are exact and are never trimmed, case-folded or Unicode-normalized.
+Integer zero is canonicalized to `0`, including a supplied JavaScript `-0`, so
+producer documents retain identical values after JSON serialization.
 Whitespace/CRLF in nonblank identities and provenance survives round trips.
 Source alias equivalence and cross-source duplicate content require caller
 governance; exact identity membership cannot establish their independence.
