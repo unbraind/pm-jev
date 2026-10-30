@@ -2,13 +2,19 @@ id: pm-jev-79ht
 title: Explain incompatible joint decision proposals before apply
 description: Validate selected typed answers against caller-declared cross-question constraints and host relationship rules without changing model answers or tracker state.
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags[2]: constraints,joint-decisions
 created_at: "2026-10-28T20:38:13.829Z"
-updated_at: "2026-10-28T22:39:40.592Z"
+updated_at: "2026-10-30T18:04:58.310Z"
+closed_at: "2026-10-30T18:04:55.743Z"
+completed_at: "2026-10-28T23:01:58.000Z"
 author: codex-agent
 acceptance_criteria: "A mutually exclusive classification pair produces a two-answer witness; validator never silently edits model answers; a failed constraint produces zero mutations; typed SDK and CLI with compact TOON/JSON, typed refusals and remedies; documented example and measured public tracker validation."
+release: 2026.10.29
+resolution: "Delivered by PR #65 (296dbc6): Explain incompatible joint decision proposals before apply"
+expected_result: "A mutually exclusive classification pair produces a two-answer witness; validator never silently edits model answers; a failed constraint produces zero mutations; typed SDK and CLI with compact TOON/JSON, typed refusals and remedies; documented example and measured public tracker validation."
+actual_result: "PR #65 merged at 2026-10-28T23:01:58Z as 296dbc6; required CI passed on the merged head."
 comments[15]{created_at,author,text}:
   "2026-10-28T20:38:33.857Z",codex-agent,"Overlap recheck: index.ts parseQuestionsDocument/validateAnswers validate individual typed shapes; triage/link apply individual proposals. Installed host SDK graph exports RelationshipGraph, assertHierarchyMutationAllowed, assertNonHierarchyCardinalityMutationAllowed, validateRelationshipEvents and ordering analysis; core owns mutation validation/transactions. Sibling pm-context next-evidence/witnesses select evidence, pm-review scopes validate review obligations, pm-rl handles evaluation/training; none implements caller-declared cross-question answer constraints. Plan: bounded read-only joint validation with exact choice/score/noul predicates, mutually exclusive/implication rules, compact answer witnesses and host graph checks for conditional relationship additions. No new apply, import/export/sync, journal, lease, checkpoint or status classification path; no model calls or tracker writes. Acceptance and shared safety constraints recorded before implementation."
   "2026-10-28T20:46:58.603Z",codex-agent,"Implementation: exported joint schema, validator and compact typed reports; jev validate delegates to the same SDK path. Selected choice/score values are preserved even when distributions disagree; noul predicates require exact inclusive cutoffs. Relationship additions are checked as one prospective graph via SDK edge, hierarchy, cardinality and ordering primitives. The new path is read-only and has no persistent package state. Focused tests currently pass 7/7, including 500 seeded sequences / 4000 operations, native no-Git JSON/TOON and SDK read-back preservation. Shipped SDK producer optional fields are accepted; malformed inputs are refused before client acquisition. Additional branch coverage and installation/public-copy acceptance are running."
@@ -49,4 +55,5 @@ docs[4]{path,scope}:
   docs/joint-decisions.md,project
   examples/joint-decisions.json,project
   README.md,project
+close_reason: "Delivered by PR #65 (296dbc6): Explain incompatible joint decision proposals before apply"
 body: ""
