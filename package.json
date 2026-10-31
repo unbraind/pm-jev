@@ -1,6 +1,6 @@
 {
   "name": "pm-jev",
-  "version": "2026.10.30",
+  "version": "2026.10.31",
   "description": "Typed, local-first System One decisions for pm-cli items (Jev-style models via @typesafe-ai/sdk)",
   "repository": {
     "type": "git",
