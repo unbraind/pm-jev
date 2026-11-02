@@ -1,0 +1,11 @@
+id: pm-jev-nl5n
+title: "Release version replacement still rewrites a comment, not the exported extension identity"
+description: "Tracks gh:unbraind/pm-jev#68 (filed 2026-10-29, missed by the blind issue watch). The release workflow's non-global first-match replacement (release.yml, source.replace(/version:\\s*[\"'][^\"']+[\"']/, ...)) still hits the explanatory comment above the export first: on current main index.ts line ~2471 holds the rewritten literal ('the release workflow rewrites the first version: \"2026.10.31\" literal') while the actual exported extension identity at line ~2475 still declares 2026.10.5, inconsistent with package.json/manifest.json at every release since. Fix the replacement to target the exported property (a global or anchored regex, or explicit capture of the export site) and add a release-prep regression asserting the exported identity equals the prepared version."
+type: Issue
+status: open
+priority: 2
+tags[2]: "gh:unbraind/pm-jev#68",release
+created_at: "2026-11-02T09:17:33.970Z"
+updated_at: "2026-11-02T09:17:33.970Z"
+author: pi-glm
+body: ""
