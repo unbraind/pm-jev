@@ -1,0 +1,24 @@
+id: pm-jev-github-21e139da0658-62
+title: Release publish resolves verified tarball argument as a GitHub SSH repository
+description: "GH issue #62: https://github.com/unbraind/pm-jev/issues/62 · author @unbraind · state reason completed · created 2026-10-28T11:41:34Z · updated 2026-11-02T11:14:32Z"
+type: Issue
+status: closed
+priority: 2
+tags[2]: "gh:unbraind/pm-jev#62","github_author:unbraind"
+created_at: "2026-10-28T11:41:34Z"
+updated_at: "2026-11-03T12:02:15.683Z"
+closed_at: "2026-11-02T09:26:43Z"
+completed_at: "2026-11-02T09:26:43Z"
+author: pm-github
+close_reason: "Closed on GitHub as completed on 2026-11-02T09:26:43Z"
+github_close_reason: "Closed on GitHub as completed on 2026-11-02T09:26:43Z"
+github_closed_at: "2026-11-02T09:26:43Z"
+github_created_at: "2026-10-28T11:41:34Z"
+github_link_only: false
+github_number: 62
+github_release: ""
+github_state: closed
+github_state_reason: completed
+github_updated_at: "2026-11-02T11:14:32Z"
+github_url: "https://github.com/unbraind/pm-jev/issues/62"
+body: "## Hosted defect: verified tarball is not treated as a local publish input\n\nObserved on `976e62b2e956a806ceb28d10ee14b31d38006193` (intended package version `2026.10.28`), not a local reproduction.\n\n[Daily Release run 40672657971](https://github.com/unbraind/pm-jev/actions/runs/40672657971), [release job 122775665923](https://github.com/unbraind/pm-jev/actions/runs/40672657971/job/122775665923):\n- 11:15:06 UTC: artifact handoff reports `release-artifact/package.tgz: OK`.\n- The [publish command at this revision](https://github.com/unbraind/pm-jev/blob/976e62b2e956a806ceb28d10ee14b31d38006193/.github/workflows/release.yml#L767) is `npm publish release-artifact/package.tgz --access public --provenance --ignore-scripts`.\n- 11:15:09, 11:15:40 and 11:16:12: npm exits128 after attempting `git --no-replace-objects ls-remote` on an SSH GitHub URL for `release-artifact/package.tgz.git`, followed by `Permission denied (publickey)`.\n- 11:26:19: the workflow exhausts its three attempts plus10-minute registry reconciliation and reports the intended package coordinate unconfirmed.\n\n## Expected / actual / impact\nExpected: publish exactly the hash-verified local artifact, retaining provenance and existing approval/tree/identity safeguards. Actual: npm resolves the supplied argument as a GitHub repository rather than the verified local tarball. The release transaction fails after its metadata PR merged; a source merge is not evidence of npm publication.\n\nThe [accepted release-readiness record](https://github.com/unbraind/pm-jev/blob/976e62b2e956a806ceb28d10ee14b31d38006193/.agents/pm/chores/pm-jev-release-gate.toon) requires verified packed files and gated publishing. Its existing security/approval checks should remain intact.\n\n## Acceptance / regression criteria\n- Resolve the publication argument explicitly as an existing local artifact (for example an absolute or explicit `./` path), reverify its hash immediately before invoking npm, and fail locally if absent.\n- Add a hermetic regression around the exact production publish argument and current npm-version behavior, covering present and missing tarballs; no GitHub shorthand/SSH lookup should occur.\n- Preserve provenance, approval, immutable-tree verification and byte-identical reconciliation; do not fix this by adding SSH credentials or weakening controls.\n- Verify the eventual official npm artifact separately from metadata merge and GitHub release creation, when the implementation owner authorizes a release.\n\n## Scope and deduplication\nRead-only hosted logs plus static workflow/canonical-record review. No publish, credentials, provider mutation or source execution performed. A local-path fix has not been tested here; the observed resolver behavior is proven, while the exact remediation remains implementation work. This is distinct from the already-reported runtime version-string issue on PR61. All-status repository issues/PRs and current PM records were checked; no owner of this publish-path failure was found.\n\n---\n\n### GitHub comments (2)\n\n> **@unbraind** (2026-10-28T15:22:00Z)\n>\n> Root cause: npm parses the bare spec `release-artifact/package.tgz` as the GitHub shorthand owner/repo, hence the `git ls-remote ssh://git@github.com/release-artifact/package.tgz.git` calls. Fixed by publishing `./release-artifact/package.tgz` in #63, and in the same scaffold line in pm-evidence, pm-hypothesis, pm-lint, pm-memory, pm-review, pm-rlm and pm-swarm.\n\n> **@unbraind** (2026-11-02T09:26:42Z)\n>\n> Fixed on main. Evidence: PR #63 merged 2026-10-28T15:55Z (publish ./release-artifact/package.tgz); Daily Release success runs 41193224689 (2026-10-31), 41298022212 (2026-11-01); v2026.10.30/.31 and v2026.11.01 published (Found in the 2026-11-02 triage of issues the blind issue watch missed.)"

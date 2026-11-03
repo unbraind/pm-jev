@@ -1,11 +1,21 @@
 id: pm-jev-nl5n
-title: "Release version replacement still rewrites a comment, not the exported extension identity"
-description: "Tracks gh:unbraind/pm-jev#68 (filed 2026-10-29, missed by the blind issue watch). The release workflow's non-global first-match replacement (release.yml, source.replace(/version:\\s*[\"'][^\"']+[\"']/, ...)) still hits the explanatory comment above the export first: on current main index.ts line ~2471 holds the rewritten literal ('the release workflow rewrites the first version: \"2026.10.31\" literal') while the actual exported extension identity at line ~2475 still declares 2026.10.5, inconsistent with package.json/manifest.json at every release since. Fix the replacement to target the exported property (a global or anchored regex, or explicit capture of the export site) and add a release-prep regression asserting the exported identity equals the prepared version."
+title: Release version replacement updates a comment instead of the exported extension identity
+description: "GH issue #68: https://github.com/unbraind/pm-jev/issues/68 · author @unbraind · created 2026-10-29T13:44:57Z · updated 2026-10-29T13:44:57Z"
 type: Issue
 status: open
 priority: 2
-tags[2]: "gh:unbraind/pm-jev#68",release
-created_at: "2026-11-02T09:17:33.970Z"
-updated_at: "2026-11-02T09:17:33.970Z"
+tags[2]: "gh:unbraind/pm-jev#68","github_author:unbraind"
+created_at: "2026-10-29T13:44:57Z"
+updated_at: "2026-11-03T12:02:15.663Z"
 author: pi-glm
-body: ""
+github_close_reason: ""
+github_closed_at: ""
+github_created_at: "2026-10-29T13:44:57Z"
+github_link_only: false
+github_number: 68
+github_release: ""
+github_state: open
+github_state_reason: unspecified
+github_updated_at: "2026-10-29T13:44:57Z"
+github_url: "https://github.com/unbraind/pm-jev/issues/68"
+body: "## Static release-identity mismatch\nPR #67 head `321403235af39961d85a333be0c51120481dda84` prepares version `2026.10.29` in package.json, root lock metadata and manifest.json, but the actual default extension export still declares `2026.10.5` in both [index.ts](https://github.com/unbraind/pm-jev/blob/321403235af39961d85a333be0c51120481dda84/index.ts#L2469-L2475) and [committed dist/index.js](https://github.com/unbraind/pm-jev/blob/321403235af39961d85a333be0c51120481dda84/dist/index.js#L1919-L1925).\n\nThe release diff updates the preceding comment's example `version: \"2026.10.28\"` to `.29`, not the actual exported property.\n\n## Exact mechanism and bounded reproduction\n[Release preparation, line153](https://github.com/unbraind/pm-jev/blob/321403235af39961d85a333be0c51120481dda84/.github/workflows/release.yml#L153) uses a non-global first-match replacement:\n```js\nsource.replace(/version:\\s*[\"'][^\"']+[\"']/, 'version: \"' + version + '\"')\n```\nThe first matching text is in the comment describing that replacement. A pure Node string-transform check using this public source excerpt, restoring only the comment's prior `.28` value and applying the exact regex with target `.29`, changes the comment while the export remains `2026.10.5`. Two assertions passed. No repository module, workflow, provider or native tracker was executed.\n\n## Intended contract / impact\n[Canonical release-readiness record pm-jev-release-gate](https://github.com/unbraind/pm-jev/blob/321403235af39961d85a333be0c51120481dda84/.agents/pm/chores/pm-jev-release-gate.toon), delivered by #51, requires verified metadata and packed release contents. The source itself describes the extension identity as release-managed.\n\nConsumers inspecting the exported module receive a stale version inconsistent with the package/manifest, undermining reliable version attribution and diagnostics. Actual host display/cache behavior, installed package behavior and npm publication have **not** been tested or inferred. This is source/committed-output evidence, not a claim that this candidate is published.\n\nAll-status67issues/PRs and canonical issue/chore records checked. Existing #62 / #63 concern tarball argument resolution, not this identity mismatch. PR67 is the current candidate.\n\n## Acceptance / regression\n1. Update the actual exported identity structurally or from a single verified version source; do not match comments/string examples as code.\n2. Fail release preparation when package, manifest and actual source/built default-export versions disagree.\n3. Include a regression with a misleading version literal in a preceding comment and multiple unrelated version strings; check the exported property, not mere text presence.\n4. Verify the packed artifact's actual extension export matches its package/manifest, without executing activation or contacting live providers.\n5. Preserve approval/publishing guards and existing coverage thresholds; no release or credential change is requested by this issue."
