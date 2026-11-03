@@ -1,5 +1,5 @@
 import { zstdDecompressSync } from "node:zlib";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdtempSync, rmSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path, { join } from "node:path";
@@ -9,6 +9,8 @@ import { createExtensionCommandSdk, PmClient, resolveImplicitPmRoot } from "@unb
 import { createExtensionTestHarness } from "@unbrained/pm-cli/sdk/testing";
 import extension from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
+import { EVALUATION_VERSION, evidenceHash } from "../decision-calibration.ts";
+import type { CalibrationReceipt, EvaluationTask, Reliability } from "../decision-calibration.ts";
 
 /** Run a plain-tracker regression with no git executable or enclosing repository discovery. */
 export async function withoutGit<T>(cwd: string, run: () => Promise<T>): Promise<T> {
@@ -60,6 +62,61 @@ export async function endpoint() {
   const address = server.address();
   if (address === null || typeof address === "string") throw new Error("missing server address");
   return { url: `http://127.0.0.1:${address.port}`, requests, setReply: (handler: typeof reply) => { reply = handler; }, close: async () => { server.closeAllConnections(); await new Promise<void>(resolveClose => { server.close(() => resolveClose()); }); } };
+}
+
+
+/** Empty reliability shell for a synthetic calibration record that only needs a digest identity. */
+function emptyReliability(): Reliability {
+  return { count: 0, accuracy: null, ece: null, nll: null, classes: [], bins: [], thresholds: [] };
+}
+
+/**
+ * Persist a digest-bound calibration and change that digest after the first decision response.
+ *
+ * The replacement makes calibrated inference throw an expected error with no context.code.
+ * A plain transport Error cannot reach that branch: it is mapped to jev_malformed_answer.
+ */
+export async function serveDigestReplacement(fixture: Awaited<ReturnType<typeof project>>, server: Awaited<ReturnType<typeof endpoint>>, task: EvaluationTask): Promise<void> {
+  const before = "c".repeat(64);
+  const reliability = emptyReliability();
+  const record: CalibrationReceipt = {
+    version: EVALUATION_VERSION,
+    method: "temperature_scaling_nll_grid",
+    task,
+    model: "tev1:4b",
+    model_digest: before,
+    target_precision: 0.9,
+    seed: "0",
+    calibration_repositories: ["public/a"],
+    validation_repositories: ["public/b"],
+    data: [],
+    observations_sha256: evidenceHash([]),
+    channels: {
+      marker: {
+        temperature: 1,
+        threshold: 0.9,
+        reason: "synthetic",
+        question_sha256: ["a".repeat(64)],
+        calibration: { raw: reliability, calibrated: reliability },
+        validation: { raw: reliability, calibrated: reliability },
+        validation_at_threshold: null,
+      },
+    },
+  };
+  const sdk = createExtensionCommandSdk(fixture.pmRoot, fixture.pm, "fixture", "jev calibrate");
+  await sdk.mutateWorkspaceSettings({
+    operationId: randomUUID(),
+    mutate: current => ({ ...current, jev: { calibrations: { [evidenceHash([task, "tev1:4b"])]: record } } }),
+  });
+  let inferred = false;
+  server.setReply((request, response, body) => {
+    if (request.url === "/api/tags") {
+      response.end(JSON.stringify({ models: [{ name: "tev1:4b", digest: inferred ? "d".repeat(64) : before, capabilities: ["decision"] }] }));
+      return;
+    }
+    inferred = true;
+    response.end(JSON.stringify(answers((body as { questions: Questions }).questions)));
+  });
 }
 
 /** Produce a normalized response for the actual supplied question schema. */

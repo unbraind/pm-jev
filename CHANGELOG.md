@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Update triage and link backlog tests for typed host lookup refusals on the pinned toolchain ([pm-jev-6fs0](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-6fs0.toon))
+
 ### Closed
 
 - Closed: Release publish resolves verified tarball argument as a GitHub SSH repository ([pm-jev-github-21e139da0658-62](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-62.toon))
