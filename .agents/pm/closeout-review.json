@@ -1,0 +1,18 @@
+{
+  "needs_review": [
+    {
+      "item": "pm-jev-tl8w",
+      "action": "needs_review",
+      "candidates": [
+        63
+      ],
+      "missing_evidence": [
+        {
+          "pr": 63,
+          "code": "required_checks_unverified",
+          "reason": "GitHub GET /repos/unbraind/pm-jev/branches/main/protection/required_status_checks failed; verify token read access and retry: HTTP 403. Required-check metadata unavailable; declare --required-checks (workflow input required-checks) to verify the required contexts. GITHUB_TOKEN cannot read administration-only branch protection."
+        }
+      ]
+    }
+  ]
+}
