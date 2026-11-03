@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Update triage and link backlog tests for typed host lookup refusals on the pinned toolchain ([pm-jev-6fs0](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-6fs0.toon))
+
 ## 2026.10.29 - 2026-10-29
 
 ### Added

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import test from "node:test";
 import { getSettingsPath, isHostOutputSuppressed, locateItem } from "@unbrained/pm-cli/sdk";
-import { answers, hostedFixture, scenario, typeAnswers } from "./fixtures.ts";
+import { answers, hostedFixture, scenario, serveDigestReplacement, typeAnswers } from "./fixtures.ts";
 import { KEEP_CURRENT_TYPE, projectTriageState, resolveJevEndpoint, triageSourceHash } from "../index.ts";
 import type { BacklogTriageRow, BacklogTriageSummary, ProjectableItem, TriageDecision } from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
@@ -300,6 +300,31 @@ test("deleted and missing source documents retain host errors without applying r
       assert.equal(server.requests.length, 1);
     });
   }
+});
+
+test("batch retains an untyped calibrated decision failure as jev_triage_failure without a receipt", async () => {
+  await scenario(async (fixture, server) => {
+    const item = (await fixture.pm.create({ type: "Feature", title: "Digest moves", priority: 3 })).item;
+    // Model replacement during calibrated inference is an expected error with no context.code.
+    // The backlog keeps the failed row, writes no receipt, and uses the generic fallback reason.
+    await serveDigestReplacement(fixture, server, "triage");
+    const output = await capture(() => fixture.harness.runCommand({
+      command: "jev triage", pmRoot: fixture.pmRoot, global: { json: true, quiet: false },
+      options: { apply: true, limit: "1", open: true },
+    }));
+    const row = JSON.parse(output.lines[0]) as BacklogTriageRow;
+    assert.equal(row.item, item.id);
+    assert.equal(row.outcome, "failed");
+    assert.equal(row.reason, "jev_triage_failure");
+    assert.equal(summary(output.result).failed, 1);
+    assert.equal(summary(output.result).changed, 0);
+    assert.equal(summary(output.result).exit_code, 1);
+    assert.equal((output.result as { exitCode: number }).exitCode, 1);
+    assert.equal((await fixture.pm.comments(item.id)).count, 0);
+    assert.equal((await fixture.pm.get(item.id)).item.type, "Feature");
+    assert.equal((await fixture.pm.get(item.id)).item.priority, 3);
+    assert.equal(server.requests.some(request => request.path !== "/api/tags"), true);
+  });
 });
 
 test("TOON batches stream a table row per item; empty backlogs have a zero summary without inference", async () => {

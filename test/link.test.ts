@@ -7,7 +7,7 @@ import { resolveWorkspaceRelationshipKindRegistry } from "@unbrained/pm-cli/sdk/
 import type { BeforeMutationHookContext } from "@unbrained/pm-cli/sdk/authoring";
 import type { Questions } from "@typesafe-ai/sdk";
 import type { LinkDecision } from "../index.ts";
-import { answers, scenario, trackerSnapshot } from "./fixtures.ts";
+import { answers, scenario, serveDigestReplacement, trackerSnapshot } from "./fixtures.ts";
 
 type Fixture = Parameters<Parameters<typeof scenario>[0]>[0];
 type Server = Parameters<Parameters<typeof scenario>[0]>[1];
@@ -314,7 +314,7 @@ test("link backlog deadline fails remaining items without subsequent inference",
 });
 
 
-test("link backlog preserves missing-source host failures and emits a fallback reason", async () => {
+test("link backlog preserves missing-source host failures as item_not_found", async () => {
   await scenario(async (fixture, server) => {
     const { source, target } = await pair(fixture);
     const located = await Promise.all([source.id, target.id].map(id => locateItem(fixture.pmRoot, id)));
@@ -328,5 +328,28 @@ test("link backlog preserves missing-source host failures and emits a fallback r
     assert.equal(JSON.parse(lines[0]).reason, "item_not_found");
     assert.equal(JSON.parse(lines[1]).failed, 1);
     assert.equal(JSON.parse(lines[1]).exit_code, 1);
+  });
+});
+
+test("link backlog retains an untyped calibrated decision failure as jev_link_failure without a receipt", async () => {
+  await scenario(async (fixture, server) => {
+    const { source, target } = await pair(fixture);
+    // Model replacement during calibrated inference is an expected error with no context.code.
+    // The backlog keeps the failed row, writes no receipt, and uses the generic fallback reason.
+    await serveDigestReplacement(fixture, server, "link");
+    const lines = await capture(() => backlog(fixture, { apply: true, limit: "1" }, { json: true, quiet: false }));
+    const row = JSON.parse(lines[0]);
+    assert.equal(row.outcome, "failed");
+    assert.equal(row.reason, "jev_link_failure");
+    assert.equal(row.edges, 0);
+    assert.deepEqual(row.proposals, []);
+    assert.ok([source.id, target.id].includes(row.item));
+    assert.equal(JSON.parse(lines[1]).failed, 1);
+    assert.equal(JSON.parse(lines[1]).exit_code, 1);
+    for (const item of [source, target]) {
+      assert.equal((await fixture.pm.comments(item.id)).count, 0);
+      assert.equal((await fixture.pm.get(item.id, { full: true })).item.dependencies?.length ?? 0, 0);
+    }
+    assert.equal(server.requests.some(request => request.path !== "/api/tags"), true);
   });
 });
