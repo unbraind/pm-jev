@@ -323,7 +323,9 @@ test("link backlog preserves missing-source host failures and emits a fallback r
       response.end(JSON.stringify(answers((body as { questions: Questions }).questions)));
     });
     const lines = await capture(() => backlog(fixture, { apply: true, limit: "1" }, { json: true, quiet: false }));
-    assert.equal(JSON.parse(lines[0]).reason, "jev_link_failure");
+    // A missing source document now surfaces the host's typed lookup refusal (pm-cli 2026.10.28
+    // GH-1613), item_not_found, instead of the generic link fallback; the failure is still retained.
+    assert.equal(JSON.parse(lines[0]).reason, "item_not_found");
     assert.equal(JSON.parse(lines[1]).failed, 1);
     assert.equal(JSON.parse(lines[1]).exit_code, 1);
   });

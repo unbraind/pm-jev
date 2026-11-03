@@ -293,7 +293,9 @@ test("deleted and missing source documents retain host errors without applying r
       });
       const output = await capture(() => fixture.harness.runCommand({ command: "jev triage", pmRoot: fixture.pmRoot, options: { open: true, apply: true }, global: { json: true, quiet: false } }));
       assert.equal(summary(output.result).failed, 1);
-      assert.equal((JSON.parse(output.lines[0]) as BacklogTriageRow).reason, mode === "deleted" ? "item_deleted" : "jev_triage_failure");
+      // A missing item document now surfaces the host's typed lookup refusal (pm-cli 2026.10.28 GH-1613),
+      // item_not_found, instead of the generic decision fallback; a deleted item keeps its own item_deleted code.
+      assert.equal((JSON.parse(output.lines[0]) as BacklogTriageRow).reason, mode === "deleted" ? "item_deleted" : "item_not_found");
       assert.equal((await fixture.pm.listAllComplete()).items.length, 0);
       assert.equal(server.requests.length, 1);
     });
