@@ -2,12 +2,17 @@ id: pm-jev-6fs0
 title: Update triage and link backlog tests for typed host lookup refusals on the pinned toolchain
 description: "The pm-toolchain Dependabot bump pins @unbrained/pm-cli 2026.10.28, whose GH-1613 change preserves typed PmClient lookup refusals: reading or mutating an item whose document is missing from disk now fails with the host code item_not_found instead of an unclassified error. The batch triage and link backlog tests asserted the old generic fallback reasons (jev_triage_failure, jev_link_failure); the host-error retention they guard (outcome failed, exit code 1, no receipts applied) is unchanged, and the rows now carry the more precise host code."
 type: Chore
-status: in_progress
+status: closed
 priority: 2
 tags[4]: dependencies,"gh:unbraind/pm-jev#75",migration,sdk
 created_at: "2026-11-03T09:59:09.226Z"
-updated_at: "2026-11-03T13:22:40.762Z"
+updated_at: "2026-11-04T00:45:56.153Z"
+closed_at: "2026-11-04T00:45:56.127Z"
+completed_at: "2026-11-04T00:45:56.127Z"
 author: pi-toolchain-glm-1103
+resolution: Implemented and merged in #75 (8ee4d7f).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #75 as 8ee4d7f; checks successful at head 658428c: CodeQL, codeql, enable-auto-merge, test (22), test (26)."
 comments[6]{created_at,author,text}:
   "2026-11-03T09:59:26.357Z",pi-toolchain-glm-1103,"Reproduced both failures locally: test/batch-triage.test.ts 'deleted and missing source documents...' expects jev_triage_failure for the missing-file case and test/link.test.ts 'link backlog preserves missing-source host failures...' expects jev_link_failure; both rows now report the host code item_not_found. Root cause: pm-cli 2026.10.28 GH-1613 preserves typed PmClient lookup refusals, so a missing item document surfaces item_not_found through the pm-jev error mapping instead of falling back to the generic decision-failure codes. Classification: test pinned old CLI behaviour; production code is correct (the host error is retained, receipts are not applied, exit code stays 1). Fix: assert item_not_found for the missing-document cases and document the upstream reference in a comment; keep every other assertion."
   "2026-11-03T10:27:13.958Z",pi-toolchain-glm-1103,"Evidence: node --test test/batch-triage.test.ts test/link.test.ts passes 28/28 (both previously failing tests included). Full suite npm test passes 398/398, plus typecheck and lint green. The merge from main took main's lockfile and @types/node 26.6.6 and kept the PR's pinned toolchain (@unbrained/pm-cli 2026.10.28, pm-changelog 2026.10.28, pm-ops 2026.10.29), re-resolved with a package-lock-only install. No production change was needed; the new typed refusal codes are an upstream improvement, recorded here for the review."
@@ -25,4 +30,5 @@ tests[5]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   npm run coverage,project,grok-jev-coverage-1103,"2026-11-03T12:36:25.734Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-80bd5e049d
   npm run lint,project,grok-jev-coverage-1103,"2026-11-03T12:36:26.778Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-80bd5e049d
   npm run typecheck,project,grok-jev-coverage-1103,"2026-11-03T12:36:27.874Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-80bd5e049d
+close_reason: "Delivered by #75 \"Build(deps-dev): Bump the pm-toolchain group with 3 updates\" (merged as 8ee4d7f). Checks successful at the PR head 658428c: CodeQL, codeql, enable-auto-merge, test (22), test (26)."
 body: ""
