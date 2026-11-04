@@ -1916,12 +1916,14 @@ function registerCommands(api) {
         run: (ctx) => runDoctorCommand(ctx),
     }));
 }
-// The extension identity. The version string is release-managed: the daily
-// release workflow rewrites the first `version: "2026.11.4"` literal in this file.
+// The extension identity. Its version is release-managed: release preparation
+// runs scripts/release-identity.ts, which sets the version property of this
+// default export to the package version, and release:check imports the export
+// to confirm it. Keep `name` and the version as the first two properties.
 /** Public pm extension activation entry and release-managed identity. */
 export default defineExtension({
     name: "pm-jev",
-    version: "2026.10.5",
+    version: "2026.11.4",
     description: "Typed, local-first System One decisions for pm items (Jev-style models via @typesafe-ai/sdk)",
     /** Register the versioned decision commands with the pm host. */
     activate(api) {
