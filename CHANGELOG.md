@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Release version replacement updates a comment instead of the exported extension identity ([pm-jev-nl5n](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-nl5n.toon))
+
 ## 2026.11.4 - 2026-11-04
 
 ### Changed
