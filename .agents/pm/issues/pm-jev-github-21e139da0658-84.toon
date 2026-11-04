@@ -7,15 +7,16 @@ status: in_progress
 priority: 2
 tags[6]: dependencies,"gh:unbraind/pm-jev#83","gh:unbraind/pm-jev#84","github_author:unbraind",migration,sdk
 created_at: "2026-11-03T20:09:06Z"
-updated_at: "2026-11-04T20:05:22.598Z"
+updated_at: "2026-11-04T20:10:02.470Z"
 author: pm-github
-comments[6]{created_at,author,text}:
+comments[7]{created_at,author,text}:
   "2026-11-04T18:55:30.699Z",codex-toolchain-1104,"Read issue #84 and merged main. Verify the five fixture failures on SDK 2026.11.4, migrate only unsupported typed clears, preserve relationship controls, then run coverage, typecheck and lint. PR: https://github.com/unbraind/pm-jev/pull/83"
   "2026-11-04T18:56:54.549Z",codex-toolchain-1104,"Confirmed all five setup failures on SDK 2026.11.4. Root cause: 2026.10.30 GH-1614 keeps typed sentinel inputs literal (classification: test). Omit absent parent/blockedBy/goal/objective fields; SDK create ignores focus by default since GH-1577. Preserve all assertions, nonempty relationships, custom registry edges, and seeded replay controls. No production workaround or null clears."
   "2026-11-04T19:00:03.391Z",codex-toolchain-1104,Use explicit unset for registry updates and the label replay root; omit absent fields in remaining creates. A repeated focused run hit the linked-test default 120-second timeout while direct seeded checks continued; the coverage receipt uses an explicit 2400-second budget. Duplication identified a newly contiguous shared fixture token sequence; explicit clears retain intent without suppressions.
   "2026-11-04T19:01:11.526Z",codex-toolchain-1104,"Direct focused suite passed 21/21 (186.8 seconds), including 500-sequence native-state, registry, and label replay. Typecheck, lint, build, changelog check, docstring and public provenance checks passed. Duplication returned to 0% by scoping the label PRNG to its no-Git fixture callback. Full coverage is queued until the shared host has no active new full suite."
   "2026-11-04T19:48:35.377Z",codex-toolchain-1104,"Final affected-fixture validation passes 21/21 under Node 22.23.4 and 21/21 under Node 26.13.0, as well as 21/21 via pm test under Node 24.19.0 with corrected timeout metadata. Test compilation passes. All five original setup regressions reach their intended native-state/registry/replay assertions. Full coverage remains queued by the shared-host one-full-suite constraint."
   "2026-11-04T20:05:20.066Z",codex-toolchain-1104,"Budget boundary: all five original regressions pass on Node 22 and Node 26 (21/21 each), linked tests pass, and static/build/production audit/strict health/changelog gates pass. Full coverage could not start because the shared-host full-suite slot stayed occupied throughout the verification budget. Canceled this unstarted queue and retain coverage as NOT RUN for CI/orchestrator verification; no threshold or source-scope change. Push the verified fixture migration and leave this item in progress."
+  "2026-11-04T20:10:02.428Z",codex-toolchain-1104,"Integrated the refreshed Dependabot head with a normal merge after a non-fast-forward push rejection. Incoming main work only closed the previously delivered pm-jev-nl5n record. package.json, package-lock.json and all tested implementation/fixture files remain identical to fix commit c41559b. Regenerate release history and recheck strict health for the refreshed tracker snapshot; full coverage remains unrun under the documented budget fallback."
 files[5]{path,scope}:
   package-lock.json,project
   package.json,project
