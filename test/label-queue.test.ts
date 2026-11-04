@@ -230,11 +230,10 @@ test("package parsers never admit a valid identity by silently dropping its malf
 
 test("500 seeded operation sequences replay earlier inputs and read unchanged native SDK state", async () => {
   const f = await project(); let seed = 0x5e1ec7;
-  const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
   try { await withoutGit(f.cwd, async () => {
-    const none = { parent: "none", blockedBy: "none", goal: "none", objective: "none" };
-    const a = (await f.pm.create({ ...none, type: "Task", title: "Original \r\n title", description: "Whitespace \r\n description  ", body: "## Body\r\n\r\nRetain this.  ", priority: 3, tags: "original", status: "open", comment: ["text=Native comment"], note: ["text=Native note"], file: ["path=index.ts"], doc: ["path=README.md"] })).item.id;
-    const b = (await f.pm.create({ ...none, type: "Task", title: "Related native item", parent: a, blockedBy: a, dep: [`id=${a},kind=related`], status: "in_progress" })).item.id;
+    const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
+    const a = (await f.pm.create({ unset: ["parent", "blocked_by", "goal", "objective"], type: "Task", title: "Original \r\n title", description: "Whitespace \r\n description  ", body: "## Body\r\n\r\nRetain this.  ", priority: 3, tags: "original", status: "open", comment: ["text=Native comment"], note: ["text=Native note"], file: ["path=index.ts"], doc: ["path=README.md"] })).item.id;
+    const b = (await f.pm.create({ type: "Task", title: "Related native item", parent: a, blockedBy: a, dep: [`id=${a},kind=related`], status: "in_progress" })).item.id;
     for (const status of ["open", "in_progress", "closed", "canceled", "blocked"]) await f.pm.schemaRemapStatus(status, `custom_${random()}`, {});
     const nativeReference = structuredClone((await f.pm.listAllComplete({ includeBody: true })).items);
     const bytes = trackerSnapshot(f.pmRoot); const prior: LabelQueueInput[] = [example()];

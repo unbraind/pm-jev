@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- SDK 2026.10.30 upgrade aborts five native-state regressions on placeholder parent fixtures ([pm-jev-github-21e139da0658-84](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-84.toon))
 - Release version replacement updates a comment instead of the exported extension identity ([pm-jev-nl5n](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-nl5n.toon))
 
 ## 2026.11.4 - 2026-11-04

@@ -126,9 +126,9 @@ test("one strict boundary refuses malformed maps, holes, extreme domains, unknow
 test("host graph validates the entire selected batch on one real non-git tracker with zero mutations", async () => {
   const f = await project();
   try { await withoutGit(f.cwd, async () => {
-    const a = (await f.pm.create({ type: "Task", title: "A", parent: "none", blockedBy: "none", goal: "none", objective: "none" })).item.id;
-    const b = (await f.pm.create({ type: "Task", title: "B", parent: "none", blockedBy: "none", goal: "none", objective: "none" })).item.id;
-    const c = (await f.pm.create({ type: "Task", title: "C", parent: "none", blockedBy: "none", goal: "none", objective: "none" })).item.id;
+    const a = (await f.pm.create({ type: "Task", title: "A" })).item.id;
+    const b = (await f.pm.create({ type: "Task", title: "B" })).item.id;
+    const c = (await f.pm.create({ type: "Task", title: "C" })).item.id;
     const before = (await f.pm.listAllComplete({ includeBody: true })).items, bytes = trackerSnapshot(f.pmRoot);
     const raw = { ...batch(), constraints: [edge("ab", a, b), edge("ba", b, a)] };
     const context = { client: f.pm };
@@ -165,9 +165,9 @@ test("seeded model: 500 random operation sequences replay older documents and JS
   /** A reproducible generator independent of the implementation. */
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
   try { await withoutGit(f.cwd, async () => {
-    const a = (await f.pm.create({ type: "Task", title: "Native fields \r\n preserved", description: " keep whitespace \r\n", body: "## Body\r\n\r\nUnchanged.  ", priority: 2, status: "open", parent: "none", blockedBy: "none", goal: "none", objective: "none", tags: "native" })).item.id;
-    const b = (await f.pm.create({ type: "Task", title: "Native blocker", status: "in_progress", parent: "none", blockedBy: a, goal: "none", objective: "none" })).item.id;
-    const c = (await f.pm.create({ type: "Task", title: "Native parent and dependency", status: "open", parent: a, blockedBy: "none", goal: "none", objective: "none", dep: [`id=${b},kind=related`] })).item.id;
+    const a = (await f.pm.create({ type: "Task", title: "Native fields \r\n preserved", description: " keep whitespace \r\n", body: "## Body\r\n\r\nUnchanged.  ", priority: 2, status: "open", tags: "native" })).item.id;
+    const b = (await f.pm.create({ type: "Task", title: "Native blocker", status: "in_progress", blockedBy: a })).item.id;
+    const c = (await f.pm.create({ type: "Task", title: "Native parent and dependency", status: "open", parent: a, dep: [`id=${b},kind=related`] })).item.id;
     const nodes = [a, b, c];
     let prior = "open";
     for (let i = 0; i < 6; i++) { const next = `custom_${random()}`; await f.pm.schemaRemapStatus(prior, next, {}); prior = next; }

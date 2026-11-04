@@ -42,7 +42,7 @@ test("registry propagation: 500 seeded registry and batch permutations retain ex
   const f = await project();
   try { await withoutGit(f.cwd, async () => {
     const nodes: string[] = [];
-    for (const title of ["First", "Second", "Third"]) nodes.push((await f.pm.create({ type: "Task", title, parent: "none", blockedBy: "none", goal: "none", objective: "none" })).item.id);
+    for (const title of ["First", "Second", "Third"]) nodes.push((await f.pm.create({ type: "Task", title })).item.id);
     const native = (await f.pm.listAllComplete({ includeBody: true })).items, bytes = trackerSnapshot(f.pmRoot);
     let seed = 0x65a17;
     /** Reproduce random registry names and orderings without sharing implementation logic. */
@@ -71,9 +71,9 @@ test("registry propagation: stored custom edges and host-contributed JSON/TOON u
   try {
     installRegistryFixture(f.pmRoot);
     const client = new PmClient({ cwd: f.cwd, pmRoot: f.pmRoot, author: "fixture" });
-    const a = (await client.create({ type: "Task", title: "First", parent: "none", blockedBy: "none", goal: "none", objective: "none" })).item.id;
-    const b = (await client.create({ type: "Task", title: "Second", parent: "none", blockedBy: "none", goal: "none", objective: "none" })).item.id;
-    await client.update(a, { dep: [`id=${b},kind=fixture_precedes`], parent: "none", blockedBy: "none", goal: "none", objective: "none" });
+    const a = (await client.create({ type: "Task", title: "First" })).item.id;
+    const b = (await client.create({ type: "Task", title: "Second" })).item.id;
+    await client.update(a, { unset: ["parent", "blocked_by", "goal", "objective"], dep: [`id=${b},kind=fixture_precedes`] });
     const registry = new RelationshipKindRegistry();
     for (const definition of REGISTRY_DEFINITIONS) registry.register(definition);
     const before = (await client.listAllComplete({ includeBody: true })).items;
