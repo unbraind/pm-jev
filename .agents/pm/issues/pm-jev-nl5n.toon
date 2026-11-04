@@ -2,14 +2,18 @@ id: pm-jev-nl5n
 title: Release version replacement updates a comment instead of the exported extension identity
 description: "GH issue #68: https://github.com/unbraind/pm-jev/issues/68 · author @unbraind · created 2026-10-29T13:44:57Z · updated 2026-10-29T13:44:57Z"
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-jev#68","github_author:unbraind"
 created_at: "2026-10-29T13:44:57Z"
-updated_at: "2026-11-04T16:55:18.325Z"
-assignee: claude-hub
+updated_at: "2026-11-04T18:41:46.922Z"
+closed_at: "2026-11-04T18:41:46.908Z"
+completed_at: "2026-11-04T18:41:46.908Z"
 claim_principal: claude-hub
 author: pi-glm
+resolution: Implemented and merged in #90 (2c074b2).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #90 as 2c074b2; checks successful at head 1195a1d: CodeQL, codeql, test (22), test (26)."
 comments[1]{created_at,author,text}:
   "2026-11-04T16:55:18.325Z",claude-hub,"Fix (branch fix/release-version-targets-extension-export), against the issue's acceptance list. (1) scripts/release-identity.ts --write replaces the release workflow's first-match regex. It sets only the version property of 'export default defineExtension({ name: \"pm-jev\", version: ... })' and refuses a source with zero or several such declarations, or a version that is not plain x.y.z. The index.ts comment no longer quotes a version literal, and the export now declares the package version 2026.11.4 (it had said 2026.10.5 since v0). (2) release:check runs verify:release-identity right after the build. It compares package.json, both package-lock.json versions, manifest.json and the version property of the source and built default exports, which are imported statically and never activated, so a mismatch fails release preparation before commit or publish. (3) test/release-identity.test.ts runs the rewrite on a fixture with a misleading preceding comment, catalog_version, a nested version and a --policy-version example, then evaluates the module in a child process: the old first-match rewrite leaves the export stale, the new one updates only the export. (4) The pack step runs --archive on ./release-artifact/package.tgz. The packed package.json and manifest.json must report the verified version, and the packed dist/index.js must be byte-identical to the build whose export was verified. The packed module is not evaluated, since an extracted archive has no dependencies. (5) No approval, publish or credential step changed; coverage stays at 100/100/100 including the new script. Revert check: restoring 2026.10.5 fails 'this repository's source and built exports report its package version'. Full release:check passed locally up to changelog:check, which needed this item's entry."
 files[5]{path,scope}:
@@ -21,6 +25,7 @@ files[5]{path,scope}:
 tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/release-identity.test.ts,project,claude-hub,"2026-11-04T16:55:03.893Z",local_mutation,fix/release-version-targets-extension-export
   "npm run verify:release-identity",project,claude-hub,"2026-11-04T16:55:05.033Z",local_mutation,fix/release-version-targets-extension-export
+close_reason: "Delivered by #90 \"Release the exported extension identity instead of the comment describing it (pm-jev-nl5n, fixes #68)\" (merged as 2c074b2). Checks successful at the PR head 1195a1d: CodeQL, codeql, test (22), test (26)."
 github_close_reason: ""
 github_closed_at: ""
 github_created_at: "2026-10-29T13:44:57Z"
