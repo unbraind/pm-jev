@@ -90,6 +90,21 @@ test("one strict schema refuses sparse, extreme and unknown inputs before any me
   });
 });
 
+test("native template whitespace preserves Unicode blanks and uses the native ASCII fallback", async () => {
+  await scenario(async (fixture, server) => {
+    const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
+    const state = "Synthetic Unicode whitespace parity";
+    const make = (instructions: string, formfeed: string, nbsp: string) => ({ long_question_identity_for_whitespace: { type: "choice", instructions, criteria: { formfeed, nbsp } } });
+    // With a byte-only BPE, equal UTF-8/JSON-escaped field lengths are an independent count oracle.
+    const unicode = await admitDecision(config, state, make("\u00a0".repeat(40), "\f".repeat(4), "\u00a0".repeat(40)));
+    const ascii = await admitDecision(config, state, make("x".repeat(80), "formfeed", "x".repeat(80)));
+    assert.equal(unicode.receipt.max_prompt_tokens, ascii.receipt.max_prompt_tokens);
+    const vertical = await admitDecision(config, state, make("\v", "\ufeff", "\f"));
+    const encoded = await admitDecision(config, state, make("long_question_identity_for_whitespace", "xxx", "nbsp"));
+    assert.equal(vertical.receipt.max_prompt_tokens, encoded.receipt.max_prompt_tokens);
+  });
+});
+
 test("native metadata refusals are bounded, content-free and never fall through to inference", async () => {
   await scenario(async (fixture, server) => {
     const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url }); const raw = batch();

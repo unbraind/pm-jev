@@ -63,7 +63,8 @@ function pythonJson(value: unknown): string {
 }
 /** Tev1 substitutes undescribed options and compactly renders structured descriptions. */
 function description(value: unknown, fallback: string): string {
-  return value === undefined || value === null || (typeof value === "string" && value.trim() === "") ? fallback : typeof value === "string" ? value : JSON.stringify(value);
+  // The pinned native minja filter strips only the six ASCII whitespace characters, unlike JavaScript trim().
+  return value === undefined || value === null || (typeof value === "string" && /^[ \t\r\n\f\v]*$/.test(value)) ? fallback : typeof value === "string" ? value : JSON.stringify(value);
 }
 /** Compile precisely one published Tev1 prompt while retaining every option in wire order. */
 function prompt(state: unknown, name: string, question: Questions[string]): { text: string; options: number } {

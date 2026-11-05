@@ -63,7 +63,9 @@ unknown question/document fields and non-JSON objects refuse before network
 access. This initial numeric domain avoids differing JavaScript/native floating
 point JSON rendering. Existing tracker data remains readable; only a new
 inference/admission request must satisfy this profile. Text, whitespace, CRLF,
-Unicode and option order are preserved. Question normalization reuses the
+Unicode and option order are preserved. Blank instruction/option fallback uses the
+native six ASCII whitespace characters; non-breaking spaces and byte-order marks
+remain literal text, matching the pinned template rather than JavaScript trim(). Question normalization reuses the
 existing `parseQuestionsDocument` producer; all emitted numeric domains are
 validated before returning a receipt.
 
