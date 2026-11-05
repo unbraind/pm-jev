@@ -6,10 +6,10 @@ status: in_progress
 priority: 1
 tags[4]: admission,decision,"gh:unbraind/pm-jev#92",tokenizer
 created_at: "2026-11-05T04:39:51.590Z"
-updated_at: "2026-11-05T17:05:02.699Z"
+updated_at: "2026-11-05T18:14:04.718Z"
 author: codex-agent
 acceptance_criteria: Long multibyte state passing byte heuristics refuses before inference when it exceeds the pinned model context; valid short typed batches retain every option and question; one receipt identifies the smallest token reduction needed.
-comments[47]{created_at,author,text}:
+comments[53]{created_at,author,text}:
   "2026-11-05T04:40:17.822Z",codex-agent,"Overlap rechecked against current pm-jev main, host SDK and pm-context/pm-rl/pm-rlm: current code has UTF-8 budgets, decision capability discovery, calibrated digest checks and usage accounting; host output token budgets describe emitted context. None admits actual model-template-question input fit. This feature belongs at runDecision before local inference. No import/export/sync, journal, mutation, status-role or shared persistent state is added; those generic contracts remain delegated to existing SDK paths."
   "2026-11-05T04:54:50.735Z",codex-agent,"Implemented strict shared batch admission, the typed SDK receipt/refusals and jev admit. Both metadata and inference use a full sha256 model reference after one alias resolution. Initial supported profile pins the published Tev1 systemone template and reconstructs the native qwen35 BPE tokenizer from model metadata, including every question and option. Read-only no-git public acceptance: 26 tracker items read, 8 samples, 24 questions and 56 options retained; prompt maxima 158..298 tokens; receipts at most 484 bytes. Native usage independently matched 210 counted tokens. A 35,450-byte multibyte stress document counted 14,125 tokens against num_ctx 8,192 and refused with an exact 5,934-token deficit before inference. Tracker hashes stayed unchanged; details in docs/decision-admission-evidence.json."
   "2026-11-05T04:56:43.550Z",codex-agent,"Correction to the preceding measurement comment: the stress input is exactly 35,282 bytes (the committed evidence is authoritative). All other recorded token counts, limits and deficits are unchanged. Production audit reports zero vulnerabilities. Local typecheck, lint, docstrings and duplication passed; strict refusal and replay property tests are still being completed."
@@ -57,6 +57,12 @@ comments[47]{created_at,author,text}:
   "2026-11-05T16:56:32.426Z",codex-agent,"npm run release:check passed with isolated HOME and disabled global/system Git configuration: 444 tests passed, zero failed/canceled/skipped; all 49 source files reported. Coverage is 100% statements/lines (8013/8013), functions (403/403), branches (3862/3862); zero duplication, 1127 documented declarations, zero production vulnerabilities and 192-file pack dry-run passed. Artifact shasum: 8b19100a815ea9a354f1b16107d908519c8d4d74. Strict read-only PM health passed with zero warnings. No timeout retries were needed. Bun release gate is running serially next."
   "2026-11-05T16:56:34.944Z",codex-agent,"Final regression structure proof rerun after removing duplicated fixture setup: original command and broad timeout-code matcher each fail the respective targeted child test (the runner counts both child and parent as failures: 1 pass, 2 fail); original guide yields 1 pass and 1 fail. Restored implementation and guide pass all 5 focused tests. All mutation proofs used disposable copies; the package worktree retained the fixed implementation."
   "2026-11-05T17:05:00.259Z",codex-agent,"bun run release:check also passed at unchanged thresholds: 444 tests passed, zero failed/canceled/skipped; all 49 sources at 100% statements, lines, branches and functions. npm and Bun both produced the same 192-file pack dry-run shasum 8b19100a815ea9a354f1b16107d908519c8d4d74. Both full gates passed on their first run with no timeout retries. All 10 linked PM test commands passed. No PM CLI/SDK defect was found; configured test-result tracking is disabled and comments preserve results. Both unresolved review findings are fixed; no thread replies, resolutions, mentions, merge or release were performed. Final source, rebuilt dist and append-only PM evidence are ready for orchestrator verification; pushed-head CI is tracked on https://github.com/unbraind/pm-jev/pull/92/checks."
+  "2026-11-05T17:44:01.314Z",codex-agent,"Round 7: fetched all 13 review threads and every comment without pagination gaps; exactly two unresolved: PRRT_kwDOU8IMzs60MMXi (npm JavaScript entrypoint discovery) and PRRT_kwDOU8IMzs60MMXZ (per-decision no-mutation scope). Latest CodeRabbit review has no outside-diff findings. Both verified valid. Remote head 8c1f4b8 already includes main. Plan installation-derived, file-verified npm/npx entrypoints with POSIX and win32 fixtures, scoped guide regression, disposable-copy behavioral reverts, whole-diff same-class review, and serial unchanged npm/Bun release gates."
+  "2026-11-05T17:47:23.581Z",codex-agent,"Implemented round 7: npm/npx JavaScript entrypoints now come from a valid absolute npm_execpath sibling or the active Node installation, with file checks and a clear install/remediation refusal; PATH shims are never consulted. Fixtures cover POSIX bin/lib, win32 sibling layouts, npm caller paths, requested CLI selection, missing/directory entries and literal arguments. Guide now scopes inference/mutation refusal to the current decision and explicitly retains earlier backlog updates. Whole-PR same-class review checked changed runners, admission call sites, CLI documentation and guarantees; the docs-install caller was updated to stop passing PATH, and no further instance required a change."
+  "2026-11-05T17:47:35.491Z",codex-agent,"Behavioral revert proofs in a disposable package copy: fixed control runs 2/2 passed. Reverting only npmInvocation and its original imports to 8c1f4b8 makes the default-runtime native-PATH-shim/no-npm-caller regression fail 0/1 with Cannot locate the installed npm JavaScript entry point (no injected-signature mismatch). Restoring only the original guide makes the per-decision guarantee regression fail 0/1 with ERR_ASSERTION. Restoring both fixes reruns 2/2 passed. The source worktree was never mutated for either revert. Initial focused runner/docs tests passed 7/7; the linked expanded runner/docs/packed-install command passed 10/10 with zero failures or skips. Test-result storage is disabled by project policy; these comments retain receipts."
+  "2026-11-05T17:50:24.797Z",codex-agent,"Out-of-scope dependency audit follow-up: pm-jev-dev-glob-cancellation records three moderate development-toolchain findings through c8/test-exclude/glob for GHSA-3g3m-2fjr-6pw4. Exact-advisory search found no duplicate; the previous closed braces-chain item tracks different advisories. No dependency pins or gate thresholds changed in this review round."
+  "2026-11-05T18:10:38.922Z",codex-agent,"Round 7 npm release gate PASSED on the fixed code with unchanged thresholds: npm run release:check; full suite 448 passed, 0 failed/canceled/skipped, duration 785517 ms. All 49 inventoried sources reached 100 percent statements/lines/functions/branches (8013/8013 statements and lines, 403/403 functions, 3862/3862 branches). Typecheck, lint, zero duplication, build, release identity/privacy, 1127 documented declarations, production audit (zero vulnerabilities), 192-file pack dry-run (shasum 59b9f422f7631068ec3262c82a2706295fcc2e94), changelog and publish-attestation checks passed. The gate used an isolated home, disabled global/system Git configuration, a minimal credential-free child environment, and no more than two test workers. No timeout retry was needed. Dist was rebuilt and remains byte-identical. Bun full gate is running serially after npm."
+  "2026-11-05T18:14:03.653Z",codex-agent,"Round 7 Bun release gate PASSED: bun run release:check; full suite 448 passed, 0 failed/canceled/skipped, duration 652510 ms. Identical unchanged 100 percent coverage on all 49 sources (8013 statements/lines, 403 functions, 3862 branches), zero production vulnerabilities, and the same 192-file pack dry-run shasum 59b9f422f7631068ec3262c82a2706295fcc2e94 as npm. All static, build, identity/privacy, docstring, duplication, changelog and publication-attestation checks passed. Both full gates passed on the first attempt; no host-load timeout retry was needed. The focused linked command passed 10/10. Behavioral reverts each failed 1/1 and fixed/restored controls passed 2/2 in disposable copies. Releasing this agent claim while leaving the item in progress for orchestrator verification; the dependency follow-up remains open. Review threads remain untouched. Final tracker writes precede fresh pushed-head CI verification."
 files[36]:
   - path: admission-command.ts
     scope: project
@@ -104,10 +110,10 @@ files[36]:
     scope: project
   - path: test/admission-install-fixtures.ts
     scope: project
-    note: Offline packed dependency reuse and shell-free npm invocation
+    note: Node and npm installation entrypoint discovery
   - path: test/admission-install-runner.test.ts
     scope: project
-    note: Node-only Bun skip and Windows runner regressions
+    note: Cross-platform npm entrypoint fixtures and native shim regression
   - path: test/admission-module-boundaries.test.ts
     scope: project
   - path: test/admission-review.test.ts
@@ -133,7 +139,7 @@ files[36]:
     scope: project
   - path: test/policy-replay.test.ts
     scope: project
-tests[10]:
+tests[11]:
   - command: "node --test --test-concurrency=1 --test-name-pattern=\"exact multibyte|short typed|one strict|native metadata|retargeting|registered admission|numeric field|real no-git\" test/decision-admission.test.ts"
     scope: project
     provenance:
@@ -205,12 +211,20 @@ tests[10]:
       created_at: "2026-11-05T16:43:31.503Z"
       source_kind: local_mutation
       source_ref: feat/tokenizer-bound-decision-admission
+  - command: node --test --test-concurrency=2 test/admission-install-runner.test.ts test/admission-docs.test.ts test/admission-docs-install.test.ts
+    scope: project
+    timeout_seconds: 900
+    provenance:
+      author: codex-agent
+      created_at: "2026-11-05T17:46:30.766Z"
+      source_kind: local_mutation
+      source_ref: feat/tokenizer-bound-decision-admission
 docs[3]:
   - path: docs/decision-admission-evidence.json
     scope: project
   - path: docs/decision-admission.md
     scope: project
-    note: String-score calibration compatibility and refit guidance
+    note: Per-decision refusal guarantee and prior backlog changes
   - path: examples/decision-admission.json
     scope: project
 body: ""

@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readdirSync, realpathSync, symlinkSync } from "node:fs";
-import { delimiter, join, resolve } from "node:path";
+import { existsSync, mkdirSync, readdirSync, statSync, symlinkSync } from "node:fs";
+import { join, posix, win32 } from "node:path";
 import { createRequire } from "node:module";
 
 // Reuse tar from the pinned host, which owns archive installation, without adding a dependency.
@@ -8,21 +8,37 @@ const { extract } = createRequire(require.resolve("@unbrained/pm-cli/package.jso
   extract(options: { file: string; cwd: string; strip: number }): Promise<void>;
 };
 
-/** Resolve npm's JavaScript entry point so Windows never needs to execute a .cmd shim. */
-export function npmInvocation(command: "npm" | "npx", args: string[], searchPath = process.env.PATH ?? "") {
+/** Installation and filesystem boundaries for cross-platform entrypoint fixtures. */
+interface NpmInstallation {
+  /** Active Node executable, independent of package-manager PATH shims. */
+  execPath: string;
+  /** npm's invoking JavaScript entrypoint, when running under npm. */
+  npmExecPath?: string;
+  /** Select the installation's path syntax. */
+  platform: NodeJS.Platform;
+  /** Verify the candidate is an installed file, rather than a directory. */
+  isFile: (file: string) => boolean;
+}
+
+/** Resolve npm's verified JavaScript entrypoint without consulting PATH or executing shims. */
+export function npmInvocation(command: "npm" | "npx", args: string[], installation: NpmInstallation = {
+  execPath: process.execPath, npmExecPath: process.env.npm_execpath, platform: process.platform,
+  /** Verify an installed entrypoint before constructing its invocation. */
+  isFile: file => existsSync(file) && statSync(file).isFile(),
+}) {
+  const path = installation.platform === "win32" ? win32 : posix;
   const filename = `${command}-cli.js`;
-  for (const directory of searchPath.split(delimiter)) {
-    for (const base of [join(directory, "node_modules/npm/bin"), resolve(directory, "../lib/node_modules/npm/bin")]) {
-      const cli = join(base, filename);
-      if (existsSync(cli)) return { bin: process.execPath, args: [cli, ...args] };
-    }
-    const executable = join(directory, command);
-    if (existsSync(executable)) {
-      const cli = realpathSync(executable);
-      if (cli.endsWith(filename)) return { bin: process.execPath, args: [cli, ...args] };
-    }
+  const invokingCli = installation.npmExecPath;
+  const bases = [
+    ...(invokingCli && path.isAbsolute(invokingCli) && /^(npm|npx)-cli\.js$/.test(path.basename(invokingCli)) ? [path.dirname(invokingCli)] : []),
+    path.join(path.dirname(installation.execPath), "node_modules/npm/bin"),
+    path.resolve(path.dirname(installation.execPath), "../lib/node_modules/npm/bin"),
+  ];
+  for (const base of bases) {
+    const cli = path.join(base, filename);
+    if (installation.isFile(cli)) return { bin: installation.execPath, args: [cli, ...args] };
   }
-  throw new Error(`Cannot locate the installed ${command} JavaScript entry point`);
+  throw new Error(`Cannot locate the installed ${filename}; install npm alongside Node or run through npm with a valid npm_execpath`);
 }
 
 /** Unpack the tested artifact alongside the already-installed lockfile dependencies, without a resolver or network. */

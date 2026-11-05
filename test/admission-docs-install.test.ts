@@ -15,7 +15,7 @@ import { endpoint, trackerSnapshot } from "./fixtures.ts";
 const runFile = promisify(execFile);
 /** Run package managers through Node on every platform, leaving native Bun executables direct. */
 function execute(bin: string, args: string[], options: ExecFileOptions) {
-  const invocation = bin === "npm" || bin === "npx" ? npmInvocation(bin, args, options.env?.PATH) : { bin, args };
+  const invocation = bin === "npm" || bin === "npx" ? npmInvocation(bin, args) : { bin, args };
   return runFile(invocation.bin, invocation.args, { ...options, encoding: "utf8" });
 }
 

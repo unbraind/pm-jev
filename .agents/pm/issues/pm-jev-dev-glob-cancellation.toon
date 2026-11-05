@@ -1,0 +1,15 @@
+id: pm-jev-dev-glob-cancellation
+title: Update the development coverage toolchain for glob cancellation advisory
+description: "Dependency installation and a full credential-free npm audit report three moderate development dependency findings through c8, test-exclude and glob. Advisory GHSA-3g3m-2fjr-6pw4 describes AbortSignal cancellation bypass and post-timeout filesystem traversal in glob versions >=9.0.0 <=14.0.1: https://github.com/advisories/GHSA-3g3m-2fjr-6pw4 . The audit proposes a major c8 downgrade to 9.1.0; do not downgrade or weaken the existing coverage gate. Find a compatible patched toolchain, preserve all release thresholds, and verify npm and Bun gates. This differs from the already-closed braces/micromatch advisory item pm-jev-2rp1; exact-advisory tracker search found no existing item. No production exploit is established by this development dependency audit. Dependency changes are outside PR 92 review-round scope."
+type: Issue
+status: open
+priority: 2
+tags[3]: deferred,dependencies,dev-only
+created_at: "2026-11-05T17:50:21.802Z"
+updated_at: "2026-11-05T17:50:21.802Z"
+author: codex-agent
+acceptance_criteria: Resolve GHSA-3g3m-2fjr-6pw4 without downgrading coverage or relaxing thresholds; pass npm and Bun full release gates.
+files[2]{path,scope,note}:
+  package-lock.json,project,Locked development dependency chain
+  package.json,project,Coverage toolchain and unchanged release thresholds
+body: ""

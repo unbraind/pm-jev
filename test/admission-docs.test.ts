@@ -10,6 +10,12 @@ import { scenario, withoutGit } from "./fixtures.ts";
 const guide = readFileSync(new URL("../docs/decision-admission.md", import.meta.url), "utf8");
 const questions = { route: { type: "choice" as const, criteria: { keep: "Keep", change: "Change" } } };
 
+test("admission guide scopes refusal guarantees to each decision and preserves earlier backlog changes", () => {
+  assert.match(guide, /Every refusal and\s+overflow happens before inference or tracker mutation for that individual\s+decision/);
+  assert.match(guide, /During `pm jev triage --open --apply`, changes already applied to\s+earlier backlog items remain when a later decision is refused/);
+  assert.match(guide, /the session is\s+not rolled back/);
+});
+
 /** Capture a real refusal without replacing the admission or tracker implementation. */
 async function refused(run: () => unknown): Promise<AdmissionRefusal> {
   try { await run(); } catch (error) { assert.ok(error instanceof AdmissionRefusal); return error; }

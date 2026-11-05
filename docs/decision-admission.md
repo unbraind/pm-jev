@@ -93,7 +93,10 @@ expected error `jev_context_exceeded` with exit 2 and the same receipt in
 `context.details.admission`. Reduce the limiting prompt by at least
 `minimum_prompt_tokens_to_remove` tokens or explicitly select a larger supported
 digest-bound context, then preflight every question again. Every refusal and
-overflow happens before inference or tracker mutation.
+overflow happens before inference or tracker mutation for that individual
+decision. During `pm jev triage --open --apply`, changes already applied to
+earlier backlog items remain when a later decision is refused; the session is
+not rolled back.
 
 The existing dedupe request producer renders its fractional retrieval score as
 display text in model state. Candidate identity, order, numeric ranking and public
