@@ -136,7 +136,7 @@ test("Ollama adapter rejects nonlocal URLs, cloud models, unavailable or non-dec
     });
     const callsBefore = server.admissionRequests.length;
     assert.equal((await replayDecisions(recording(), policy, adapter)).agreement, 3);
-    assert.deepEqual(server.admissionRequests.slice(callsBefore).map(call => call.path), ["/api/show"]);
+    assert.deepEqual(server.admissionRequests.slice(callsBefore).map(call => call.path), []);
     server.setReply((_, res) => res.end(JSON.stringify({ ...result(), model: "changed" })));
     assert.equal((await replayDecisions(recording(), policy, adapter)).gaps, 1);
     const fetchMock = mock.method(globalThis, "fetch", async () => { throw new Error("offline"); });

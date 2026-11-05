@@ -1,3 +1,4 @@
+import { ollamaModelName } from "./ollama-model.js";
 import { acceptsThreshold } from "./threshold.js";
 import { compareExact, displayRatio, precisionMeets } from "./exact.js";
 import { createHash } from "node:crypto";
@@ -189,7 +190,7 @@ export async function modelDigest(baseUrl, model, timeout) {
     if (!response.ok)
         throw new Error("Cannot verify local model digest");
     const payload = await response.json();
-    const digest = payload.models.find(/** Match an exact installed model tag. */ /** Match an exact installed model tag. */ entry => entry.name === model)?.digest;
+    const digest = payload.models.find(/** Match an exact installed model tag. */ /** Match an exact installed model tag. */ entry => ollamaModelName(entry.name) === ollamaModelName(model))?.digest;
     if (!digest || !/^[a-f0-9]{64}$/.test(digest))
         throw new Error("Local model digest missing or invalid");
     return digest;

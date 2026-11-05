@@ -46,7 +46,7 @@ export async function endpoint() {
   const requests: { path: string; body: unknown; contentEncoding: string | undefined }[] = [];
   const admissionRequests: { path: string; body: unknown }[] = [];
   let admissionReply = (request: IncomingMessage, response: ServerResponse, _body: unknown): void => {
-    response.end(JSON.stringify(request.url === "/api/tags" ? { models: ["tev1:4b", "chat-model", "scripted-test-model"].map(name => ({ name, digest: "a".repeat(64) })) } : admissionMetadata()));
+    response.end(JSON.stringify(request.url === "/api/tags" ? { models: ["tev1:4b", "chat-model", "scripted-test-model"].map(name => ({ name: name.includes(":") ? name : `${name}:latest`, digest: "a".repeat(64) })) } : admissionMetadata()));
   };
   let reply = (request: IncomingMessage, response: ServerResponse, body: unknown): void => {
     if (request.url === "/v1/models") { response.end(JSON.stringify({ models: [{ name: "tev1:4b" }] })); return; }

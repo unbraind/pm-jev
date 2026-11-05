@@ -2,7 +2,7 @@ import { parseQuestionsDocument } from "./index.js";
 /** Version of the read-only, text-only decision admission document. */
 export const ADMISSION_VERSION = "pm-jev-admission/1";
 /** Bounds apply before serialization, network requests or tokenizer construction. */
-export const ADMISSION_LIMITS = Object.freeze({ bytes: 65536, questions: 64, options: 24, nodes: 16384, depth: 12, context: 1048576 });
+export const ADMISSION_LIMITS = Object.freeze({ bytes: 65536, questions: 64, options: 255, nodes: 16384, depth: 12, context: 1048576 });
 /** A stable refusal never repeats state, question text or provider response bodies. */
 export class AdmissionRefusal extends Error {
     /** Stable machine classification of the refusal. */
@@ -20,7 +20,7 @@ export class AdmissionRefusal extends Error {
 /** Reject unsupported input through the single schema shared by preflight and inference. */
 function requireInput(condition) {
     if (!condition)
-        throw new AdmissionRefusal("invalid_input", "Use pm-jev-admission/1 with non-null JSON state, 1..64 choice/score/noul questions, 1..24 choice options and 2..10 score levels, within 64 KiB. Use dense arrays, safe integer numbers, well-formed strings and documented fields only.");
+        throw new AdmissionRefusal("invalid_input", "Use pm-jev-admission/1 with non-null JSON state, 1..64 choice/score/noul questions, 1..255 choice options and 2..10 score levels, within 64 KiB. Use dense arrays, safe integer numbers, well-formed strings and documented fields only.");
 }
 /** Traverse before cloning: JSON must not silently erase holes, infinities, cycles or undefined entries. */
 function json(value, depth = 0, budget = { nodes: ADMISSION_LIMITS.nodes, chars: ADMISSION_LIMITS.bytes }) {

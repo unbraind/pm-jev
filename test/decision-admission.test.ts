@@ -18,7 +18,7 @@ function refusal(code: string) {
   return (error: unknown) => { assert.ok(error instanceof AdmissionRefusal); assert.equal(error.code, code); assert.ok(error.remedy.length > 30); assert.equal(error.message.includes("PRIVATE"), false); return true; };
 }
 /** Publish a tiny explicitly bounded model through the real HTTP metadata boundary. */
-function serveContext(server: Parameters<Parameters<typeof scenario>[0]>[1], context: number, digest = "a".repeat(64)): void {
+function serveContext(server: Parameters<Parameters<typeof scenario>[0]>[1], context: number, digest = context.toString(16).padStart(64, "0")): void {
   server.setAdmissionReply((request, response) => response.end(JSON.stringify(request.url === "/api/tags" ? { models: [{ name: "tev1:4b", digest }] } : admissionMetadata(context))));
 }
 
@@ -41,10 +41,10 @@ test("exact multibyte overflow refuses before inference and reports the smallest
     assert.ok(Buffer.byteLength(JSON.stringify(admitted.receipt)) < 700);
     // The exact usable threshold is inclusive; a one-token reduction in declared context flips it.
     server.setAdmissionReply((_, response) => response.end(JSON.stringify(admissionMetadata(admitted.receipt.max_prompt_tokens + 1))));
-    const pinned = { ...config, model: admitted.model };
+    const pinned = { ...config, model: `sha256:${"c".repeat(64)}` };
     assert.equal((await admitDecisionBatch(pinned, raw)).receipt.ok, true);
     server.setAdmissionReply((_, response) => response.end(JSON.stringify(admissionMetadata(admitted.receipt.max_prompt_tokens))));
-    assert.equal((await admitDecisionBatch(pinned, raw)).receipt.minimum_prompt_tokens_to_remove, 1);
+    assert.equal((await admitDecisionBatch({ ...pinned, model: `sha256:${"d".repeat(64)}` }, raw)).receipt.minimum_prompt_tokens_to_remove, 1);
   });
 });
 
@@ -145,6 +145,7 @@ test("native metadata refusals are bounded, content-free and never fall through 
     }
     server.setAdmissionReply((_, response) => response.end(JSON.stringify({ ...good, model_info: { ...info, "tokenizer.ggml.tokens": [...info["tokenizer.ggml.tokens"] as string[], "ab"], "tokenizer.ggml.token_type": [...info["tokenizer.ggml.token_type"] as number[], 1], "tokenizer.ggml.merges": ["a b"] } })));
     assert.equal((await admitDecisionBatch(pinned, raw)).receipt.ok, true);
+    pinned.model = `sha256:${"b".repeat(64)}`;
     for (const data of ["not JSON", "null", "[]", '"PRIVATE"']) {
       server.setAdmissionReply((_, response) => response.end(data));
       await assert.rejects(admitDecisionBatch(pinned, raw), refusal("metadata_unavailable"));
@@ -163,20 +164,21 @@ test("retargeting the alias at every network boundary and retry never changes th
   await scenario(async (fixture, server) => {
     const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
     const raw = batch();
-    for (const boundary of ["tags", "show", "retry"]) {
-      let alias = "a".repeat(64); let attempts = 0;
+    for (const [i, boundary] of ["tags", "show", "retry"].entries()) {
+      const digest = String(i + 1).repeat(64);
+      let alias = digest; let attempts = 0;
       server.setAdmissionReply((request, response, body) => {
         if (request.url === "/api/tags") { response.end(JSON.stringify({ models: [null, { name: "tev1:4b", digest: alias }] })); if (boundary === "tags") alias = "b".repeat(64); }
-        else { assert.equal((body as { model: string }).model, `sha256:${"a".repeat(64)}`); if (boundary === "show") alias = "b".repeat(64); response.end(JSON.stringify(admissionMetadata())); }
+        else { assert.equal((body as { model: string }).model, `sha256:${digest}`); if (boundary === "show") alias = "b".repeat(64); response.end(JSON.stringify(admissionMetadata())); }
       });
       const saved = server.requests.length;
       server.setReply((_, response, body) => {
-        assert.equal((body as { model: string }).model, `sha256:${"a".repeat(64)}`);
+        assert.equal((body as { model: string }).model, `sha256:${digest}`);
         if (boundary === "retry" && attempts++ === 0) { alias = "b".repeat(64); response.statusCode = 429; response.setHeader("retry-after-ms", "1"); response.end(); }
         else response.end(JSON.stringify({ ...answers(raw.questions), model: (body as { model: string }).model }));
       });
       const result = await runDecision(createJevClient({ config, hostedBlocked: null }, {}), config, raw.state, raw.questions);
-      assert.equal(result.admission?.model_digest, "a".repeat(64)); assert.equal(alias, "b".repeat(64));
+      assert.equal(result.admission?.model_digest, digest); assert.equal(alias, "b".repeat(64));
       assert.equal(server.requests.length - saved, boundary === "retry" ? 2 : 1);
     }
   });

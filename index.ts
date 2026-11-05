@@ -1,3 +1,4 @@
+import { ollamaModelName } from "./ollama-model.ts";
 import { acceptsThreshold, marginValue, threshold as thresholdState } from "./threshold.ts";
 import type { ThresholdInput } from "./threshold.ts";
 import { compareExact, displayExact, subtractExact } from "./exact.ts";
@@ -2220,7 +2221,7 @@ async function runDoctorCommand(ctx: CommandHandlerContext): Promise<DoctorRepor
     try {
       const inventory = await listDecisionModels(resolved, process.env);
       const decisionCapable = inventory.models.filter(/** Count only models advertising decision support. */ (model) => model.decision).length;
-      const served = inventory.models.some(/** Verify the configured model appears in the inventory. */ (model) => model.name === config.model);
+      const served = inventory.models.some(/** Verify the configured model appears in the inventory. */ (model) => config.provider === "ollama" ? ollamaModelName(model.name) === ollamaModelName(config.model) : model.name === config.model);
       checks.push(
         {
           name: "endpoint",

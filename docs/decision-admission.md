@@ -20,7 +20,11 @@ hosted prompt fit.
 
 Admission resolves the configured alias once through `/api/tags`, then reads
 `/api/show` and submits inference using `sha256:<full digest>`. An alias change
-between any of these steps cannot redirect an admitted request. No alias-keyed
+between any of these steps cannot redirect an admitted request. Untagged names
+resolve to `:latest`, including names containing a registry port. Validated profiles
+(tokenizer, context, vocabulary hash and labels) use a process-local eight-entry
+LRU keyed by endpoint and full digest. Aliases are resolved on every admission;
+a changed digest loads a new profile. Refusals are never cached. No alias-keyed
 cache, persisted admission journal, settings write or model download is used.
 Older endpoints that cannot inspect or submit a digest refuse; they never fall
 back to the alias.
@@ -61,7 +65,13 @@ decision output stay intact; the producer now emits the same documented numeric
 domain that admission accepts.
 
 The single input schema bounds the full document at 64 KiB, depth 12 and 16,384
-JSON nodes, with 1..64 questions, 1..24 choice options and 2..10 score levels.
+JSON nodes, with 1..64 questions, 1..255 choice options and 2..10 score levels.
+Native Tev1 labels are the single-token codes among `A..Z`, then `AA..ZZ`,
+in that order, capped at 255. A model with fewer labels refuses an oversized
+question with `option_limit_exceeded` before inference: explicitly select a
+model with more labels or revise the question, dedupe limit, or type registry.
+The existing dedupe limit (32 candidates plus `none`), registry-driven triage,
+and 255-option question parser retain their domains; nothing is silently dropped.
 State and structured descriptions use dense JSON arrays, well-formed Unicode,
 and safe integer numbers; fractional/nonfinite numbers, sparse arrays, cycles,
 unknown question/document fields and non-JSON objects refuse before network

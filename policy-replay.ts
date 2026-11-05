@@ -1,3 +1,4 @@
+import { ollamaModelName } from "./ollama-model.ts";
 import { compareExact, subtractExact } from "./exact.ts";
 import { reportPriorReceipt, withReceipt } from "./partial-receipt.ts";
 import type { ReceiptFailure, ReceiptOptions, ReceiptRun } from "./partial-receipt.ts";
@@ -217,7 +218,7 @@ export async function createOllamaReplayAdapter(model: string, baseUrl = "http:/
     const response = await fetch(`${origin}/api/tags`, { redirect: "error", signal: AbortSignal.timeout(5000) });
     if (!response.ok) throw new Error();
     const inventory = await response.json() as { models: { name: string; digest: string; capabilities: string[]; remote_host?: unknown; remote_model?: unknown }[] };
-    const card = inventory.models.find(/** Resolve the exact installed tag before sending any recorded state. */ entry => entry.name === model);
+    const card = inventory.models.find(/** Resolve the exact installed tag before sending any recorded state. */ entry => ollamaModelName(entry.name) === ollamaModelName(model));
     if (!card || card.remote_host || card.remote_model || !card.capabilities.includes("decision") || !/^[a-f0-9]{64}$/.test(card.digest)) throw new Error();
     const pinned = { ...config, model: `sha256:${card.digest}` };
     const client = createJevClient({ config: pinned, hostedBlocked: null }, {}, 0);
@@ -225,7 +226,7 @@ export async function createOllamaReplayAdapter(model: string, baseUrl = "http:/
       /** Reuse the existing typed transport with zero retries and a per-input deadline. */
       async decide(record, signal) {
         const result = await runDecision(client, pinned, record.state, record.questions, signal === undefined ? undefined : AbortSignal.any([signal, AbortSignal.timeout(deadlineMs)]));
-        if (result.model !== model && result.model !== pinned.model) throw new Error("Replay model changed");
+        if (ollamaModelName(result.model) !== ollamaModelName(model) && result.model !== pinned.model) throw new Error("Replay model changed");
         return result;
       } };
   } catch { throw new ReplayRefusal("model_unavailable", `Start local Ollama, run ollama pull ${model}, and verify that /api/tags advertises a local decision capability and digest; then retry.`); }
