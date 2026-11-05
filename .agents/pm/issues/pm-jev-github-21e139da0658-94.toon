@@ -1,0 +1,21 @@
+id: pm-jev-github-21e139da0658-94
+title: PR #92 rejects valid Unicode after item-state truncation splits a surrogate pair
+description: "GH issue #94: https://github.com/unbraind/pm-jev/issues/94 · author @unbraind · created 2026-11-05T05:31:07Z · updated 2026-11-05T05:31:07Z"
+type: Issue
+status: open
+priority: 2
+tags[2]: "gh:unbraind/pm-jev#94","github_author:unbraind"
+created_at: "2026-11-05T05:31:07Z"
+updated_at: "2026-11-05T11:11:21.715Z"
+author: pm-github
+github_close_reason: ""
+github_closed_at: ""
+github_created_at: "2026-11-05T05:31:07Z"
+github_link_only: false
+github_number: 94
+github_release: ""
+github_state: open
+github_state_reason: unspecified
+github_updated_at: "2026-11-05T05:31:07Z"
+github_url: "https://github.com/unbraind/pm-jev/issues/94"
+body: "## Reproduced projection/validation regression in PR #92\n\nTested commit: [0d30ec217955a12155038726a757bc8c441c2713](https://github.com/unbraind/pm-jev/pull/92). This finding concerns the proposed admission path, not a claim that the released package already refuses this input.\n\nThe new [JSON Unicode validation](https://github.com/unbraind/pm-jev/blob/0d30ec217955a12155038726a757bc8c441c2713/admission-schema.ts#L34-L36) rejects unpaired surrogates. The existing [item-state projection](https://github.com/unbraind/pm-jev/blob/0d30ec217955a12155038726a757bc8c441c2713/index.ts#L566-L588) uses UTF-16 `slice(0, 4000)` for text fields and `slice(0, 128)` for tags. These can split an emoji and create malformed Unicode from a valid tracker item. The new mandatory admission path then refuses its own projection as `invalid_input`.\n\n### Expected and actual\n\nThe documented projection goal is bounded, least-privilege item state. Valid source text should remain valid after truncation while preserving size/token limits and strict rejection of genuinely malformed source input.\n\nFor `\"a\".repeat(3999) + \"😀\" + \"z\"`, the original title is well-formed. Projection retains the first half of the emoji at code-unit index 3999, followed by the truncation suffix. Admission rejects it before inference.\n\n### Sanitized reproduction\n\nAn isolated Node source-excerpt harness ran the actual `projectItemState`/`truncateStateText` composition and the new JSON validation helper:\n\n```js\nconst original = \"a\".repeat(3999) + \"😀\" + \"z\";\noriginal.isWellFormed();                  // true\nvalidate({ title: original });            // accepted\nconst projected = projectItemState({\n  title: original, type: \"Task\", status: \"open\", tags: []\n});\nprojected.title.isWellFormed();           // false\nprojected.title.charCodeAt(3999).toString(16); // \"d83d\"\nvalidate(projected);                      // throws invalid_input\n```\n\nThe same code-unit boundary issue applies to tag projection at 128, though the executed reproduction above covers the text-field boundary.\n\n### Impact and limits\n\nA valid long title/body/description can block decision commands merely because an emoji crosses the projection limit. This is a reproduced source-composition defect, not evidence of a provider-side tokenizer failure. No SDK installation, provider request, inference, full CLI run or mutation was performed.\n\n### Regression criteria\n\n- Test a supplementary Unicode character spanning the 4,000-code-unit text boundary and the 128-code-unit tag boundary.\n- Generated projections remain well-formed and pass admission when the original source is valid.\n- Maintain bounded projection size and token admission; do not remove the Unicode validator or silently allow malformed input.\n- Retain short-Unicode and ordinary ASCII truncation controls, and rejection coverage for actual unpaired surrogates.\n\n### Scope and deduplication\n\nThe source goal is tracked by [pm-jev-tokenizer-admission](https://github.com/unbraind/pm-jev/blob/0d30ec217955a12155038726a757bc8c441c2713/.agents/pm/features/pm-jev-tokenizer-admission.toon). Before filing, the review screened all 92 all-status issue/PR titles, all four ordinary issue bodies, all 49 canonical PM records at this commit, the fresh #92 discussion and related #47 discussion. No existing issue or canonical defect record covered this mechanism. Historical PR conversations were not exhaustively audited. The candidate head was rechecked unchanged immediately before filing."

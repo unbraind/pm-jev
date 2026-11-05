@@ -1,15 +1,14 @@
 id: pm-jev-nl5n
 title: Release version replacement updates a comment instead of the exported extension identity
-description: "GH issue #68: https://github.com/unbraind/pm-jev/issues/68 · author @unbraind · created 2026-10-29T13:44:57Z · updated 2026-10-29T13:44:57Z"
+description: "GH issue #68: https://github.com/unbraind/pm-jev/issues/68 · author @unbraind · state reason completed · created 2026-10-29T13:44:57Z · updated 2026-11-04T18:39:37Z"
 type: Issue
 status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-jev#68","github_author:unbraind"
 created_at: "2026-10-29T13:44:57Z"
-updated_at: "2026-11-04T18:41:46.922Z"
-closed_at: "2026-11-04T18:41:46.908Z"
-completed_at: "2026-11-04T18:41:46.908Z"
-claim_principal: claude-hub
+updated_at: "2026-11-05T11:11:21.777Z"
+closed_at: "2026-11-04T18:39:37Z"
+completed_at: "2026-11-04T18:39:37Z"
 author: pi-glm
 resolution: Implemented and merged in #90 (2c074b2).
 expected_result: The change described by this item is on main.
@@ -25,15 +24,15 @@ files[5]{path,scope}:
 tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/release-identity.test.ts,project,claude-hub,"2026-11-04T16:55:03.893Z",local_mutation,fix/release-version-targets-extension-export
   "npm run verify:release-identity",project,claude-hub,"2026-11-04T16:55:05.033Z",local_mutation,fix/release-version-targets-extension-export
-close_reason: "Delivered by #90 \"Release the exported extension identity instead of the comment describing it (pm-jev-nl5n, fixes #68)\" (merged as 2c074b2). Checks successful at the PR head 1195a1d: CodeQL, codeql, test (22), test (26)."
-github_close_reason: ""
-github_closed_at: ""
+close_reason: "Closed on GitHub as completed on 2026-11-04T18:39:37Z; closing commit https://github.com/unbraind/pm-jev/commit/2c074b2f9d24c025e881a93f5e4968411f6adf7d"
+github_close_reason: "Closed on GitHub as completed on 2026-11-04T18:39:37Z; closing commit https://github.com/unbraind/pm-jev/commit/2c074b2f9d24c025e881a93f5e4968411f6adf7d"
+github_closed_at: "2026-11-04T18:39:37Z"
 github_created_at: "2026-10-29T13:44:57Z"
 github_link_only: false
 github_number: 68
 github_release: ""
-github_state: open
-github_state_reason: unspecified
-github_updated_at: "2026-10-29T13:44:57Z"
+github_state: closed
+github_state_reason: completed
+github_updated_at: "2026-11-04T18:39:37Z"
 github_url: "https://github.com/unbraind/pm-jev/issues/68"
 body: "## Static release-identity mismatch\nPR #67 head `321403235af39961d85a333be0c51120481dda84` prepares version `2026.10.29` in package.json, root lock metadata and manifest.json, but the actual default extension export still declares `2026.10.5` in both [index.ts](https://github.com/unbraind/pm-jev/blob/321403235af39961d85a333be0c51120481dda84/index.ts#L2469-L2475) and [committed dist/index.js](https://github.com/unbraind/pm-jev/blob/321403235af39961d85a333be0c51120481dda84/dist/index.js#L1919-L1925).\n\nThe release diff updates the preceding comment's example `version: \"2026.10.28\"` to `.29`, not the actual exported property.\n\n## Exact mechanism and bounded reproduction\n[Release preparation, line153](https://github.com/unbraind/pm-jev/blob/321403235af39961d85a333be0c51120481dda84/.github/workflows/release.yml#L153) uses a non-global first-match replacement:\n```js\nsource.replace(/version:\\s*[\"'][^\"']+[\"']/, 'version: \"' + version + '\"')\n```\nThe first matching text is in the comment describing that replacement. A pure Node string-transform check using this public source excerpt, restoring only the comment's prior `.28` value and applying the exact regex with target `.29`, changes the comment while the export remains `2026.10.5`. Two assertions passed. No repository module, workflow, provider or native tracker was executed.\n\n## Intended contract / impact\n[Canonical release-readiness record pm-jev-release-gate](https://github.com/unbraind/pm-jev/blob/321403235af39961d85a333be0c51120481dda84/.agents/pm/chores/pm-jev-release-gate.toon), delivered by #51, requires verified metadata and packed release contents. The source itself describes the extension identity as release-managed.\n\nConsumers inspecting the exported module receive a stale version inconsistent with the package/manifest, undermining reliable version attribution and diagnostics. Actual host display/cache behavior, installed package behavior and npm publication have **not** been tested or inferred. This is source/committed-output evidence, not a claim that this candidate is published.\n\nAll-status67issues/PRs and canonical issue/chore records checked. Existing #62 / #63 concern tarball argument resolution, not this identity mismatch. PR67 is the current candidate.\n\n## Acceptance / regression\n1. Update the actual exported identity structurally or from a single verified version source; do not match comments/string examples as code.\n2. Fail release preparation when package, manifest and actual source/built default-export versions disagree.\n3. Include a regression with a misleading version literal in a preceding comment and multiple unrelated version strings; check the exported property, not mere text presence.\n4. Verify the packed artifact's actual extension export matches its package/manifest, without executing activation or contacting live providers.\n5. Preserve approval/publishing guards and existing coverage thresholds; no release or credential change is requested by this issue."
