@@ -14,16 +14,18 @@ import { selectLabelQueue } from "../index.ts";
 import type { LabelQueueInput } from "../index.ts";
 import { duplicateLabelDocument } from "./label-identity-fixtures.ts";
 import { REGISTRY_DEFINITIONS, installRegistryFixture, registryBatch } from "./joint-registry-fixtures.ts";
+import { endpoint } from "./fixtures.ts";
 
 const execute = promisify(execFile);
 
 test("one archive validates through npm global, Bun global, project-local, npx and bunx installs", { timeout: 900000 }, async () => {
   const scratch = mkdtempSync(join(tmpdir(), "jev-joint-install-"));
+  const server = await endpoint();
   const root = resolve(".");
   // A minimal child environment avoids forwarding ambient registry/provider credentials.
   const env = { PATH: process.env.PATH, HOME: scratch, TMPDIR: scratch, NPM_CONFIG_USERCONFIG: devNull, npm_config_userconfig: devNull,
     NPM_CONFIG_CACHE: join(scratch, "npm-cache"), BUN_INSTALL: join(scratch, "bun"), BUN_INSTALL_GLOBAL_DIR: join(scratch, "bun-global"), BUN_INSTALL_BIN: join(scratch, "bun-bin"),
-    BUN_INSTALL_CACHE_DIR: join(scratch, "bun-cache"), PM_AUTHOR: "fixture", PM_TELEMETRY_OPT_OUT: "1", GIT_CEILING_DIRECTORIES: scratch };
+    BUN_INSTALL_CACHE_DIR: join(scratch, "bun-cache"), PM_AUTHOR: "fixture", PM_TELEMETRY_OPT_OUT: "1", GIT_CEILING_DIRECTORIES: scratch, PM_JEV_BASE_URL: server.url, PM_JEV_MODEL: "tev1:4b" };
   const pin = (JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as { devDependencies: Record<string, string> }).devDependencies["@unbrained/pm-cli"];
   const host = `@unbrained/pm-cli@${pin}`;
   try {
@@ -58,6 +60,13 @@ test("one archive validates through npm global, Bun global, project-local, npx a
       const runtimeEnv = { ...env, PM_PATH: join(tracker, ".agents/pm"), PM_GLOBAL_PATH: join(scratch, `global-${mode.name}`), PATH: `${join(local, "node_modules/.bin")}:${env.PATH}` };
       await execute(mode.bin, [...mode.args, "init", "synthetic", "--defaults", "--agent-guidance", "skip"], { cwd: mode.cwd, env: runtimeEnv, timeout: 120000 });
       await execute(mode.bin, [...mode.args, "install", archive], { cwd: mode.cwd, env: runtimeEnv, timeout: 120000 });
+      const admissionFile = join(scratch, "admission.json");
+      writeFileSync(admissionFile, readFileSync(join(root, "examples/decision-admission.json")));
+      for (const json of [true, false]) {
+        const output = await execute(mode.bin, [...mode.args, ...(json ? ["--json"] : []), "jev", "admit", "--batch", admissionFile], { cwd: mode.cwd, env: runtimeEnv, timeout: 120000 });
+        const receipt = (json ? JSON.parse(output.stdout) : decode(output.stdout)) as { ok: boolean; questions: number; options: number; inference_calls: number };
+        assert.equal(receipt.ok, true); assert.equal(receipt.questions, 3); assert.equal(receipt.options, 7); assert.equal(receipt.inference_calls, 0);
+      }
       const queueFile = join(scratch, "label-queue.json");
       const queueBytes = readFileSync(join(root, "examples/label-queue.json"), "utf8");
       writeFileSync(queueFile, queueBytes);
@@ -119,5 +128,5 @@ test("one archive validates through npm global, Bun global, project-local, npx a
     const queueCode = 'import {selectLabelQueue,parseLabelQueueInput} from "pm-jev"; import {readFileSync} from "node:fs"; globalThis.fetch=()=>{throw new Error("unexpected network");}; const input=JSON.parse(readFileSync(process.argv[1],"utf8")); const a=selectLabelQueue(input),b=selectLabelQueue(parseLabelQueueInput(input).input); if(JSON.stringify(a)!==JSON.stringify(b)||a.counts.selected!==2||a.omissions.held_out!==1||a.queue[0].ground_truth!==false||a.queue[0].label.kind!=="inferred")throw new Error("packed queue contract failed"); const conflict=JSON.parse(readFileSync(process.argv[2],"utf8")); const c=selectLabelQueue(conflict); if(c.counts.selected!==1||c.omissions.invalid!==conflict.cases.length-1||c.queue[0].id!==input.cases[1].id)throw new Error("packed duplicate quarantine failed");';
     for (const runtime of [process.execPath, "bun"]) await execute(runtime, ["--input-type=module", "-e", queueCode, join(root, "examples/label-queue.json"), conflictFile], { cwd: local, env, timeout: 120000 });
     console.log(`packed SDK: passed; sha512=${digest}`);
-  } finally { rmSync(scratch, { recursive: true, force: true }); }
+  } finally { await server.close(); rmSync(scratch, { recursive: true, force: true }); }
 });

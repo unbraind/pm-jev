@@ -1,6 +1,9 @@
 import { acceptsThreshold, marginValue, threshold as thresholdState } from "./threshold.js";
 import { compareExact, displayExact, subtractExact } from "./exact.js";
 import { TokenUsageTotals } from "./token-usage.js";
+import { admitDecision } from "./decision-admission.js";
+import { AdmissionRefusal } from "./admission-schema.js";
+import { ADMISSION_FLAGS, runAdmissionCommand } from "./admission-command.js";
 // pm-jev — typed, local-first System One decisions for pm items.
 //
 // "Project management = context management": this package turns pm items into
@@ -39,6 +42,10 @@ import { defineCommand, defineExtension } from "@unbrained/pm-cli/sdk/authoring"
 export { isPmCliExpectedError };
 /** Re-export the structural expected-error factory for package consumers. */
 export { createPmCliExpectedError };
+/** Exact local prompt admission, strict documents and content-free receipts. */
+export { admitDecision, admitDecisionBatch, validateAdmissionReceipt, TEV1_TEMPLATE_SHA256 } from "./decision-admission.js";
+/** Shared admission boundary and actionable machine refusals. */
+export { ADMISSION_VERSION, ADMISSION_LIMITS, AdmissionRefusal, parseAdmissionInput } from "./admission-schema.js";
 /** Fixed-score cost selection and proposal vetoes for SDK consumers. */
 export { COST_POLICY_VERSION, CostPolicyRefusal, parseCostDataset, selectAbstentionPolicy, abstainWithPolicy } from "./cost-policy.js";
 /** Bounded sensitivity comparisons over the existing typed decision interface. */
@@ -497,11 +504,15 @@ export async function runDecision(client, config, state, questions, signal) {
     try {
         if (state === null || state === undefined)
             throw new Error("malformed response: decision state must be non-null");
-        const request = { state: state, questions, model: config.model,
+        const deadline = signal ?? AbortSignal.timeout(config.totalDeadlineMs);
+        const admitted = config.provider === "ollama" ? await admitDecision(config, state, questions, deadline) : undefined;
+        if (admitted && !admitted.receipt.ok)
+            throw createPmCliExpectedError("Decision prompt exceeds its digest-bound context; reduce state or explicitly select a larger supported model and preflight again. Every question and option was retained.", { context: { code: "jev_context_exceeded", details: { admission: { ...admitted.receipt } } } });
+        const request = { state: (admitted?.state ?? state), questions: admitted?.questions ?? questions, model: admitted?.model ?? config.model,
             ...(config.provider === "ollama" && config.keepAlive !== undefined ? { keep_alive: config.keepAlive } : {}) };
-        const result = await client.systemOne(request, { signal: signal ?? AbortSignal.timeout(config.totalDeadlineMs) });
-        validateAnswers(questions, result);
-        return result;
+        const result = await client.systemOne(request, { signal: deadline });
+        validateAnswers(request.questions, result);
+        return admitted === undefined ? result : { ...result, admission: admitted.receipt };
     }
     catch (error) {
         throw translateDecisionError(error, config);
@@ -522,6 +533,8 @@ export async function runDecision(client, config, state, questions, signal) {
 export function translateDecisionError(error, config) {
     if (isPmCliExpectedError(error))
         return error;
+    if (error instanceof AdmissionRefusal)
+        return createPmCliExpectedError(error.message, { context: { code: `jev_admission_${error.code}`, required: error.remedy } });
     if (error instanceof APIUserAbortError || (error instanceof Error && error.name === "TimeoutError")) {
         return createPmCliExpectedError(`Decision call exceeded its total deadline of ${config.totalDeadlineMs}ms (model "${config.model}" at ${config.baseUrl}). Raise jev.total_deadline_ms in settings.json or reduce the batch.`, { context: { code: "jev_deadline_exceeded" }, });
     }
@@ -1797,6 +1810,14 @@ function registerCommands(api) {
         examples: ["pm jev validate --batch joint-decisions.json --json"],
         /** Use the same bounded validator for CLI and SDK decisions. */
         run: (ctx) => runJointCommand(ctx),
+    }));
+    api.registerCommand(defineCommand({
+        name: "jev admit",
+        description: "Check exact digest-bound local decision prompt fit without inference",
+        flags: ADMISSION_FLAGS,
+        examples: ["pm jev admit --batch examples/decision-admission.json --json"],
+        /** Preflight shares the inference admission path and the host's output renderer. */
+        run: (ctx) => runAdmissionCommand(ctx),
     }));
     api.registerCommand(defineCommand({
         name: "jev drift",

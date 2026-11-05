@@ -1,4 +1,5 @@
 import type { ThresholdInput } from "./threshold.ts";
+import type { AdmissionReceipt } from "./decision-admission.ts";
 import type { TokenUsage } from "./token-usage.ts";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import type { Questions, SystemOneResult, ChoiceResponse } from "@typesafe-ai/sdk";
@@ -15,6 +16,18 @@ export { createPmCliExpectedError };
 export type { ItemMetadata, PmSettings };
 /** Re-export the SDK question-map and result contracts callers validate against. */
 export type { Questions, SystemOneResult };
+/** Exact local prompt admission, strict documents and content-free receipts. */
+export { admitDecision, admitDecisionBatch, validateAdmissionReceipt, TEV1_TEMPLATE_SHA256 } from "./decision-admission.ts";
+/** Shared admission boundary and actionable machine refusals. */
+export { ADMISSION_VERSION, ADMISSION_LIMITS, AdmissionRefusal, parseAdmissionInput } from "./admission-schema.ts";
+/** Digest-pinned detached requests and numeric receipt contracts. */
+export type { AdmissionReceipt, AdmittedDecision } from "./decision-admission.ts";
+/** Portable admission input and refusal codes. */
+export type { AdmissionInput, AdmissionRefusalCode } from "./admission-schema.ts";
+/** Local results include the exact admission receipt; hosted results retain their existing contract. */
+export type DecisionResult = SystemOneResult<Questions> & {
+    readonly admission?: AdmissionReceipt;
+};
 /** Fixed-score cost selection and proposal vetoes for SDK consumers. */
 export { COST_POLICY_VERSION, CostPolicyRefusal, parseCostDataset, selectAbstentionPolicy, abstainWithPolicy } from "./cost-policy.ts";
 /** Typed caller costs, evidence, receipts and refusal codes. */
@@ -224,7 +237,7 @@ export declare function validateAnswers(questions: Questions, raw: unknown): ass
  * @returns The validated response with resolved model and usage.
  * @throws {PmCliExpectedError} A mapped transport/validation failure.
  */
-export declare function runDecision(client: TypeSafeClient, config: JevConfig, state: unknown, questions: Questions, signal?: AbortSignal): Promise<SystemOneResult<Questions>>;
+export declare function runDecision(client: TypeSafeClient, config: JevConfig, state: unknown, questions: Questions, signal?: AbortSignal): Promise<DecisionResult>;
 /**
  * Map any decision-call failure onto a typed expected CLI error.
  *
