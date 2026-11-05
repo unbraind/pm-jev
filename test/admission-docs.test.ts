@@ -1,0 +1,70 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+import { isPmCliExpectedError } from "@unbrained/pm-cli/sdk";
+import { AdmissionRefusal, admitDecision, admitDecisionBatch, createJevClient, resolveJevEndpoint, runDecision, translateDecisionError, validateAdmissionReceipt } from "../index.ts";
+import type { AdmissionRefusalCode } from "../index.ts";
+import { admissionMetadata } from "./admission-fixtures.ts";
+import { scenario, withoutGit } from "./fixtures.ts";
+
+const guide = readFileSync(new URL("../docs/decision-admission.md", import.meta.url), "utf8");
+const questions = { route: { type: "choice" as const, criteria: { keep: "Keep", change: "Change" } } };
+
+/** Capture a real refusal without replacing the admission or tracker implementation. */
+async function refused(run: () => unknown): Promise<AdmissionRefusal> {
+  try { await run(); } catch (error) { assert.ok(error instanceof AdmissionRefusal); return error; }
+  throw new Error("Expected an admission refusal");
+}
+
+test("admission guide refusal table matches every declared code, runtime remedy and host outcome", async () => {
+  const schema = readFileSync(new URL("../admission-schema.ts", import.meta.url), "utf8");
+  const declaration = schema.match(/export type AdmissionRefusalCode = ([^;]+);/);
+  assert.ok(declaration);
+  const codes = [...declaration[1].matchAll(/"([a-z_]+)"/g)].map(match => match[1]).sort();
+  const rows = guide.split("\n").filter(line => /^\| `[a-z_]+` \|/.test(line)).map(line => line.split(" | ").map(cell => cell.replace(/^\| | \|$/g, "").replaceAll("`", "")));
+  assert.deepEqual(rows.map(row => row[0]).sort(), codes);
+  await scenario(async (fixture, server) => withoutGit(fixture.cwd, async () => {
+    const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
+    const refusals = new Map<AdmissionRefusalCode, AdmissionRefusal>();
+    const invalid = await refused(() => admitDecisionBatch(config, {})); refusals.set(invalid.code, invalid);
+    const unsupported = await refused(() => admitDecision({ ...config, provider: "typesafe" }, "Synthetic", questions)); refusals.set(unsupported.code, unsupported);
+    const admitted = await admitDecision(config, "Synthetic", questions);
+    const report = await refused(() => validateAdmissionReceipt({ ...admitted.receipt, questions: 0 })); refusals.set(report.code, report);
+    const large = { route: { type: "choice" as const, criteria: Object.fromEntries(Array.from({ length: 27 }, (_, i) => [`option-${i}`, null])) } };
+    const options = await refused(() => admitDecision(config, "Synthetic", large)); refusals.set(options.code, options);
+    server.setAdmissionReply((_, response) => { response.statusCode = 503; response.end("unavailable"); });
+    const metadata = await refused(() => admitDecision(config, "Synthetic", questions)); refusals.set(metadata.code, metadata);
+    // The reserved code has no producer; verify the public mapper still preserves it.
+    const reserved = rows.find(row => row[0] === "context_exceeded"); assert.ok(reserved);
+    assert.equal(reserved[4], "Reserved code, not emitted by current admission; a supplied refusal preserves its remedy in context.required.");
+    for (const file of ["../admission-schema.ts", "../decision-admission.ts", "../admission-command.ts", "../index.ts"]) {
+      assert.doesNotMatch(readFileSync(new URL(file, import.meta.url), "utf8"), /new AdmissionRefusal\("context_exceeded"/);
+    }
+    refusals.set("context_exceeded", new AdmissionRefusal("context_exceeded", "Synthetic caller remedy"));
+    for (const row of rows) {
+      const error = refusals.get(row[0] as AdmissionRefusalCode); assert.ok(error);
+      const mapped = translateDecisionError(error, config);
+      assert.ok(isPmCliExpectedError(mapped)); assert.equal(mapped instanceof AdmissionRefusal, false);
+      assert.equal(mapped.context.code, row[1]); assert.equal(String(mapped.exitCode), row[2]);
+      assert.equal(row[3], "none"); assert.equal(mapped.context.details, undefined);
+      assert.equal(mapped.context.required, error.remedy);
+      if (error.code !== "context_exceeded") assert.ok(error.remedy.includes(row[4]), `${error.code}: documented remedy must match runtime`);
+    }
+    // Actual runDecision must use the same mapping rather than leaking the typed refusal.
+    server.setAdmissionReply((request, response) => response.end(JSON.stringify(request.url === "/api/tags" ? { models: [{ name: config.model, digest: "a".repeat(64) }] } : admissionMetadata())));
+    await assert.rejects(runDecision(createJevClient({ config, hostedBlocked: null }, {}), config, "Synthetic", large), error => {
+      assert.ok(isPmCliExpectedError(error)); assert.equal(error.context.code, "jev_admission_option_limit_exceeded");
+      assert.equal(error.exitCode, 2); assert.equal(error.context.required, options.remedy); return true;
+    });
+    server.setAdmissionReply((request, response) => response.end(JSON.stringify(request.url === "/api/tags" ? { models: [{ name: config.model, digest: "b".repeat(64) }] } : admissionMetadata(2))));
+    const overflow = await admitDecision(config, "Synthetic", questions); assert.equal(overflow.receipt.ok, false);
+    await assert.rejects(runDecision(createJevClient({ config, hostedBlocked: null }, {}), config, "Synthetic", questions), error => {
+      assert.ok(isPmCliExpectedError(error)); assert.equal(error.context.code, "jev_context_exceeded"); assert.equal(error.exitCode, 2);
+      assert.deepEqual(error.context.details?.admission, overflow.receipt); return true;
+    });
+    assert.match(guide, /Direct admission returns `receipt.ok: false`; `jev admit`\s+returns that receipt with exit 1 and a `remedy`/);
+    assert.match(guide, /`jev_context_exceeded` with exit 2 and the same receipt in\s+`context.details.admission`/);
+    assert.match(guide, /`jev admit` CLI returns exit 2/);
+    assert.equal(server.requests.length, 0);
+  }));
+});

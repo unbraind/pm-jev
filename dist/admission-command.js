@@ -13,7 +13,7 @@ export async function runAdmissionCommand(ctx) {
             raw = await readBoundedJson(readStringOption(ctx.options, "batch"), ADMISSION_LIMITS.bytes);
         }
         catch {
-            throw new AdmissionRefusal("invalid_input", "Pass --batch with a readable regular pm-jev-admission/1 JSON file up to 64 KiB; see examples/decision-admission.json.");
+            throw new AdmissionRefusal("invalid_input", "Pass --batch with a readable regular pm-jev-admission/1 JSON file up to 64 KiB; see node_modules/pm-jev/examples/decision-admission.json in the project where pm-jev is installed.");
         }
         const resolved = await resolveJevEndpoint(ctx.pm_root, process.env);
         requireCallableEndpoint(resolved);

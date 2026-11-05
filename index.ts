@@ -2359,7 +2359,7 @@ function registerCommands(api: ExtensionApi): void {
     name: "jev admit",
     description: "Check exact digest-bound local decision prompt fit without inference",
     flags: ADMISSION_FLAGS,
-    examples: ["pm jev admit --batch examples/decision-admission.json --json"],
+    examples: ["npx --no-install pm jev admit --batch node_modules/pm-jev/examples/decision-admission.json --json"],
     /** Preflight shares the inference admission path and the host's output renderer. */
     run: (ctx: CommandHandlerContext) => runAdmissionCommand(ctx),
   }));

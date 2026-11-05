@@ -1005,7 +1005,7 @@ Local decisions now count every complete typed question prompt against the
 immutable model's declared context before inference. Oversized batches refuse
 with one content-free receipt stating the minimum prompt-token reduction;
 questions and options are preserved. Check without inference using
-`pm jev admit --batch examples/decision-admission.json --json` (omit `--json`
+`npx --no-install pm jev admit --batch node_modules/pm-jev/examples/decision-admission.json --json` (omit `--json`
 for compact TOON), or use the typed `admitDecision` / `admitDecisionBatch` APIs.
 Local `runDecision` results include `admission`; inference uses the admitted
 `sha256:<digest>` model reference. The initial profile supports Tev1's pinned
