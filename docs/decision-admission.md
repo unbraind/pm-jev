@@ -55,6 +55,11 @@ host's expected error `jev_context_exceeded`, with the same admission receipt in
 admission failures. Receipts contain hashes/counts only, never state or question
 text.
 
+The existing dedupe request producer renders its fractional retrieval score as
+display text in model state. Candidate identity, order, numeric ranking and public
+decision output stay intact; the producer now emits the same documented numeric
+domain that admission accepts.
+
 The single input schema bounds the full document at 64 KiB, depth 12 and 16,384
 JSON nodes, with 1..64 questions, 1..24 choice options and 2..10 score levels.
 State and structured descriptions use dense JSON arrays, well-formed Unicode,

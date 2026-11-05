@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { decode, encode } from "@toon-format/toon";
-import { admitDecision, admitDecisionBatch, parseAdmissionInput, AdmissionRefusal, ADMISSION_VERSION, validateAdmissionReceipt, createJevClient, resolveJevEndpoint, runDecision, projectItemState, parseQuestionsDocument } from "../index.ts";
+import { admitDecision, admitDecisionBatch, parseAdmissionInput, AdmissionRefusal, ADMISSION_VERSION, validateAdmissionReceipt, createJevClient, resolveJevEndpoint, runDecision, projectItemState, parseQuestionsDocument, buildDedupeRequest } from "../index.ts";
 import type { AdmissionReceipt, Questions, ItemMetadata } from "../index.ts";
 import { scenario, withoutGit, trackerSnapshot, answers } from "./fixtures.ts";
 import { admissionMetadata } from "./admission-fixtures.ts";
@@ -102,6 +102,20 @@ test("native template whitespace preserves Unicode blanks and uses the native AS
     const vertical = await admitDecision(config, state, make("\v", "\ufeff", "\f"));
     const encoded = await admitDecision(config, state, make("long_question_identity_for_whitespace", "xxx", "nbsp"));
     assert.equal(vertical.receipt.max_prompt_tokens, encoded.receipt.max_prompt_tokens);
+  });
+});
+
+test("the existing dedupe producer admits fractional ranking metadata without changing candidates or options", async () => {
+  await scenario(async (fixture, server) => {
+    const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
+    const candidate = { id: "synthetic-candidate", title: "Existing task", type: "Task", status: "open", score: 2 / 3 };
+    const before = structuredClone(candidate);
+    const request = buildDedupeRequest("Proposed task", "Context", [candidate]);
+    const result = await runDecision(createJevClient({ config, hostedBlocked: null }, {}), config, request.state, request.questions);
+    assert.equal(result.admission?.ok, true); assert.equal(result.admission.questions, 1); assert.equal(result.admission.options, 2);
+    assert.deepEqual(candidate, before);
+    const question = request.questions.duplicate_of; assert.ok(question.type === "choice");
+    assert.equal(Object.keys(question.criteria).length, 2);
   });
 });
 

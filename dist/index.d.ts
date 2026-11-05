@@ -348,11 +348,11 @@ export declare function buildDedupeRequest(title: string, body: string, candidat
             body: string;
         };
         candidates: {
+            score: string;
             title: string;
             id: string;
             type: string;
             status: string;
-            score: number;
         }[];
     };
     questions: Questions;

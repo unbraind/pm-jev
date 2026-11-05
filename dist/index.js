@@ -887,7 +887,7 @@ export function buildDedupeRequest(title, body, candidates) {
         criteria[candidate.id] = `${truncateStateText(candidate.title)} (type ${candidate.type}, status ${candidate.status}, title similarity ${candidate.score})`;
     criteria.none = "The proposed item is not a duplicate of any candidate";
     const questions = { duplicate_of: { type: "choice", instructions: "A new pm item is about to be created. Does it duplicate one of the candidate items listed in the state? Choose the candidate id it duplicates, or none.", criteria } };
-    return { state: { proposed: { title: truncateStateText(title), body: truncateStateText(body) }, candidates: candidates.map(/** Bound candidate text without changing deterministic ranks. */ /** Bound candidate text without changing deterministic ranks. */ candidate => ({ ...candidate, title: truncateStateText(candidate.title) })) }, questions };
+    return { state: { proposed: { title: truncateStateText(title), body: truncateStateText(body) }, candidates: candidates.map(/** Keep the deterministic rank as exact display text within the supported JSON numeric domain. */ /** Keep the deterministic rank as exact display text within the supported JSON numeric domain. */ candidate => ({ ...candidate, score: String(candidate.score), title: truncateStateText(candidate.title) })) }, questions };
 }
 /** Bind the non-mutating candidate to the current type without adding routing fields to evidence. */
 export function withCurrentType(questions, current) {
