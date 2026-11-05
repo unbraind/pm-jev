@@ -5,6 +5,7 @@ import { writeFileSync } from "node:fs";
 import { getSettingsPath } from "@unbrained/pm-cli/sdk";
 import { activeCalibration, atThreshold, calibrationKey, calibrateObservations, calibratedAnswer, EVALUATION_VERSION, evidenceHash, fitTemperature, modelDigest, precisionLower, questionFingerprint, ranked, readCalibration, reliability, repositorySplit, scaledRows, scaleProbabilities, validExemplarSetting } from "../decision-calibration.ts";
 import type { Observation } from "../decision-calibration.ts";
+import { buildDedupeRequest } from "../index.ts";
 import { scenario } from "./fixtures.ts";
 
 /** Construct independent categorical observations with reproducible public provenance. */
@@ -96,6 +97,32 @@ test("channel application requires compatible semantics and refuses unqualified 
   fit.question_sha256 = [questionFingerprint("candidate_7", { instructions: "candidate_7" })];
   assert.ok(calibratedAnswer(active, "candidate_1", { instructions: "candidate_1" }, { yes: 0.65, no: 0.35 }, 0.8).calibration);
   assert.equal(questionFingerprint("duplicate_of", { type: "choice", instructions: "same", criteria: { id1: "A", none: "None" } }), questionFingerprint("duplicate_of", { type: "choice", instructions: "same", criteria: { id2: "B", none: "None" } }));
+});
+
+test("duplicate calibration rejects numeric-score legacy fits and accepts refits across candidate identities", () => {
+  const request = buildDedupeRequest("Synthetic", "Body", [{ id: "candidate-a", title: "Task", type: "Task", status: "open", score: 0.5 }]);
+  assert.equal(typeof request.state.candidates[0].score, "string");
+  const q = request.questions.duplicate_of;
+  assert.equal(q.type, "choice");
+  if (q.type !== "choice") throw new Error("Expected duplicate choice");
+  const legacy = evidenceHash({ type: q.type, instructions: q.instructions, candidate_count: Object.keys(q.criteria).length, none: q.criteria.none });
+  const record = calibrateObservations("dedupe", "local", "c".repeat(64), [...observations(40, "public/a"), ...observations(40, "public/b")], "0", 0.9);
+  const fit = record.channels.type;
+  record.channels.duplicate_of = fit;
+  fit.question_sha256 = [legacy];
+  fit.temperature = 0.1; fit.threshold = 0.9;
+  const active = { record, receipt_sha256: evidenceHash(record) };
+  const probabilities = { "candidate-a": 0.65, none: 0.35 };
+  const rejected = calibratedAnswer(active, "duplicate_of", q, probabilities, 0.8);
+  assert.equal(rejected.calibration, null);
+  assert.deepEqual(rejected.probabilities, probabilities);
+  assert.equal(rejected.threshold, 0.8);
+  fit.question_sha256 = [questionFingerprint("duplicate_of", q)];
+  const other = buildDedupeRequest("Other", "Different body", [{ id: "candidate-b", title: "Other task", type: "Issue", status: "closed", score: 0.75 }]);
+  const refitted = calibratedAnswer(active, "duplicate_of", other.questions.duplicate_of, { "candidate-b": 0.65, none: 0.35 }, 0.8);
+  assert.ok(refitted.calibration);
+  assert.ok(refitted.probabilities["candidate-b"] > 0.99);
+  assert.equal(refitted.threshold, 0.9);
 });
 
 test("persisted exemplar settings validate every identity component before activation", () => {

@@ -133,3 +133,10 @@ resolution](https://github.com/ollama/ollama/blob/main/server/model_resolver.go)
 [Ollama's decision endpoint](https://github.com/ollama/ollama/blob/main/server/routes.go),
 [Tev1's model](https://ollama.com/library/tev1), and
 [llama.cpp's tokenizer](https://github.com/ggml-org/llama.cpp/blob/master/src/llama-vocab.cpp).
+
+The duplicate-screening candidate state encodes similarity scores as strings.
+The `duplicate_of` calibration fingerprint includes `candidate-score-string/1`;
+fits from the older numeric-score prompt remain readable but do not apply to
+this prompt. Refit duplicate calibration with the current request builder to
+restore fitted temperatures and thresholds. Candidate identities and scores
+remain exchangeable evidence within this encoding.

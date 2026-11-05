@@ -40,7 +40,7 @@ export function validExemplarSetting(value) {
 export function questionFingerprint(channel, question) {
     const q = question;
     if (channel === "duplicate_of")
-        return evidenceHash({ type: q.type, instructions: q.instructions, candidate_count: Object.keys(q.criteria).length, none: q.criteria.none });
+        return evidenceHash({ type: q.type, instructions: q.instructions, candidate_count: Object.keys(q.criteria).length, none: q.criteria.none, state_encoding: "candidate-score-string/1" });
     const encoded = JSON.stringify(question);
     return evidenceHash(JSON.parse(channel.startsWith("candidate_") ? encoded.replaceAll(/candidate_\d+/g, "candidate_0") : encoded));
 }
