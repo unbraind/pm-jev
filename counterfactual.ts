@@ -1,7 +1,8 @@
+import { parseQuestionsDocument } from "./questions-document.ts";
 import { compareExact } from "./exact.ts";
 import { createHmac, randomBytes, createHash } from "node:crypto";
 import type { Questions, SystemOneResult, ChoiceResponse, ScoreResponse, NoulResponse } from "@typesafe-ai/sdk";
-import { createJevClient, isPmCliExpectedError, parseQuestionsDocument, runDecision } from "./index.ts";
+import { createJevClient, isPmCliExpectedError, runDecision } from "./index.ts";
 import type { ResolvedJevEndpoint } from "./index.ts";
 import { TokenUsageTotals } from "./token-usage.ts";
 

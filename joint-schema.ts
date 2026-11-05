@@ -1,5 +1,6 @@
+import { parseQuestionsDocument } from "./questions-document.ts";
 import type { Questions, SystemOneResult } from "@typesafe-ai/sdk";
-import { parseQuestionsDocument, validateAnswers } from "./index.ts";
+import { validateAnswers } from "./index.ts";
 
 /** Portable joint constraint document version. */
 export const JOINT_VERSION = "pm-jev-joint/1";

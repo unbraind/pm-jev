@@ -1,0 +1,198 @@
+{
+  "version": "pm-jev-admission-evidence/1",
+  "provenance": {
+    "repository": "unbraind/pm-lint",
+    "commit": "c26764b9f47cae0ef45d478a47a3f54301a1cb0c",
+    "archive_sha256": "0d77505775b9465f683aad4da61ce9bfe6986dedc6b0aa337142f05cc7bbe80c"
+  },
+  "tracker_items_read": 26,
+  "sampled_items": 8,
+  "questions_retained": 24,
+  "options_retained": 56,
+  "prompt_tokens_min": 158,
+  "prompt_tokens_max": 298,
+  "receipt_bytes_max": 484,
+  "all_samples_fit": true,
+  "native_parity": {
+    "input_tokens": 210,
+    "counted_prompt_tokens": 210,
+    "inference_calls": 1
+  },
+  "multibyte_stress": {
+    "input_bytes": 35282,
+    "receipt": {
+      "version": "pm-jev-admission/1",
+      "ok": false,
+      "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+      "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+      "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+      "context_tokens": 8192,
+      "scoring_tokens": 1,
+      "questions": 3,
+      "options": 7,
+      "max_prompt_tokens": 14125,
+      "limiting_question_index": 0,
+      "minimum_prompt_tokens_to_remove": 5934,
+      "inference_calls": 0,
+      "mutations": 0
+    }
+  },
+  "no_git": true,
+  "tracker_changed": false,
+  "admission_inference_calls": 0,
+  "mutations": 0,
+  "reports": [
+    {
+      "input_bytes": 826,
+      "receipt": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 3,
+        "options": 7,
+        "max_prompt_tokens": 233,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      }
+    },
+    {
+      "input_bytes": 627,
+      "receipt": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 3,
+        "options": 7,
+        "max_prompt_tokens": 204,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      }
+    },
+    {
+      "input_bytes": 969,
+      "receipt": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 3,
+        "options": 7,
+        "max_prompt_tokens": 298,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      }
+    },
+    {
+      "input_bytes": 762,
+      "receipt": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 3,
+        "options": 7,
+        "max_prompt_tokens": 266,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      }
+    },
+    {
+      "input_bytes": 622,
+      "receipt": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 3,
+        "options": 7,
+        "max_prompt_tokens": 190,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      }
+    },
+    {
+      "input_bytes": 399,
+      "receipt": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 3,
+        "options": 7,
+        "max_prompt_tokens": 158,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      }
+    },
+    {
+      "input_bytes": 572,
+      "receipt": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 3,
+        "options": 7,
+        "max_prompt_tokens": 187,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      }
+    },
+    {
+      "input_bytes": 638,
+      "receipt": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 3,
+        "options": 7,
+        "max_prompt_tokens": 194,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      }
+    }
+  ]
+}

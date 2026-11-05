@@ -1,0 +1,34 @@
+import { readStringOption } from "@unbrained/pm-cli/sdk";
+import { readBoundedJson } from "./bounded-json.js";
+import { ADMISSION_LIMITS, AdmissionRefusal } from "./admission-schema.js";
+import { admitDecisionBatch } from "./decision-admission.js";
+import { resolveJevEndpoint, requireCallableEndpoint } from "./jev-endpoint.js";
+/** Preflight accepts the same batch as the SDK without inference or tracker writes. */
+export const ADMISSION_FLAGS = [{ long: "--batch", value_name: "file", value_type: "string", description: "pm-jev-admission/1 JSON state and typed questions (64 KiB maximum)" }];
+/** Render one compact receipt through the host's TOON/JSON and exit-code contract. */
+export async function runAdmissionCommand(ctx) {
+    try {
+        let raw;
+        try {
+            raw = await readBoundedJson(readStringOption(ctx.options, "batch"), ADMISSION_LIMITS.bytes);
+        }
+        catch {
+            throw new AdmissionRefusal("invalid_input", "Pass --batch with a readable regular pm-jev-admission/1 JSON file up to 64 KiB; see node_modules/pm-jev/examples/decision-admission.json in the project where pm-jev is installed.");
+        }
+        const resolved = await resolveJevEndpoint(ctx.pm_root, process.env);
+        requireCallableEndpoint(resolved);
+        const deadline = AbortSignal.timeout(resolved.config.totalDeadlineMs);
+        const { receipt } = await admitDecisionBatch(resolved.config, raw, deadline).catch(/** Only this command's own deadline is a structured refusal; preserve unrelated failures. */ (error) => {
+            if (!deadline.aborted || error !== deadline.reason)
+                throw error;
+            throw new AdmissionRefusal("metadata_unavailable", "Native Ollama metadata did not answer within the total deadline. Raise jev.total_deadline_ms in settings.json or restore the endpoint, then retry; no inference was submitted.");
+        });
+        return { ...receipt, ...(receipt.ok ? {} : { exit_code: 1, remedy: `Remove at least ${receipt.minimum_prompt_tokens_to_remove} prompt tokens from the limiting prompt, or explicitly select a supported model with a larger digest-bound num_ctx; recheck every question. Questions and options were preserved.` }) };
+    }
+    catch (error) {
+        if (!(error instanceof AdmissionRefusal))
+            throw error;
+        return { ok: false, exit_code: 2, inference_calls: 0, mutations: 0, refusal: { code: error.code, remedy: error.remedy } };
+    }
+}
+//# sourceMappingURL=admission-command.js.map

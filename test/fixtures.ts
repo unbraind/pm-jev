@@ -11,6 +11,7 @@ import extension from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
 import { EVALUATION_VERSION, evidenceHash } from "../decision-calibration.ts";
 import type { CalibrationReceipt, EvaluationTask, Reliability } from "../decision-calibration.ts";
+import { admissionMetadata } from "./admission-fixtures.ts";
 
 /** Run a plain-tracker regression with no git executable or enclosing repository discovery. */
 export async function withoutGit<T>(cwd: string, run: () => Promise<T>): Promise<T> {
@@ -43,6 +44,10 @@ export async function project() {
 /** Start a real loopback HTTP boundary with replaceable deterministic responses. */
 export async function endpoint() {
   const requests: { path: string; body: unknown; contentEncoding: string | undefined }[] = [];
+  const admissionRequests: { path: string; body: unknown }[] = [];
+  let admissionReply = (request: IncomingMessage, response: ServerResponse, _body: unknown): void => {
+    response.end(JSON.stringify(request.url === "/api/tags" ? { models: ["tev1:4b", "chat-model", "scripted-test-model"].map(name => ({ name: name.includes(":") ? name : `${name}:latest`, digest: "a".repeat(64) })) } : admissionMetadata()));
+  };
   let reply = (request: IncomingMessage, response: ServerResponse, body: unknown): void => {
     if (request.url === "/v1/models") { response.end(JSON.stringify({ models: [{ name: "tev1:4b" }] })); return; }
     if (request.url === "/api/tags") { response.end(JSON.stringify({ models: [{ name: "tev1:4b", capabilities: ["decision"] }] })); return; }
@@ -54,6 +59,11 @@ export async function endpoint() {
     const bytes = Buffer.concat(chunks);
     const raw = (request.headers["content-encoding"] === "zstd" ? zstdDecompressSync(bytes) : bytes).toString("utf8");
     const body: unknown = raw ? JSON.parse(raw) : null;
+    if (request.headers["x-pm-jev-admission"]) {
+      admissionRequests.push({ path: request.url ?? "", body });
+      response.setHeader("Content-Type", "application/json");
+      admissionReply(request, response, body); return;
+    }
     requests.push({ path: request.url ?? "", body, contentEncoding: request.headers["content-encoding"] });
     response.setHeader("Content-Type", "application/json");
     reply(request, response, body);
@@ -61,7 +71,7 @@ export async function endpoint() {
   await new Promise<void>(resolveListen => { server.listen(0, "127.0.0.1", resolveListen); });
   const address = server.address();
   if (address === null || typeof address === "string") throw new Error("missing server address");
-  return { url: `http://127.0.0.1:${address.port}`, requests, setReply: (handler: typeof reply) => { reply = handler; }, close: async () => { server.closeAllConnections(); await new Promise<void>(resolveClose => { server.close(() => resolveClose()); }); } };
+  return { url: `http://127.0.0.1:${address.port}`, requests, admissionRequests, setAdmissionReply: (handler: typeof admissionReply) => { admissionReply = handler; }, setReply: (handler: typeof reply) => { reply = handler; }, close: async () => { server.closeAllConnections(); await new Promise<void>(resolveClose => { server.close(() => resolveClose()); }); } };
 }
 
 

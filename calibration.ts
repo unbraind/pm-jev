@@ -1,3 +1,4 @@
+import { parseQuestionsDocument } from "./questions-document.ts";
 import { acceptsThreshold, threshold, numericBoundary } from "./threshold.ts";
 import type { Threshold } from "./threshold.ts";
 import type { ExactValue } from "./exact.ts";
@@ -6,7 +7,7 @@ import { TokenUsageTotals } from "./token-usage.ts";
 import type { TokenUsage } from "./token-usage.ts";
 import { createHash } from "node:crypto";
 import type { NoulResponse } from "@typesafe-ai/sdk";
-import { createJevClient, parseQuestionsDocument, runDecision } from "./index.ts";
+import { createJevClient, runDecision } from "./index.ts";
 import type { JevConfig } from "./index.ts";
 import { assertPublicProvenance } from "./source-provenance.ts";
 

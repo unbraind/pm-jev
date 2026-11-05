@@ -1,3 +1,4 @@
+import { ollamaModelName } from "./ollama-model.ts";
 import { acceptsThreshold } from "./threshold.ts";
 import { compareExact, displayRatio, precisionMeets } from "./exact.ts";
 import { createHash } from "node:crypto";
@@ -105,7 +106,7 @@ export function validExemplarSetting(value: unknown): value is ExemplarSetting {
 /** Fingerprint fixed decision semantics while treating duplicate candidate identities as exchangeable evidence. */
 export function questionFingerprint(channel: string, question: unknown): string {
   const q = question as { type: string; instructions: string; criteria: Record<string, unknown> };
-  if (channel === "duplicate_of") return evidenceHash({ type: q.type, instructions: q.instructions, candidate_count: Object.keys(q.criteria).length, none: q.criteria.none });
+  if (channel === "duplicate_of") return evidenceHash({ type: q.type, instructions: q.instructions, candidate_count: Object.keys(q.criteria).length, none: q.criteria.none, state_encoding: "candidate-score-string/1" });
   const encoded = JSON.stringify(question);
   return evidenceHash(JSON.parse(channel.startsWith("candidate_") ? encoded.replaceAll(/candidate_\d+/g, "candidate_0") : encoded));
 }
@@ -241,7 +242,7 @@ export async function modelDigest(baseUrl: string, model: string, timeout: numbe
   const response = await fetch(`${baseUrl}/api/tags`, { redirect: "error", signal: typeof timeout === "number" ? AbortSignal.timeout(timeout) : timeout });
   if (!response.ok) throw new Error("Cannot verify local model digest");
   const payload = await response.json() as { models: { name: string; digest: string }[] };
-  const digest = payload.models.find(/** Match an exact installed model tag. */ entry => entry.name === model)?.digest;
+  const digest = payload.models.find(/** Match an exact installed model tag. */ entry => ollamaModelName(entry.name) === ollamaModelName(model))?.digest;
   if (!digest || !/^[a-f0-9]{64}$/.test(digest)) throw new Error("Local model digest missing or invalid");
   return digest;
 }

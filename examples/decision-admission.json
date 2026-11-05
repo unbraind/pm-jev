@@ -1,0 +1,9 @@
+{
+  "version": "pm-jev-admission/1",
+  "state": { "title": "Unicode 漢字 😀 é", "status": "open" },
+  "questions": {
+    "route": { "type": "choice", "instructions": "Choose the next step", "criteria": { "review": "Review the evidence", "wait": "Wait for evidence", "none": null } },
+    "impact": { "type": "score", "criteria": ["minor", "major"] },
+    "short": { "type": "noul", "instructions": "Is it short?" }
+  }
+}

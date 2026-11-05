@@ -49,7 +49,10 @@
     "examples/joint-decisions.json",
     "docs/label-queue.md",
     "docs/label-queue-evidence.json",
-    "examples/label-queue.json"
+    "examples/label-queue.json",
+    "docs/decision-admission.md",
+    "docs/decision-admission-evidence.json",
+    "examples/decision-admission.json"
   ],
   "scripts": {
     "build": "tsc",
@@ -82,6 +85,7 @@
     "verify:release-identity": "node scripts/release-identity.ts"
   },
   "dependencies": {
+    "@huggingface/tokenizers": "0.2.0",
     "@typesafe-ai/sdk": "^0.7.0"
   },
   "peerDependencies": {

@@ -2,6 +2,10 @@
 
 ## 2026.11.5 - 2026-11-05
 
+### Added
+
+- Refuse local decisions that exceed digest-bound tokenizer context ([pm-jev-tokenizer-admission](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-tokenizer-admission.toon))
+
 ### Fixed
 
 - SDK 2026.10.30 upgrade aborts five native-state regressions on placeholder parent fixtures ([pm-jev-github-21e139da0658-84](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-84.toon))

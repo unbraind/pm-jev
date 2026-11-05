@@ -1,7 +1,16 @@
+import { parseQuestionsDocument } from "./questions-document.ts";
+import { resolveJevEndpoint, requireCallableEndpoint, createJevClient, numberSetting } from "./jev-endpoint.ts";
+import type { JevConfig, ResolvedJevEndpoint } from "./jev-endpoint.ts";
+import { ollamaModelName } from "./ollama-model.ts";
+import { boundedText } from "./bounded-text.ts";
 import { acceptsThreshold, marginValue, threshold as thresholdState } from "./threshold.ts";
 import type { ThresholdInput } from "./threshold.ts";
 import { compareExact, displayExact, subtractExact } from "./exact.ts";
 import { TokenUsageTotals } from "./token-usage.ts";
+import { admitDecision } from "./decision-admission.ts";
+import type { AdmissionReceipt } from "./decision-admission.ts";
+import { AdmissionRefusal } from "./admission-schema.ts";
+import { ADMISSION_FLAGS, runAdmissionCommand } from "./admission-command.ts";
 import type { TokenUsage } from "./token-usage.ts";
 // pm-jev — typed, local-first System One decisions for pm items.
 //
@@ -31,7 +40,7 @@ import {
   APIUserAbortError,
   TypeSafeClient,
 } from "@typesafe-ai/sdk";
-import type { EntryType, Questions, ScoreCriteria, SystemOneResult, ChoiceResponse, ScoreResponse, NoulResponse } from "@typesafe-ai/sdk";
+import type { EntryType, Questions, SystemOneResult, ChoiceResponse, ScoreResponse, NoulResponse } from "@typesafe-ai/sdk";
 import { createHash } from "node:crypto";
 import { EVALUATION_FLAGS, runEvaluationCommand } from "./evaluation-command.ts";
 import { COST_POLICY_FLAGS, runCostPolicyCommand } from "./cost-policy-command.ts";
@@ -41,7 +50,7 @@ import { LABEL_QUEUE_FLAGS, runLabelQueueCommand } from "./label-command.ts";
 import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.ts";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.ts";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.ts";
-import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked, readOpaqueJevSettings } from "./decision-calibration.ts";
+import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked } from "./decision-calibration.ts";
 import type { ActiveCalibration, CalibrationUse } from "./decision-calibration.ts";
 import {
   DEPENDENCY_KIND_VALUES,
@@ -73,6 +82,16 @@ export { createPmCliExpectedError };
 export type { ItemMetadata, PmSettings };
 /** Re-export the SDK question-map and result contracts callers validate against. */
 export type { Questions, SystemOneResult };
+/** Exact local prompt admission, strict documents and content-free receipts. */
+export { admitDecision, admitDecisionBatch, validateAdmissionReceipt, TEV1_TEMPLATE_SHA256 } from "./decision-admission.ts";
+/** Shared admission boundary and actionable machine refusals. */
+export { ADMISSION_VERSION, ADMISSION_LIMITS, AdmissionRefusal, parseAdmissionInput } from "./admission-schema.ts";
+/** Digest-pinned detached requests and numeric receipt contracts. */
+export type { AdmissionReceipt, AdmittedDecision } from "./decision-admission.ts";
+/** Portable admission input and refusal codes. */
+export type { AdmissionInput, AdmissionRefusalCode } from "./admission-schema.ts";
+/** Local results include the exact admission receipt; hosted results retain their existing contract. */
+export type DecisionResult = SystemOneResult<Questions> & { readonly admission?: AdmissionReceipt };
 /** Fixed-score cost selection and proposal vetoes for SDK consumers. */
 export { COST_POLICY_VERSION, CostPolicyRefusal, parseCostDataset, selectAbstentionPolicy, abstainWithPolicy } from "./cost-policy.ts";
 /** Typed caller costs, evidence, receipts and refusal codes. */
@@ -174,330 +193,14 @@ const BUILTIN_TYPE_CRITERIA: ReadonlyMap<string, string> = new Map(Object.entrie
   Reminder: "A prompt to revisit something at a particular time",
 }));
 
-/** Default local Ollama base URL when neither settings nor env configure one. */
-const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434";
-/** Default decision model served by a stock local Ollama install. */
-const DEFAULT_OLLAMA_MODEL = "tev1:4b";
-/** Default hosted TypeSafe base URL. */
-const DEFAULT_TYPESAFE_BASE_URL = "https://api.typesafe.ai";
-/** Default hosted model alias (calibrated thresholds must pin a resolved version). */
-const DEFAULT_TYPESAFE_MODEL = "jev-latest";
-/** API key placeholder Ollama accepts; the local server does not authenticate. */
-const OLLAMA_API_KEY = "ollama";
-/** Per-attempt HTTP timeout default, milliseconds. */
-const DEFAULT_TIMEOUT_MS = 90_000;
-/** Total deadline for one decision call including SDK retries, milliseconds. */
-const DEFAULT_TOTAL_DEADLINE_MS = 240_000;
-/** Default probability an answer must clear before --apply may write a field. */
-const DEFAULT_MIN_CONFIDENCE = 0.8;
-/** Default gate threshold for the noul exit gate. */
-const DEFAULT_GATE_THRESHOLD = 0.5;
 /** Default candidate cap for dedupe. */
 const DEFAULT_DEDUPE_LIMIT = 8;
 /** Hard cap on any single text field projected into decision state, characters. */
 const STATE_TEXT_LIMIT = 4_000;
-/** Smallest per-attempt timeout accepted from settings, milliseconds. */
-const TIMEOUT_MS_MIN = 1_000;
-/** Largest per-attempt timeout accepted from settings, milliseconds. */
-const TIMEOUT_MS_MAX = 600_000;
-
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
-
-/** The two supported decision providers. */
-export type JevProvider = "ollama" | "typesafe";
-
-/** Fully resolved, call-ready provider endpoint configuration. */
-export interface JevConfig {
-  /** Which provider answers decisions. */
-  readonly provider: JevProvider;
-  /** HTTP base URL of the decision endpoint. */
-  readonly baseUrl: string;
-  /** Model name to send with every decision request. */
-  readonly model: string;
-  /** Per-attempt HTTP timeout in milliseconds (SDK `timeout`). */
-  readonly timeoutMs: number;
-  /** Total deadline for one decision call, retries included, in milliseconds. */
-  readonly totalDeadlineMs: number;
-  /** Probability threshold an answer must clear before --apply writes it. */
-  readonly minConfidence: number;
-  /** Probability threshold the gate command compares a noul against. */
-  readonly gateThreshold: number;
-  /** Ollama model residency after a request, in seconds or a duration string. */
-  readonly keepAlive?: number | string;
-}
-
-/** Why a hosted (typesafe) provider is not callable; local callers see `null`. */
-export type HostedBlock = "missing_opt_in" | "missing_api_key";
-
-/** Endpoint resolution result: the config plus the hosted opt-in verdict. */
-export interface ResolvedJevEndpoint {
-  /** Provider endpoint configuration; always populated. */
-  readonly config: JevConfig;
-  /** Hosted privacy-gate verdict: `null` when calls may proceed. */
-  readonly hostedBlocked: HostedBlock | null;
-}
-
-/** The `jev` settings block accepted inside pm's own `settings.json`. */
-interface JevSettingsSection {
-  /** Provider selection; defaults to the local ollama provider. */
-  readonly provider?: unknown;
-  /** Base URL override for the selected provider. */
-  readonly base_url?: unknown;
-  /** Model override for the selected provider. */
-  readonly model?: unknown;
-  /** Per-attempt timeout in milliseconds. */
-  readonly timeout_ms?: unknown;
-  /** Total deadline in milliseconds. */
-  readonly total_deadline_ms?: unknown;
-  /** Probability threshold --apply must clear. */
-  readonly min_confidence?: unknown;
-  /** Gate command threshold. */
-  readonly gate_threshold?: unknown;
-  /** Explicit opt-in required before any hosted (external) provider is used. */
-  readonly allow_external?: unknown;
-  /** Ollama-only model residency; forwarded through the official SDK request. */
-  readonly keep_alive?: unknown;
-}
-
-/** Validate the Ollama wire value without interpreting it as a request timeout. */
-function keepAliveSetting(value: unknown): number | string {
-  if (value === undefined) return "5m";
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && /^-?\d+(\.\d+)?(ns|us|µs|ms|s|m|h)$/.test(value)) return value;
-  throw createPmCliExpectedError("jev.keep_alive must be finite seconds or an Ollama duration such as 5m.", { context: { code: "jev_invalid_keep_alive" } });
-}
-
-/**
- * Read the `jev` section from pm's own `settings.json`.
- *
- * The typed `readSettings` projection intentionally strips package-private
- * sections, so this reads the raw settings document through the SDK's resolved
- * `getSettingsPath` — pm's settings file, not an ad-hoc config file. Anything
- * that is not a plain object yields an empty section; malformed values are
- * ignored by the individual accessors below rather than failing the command.
- *
- * @param pmRoot - Resolved pm tracker root (the `.agents/pm` directory).
- * @returns The raw `jev` settings section, or an empty object when absent.
- */
-async function readJevSettingsSection(pmRoot: string): Promise<JevSettingsSection> {
-  return await readOpaqueJevSettings(pmRoot) as JevSettingsSection;
-}
-
-/**
- * Coerce a settings value into a finite number inside `[low, high]`.
- *
- * @param value - Raw settings value of any shape.
- * @param fallback - Value returned when the input is missing or invalid.
- * @param low - Smallest accepted value.
- * @param high - Largest accepted value.
- * @returns The clamped number, or `fallback` for unusable input.
- */
-function numberSetting(value: unknown, fallback: number, low: number, high: number): number {
-  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(high, Math.max(low, parsed));
-}
-
-/**
- * Coerce a settings value into a probability in `(0, 1]`.
- *
- * @param value - Raw settings value of any shape.
- * @param fallback - Value returned when the input is missing or invalid.
- * @returns The clamped probability, or `fallback` for unusable input.
- */
-function probabilitySetting(value: unknown, fallback: number): number {
-  return numberSetting(value, fallback, 0, 1);
-}
-
-/**
- * Coerce a settings value into a trimmed nonempty string.
- *
- * @param value - Raw settings value of any shape.
- * @returns The trimmed string, or `undefined` for missing/non-string input.
- */
-function stringSetting(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
-/**
- * Resolve the effective provider selection from settings and environment.
- *
- * @param section - The raw `jev` settings section.
- * @returns The selected provider name, validated.
- * @throws {PmCliExpectedError} The provider or URL is invalid, or a hosted
- *         credential destination is not explicitly trusted.
- */
-function resolveProvider(section: JevSettingsSection): JevProvider {
-  const raw = stringSetting(section.provider)?.toLowerCase();
-  if (raw === "typesafe") return "typesafe";
-  if (raw === undefined || raw === "ollama") return "ollama";
-  throw createPmCliExpectedError(
-    `Unsupported jev provider "${raw}". Supported providers: ollama (local, default), typesafe (hosted, requires explicit opt-in).`,
-    { context: { code: "jev_provider_unsupported" } },
-  );
-}
-
-/**
- * Read the local Ollama endpoint pm itself is configured with, through the
- * SDK's typed `readSettings` projection — never by parsing `settings.json`.
- *
- * `readSettings` is total by contract: an absent or malformed settings
- * document resolves to typed defaults whose `providers.ollama` values are
- * empty strings, and `stringSetting` treats blank values as "not configured",
- * so resolution falls through to the built-in defaults. Reads are local file
- * access only: resolving settings never spawns an external command.
- *
- * @param pmRoot - Resolved pm tracker root (the `.agents/pm` directory).
- * @returns The typed `providers.ollama` base URL and model when configured.
- */
-async function readOllamaProviderSettings(pmRoot: string): Promise<{ readonly baseUrl?: string; readonly model?: string }> {
-  const settings = await readSettings(pmRoot);
-  const ollama = settings.providers.ollama;
-  return { baseUrl: stringSetting(ollama.base_url), model: stringSetting(ollama.model) };
-}
-
-/**
- * Resolve the fully configured decision endpoint, without enforcing the hosted
- * privacy gate — so `jev doctor` can diagnose a refused configuration instead
- * of dying on it.
- *
- * Precedence: environment overrides win, then the `jev` settings section, then
- * pm's typed `providers.ollama` settings (local provider only), then built-in
- * defaults. Hosted TypeSafe resolution never consults `providers.ollama`: an
- * Ollama endpoint must not silently become a hosted credential destination.
- *
- * @param pmRoot - Resolved pm tracker root.
- * @param env - Environment to read `PM_JEV_BASE_URL`, `PM_JEV_MODEL` and
- *              `TYPESAFE_API_KEY` from.
- * @returns The endpoint configuration and the hosted opt-in verdict.
- * @throws {PmCliExpectedError} The provider or URL is invalid, or a hosted
- *         credential destination is not explicitly trusted.
- */
-export async function resolveJevEndpoint(
-  pmRoot: string,
-  env: Record<string, string | undefined>,
-): Promise<ResolvedJevEndpoint> {
-  const section = await readJevSettingsSection(pmRoot);
-  const provider = resolveProvider(section);
-
-  const envBaseUrl = stringSetting(env.PM_JEV_BASE_URL);
-  const envModel = stringSetting(env.PM_JEV_MODEL);
-  const sectionBaseUrl = stringSetting(section.base_url);
-  const sectionModel = stringSetting(section.model);
-  const ollama = provider === "ollama" ? await readOllamaProviderSettings(pmRoot) : {};
-  const baseUrl =
-    envBaseUrl ??
-    sectionBaseUrl ??
-    ollama.baseUrl ??
-    (provider === "typesafe" ? DEFAULT_TYPESAFE_BASE_URL : DEFAULT_OLLAMA_BASE_URL);
-  const model =
-    envModel ??
-    sectionModel ??
-    ollama.model ??
-    (provider === "typesafe" ? DEFAULT_TYPESAFE_MODEL : DEFAULT_OLLAMA_MODEL);
-  let url: URL;
-  try { url = new URL(baseUrl); } catch {
-    throw createPmCliExpectedError("jev base URL must be an absolute HTTP(S) URL.", { context: { code: "jev_invalid_url" } });
-  }
-  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
-    throw createPmCliExpectedError("jev base URL must be HTTP(S) without credentials, query or fragment.", { context: { code: "jev_invalid_url" } });
-  }
-  if (provider === "typesafe" && (url.protocol !== "https:" ||
-    (url.origin !== new URL(DEFAULT_TYPESAFE_BASE_URL).origin && envBaseUrl === undefined))) {
-    throw createPmCliExpectedError(
-      "Hosted TypeSafe credentials require HTTPS; configure a non-default origin with PM_JEV_BASE_URL.",
-      { context: { code: "jev_untrusted_credential_host" } },
-    );
-  }
-  const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
-  const hostedBlocked: HostedBlock | null = (provider === "typesafe" || !local) && section.allow_external !== true
-    ? "missing_opt_in"
-    : provider === "typesafe" && stringSetting(env.TYPESAFE_API_KEY) === undefined ? "missing_api_key" : null;
-  const timeoutMs = numberSetting(section.timeout_ms, DEFAULT_TIMEOUT_MS, TIMEOUT_MS_MIN, TIMEOUT_MS_MAX);
-  const totalDeadlineMs = numberSetting(
-    section.total_deadline_ms,
-    Math.max(DEFAULT_TOTAL_DEADLINE_MS, timeoutMs * 3),
-    TIMEOUT_MS_MIN,
-    3_600_000,
-  );
-
-  // Trim trailing slashes without a regex: `/\/+$/` backtracks polynomially on
-  // long runs of "/" in caller-supplied configuration (CodeQL js/polynomial-redos).
-  let trimmedBaseUrl = baseUrl;
-  while (trimmedBaseUrl.endsWith("/")) trimmedBaseUrl = trimmedBaseUrl.slice(0, -1);
-  return {
-    hostedBlocked,
-    config: {
-      provider,
-      baseUrl: trimmedBaseUrl,
-      model,
-      timeoutMs,
-      totalDeadlineMs,
-      minConfidence: probabilitySetting(section.min_confidence, DEFAULT_MIN_CONFIDENCE),
-      gateThreshold: probabilitySetting(section.gate_threshold, DEFAULT_GATE_THRESHOLD),
-      ...(provider === "ollama" ? { keepAlive: keepAliveSetting(section.keep_alive) } : {}),
-    },
-  };
-}
-
-/**
- * Build a TypeSafeClient for the resolved endpoint.
- *
- * The client carries `logLevel: "off"` so request/response bodies are never
- * emitted even if a caller enables debug logging elsewhere: PM state is
- * private. Retries stay at the SDK's bounded defaults (two retries with
- * exponential backoff on 429/5xx), while the total deadline is enforced per
- * call through an abort signal in {@link runDecision}.
- *
- * @param resolved - Endpoint resolution from {@link resolveJevEndpoint}.
- * @param env - Environment to read `TYPESAFE_API_KEY` from for hosted calls.
- * @returns A configured client bound to the selected provider.
- */
-export function createJevClient(resolved: ResolvedJevEndpoint, env: Record<string, string | undefined>, maxRetries = 2): TypeSafeClient {
-  const config = requireCallableEndpoint(resolved);
-  const apiKey = config.provider === "ollama" ? OLLAMA_API_KEY : stringSetting(env.TYPESAFE_API_KEY);
-  return new TypeSafeClient({
-    apiKey,
-    baseURL: config.baseUrl,
-    defaultModel: config.model,
-    timeout: config.timeoutMs,
-    retry: { maxRetries },
-    logLevel: "off",
-    // Local Ollama compatibility endpoints expect JSON, regardless of SDK compression defaults.
-    compression: config.provider === "ollama" ? false : undefined,
-    /** Refuse redirects so a local endpoint cannot forward private state externally. */
-    fetch: (input, init) => fetch(input, { ...init, redirect: "error" }),
-  });
-}
-
-/**
- * Enforce the hosted privacy gate: refuse external transfer unless the caller
- * explicitly opted in via `jev.allow_external=true` AND provided an API key.
- *
- * The refusal message never echoes item state; it only names the missing
- * pieces so an agent can fix configuration.
- *
- * @param resolved - Endpoint resolution from {@link resolveJevEndpoint}.
- * @returns The call-ready configuration.
- * @throws {PmCliExpectedError} The hosted provider is not opted in or has no key.
- */
-export function requireCallableEndpoint(resolved: ResolvedJevEndpoint): JevConfig {
-  if (resolved.hostedBlocked === null) return resolved.config;
-  throw createPmCliExpectedError(
-    resolved.hostedBlocked === "missing_opt_in"
-      ? "Refusing to send pm item state to the hosted TypeSafe provider. External transfer is opt-in: set \"jev\": { \"provider\": \"typesafe\", \"allow_external\": true } in this tracker's settings.json, or use the default local ollama provider. See https://docs.typesafe.ai/legal/privacy-policy for the vendor data boundary."
-      : "The hosted TypeSafe provider is opted in but no TYPESAFE_API_KEY is set in the environment. Refusing to run without credentials.",
-    {
-      context: {
-        code: resolved.hostedBlocked === "missing_opt_in" ? "jev_external_not_allowed" : "jev_external_missing_key",
-      },
-    },
-  );
-}
+/** Endpoint resolution and client construction retain the existing public API. */
+export { resolveJevEndpoint, requireCallableEndpoint, createJevClient } from "./jev-endpoint.ts";
+/** Public endpoint configuration and privacy-gate contracts. */
+export type { JevProvider, JevConfig, HostedBlock, ResolvedJevEndpoint } from "./jev-endpoint.ts";
 
 // ---------------------------------------------------------------------------
 // Decision boundary: state projection, validation, execution, error mapping
@@ -547,7 +250,7 @@ export interface ProjectedItemState {
  */
 function truncateStateText(value: string | undefined): string {
   if (value === undefined) return "";
-  return value.length > STATE_TEXT_LIMIT ? `${value.slice(0, STATE_TEXT_LIMIT)}…[truncated]` : value;
+  return value.length > STATE_TEXT_LIMIT ? `${boundedText(value, STATE_TEXT_LIMIT)}…[truncated]` : value;
 }
 
 /**
@@ -566,7 +269,7 @@ export function projectItemState(item: ProjectableItem): ProjectedItemState {
     title: truncateStateText(item.title),
     type: truncateStateText(item.type),
     status: truncateStateText(item.status),
-    tags: item.tags.slice(0, 32).map(/** Bound each retained tag before inference. */ tag => tag.slice(0, 128)),
+    tags: item.tags.slice(0, 32).map(/** Bound each retained tag before inference. */ tag => boundedText(tag, 128)),
     description: truncateStateText(item.description),
     body: truncateStateText(item.body),
   };
@@ -599,7 +302,7 @@ export function projectTriageState(item: ProjectableItem): TriageItemState {
     title: truncateStateText(item.title),
     ...(description ? { description } : {}),
     ...(body ? { body } : {}),
-    ...(item.tags.length ? { tags: item.tags.slice(0, 32).map(/** Bound each retained triage tag. */ tag => tag.slice(0, 128)) } : {}),
+    ...(item.tags.length ? { tags: item.tags.slice(0, 32).map(/** Bound each retained triage tag. */ tag => boundedText(tag, 128)) } : {}),
   };
 }
 
@@ -692,17 +395,20 @@ export async function runDecision(
   state: unknown,
   questions: Questions,
   signal?: AbortSignal,
-): Promise<SystemOneResult<Questions>> {
+): Promise<DecisionResult> {
   try {
     if (state === null || state === undefined) throw new Error("malformed response: decision state must be non-null");
-    const request = { state: state as NonNullable<EntryType>, questions, model: config.model,
+    const deadline = signal ?? AbortSignal.timeout(config.totalDeadlineMs);
+    const admitted = config.provider === "ollama" ? await admitDecision(config, state, questions, deadline) : undefined;
+    if (admitted && !admitted.receipt.ok) throw createPmCliExpectedError("Decision prompt exceeds its digest-bound context; reduce state or explicitly select a larger supported model and preflight again. Every question and option was retained.", { context: { code: "jev_context_exceeded", details: { admission: { ...admitted.receipt } } } });
+    const request = { state: (admitted?.state ?? state) as NonNullable<EntryType>, questions: admitted?.questions ?? questions, model: admitted?.model ?? config.model,
       ...(config.provider === "ollama" && config.keepAlive !== undefined ? { keep_alive: config.keepAlive } : {}) };
     const result = await client.systemOne(
       request,
-      { signal: signal ?? AbortSignal.timeout(config.totalDeadlineMs) },
+      { signal: deadline },
     );
-    validateAnswers(questions, result);
-    return result;
+    validateAnswers(request.questions, result);
+    return admitted === undefined ? result : { ...result, admission: admitted.receipt };
   } catch (error) {
     throw translateDecisionError(error, config);
   }
@@ -725,6 +431,7 @@ export function translateDecisionError(
   config: JevConfig,
 ): ReturnType<typeof createPmCliExpectedError> {
   if (isPmCliExpectedError(error)) return error;
+  if (error instanceof AdmissionRefusal) return createPmCliExpectedError(error.message, { context: { code: `jev_admission_${error.code}`, required: error.remedy } });
   if (error instanceof APIUserAbortError || (error instanceof Error && error.name === "TimeoutError")) {
     return createPmCliExpectedError(
       `Decision call exceeded its total deadline of ${config.totalDeadlineMs}ms (model "${config.model}" at ${config.baseUrl}). Raise jev.total_deadline_ms in settings.json or reduce the batch.`,
@@ -776,167 +483,8 @@ export function translateDecisionError(
 // Caller-supplied question parsing (jev ask)
 // ---------------------------------------------------------------------------
 
-/**
- * Parse and validate a caller-supplied question map for `jev ask`.
- *
- * Structural mirror of the SDK `Questions` contract: a nonempty object of
- * named questions where `choice` needs a nonempty criteria map, `score` needs
- * a rubric of 2–10 described levels, and `noul` accepts optional true/false
- * descriptions. Instructions may be text, JSON, or absent.
- *
- * @param raw - Parsed JSON from the questions file.
- * @returns The validated question map.
- * @throws {PmCliExpectedError} The document violates the Questions contract.
- */
-export function parseQuestionsDocument(raw: unknown): Questions {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
-    throw createPmCliExpectedError("Questions file must contain a JSON object of named questions.", {
-      context: { code: "jev_questions_shape" },
-    });
-  }
-  const entries = Object.entries(raw as Record<string, unknown>);
-  if (entries.length === 0) {
-    throw createPmCliExpectedError("Questions file must define at least one question.", {
-      context: { code: "jev_questions_empty" },
-    });
-  }
-  const questions: Questions = Object.create(null) as Questions;
-  for (const [name, value] of entries) {
-    const question = requireQuestionRecord(name, value);
-    const instructions = requireEntryType(name, question.instructions, "instructions");
-    if (question.type === "choice") {
-      const rawCriteria = requireCriteriaRecord(name, question.criteria);
-      const criteria: Record<string, EntryType> = Object.create(null) as Record<string, EntryType>;
-      for (const [label, description] of Object.entries(rawCriteria)) {
-        criteria[label] = requireEntryType(name, description, `criteria.${label}`);
-      }
-      questions[name] = { type: "choice", instructions, criteria };
-    } else if (question.type === "score") {
-      const rubric = requireRubric(name, question.criteria).map(/** Validate each supplied rubric description. */ (level, index) =>
-        requireEntryType(name, level, `criteria[${index}]`),
-      );
-      questions[name] = { type: "score", instructions, criteria: rubric as unknown as ScoreCriteria };
-    } else {
-      const criteria = requireNoulCriteria(name, question.criteria);
-      // A bare noul key names its proposition; make that existing implicit instruction explicit for the SDK.
-      const proposition = instructions ?? name;
-      questions[name] = criteria === null ? { type: "noul", instructions: proposition } : { type: "noul", instructions: proposition, criteria };
-    }
-  }
-  return questions;
-}
-
-/**
- * Narrow one question instructions or criterion value to the SDK entry type.
- *
- * Accepts text, a JSON object or array, or `null` (undescribed); `undefined`
- * is also accepted because instructions and criteria are optional fields.
- *
- * @param name - Question name used in diagnostics.
- * @param value - Raw instructions or criterion value of unknown shape.
- * @param field - Field path used in diagnostics.
- * @returns The value narrowed to the SDK `EntryType` union.
- * @throws {PmCliExpectedError} The value is a boolean, number, or other
- *         non-entry shape the endpoint would reject.
- */
-function requireEntryType(name: string, value: unknown, field: string): EntryType {
-  if (value === undefined || value === null || typeof value === "string") return value as EntryType;
-  if (typeof value === "object") return value as EntryType;
-  throw createPmCliExpectedError(
-    `Question "${name}" field ${field} must be text, a JSON object or array, or null.`,
-    { context: { code: "jev_question_entry_type" } },
-  );
-}
-
-/**
- * Validate one question entry's base record and type discriminator.
- *
- * @param name - Question name used in diagnostics.
- * @param value - Raw question value of unknown shape.
- * @returns The question record with its `type` and `criteria` fields.
- * @throws {PmCliExpectedError} The entry is not a known question type.
- */
-function requireQuestionRecord(
-  name: string,
-  value: unknown,
-): { type: "choice" | "score" | "noul"; criteria: unknown; instructions: unknown } {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw createPmCliExpectedError(`Question "${name}" must be an object.`, { context: { code: "jev_question_shape" } });
-  }
-  const record = value as Record<string, unknown>;
-  if (record.type !== "choice" && record.type !== "score" && record.type !== "noul") {
-    throw createPmCliExpectedError(
-      `Question "${name}" has unsupported type ${JSON.stringify(record.type) ?? "undefined"}; supported: choice, score, noul.`,
-      { context: { code: "jev_question_type" } },
-    );
-  }
-  return { type: record.type, criteria: record.criteria, instructions: record.instructions };
-}
-
-/**
- * Validate a choice question's criteria map.
- *
- * @param name - Question name used in diagnostics.
- * @param criteria - Raw criteria value of unknown shape.
- * @returns The criteria as a label→description map.
- * @throws {PmCliExpectedError} The criteria are not a nonempty plain object.
- */
-function requireCriteriaRecord(name: string, criteria: unknown): Record<string, unknown> {
-  if (typeof criteria !== "object" || criteria === null || Array.isArray(criteria)) {
-    throw createPmCliExpectedError(`Choice question "${name}" needs a nonempty criteria object of option labels.`, {
-      context: { code: "jev_choice_criteria" },
-    });
-  }
-  const labels = Object.keys(criteria as Record<string, unknown>);
-  if (labels.length === 0 || labels.length > 255) {
-    throw createPmCliExpectedError(`Choice question "${name}" needs between 1 and 255 option labels.`, {
-      context: { code: "jev_choice_criteria" },
-    });
-  }
-  return criteria as Record<string, unknown>;
-}
-
-/**
- * Validate a score question's ordered rubric.
- *
- * @param name - Question name used in diagnostics.
- * @param criteria - Raw criteria value of unknown shape.
- * @returns The rubric as an array of level descriptions.
- * @throws {PmCliExpectedError} The rubric is not an array of at least two entries.
- */
-function requireRubric(name: string, criteria: unknown): readonly unknown[] {
-  if (!Array.isArray(criteria) || criteria.length < 2) {
-    throw createPmCliExpectedError(`Score question "${name}" needs an ordered criteria rubric of at least 2 levels.`, {
-      context: { code: "jev_score_criteria" },
-    });
-  }
-  return criteria;
-}
-
-/**
- * Validate a noul question's optional outcome descriptions.
- *
- * @param name - Question name used in diagnostics.
- * @param criteria - Raw criteria value of unknown shape.
- * @returns The true/false descriptions when present, otherwise `null`.
- * @throws {PmCliExpectedError} The criteria are not a plain object or carry
- *         non-entry descriptions.
- */
-function requireNoulCriteria(name: string, criteria: unknown): { true?: EntryType; false?: EntryType } | null {
-  if (criteria === undefined || criteria === null) return null;
-  if (typeof criteria !== "object" || Array.isArray(criteria)) {
-    throw createPmCliExpectedError(`Noul question "${name}" criteria must be an object with optional true/false descriptions.`, {
-      context: { code: "jev_noul_criteria" },
-    });
-  }
-  const record = criteria as Record<string, unknown>;
-  const narrowed: { true?: EntryType; false?: EntryType } = {};
-  for (const outcome of ["true", "false"] as const) {
-    const value = record[outcome];
-    if (value !== undefined) narrowed[outcome] = requireEntryType(name, value, `criteria.${outcome}`);
-  }
-  return narrowed;
-}
+/** Validate caller questions through the shared leaf parser. */
+export { parseQuestionsDocument } from "./questions-document.ts";
 
 // ---------------------------------------------------------------------------
 // Command plumbing
@@ -1183,7 +731,7 @@ export function buildDedupeRequest(title: string, body: string, candidates: read
   for (const candidate of candidates) criteria[candidate.id] = `${truncateStateText(candidate.title)} (type ${candidate.type}, status ${candidate.status}, title similarity ${candidate.score})`;
   criteria.none = "The proposed item is not a duplicate of any candidate";
   const questions: Questions = { duplicate_of: { type: "choice", instructions: "A new pm item is about to be created. Does it duplicate one of the candidate items listed in the state? Choose the candidate id it duplicates, or none.", criteria } };
-  return { state: { proposed: { title: truncateStateText(title), body: truncateStateText(body) }, candidates: candidates.map(/** Bound candidate text without changing deterministic ranks. */ candidate => ({ ...candidate, title: truncateStateText(candidate.title) })) }, questions };
+  return { state: { proposed: { title: truncateStateText(title), body: truncateStateText(body) }, candidates: candidates.map(/** Keep the deterministic rank as exact display text within the supported JSON numeric domain. */ candidate => ({ ...candidate, score: String(candidate.score), title: truncateStateText(candidate.title) })) }, questions };
 }
 
 /** Bind the non-mutating candidate to the current type without adding routing fields to evidence. */
@@ -2202,7 +1750,7 @@ async function runDoctorCommand(ctx: CommandHandlerContext): Promise<DoctorRepor
     try {
       const inventory = await listDecisionModels(resolved, process.env);
       const decisionCapable = inventory.models.filter(/** Count only models advertising decision support. */ (model) => model.decision).length;
-      const served = inventory.models.some(/** Verify the configured model appears in the inventory. */ (model) => model.name === config.model);
+      const served = inventory.models.some(/** Verify the configured model appears in the inventory. */ (model) => config.provider === "ollama" ? ollamaModelName(model.name) === ollamaModelName(config.model) : model.name === config.model);
       checks.push(
         {
           name: "endpoint",
@@ -2335,6 +1883,14 @@ function registerCommands(api: ExtensionApi): void {
     examples: ["pm jev validate --batch joint-decisions.json --json"],
     /** Use the same bounded validator for CLI and SDK decisions. */
     run: (ctx: CommandHandlerContext) => runJointCommand(ctx),
+  }));
+  api.registerCommand(defineCommand({
+    name: "jev admit",
+    description: "Check exact digest-bound local decision prompt fit without inference",
+    flags: ADMISSION_FLAGS,
+    examples: ["npx --no-install pm jev admit --batch node_modules/pm-jev/examples/decision-admission.json --json"],
+    /** Preflight shares the inference admission path and the host's output renderer. */
+    run: (ctx: CommandHandlerContext) => runAdmissionCommand(ctx),
   }));
   api.registerCommand(defineCommand({
     name: "jev drift",

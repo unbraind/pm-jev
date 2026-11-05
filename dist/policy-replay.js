@@ -1,7 +1,9 @@
+import { parseQuestionsDocument } from "./questions-document.js";
+import { ollamaModelName } from "./ollama-model.js";
 import { compareExact, subtractExact } from "./exact.js";
 import { reportPriorReceipt, withReceipt } from "./partial-receipt.js";
 import { createHash } from "node:crypto";
-import { createJevClient, parseQuestionsDocument, runDecision, validateAnswers } from "./index.js";
+import { createJevClient, runDecision, validateAnswers } from "./index.js";
 /** Version of the frozen-input compatibility contract. */
 export const REPLAY_VERSION = "pm-jev-replay/1";
 /** Redacted, actionable replay failure; input and transport text are never echoed. */
@@ -184,15 +186,16 @@ export async function createOllamaReplayAdapter(model, baseUrl = "http://127.0.0
         if (!response.ok)
             throw new Error();
         const inventory = await response.json();
-        const card = inventory.models.find(/** Resolve the exact installed tag before sending any recorded state. */ /** Resolve the exact installed tag before sending any recorded state. */ entry => entry.name === model);
+        const card = inventory.models.find(/** Resolve the exact installed tag before sending any recorded state. */ /** Resolve the exact installed tag before sending any recorded state. */ entry => ollamaModelName(entry.name) === ollamaModelName(model));
         if (!card || card.remote_host || card.remote_model || !card.capabilities.includes("decision") || !/^[a-f0-9]{64}$/.test(card.digest))
             throw new Error();
-        const client = createJevClient({ config, hostedBlocked: null }, {}, 0);
+        const pinned = { ...config, model: `sha256:${card.digest}` };
+        const client = createJevClient({ config: pinned, hostedBlocked: null }, {}, 0);
         return { version: `ollama:${card.digest}`,
             /** Reuse the existing typed transport with zero retries and a per-input deadline. */
             async decide(record, signal) {
-                const result = await runDecision(client, config, record.state, record.questions, signal === undefined ? undefined : AbortSignal.any([signal, AbortSignal.timeout(deadlineMs)]));
-                if (result.model !== model)
+                const result = await runDecision(client, pinned, record.state, record.questions, signal === undefined ? undefined : AbortSignal.any([signal, AbortSignal.timeout(deadlineMs)]));
+                if (ollamaModelName(result.model) !== ollamaModelName(model) && result.model !== pinned.model)
                     throw new Error("Replay model changed");
                 return result;
             } };

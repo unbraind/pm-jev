@@ -1,9 +1,10 @@
 import { createPmCliExpectedError } from "@unbrained/pm-cli/sdk";
+import { boundedText } from "./bounded-text.js";
 /** Explicit recovery path for private trackers; never an automatic public-source fallback. */
 export const LOCAL_SOURCE_GUIDANCE = "For private local evaluation, pass --local-unverified --from <tracker>.";
 /** Remove credential material, endpoint details and local identities from one diagnostic line. */
 export function redactedSourceLine(text) {
-    return text.split(/\r?\n/, 1)[0]
+    return boundedText(text.split(/\r?\n/, 1)[0]
         .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
         .replace(/https?:\/\/\S+/gi, "[redacted-url]")
         .replace(/\b(?:Bearer|Basic)\s+\S+/gi, "[redacted-authorization]")
@@ -11,8 +12,7 @@ export function redactedSourceLine(text) {
         .replace(/\b(?:[A-Z_]*(?:TOKEN|PASSWORD|SECRET|API_KEY)|token|password|secret|api_key)\s*[=:]\s*\S+/gi, "[redacted-credential]")
         .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted-email]")
         .replace(/(?:[A-Z]:\\|\/(?:home|Users|tmp|private|var|run|mnt|opt)\/)[^\s"']+/gi, "[redacted-path]")
-        .replace(/[\x00-\x1f\x7f]/g, "")
-        .slice(0, 500);
+        .replace(/[\x00-\x1f\x7f]/g, ""), 500);
 }
 /** Redact a tool invocation and distinguish launch errors, runtime limits, signals and command exits. */
 export function sourceFailureDetail(command, code, status, stderr, signal) {

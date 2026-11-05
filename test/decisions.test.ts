@@ -270,7 +270,7 @@ test("typed providers.ollama settings supply the local endpoint when jev does no
     const decision = await fixture.harness.runCommand({ command: "jev triage", args: [created.item.id], pmRoot: fixture.pmRoot });
     assert.equal(decision.handled, true);
     assert.equal(server.requests.length, 1);
-    assert.equal((server.requests[0].body as { model?: string }).model, "chat-model");
+    assert.equal((server.requests[0].body as { model?: string }).model, `sha256:${"a".repeat(64)}`);
   } finally { if (previous === undefined) delete process.env.PM_JEV_BASE_URL; else process.env.PM_JEV_BASE_URL = previous; await server.close(); fixture.dispose(); }
 });
 
