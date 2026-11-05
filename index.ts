@@ -2502,7 +2502,7 @@ function registerCommands(api: ExtensionApi): void {
 /** Public pm extension activation entry and release-managed identity. */
 export default defineExtension({
   name: "pm-jev",
-  version: "2026.11.4",
+  version: "2026.11.5",
   description: "Typed, local-first System One decisions for pm items (Jev-style models via @typesafe-ai/sdk)",
   /** Register the versioned decision commands with the pm host. */
   activate(api: ExtensionApi): void {
