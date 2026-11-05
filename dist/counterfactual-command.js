@@ -1,7 +1,8 @@
+import { parseQuestionsDocument } from "./questions-document.js";
 import { open } from "node:fs/promises";
 import { constants } from "node:fs";
 import { createExtensionCommandSdk, isErrnoError, isPmCliExpectedError, PmClient, readStringOption } from "@unbrained/pm-cli/sdk";
-import { parseQuestionsDocument, projectItemState, resolveJevEndpoint } from "./index.js";
+import { projectItemState, resolveJevEndpoint } from "./index.js";
 import { CounterfactualRefusal, explainDecision, explanationEndpointRefusal } from "./counterfactual.js";
 /** Explicit comparisons are opt-in; there is no mutation or apply flag. */
 export const EXPLANATION_FLAGS = [

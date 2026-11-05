@@ -2,7 +2,7 @@ import { ollamaModelName } from "./ollama-model.ts";
 import { createHash } from "node:crypto";
 import { Tokenizer } from "@huggingface/tokenizers";
 import type { Questions } from "@typesafe-ai/sdk";
-import type { JevConfig } from "./index.ts";
+import type { JevConfig } from "./jev-endpoint.ts";
 import { ADMISSION_VERSION, ADMISSION_LIMITS, AdmissionRefusal, parseAdmissionInput } from "./admission-schema.ts";
 
 /** Exact published Tev1 pplx-decider template; unknown templates require explicit new support. */

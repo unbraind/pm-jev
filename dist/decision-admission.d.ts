@@ -1,5 +1,5 @@
 import type { Questions } from "@typesafe-ai/sdk";
-import type { JevConfig } from "./index.ts";
+import type { JevConfig } from "./jev-endpoint.ts";
 import { ADMISSION_VERSION } from "./admission-schema.ts";
 /** Exact published Tev1 pplx-decider template; unknown templates require explicit new support. */
 export declare const TEV1_TEMPLATE_SHA256 = "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135";

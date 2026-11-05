@@ -17,9 +17,9 @@ export declare function runAdmissionCommand(ctx: CommandHandlerContext): Promise
     minimum_prompt_tokens_to_remove: number;
     inference_calls: 0;
     mutations: 0;
-    refusal?: undefined;
     exit_code?: number | undefined;
     remedy?: string | undefined;
+    refusal?: undefined;
 } | {
     ok: boolean;
     exit_code: number;

@@ -1,5 +1,5 @@
 import type { Questions } from "@typesafe-ai/sdk";
-import { parseQuestionsDocument } from "./index.ts";
+import { parseQuestionsDocument } from "./questions-document.ts";
 
 /** Version of the read-only, text-only decision admission document. */
 export const ADMISSION_VERSION = "pm-jev-admission/1";

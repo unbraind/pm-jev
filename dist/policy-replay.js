@@ -1,8 +1,9 @@
+import { parseQuestionsDocument } from "./questions-document.js";
 import { ollamaModelName } from "./ollama-model.js";
 import { compareExact, subtractExact } from "./exact.js";
 import { reportPriorReceipt, withReceipt } from "./partial-receipt.js";
 import { createHash } from "node:crypto";
-import { createJevClient, parseQuestionsDocument, runDecision, validateAnswers } from "./index.js";
+import { createJevClient, runDecision, validateAnswers } from "./index.js";
 /** Version of the frozen-input compatibility contract. */
 export const REPLAY_VERSION = "pm-jev-replay/1";
 /** Redacted, actionable replay failure; input and transport text are never echoed. */

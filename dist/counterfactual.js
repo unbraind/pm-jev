@@ -1,6 +1,7 @@
+import { parseQuestionsDocument } from "./questions-document.js";
 import { compareExact } from "./exact.js";
 import { createHmac, randomBytes, createHash } from "node:crypto";
-import { createJevClient, isPmCliExpectedError, parseQuestionsDocument, runDecision } from "./index.js";
+import { createJevClient, isPmCliExpectedError, runDecision } from "./index.js";
 import { TokenUsageTotals } from "./token-usage.js";
 /** Versioned sensitivity receipt; no narrative rationale or mutation authority. */
 export const COUNTERFACTUAL_VERSION = "pm-jev-counterfactual/1";

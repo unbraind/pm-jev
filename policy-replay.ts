@@ -1,10 +1,11 @@
+import { parseQuestionsDocument } from "./questions-document.ts";
 import { ollamaModelName } from "./ollama-model.ts";
 import { compareExact, subtractExact } from "./exact.ts";
 import { reportPriorReceipt, withReceipt } from "./partial-receipt.ts";
 import type { ReceiptFailure, ReceiptOptions, ReceiptRun } from "./partial-receipt.ts";
 import { createHash } from "node:crypto";
 import type { Questions, SystemOneResult, ChoiceResponse, ScoreResponse, NoulResponse } from "@typesafe-ai/sdk";
-import { createJevClient, parseQuestionsDocument, runDecision, validateAnswers } from "./index.ts";
+import { createJevClient, runDecision, validateAnswers } from "./index.ts";
 import type { JevConfig } from "./index.ts";
 
 /** Version of the frozen-input compatibility contract. */

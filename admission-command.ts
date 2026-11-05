@@ -3,7 +3,7 @@ import type { CommandHandlerContext, FlagDefinition } from "@unbrained/pm-cli/sd
 import { readBoundedJson } from "./bounded-json.ts";
 import { ADMISSION_LIMITS, AdmissionRefusal } from "./admission-schema.ts";
 import { admitDecisionBatch } from "./decision-admission.ts";
-import { resolveJevEndpoint, requireCallableEndpoint } from "./index.ts";
+import { resolveJevEndpoint, requireCallableEndpoint } from "./jev-endpoint.ts";
 
 /** Preflight accepts the same batch as the SDK without inference or tracker writes. */
 export const ADMISSION_FLAGS: FlagDefinition[] = [{ long: "--batch", value_name: "file", value_type: "string", description: "pm-jev-admission/1 JSON state and typed questions (64 KiB maximum)" }];

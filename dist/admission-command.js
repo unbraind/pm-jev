@@ -2,7 +2,7 @@ import { readStringOption } from "@unbrained/pm-cli/sdk";
 import { readBoundedJson } from "./bounded-json.js";
 import { ADMISSION_LIMITS, AdmissionRefusal } from "./admission-schema.js";
 import { admitDecisionBatch } from "./decision-admission.js";
-import { resolveJevEndpoint, requireCallableEndpoint } from "./index.js";
+import { resolveJevEndpoint, requireCallableEndpoint } from "./jev-endpoint.js";
 /** Preflight accepts the same batch as the SDK without inference or tracker writes. */
 export const ADMISSION_FLAGS = [{ long: "--batch", value_name: "file", value_type: "string", description: "pm-jev-admission/1 JSON state and typed questions (64 KiB maximum)" }];
 /** Render one compact receipt through the host's TOON/JSON and exit-code contract. */

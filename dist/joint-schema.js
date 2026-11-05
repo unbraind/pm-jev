@@ -1,4 +1,5 @@
-import { parseQuestionsDocument, validateAnswers } from "./index.js";
+import { parseQuestionsDocument } from "./questions-document.js";
+import { validateAnswers } from "./index.js";
 /** Portable joint constraint document version. */
 export const JOINT_VERSION = "pm-jev-joint/1";
 /** Hard input and output bounds keep agent receipts predictable. */

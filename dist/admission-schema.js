@@ -1,4 +1,4 @@
-import { parseQuestionsDocument } from "./index.js";
+import { parseQuestionsDocument } from "./questions-document.js";
 /** Version of the read-only, text-only decision admission document. */
 export const ADMISSION_VERSION = "pm-jev-admission/1";
 /** Bounds apply before serialization, network requests or tokenizer construction. */

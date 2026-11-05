@@ -1,8 +1,9 @@
+import { parseQuestionsDocument } from "./questions-document.js";
 import { acceptsThreshold, threshold, numericBoundary } from "./threshold.js";
 import { compareExact, countRatio, displayRatio } from "./exact.js";
 import { TokenUsageTotals } from "./token-usage.js";
 import { createHash } from "node:crypto";
-import { createJevClient, parseQuestionsDocument, runDecision } from "./index.js";
+import { createJevClient, runDecision } from "./index.js";
 import { assertPublicProvenance } from "./source-provenance.js";
 /** Stable corpus identity; template or label changes require a new version. */
 export const DATASET_VERSION = "pm-jev-calibration/1";

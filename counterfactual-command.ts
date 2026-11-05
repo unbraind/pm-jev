@@ -1,8 +1,9 @@
+import { parseQuestionsDocument } from "./questions-document.ts";
 import { open } from "node:fs/promises";
 import { constants } from "node:fs";
 import { createExtensionCommandSdk, isErrnoError, isPmCliExpectedError, PmClient, readStringOption } from "@unbrained/pm-cli/sdk";
 import type { CommandHandlerContext, FlagDefinition } from "@unbrained/pm-cli/sdk/authoring";
-import { parseQuestionsDocument, projectItemState, resolveJevEndpoint } from "./index.ts";
+import { projectItemState, resolveJevEndpoint } from "./index.ts";
 import type { ProjectableItem } from "./index.ts";
 import { CounterfactualRefusal, explainDecision, explanationEndpointRefusal } from "./counterfactual.ts";
 
