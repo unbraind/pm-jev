@@ -1,4 +1,5 @@
 import { ollamaModelName } from "./ollama-model.js";
+import { boundedText } from "./bounded-text.js";
 import { acceptsThreshold, marginValue, threshold as thresholdState } from "./threshold.js";
 import { compareExact, displayExact, subtractExact } from "./exact.js";
 import { TokenUsageTotals } from "./token-usage.js";
@@ -366,7 +367,7 @@ export function requireCallableEndpoint(resolved) {
 function truncateStateText(value) {
     if (value === undefined)
         return "";
-    return value.length > STATE_TEXT_LIMIT ? `${value.slice(0, STATE_TEXT_LIMIT)}…[truncated]` : value;
+    return value.length > STATE_TEXT_LIMIT ? `${boundedText(value, STATE_TEXT_LIMIT)}…[truncated]` : value;
 }
 /**
  * Project one pm item into least-privilege decision state.
@@ -384,7 +385,7 @@ export function projectItemState(item) {
         title: truncateStateText(item.title),
         type: truncateStateText(item.type),
         status: truncateStateText(item.status),
-        tags: item.tags.slice(0, 32).map(/** Bound each retained tag before inference. */ /** Bound each retained tag before inference. */ tag => tag.slice(0, 128)),
+        tags: item.tags.slice(0, 32).map(/** Bound each retained tag before inference. */ /** Bound each retained tag before inference. */ tag => boundedText(tag, 128)),
         description: truncateStateText(item.description),
         body: truncateStateText(item.body),
     };
@@ -408,7 +409,7 @@ export function projectTriageState(item) {
         title: truncateStateText(item.title),
         ...(description ? { description } : {}),
         ...(body ? { body } : {}),
-        ...(item.tags.length ? { tags: item.tags.slice(0, 32).map(/** Bound each retained triage tag. */ /** Bound each retained triage tag. */ tag => tag.slice(0, 128)) } : {}),
+        ...(item.tags.length ? { tags: item.tags.slice(0, 32).map(/** Bound each retained triage tag. */ /** Bound each retained triage tag. */ tag => boundedText(tag, 128)) } : {}),
     };
 }
 /** Hash complete source evidence, excluding inferred type/priority and receipt metadata. */

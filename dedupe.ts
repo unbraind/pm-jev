@@ -12,6 +12,7 @@ import { createJevClient, resolveJevEndpoint, requireCallableEndpoint, runDecisi
 import { duplicateSimilarity, qualityLexicalAccepts } from "./duplicate-quality.ts";
 import type { QualityPolicy } from "./duplicate-quality.ts";
 import { modelDigest, readOpaqueJevSettings } from "./decision-calibration.ts";
+import { boundedText } from "./bounded-text.ts";
 
 /** Complete SDK item evidence retained locally for ranking and revision checks. */
 export type PairItem = ItemMetadata & { body?: string };
@@ -127,7 +128,7 @@ export function candidatePairs(items: readonly PairItem[], limit: number, topK =
 }
 /** Least-privilege, prompt-bounded pair evidence excludes closure labels, ids and receipts. */
 export function pairState(pair: DuplicatePair) {
-  return Object.fromEntries(([ ["A", pair.a], ["B", pair.b] ] as const).map(/** Keep the same semantic budget for each side. */ ([key, item]) => [key, { title: item.title.slice(0, 320), text: [item.description, item.body ?? ""].filter(/** Avoid repeating identical summary and body text. */ (value, i, values) => values.indexOf(value) === i).join("\n").slice(0, 1600) }]));
+  return Object.fromEntries(([ ["A", pair.a], ["B", pair.b] ] as const).map(/** Keep the same semantic budget for each side. */ ([key, item]) => [key, { title: boundedText(item.title, 320), text: boundedText([item.description, item.body ?? ""].filter(/** Avoid repeating identical summary and body text. */ (value, i, values) => values.indexOf(value) === i).join("\n"), 1600) }]));
 }
 /** Inclusive positive and negative cutoffs per typed question, with an explicit central abstention band. */
 export function pairVerdict(pair: DuplicatePair, probability: number, relatedProbability: number, threshold: ThresholdInput, relatedThreshold: ThresholdInput): PairVerdict {

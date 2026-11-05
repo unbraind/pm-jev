@@ -1,4 +1,5 @@
 import { displayRatio } from "./exact.ts";
+import { boundedText } from "./bounded-text.ts";
 /**
  * Same-tracker exemplar retrieval for retrieval-augmented decisions.
  *
@@ -221,11 +222,11 @@ function budgetedBody(unit: ExemplarUnit, remaining: number): string | null {
   if (Buffer.byteLength(JSON.stringify({ title: unit.title, body: unit.body, ...unit.labels }), "utf8") <= remaining * 4) return unit.body;
   const room = remaining * 4 - skeleton - Buffer.byteLength(TRUNCATED_MARKER, "utf8");
   let slice = Math.max(0, room);
-  let text = `${unit.body.slice(0, slice)}${TRUNCATED_MARKER}`;
+  let text = `${boundedText(unit.body, slice)}${TRUNCATED_MARKER}`;
   // Escape inflation can push a candidate over the budget; halve deterministically.
   while (slice > 0 && Buffer.byteLength(JSON.stringify({ title: unit.title, body: text, ...unit.labels }), "utf8") > remaining * 4) {
     slice = Math.floor(slice / 2);
-    text = `${unit.body.slice(0, slice)}${TRUNCATED_MARKER}`;
+    text = `${boundedText(unit.body, slice)}${TRUNCATED_MARKER}`;
   }
   return slice === 0 && Buffer.byteLength(JSON.stringify({ title: unit.title, body: text, ...unit.labels }), "utf8") > remaining * 4 ? "" : text;
 }

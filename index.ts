@@ -1,4 +1,5 @@
 import { ollamaModelName } from "./ollama-model.ts";
+import { boundedText } from "./bounded-text.ts";
 import { acceptsThreshold, marginValue, threshold as thresholdState } from "./threshold.ts";
 import type { ThresholdInput } from "./threshold.ts";
 import { compareExact, displayExact, subtractExact } from "./exact.ts";
@@ -562,7 +563,7 @@ export interface ProjectedItemState {
  */
 function truncateStateText(value: string | undefined): string {
   if (value === undefined) return "";
-  return value.length > STATE_TEXT_LIMIT ? `${value.slice(0, STATE_TEXT_LIMIT)}…[truncated]` : value;
+  return value.length > STATE_TEXT_LIMIT ? `${boundedText(value, STATE_TEXT_LIMIT)}…[truncated]` : value;
 }
 
 /**
@@ -581,7 +582,7 @@ export function projectItemState(item: ProjectableItem): ProjectedItemState {
     title: truncateStateText(item.title),
     type: truncateStateText(item.type),
     status: truncateStateText(item.status),
-    tags: item.tags.slice(0, 32).map(/** Bound each retained tag before inference. */ tag => tag.slice(0, 128)),
+    tags: item.tags.slice(0, 32).map(/** Bound each retained tag before inference. */ tag => boundedText(tag, 128)),
     description: truncateStateText(item.description),
     body: truncateStateText(item.body),
   };
@@ -614,7 +615,7 @@ export function projectTriageState(item: ProjectableItem): TriageItemState {
     title: truncateStateText(item.title),
     ...(description ? { description } : {}),
     ...(body ? { body } : {}),
-    ...(item.tags.length ? { tags: item.tags.slice(0, 32).map(/** Bound each retained triage tag. */ tag => tag.slice(0, 128)) } : {}),
+    ...(item.tags.length ? { tags: item.tags.slice(0, 32).map(/** Bound each retained triage tag. */ tag => boundedText(tag, 128)) } : {}),
   };
 }
 
