@@ -17,7 +17,12 @@ export async function runAdmissionCommand(ctx) {
         }
         const resolved = await resolveJevEndpoint(ctx.pm_root, process.env);
         requireCallableEndpoint(resolved);
-        const { receipt } = await admitDecisionBatch(resolved.config, raw);
+        const deadline = AbortSignal.timeout(resolved.config.totalDeadlineMs);
+        const { receipt } = await admitDecisionBatch(resolved.config, raw, deadline).catch(/** Only this command's own deadline is a structured refusal; preserve unrelated failures. */ (error) => {
+            if (!deadline.aborted || error !== deadline.reason)
+                throw error;
+            throw new AdmissionRefusal("metadata_unavailable", "Native Ollama metadata did not answer within the total deadline. Raise jev.total_deadline_ms in settings.json or restore the endpoint, then retry; no inference was submitted.");
+        });
         return { ...receipt, ...(receipt.ok ? {} : { exit_code: 1, remedy: `Remove at least ${receipt.minimum_prompt_tokens_to_remove} prompt tokens from the limiting prompt, or explicitly select a supported model with a larger digest-bound num_ctx; recheck every question. Questions and options were preserved.` }) };
     }
     catch (error) {

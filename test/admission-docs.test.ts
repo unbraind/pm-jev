@@ -16,6 +16,17 @@ async function refused(run: () => unknown): Promise<AdmissionRefusal> {
   throw new Error("Expected an admission refusal");
 }
 
+test("admission guide limits refits to compatible calibration identities and represented candidate counts", () => {
+  assert.match(guide, /refit with the current request builder is required to use fitted\s+temperatures and thresholds/);
+  assert.match(guide, /model digest, fixed question semantics, exemplar setting, or candidate count/);
+  assert.match(guide, /Refitting is optional when\s+using the uncalibrated fallback policy, or when a compatible fit already exists/);
+  assert.match(guide, /changing candidate identities or scores alone does not require a refit/);
+  assert.match(guide, /refit covers only candidate counts represented in the calibration split/);
+  assert.match(guide, /at most eight candidates \(plus `none`\)/);
+  assert.match(guide, /more than eight candidates still use uncalibrated probabilities/);
+  assert.match(guide, /fitted threshold may remain\s+unqualified \(`null`\) if calibration or held-out precision evidence is\s+insufficient/);
+});
+
 test("admission guide refusal table matches every declared code, runtime remedy and host outcome", async () => {
   const schema = readFileSync(new URL("../admission-schema.ts", import.meta.url), "utf8");
   const declaration = schema.match(/export type AdmissionRefusalCode = ([^;]+);/);

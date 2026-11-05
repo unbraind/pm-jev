@@ -137,6 +137,17 @@ resolution](https://github.com/ollama/ollama/blob/main/server/model_resolver.go)
 The duplicate-screening candidate state encodes similarity scores as strings.
 The `duplicate_of` calibration fingerprint includes `candidate-score-string/1`;
 fits from the older numeric-score prompt remain readable but do not apply to
-this prompt. Refit duplicate calibration with the current request builder to
-restore fitted temperatures and thresholds. Candidate identities and scores
-remain exchangeable evidence within this encoding.
+this prompt. A refit with the current request builder is required to use fitted
+temperatures and thresholds after this encoding change, or after a change to the
+model digest, fixed question semantics, exemplar setting, or candidate count
+that leaves no compatible calibration identity. Refitting is optional when
+using the uncalibrated fallback policy, or when a compatible fit already exists;
+changing candidate identities or scores alone does not require a refit because
+they remain exchangeable evidence within this encoding.
+
+A refit covers only candidate counts represented in the calibration split.
+`tracker-evaluation.ts` supplies at most eight candidates (plus `none`), so
+requests with more than eight candidates still use uncalibrated probabilities
+under these fits. Even for a matching count, a fitted threshold may remain
+unqualified (`null`) if calibration or held-out precision evidence is
+insufficient; refitting does not guarantee authorization of calibrated changes.

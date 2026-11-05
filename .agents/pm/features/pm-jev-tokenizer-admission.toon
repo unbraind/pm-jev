@@ -6,10 +6,10 @@ status: in_progress
 priority: 1
 tags[4]: admission,decision,"gh:unbraind/pm-jev#92",tokenizer
 created_at: "2026-11-05T04:39:51.590Z"
-updated_at: "2026-11-05T15:55:36.463Z"
+updated_at: "2026-11-05T17:05:02.699Z"
 author: codex-agent
 acceptance_criteria: Long multibyte state passing byte heuristics refuses before inference when it exceeds the pinned model context; valid short typed batches retain every option and question; one receipt identifies the smallest token reduction needed.
-comments[40]{created_at,author,text}:
+comments[47]{created_at,author,text}:
   "2026-11-05T04:40:17.822Z",codex-agent,"Overlap rechecked against current pm-jev main, host SDK and pm-context/pm-rl/pm-rlm: current code has UTF-8 budgets, decision capability discovery, calibrated digest checks and usage accounting; host output token budgets describe emitted context. None admits actual model-template-question input fit. This feature belongs at runDecision before local inference. No import/export/sync, journal, mutation, status-role or shared persistent state is added; those generic contracts remain delegated to existing SDK paths."
   "2026-11-05T04:54:50.735Z",codex-agent,"Implemented strict shared batch admission, the typed SDK receipt/refusals and jev admit. Both metadata and inference use a full sha256 model reference after one alias resolution. Initial supported profile pins the published Tev1 systemone template and reconstructs the native qwen35 BPE tokenizer from model metadata, including every question and option. Read-only no-git public acceptance: 26 tracker items read, 8 samples, 24 questions and 56 options retained; prompt maxima 158..298 tokens; receipts at most 484 bytes. Native usage independently matched 210 counted tokens. A 35,450-byte multibyte stress document counted 14,125 tokens against num_ctx 8,192 and refused with an exact 5,934-token deficit before inference. Tracker hashes stayed unchanged; details in docs/decision-admission-evidence.json."
   "2026-11-05T04:56:43.550Z",codex-agent,"Correction to the preceding measurement comment: the stress input is exactly 35,282 bytes (the committed evidence is authoritative). All other recorded token counts, limits and deficits are unchanged. Production audit reports zero vulnerabilities. Local typecheck, lint, docstrings and duplication passed; strict refusal and replay property tests are still being completed."
@@ -50,7 +50,14 @@ comments[40]{created_at,author,text}:
   "2026-11-05T15:41:12.553Z",codex-agent,"Full npm run release:check PASSED with isolated HOME, disabled global/system Git configuration and a minimal credential-free child environment. Results: 440 tests passed; 0 failures, cancellations or skips. All 49 inventoried source files meet unchanged 100 percent thresholds: 8009/8009 lines and statements, 403/403 functions, 3851/3851 branches. Static checks, build, identity/privacy, 1126 documented declarations, production audit (0 vulnerabilities), 192-file pack dry-run, changelog and publish-attestation checks all pass. No timeout or retry was needed. Bun full release gate runs next against the same code and tests."
   "2026-11-05T15:42:06.680Z",codex-agent,"Whole-PR cycle audit: parsed every static import/re-export in all 38 emitted JavaScript modules, compared local edges with origin/main, and tested reachability for each of 29 newly introduced local edges. Zero new edges participate in any value cycle. This independently covers the whole PR, in addition to the persistent admission graph regressions and the 98-runtime/188-declaration public surface snapshot."
   "2026-11-05T15:55:34.412Z",codex-agent,"Final validation: npm run release:check AND bun run release:check both PASS, run serially with isolated HOME, disabled global/system Git configuration, minimal credential-free environments and at most two test workers. Each: 440 passed; zero failed, canceled or skipped. All 49 inventoried source files at unchanged 100% statements/lines/branches/functions: 8009/8009 statements and lines, 403/403 functions, 3851/3851 branches. Typecheck, lint, 0% duplication, build, identity/privacy, 1126 documented declarations, production audit (0 vulnerabilities), 192-file package dry-run, changelog and publish-attestation checks passed. Both package dry-runs report shasum 6d632ed6845bfa69eaa7c9d141b908290e0ad807. No timeout or retry needed. dist is rebuilt. New boundary/API suite: 3/3, focused suite: 33/33; two independent behavioral reverts fail and restored suites pass. Outside-diff item is valid and fixed: admission schema and command no longer import index for values; complete public export surface is preserved. Whole-PR import audit finds zero introduced value cycles. No unresolved threads existed at intake; no replies or resolutions were posted. No new pm CLI/SDK bugs found. Claim released next; item stays in progress for orchestrator verification. Fresh pushed-head CI is a separate pending check at https://github.com/unbraind/pm-jev/pull/92/checks."
-files[35]:
+  "2026-11-05T16:39:55.580Z",codex-agent,"Review round 6: fetched all unresolved threads and all comments (two threads, no pagination); latest CodeRabbit review has no outside-diff findings. Verified branch is current with remote and includes main. Plan: identify the CLI-owned total deadline by signal reason identity, preserve unrelated errors, qualify duplicate calibration refit scope, add regression and behavioral revert proofs, self-review the full diff, then run unchanged npm and Bun release gates."
+  "2026-11-05T16:43:28.874Z",codex-agent,"Verified both round-6 findings. PRRT_kwDOU8IMzs60KhWl: command creates and passes its own timeout signal and maps only rejection identical to its aborted signal reason; unrelated Error, TimeoutError, AbortError, ETIMEDOUT, ESOCKETTIMEDOUT, UND_ERR_CONNECT_TIMEOUT, ABORT_ERR and non-Error failures preserve identity. PRRT_kwDOU8IMzs60KhXC: guide specifies required versus optional refits, identity compatibility, represented candidate counts, eight-candidate evaluation cap and nullable unqualified thresholds. Self-review of the full PR source diff and related guidance found no further instance requiring changes. Existing general decision-error translation remains a separate established API contract."
+  "2026-11-05T16:43:30.126Z",codex-agent,"Behavioral revert proofs in a disposable package copy: restoring only admission-command.ts from 093b63c makes the CLI deadline regression fail (1 pass, 1 fail); restoring only docs/decision-admission.md makes the refit contract regression fail (1 pass, 1 fail). Replacing reason-identity checking with broad TimeoutError/ETIMEDOUT matching makes the unrelated-error regression fail (1 pass, 1 fail). Restoring both fixes passes all 4 focused tests. Exact proof commands: node --test --test-concurrency=2 test/admission-command.test.ts; node --test --test-concurrency=2 test/admission-docs.test.ts. No reviewed-worktree mutations were used for revert proofs."
+  "2026-11-05T16:46:10.683Z",codex-agent,"All 10 linked test commands passed via pinned pm test --run --progress, including offline packed npx and bunx JSON/TOON acceptance. Test-result tracking is disabled in this tracker, so this comment preserves the successful run receipt. New regressions were consolidated into subtests to satisfy the unchanged zero-duplication gate; lint, duplication and docstrings pass."
+  "2026-11-05T16:56:32.426Z",codex-agent,"npm run release:check passed with isolated HOME and disabled global/system Git configuration: 444 tests passed, zero failed/canceled/skipped; all 49 source files reported. Coverage is 100% statements/lines (8013/8013), functions (403/403), branches (3862/3862); zero duplication, 1127 documented declarations, zero production vulnerabilities and 192-file pack dry-run passed. Artifact shasum: 8b19100a815ea9a354f1b16107d908519c8d4d74. Strict read-only PM health passed with zero warnings. No timeout retries were needed. Bun release gate is running serially next."
+  "2026-11-05T16:56:34.944Z",codex-agent,"Final regression structure proof rerun after removing duplicated fixture setup: original command and broad timeout-code matcher each fail the respective targeted child test (the runner counts both child and parent as failures: 1 pass, 2 fail); original guide yields 1 pass and 1 fail. Restored implementation and guide pass all 5 focused tests. All mutation proofs used disposable copies; the package worktree retained the fixed implementation."
+  "2026-11-05T17:05:00.259Z",codex-agent,"bun run release:check also passed at unchanged thresholds: 444 tests passed, zero failed/canceled/skipped; all 49 sources at 100% statements, lines, branches and functions. npm and Bun both produced the same 192-file pack dry-run shasum 8b19100a815ea9a354f1b16107d908519c8d4d74. Both full gates passed on their first run with no timeout retries. All 10 linked PM test commands passed. No PM CLI/SDK defect was found; configured test-result tracking is disabled and comments preserve results. Both unresolved review findings are fixed; no thread replies, resolutions, mentions, merge or release were performed. Final source, rebuilt dist and append-only PM evidence are ready for orchestrator verification; pushed-head CI is tracked on https://github.com/unbraind/pm-jev/pull/92/checks."
+files[36]:
   - path: admission-command.ts
     scope: project
   - path: admission-schema.ts
@@ -86,6 +93,8 @@ files[35]:
   - path: README.md
     scope: project
   - path: source-diagnostics.ts
+    scope: project
+  - path: test/admission-command.test.ts
     scope: project
   - path: test/admission-docs-install.test.ts
     scope: project
@@ -124,7 +133,7 @@ files[35]:
     scope: project
   - path: test/policy-replay.test.ts
     scope: project
-tests[9]:
+tests[10]:
   - command: "node --test --test-concurrency=1 --test-name-pattern=\"exact multibyte|short typed|one strict|native metadata|retargeting|registered admission|numeric field|real no-git\" test/decision-admission.test.ts"
     scope: project
     provenance:
@@ -187,6 +196,13 @@ tests[9]:
     provenance:
       author: codex-agent
       created_at: "2026-11-05T15:25:59.834Z"
+      source_kind: local_mutation
+      source_ref: feat/tokenizer-bound-decision-admission
+  - command: node --test --test-concurrency=2 test/admission-command.test.ts test/admission-docs.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-11-05T16:43:31.503Z"
       source_kind: local_mutation
       source_ref: feat/tokenizer-bound-decision-admission
 docs[3]:
