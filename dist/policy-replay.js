@@ -187,12 +187,13 @@ export async function createOllamaReplayAdapter(model, baseUrl = "http://127.0.0
         const card = inventory.models.find(/** Resolve the exact installed tag before sending any recorded state. */ /** Resolve the exact installed tag before sending any recorded state. */ entry => entry.name === model);
         if (!card || card.remote_host || card.remote_model || !card.capabilities.includes("decision") || !/^[a-f0-9]{64}$/.test(card.digest))
             throw new Error();
-        const client = createJevClient({ config, hostedBlocked: null }, {}, 0);
+        const pinned = { ...config, model: `sha256:${card.digest}` };
+        const client = createJevClient({ config: pinned, hostedBlocked: null }, {}, 0);
         return { version: `ollama:${card.digest}`,
             /** Reuse the existing typed transport with zero retries and a per-input deadline. */
             async decide(record, signal) {
-                const result = await runDecision(client, config, record.state, record.questions, signal === undefined ? undefined : AbortSignal.any([signal, AbortSignal.timeout(deadlineMs)]));
-                if (result.model !== model)
+                const result = await runDecision(client, pinned, record.state, record.questions, signal === undefined ? undefined : AbortSignal.any([signal, AbortSignal.timeout(deadlineMs)]));
+                if (result.model !== model && result.model !== pinned.model)
                     throw new Error("Replay model changed");
                 return result;
             } };

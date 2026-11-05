@@ -3,6 +3,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { KEEP_CURRENT_TYPE } from "../index.ts";
+import { modelDigest } from "../decision-calibration.ts";
 import { project } from "./fixtures.ts";
 import { isHostOutputSuppressed } from "@unbrained/pm-cli/sdk";
 import type { BacklogTriageSummary, TriageDecision, DedupeDecision, AskDecision, GateDecision } from "../index.ts";
@@ -19,6 +20,7 @@ test("real local tev1: triage, dedupe, ask and gate on synthetic state", { timeo
   const previousUrl = process.env.PM_JEV_BASE_URL, previousModel = process.env.PM_JEV_MODEL;
   process.env.PM_JEV_BASE_URL = "http://localhost:11434"; process.env.PM_JEV_MODEL = "tev1:4b";
   try {
+    const expectedModel = `sha256:${await modelDigest("http://localhost:11434", "tev1:4b", 30000)}`;
     await fixture.pm.schemaAddType("Bug", { description: "A software defect, crash, exception, or broken existing behavior" });
     const created = await fixture.pm.create({ type: "Feature", title: "Login crashes for every user with an unhandled exception", description: "After the latest update, opening login throws an exception and closes the application. Nobody can sign in. Existing login worked before the regression.", priority: 3 });
     const id = created.item.id;
@@ -36,7 +38,7 @@ test("real local tev1: triage, dedupe, ask and gate on synthetic state", { timeo
     if (triage.proposals.type.abstained) assert.equal(triage.proposals.type.reason, "top_two_margin_below_threshold");
     assert.ok(triage.proposals.priority.level <= 2);
     assert.equal(triage.applied.length, 0);
-    assert.equal(triage.model, "tev1:4b");
+    assert.equal(triage.model, expectedModel);
     assert.ok(triage.usage.input_tokens === null || triage.usage.input_tokens > 0);
     assert.equal((await fixture.pm.get(id)).item.type, "Feature");
     const dedupe = await run("dedupe", { title: created.item.title, body: "Same login crash for every user" }) as DedupeDecision;
