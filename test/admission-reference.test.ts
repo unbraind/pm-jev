@@ -61,3 +61,14 @@ test("native lookup refuses unknown, malformed and ambiguous inventory names bef
     assert.equal((await admitDecision(config, "Synthetic", questions)).receipt.model_digest, digest);
   });
 });
+
+test("reference canonicalization stays linear on colon-heavy and oversized input", () => {
+  const started = performance.now();
+  assert.equal(ollamaModelName(":".repeat(100_000)), undefined);
+  assert.equal(ollamaModelName(`${":".repeat(100_000)}/`), undefined);
+  assert.equal(ollamaModelName("a" + ":".repeat(600)), undefined);
+  assert.equal(ollamaModelName(`registry.example:5000/team/${"m".repeat(80)}:${"t".repeat(80)}`), `registry.example:5000/team/${"m".repeat(80)}:${"t".repeat(80)}`);
+  assert.equal(ollamaModelName("x".repeat(641)), undefined);
+  assert.ok(performance.now() - started < 250, "canonicalization must not scale polynomially with ':' runs");
+});
+
