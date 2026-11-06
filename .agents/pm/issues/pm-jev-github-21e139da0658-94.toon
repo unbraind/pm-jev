@@ -2,12 +2,25 @@ id: pm-jev-github-21e139da0658-94
 title: PR #92 rejects valid Unicode after item-state truncation splits a surrogate pair
 description: "GH issue #94: https://github.com/unbraind/pm-jev/issues/94 · author @unbraind · created 2026-11-05T05:31:07Z · updated 2026-11-05T05:31:07Z"
 type: Issue
-status: open
+status: in_progress
 priority: 2
 tags[2]: "gh:unbraind/pm-jev#94","github_author:unbraind"
 created_at: "2026-11-05T05:31:07Z"
-updated_at: "2026-11-05T11:11:21.715Z"
+updated_at: "2026-11-06T05:22:55.359Z"
 author: pm-github
+comments[5]{created_at,author,text}:
+  "2026-11-06T04:31:40.445Z",codex-sol,"Read issue in full. Current main already uses boundedText to preserve surrogate pairs, with boundary and SDK tests from PR 92. Extend every boundary offset through the real no-git SDK tracker and record a behavioral revert of the existing protection instead of replacing working truncation."
+  "2026-11-06T04:39:30.667Z",codex-sol,"Expanded boundary offsets -2, -1, 0 and +1 for item/triage projection and real no-git SDK tracker decisions. Replacing only boundedText with UTF-16 slice in a disposable copy fails all 7 Unicode tests; the restored implementation passes 7/7. Existing strict malformed-surrogate refusals remain covered."
+  "2026-11-06T04:47:05.024Z",codex-sol,"The installed-model end-to-end acceptance uses this public defect item from a verified main snapshot. Five packed CLI reference spellings preserve the same projected evidence, fit admission at 1182 prompt tokens, and return identical native Noul probabilities without changing durable tracker state."
+  "2026-11-06T05:08:24.046Z",codex-sol,"Final-code validation retains 7/7 Unicode regressions, including real SDK no-git decisions at every boundary offset. The raw slice behavioral revert fails 7/7, and all restored protections pass 13/13. Final packed public-item inference repeats the same token parity and immutable durable tracker snapshot for five native reference spellings."
+  "2026-11-06T05:22:53.961Z",codex-sol,"Final local npm and Bun-command release gates each passed 454/454 with all four c8 coverage dimensions at 100%. Unicode boundary and malformed-source controls remain green, and the behavioral UTF-16 slice revert fails 7/7. Final-head PR CI remains the next gate; releasing the claim without closing the item."
+files[2]{path,scope}:
+  bounded-text.ts,project
+  test/bounded-text.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/bounded-text.test.ts,project,codex-sol,"2026-11-06T04:35:23.332Z",local_mutation,tev1-admission-reference-and-unicode-fixes
+docs[1]{path,scope}:
+  docs/decision-admission.md,project
 github_close_reason: ""
 github_closed_at: ""
 github_created_at: "2026-11-05T05:31:07Z"

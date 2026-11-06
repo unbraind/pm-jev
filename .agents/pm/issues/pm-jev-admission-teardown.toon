@@ -1,0 +1,25 @@
+id: pm-jev-admission-teardown
+title: Retry packed admission fixture teardown within a finite bound
+description: "Track the packed documentation ENOTEMPTY failure with deterministic recovery, exhaustion and command-failure regression evidence."
+type: Issue
+status: in_progress
+priority: 2
+tags[3]: admission,"gh:unbraind/pm-jev#98",tests
+created_at: "2026-11-06T04:31:35.679Z"
+updated_at: "2026-11-06T05:22:57.950Z"
+author: codex-sol
+comments[5]{created_at,author,text}:
+  "2026-11-06T04:31:41.495Z",codex-sol,Read issue and CI evidence in full. Commands are awaited via execFile callbacks and the HTTP fixture is closed before removal; no particular late writer is established. Add bounded ENOTEMPTY retries and deterministic recovery/exhaustion/unrelated-error tests while preserving command failures.
+  "2026-11-06T04:39:39.403Z",codex-sol,"Focused cleanup passes 3/3, including exit 23 from a real awaited child command. Reverting only the retry helper to a single removal fails 2/3; restoration passes. Packed guide plus runner/docs/reference selection passes 13/13, including four offline documented commands and the nested explicit Bun skip."
+  "2026-11-06T04:42:57.117Z",codex-sol,Node 22 focused packed/reference/Unicode/cleanup verification passed 20/20 with no skips. All five final live reference decisions also succeeded; the public copy retained read-only item/history bytes and remained unchanged by commands. CLI startup and native metadata/tokenization are included in reported command latency.
+  "2026-11-06T05:08:26.528Z",codex-sol,"Node 26 npm release gate passed 454/454, zero fail/skip/cancel/todo, with all c8 coverage dimensions at 100% and zero production vulnerabilities. Cleanup retry revert still fails 2/3, including recovery/exhaustion controls; the command-failure control remains passing. Starting the full Bun-command release gate on the final code next."
+  "2026-11-06T05:22:56.878Z",codex-sol,"Final local npm and Bun-command release gates each passed 454/454, zero fail/skip/cancel/todo; c8 statements, branches, functions and lines are all 100%, and production audit found zero vulnerabilities. Packed offline guide commands and the Node-only explicit Bun skip remain covered. Persistent cleanup failures and real failed commands still fail. Releasing the claim for final-head PR CI and orchestrator verification; item remains in progress."
+files[3]{path,scope}:
+  test/admission-cleanup.test.ts,project
+  test/admission-cleanup.ts,project
+  test/admission-docs-install.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/admission-cleanup.test.ts,project,codex-sol,"2026-11-06T04:35:24.372Z",local_mutation,tev1-admission-reference-and-unicode-fixes
+docs[1]{path,scope}:
+  docs/decision-admission.md,project
+body: ""

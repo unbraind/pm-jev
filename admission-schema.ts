@@ -6,7 +6,7 @@ export const ADMISSION_VERSION = "pm-jev-admission/1";
 /** Bounds apply before serialization, network requests or tokenizer construction. */
 export const ADMISSION_LIMITS = Object.freeze({ bytes: 65536, questions: 64, options: 255, nodes: 16384, depth: 12, context: 1048576 });
 /** Content-free refusals distinguish invalid data, unsupported profiles and transport failures. */
-export type AdmissionRefusalCode = "invalid_input" | "unsupported_model" | "metadata_unavailable" | "invalid_report" | "context_exceeded" | "option_limit_exceeded";
+export type AdmissionRefusalCode = "invalid_input" | "unsupported_model" | "ambiguous_model" | "metadata_unavailable" | "invalid_report" | "context_exceeded" | "option_limit_exceeded";
 /** A stable refusal never repeats state, question text or provider response bodies. */
 export class AdmissionRefusal extends Error {
   /** Stable machine classification of the refusal. */

@@ -49,6 +49,8 @@ test("admission guide refusal table matches every declared code, runtime remedy 
     const report = await refused(() => validateAdmissionReceipt({ ...admitted.receipt, questions: 0 })); refusals.set(report.code, report);
     const large = { route: { type: "choice" as const, criteria: Object.fromEntries(Array.from({ length: 27 }, (_, i) => [`option-${i}`, null])) } };
     const options = await refused(() => admitDecision(config, "Synthetic", large)); refusals.set(options.code, options);
+    server.setAdmissionReply((_, response) => response.end(JSON.stringify({ models: [{ name: config.model, digest: "a".repeat(64) }, { name: config.model.toUpperCase(), digest: "b".repeat(64) }] })));
+    const ambiguous = await refused(() => admitDecision(config, "Synthetic", questions)); refusals.set(ambiguous.code, ambiguous);
     server.setAdmissionReply((_, response) => { response.statusCode = 503; response.end("unavailable"); });
     const metadata = await refused(() => admitDecision(config, "Synthetic", questions)); refusals.set(metadata.code, metadata);
     // The reserved code has no producer; verify the public mapper still preserves it.
