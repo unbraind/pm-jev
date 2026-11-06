@@ -81,8 +81,9 @@ test("replay shares alias ambiguity refusal before inspection or inference in ei
       { name: "tev1:4b", digest, capabilities: ["decision"] },
       { name: "REGISTRY.OLLAMA.AI/Library/Tev1:4B", digest: "a".repeat(64), capabilities: ["decision"] },
     ];
-    server.setAdmissionReply((request, response) => response.end(JSON.stringify(request.url === "/api/tags" ? { models } : admissionMetadata())));
-    server.setReply((request, response, body) => response.end(JSON.stringify(request.url === "/api/tags" ? { models } : { ...answers(questions), model: (body as { model: string }).model })));
+    let readModels = () => models;
+    server.setAdmissionReply((request, response) => response.end(JSON.stringify(request.url === "/api/tags" ? { models: readModels() } : admissionMetadata())));
+    server.setReply((request, response, body) => response.end(JSON.stringify(request.url === "/api/tags" ? { models: readModels() } : { ...answers(questions), model: (body as { model: string }).model })));
     const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
     for (let order = 0; order < 2; order++) {
       models.reverse();
@@ -101,10 +102,20 @@ test("replay shares alias ambiguity refusal before inspection or inference in ei
       assert.equal(result.model, `sha256:${digest}`);
     }
     assert.equal(server.requests.filter(request => request.path === "/v1/systemone").length, 2);
-    // A duplicate digest cannot hide a remote row or a missing local decision capability.
-    for (const extra of [{ remote_host: "remote.invalid" }, { remote_model: "remote" }, { capabilities: [] }, { capabilities: undefined }]) {
-      models = [{ name: "tev1:4b", digest, capabilities: ["decision"] }, { ...models[1], ...extra }];
+    // Each invalid row starts clean; repairing only its intended defect must recover admission.
+    const local = { name: "tev1:4b", digest, capabilities: ["decision"] };
+    for (const { invalid, repair } of [
+      { invalid: { remote_host: "remote.invalid" }, repair: { remote_host: undefined } },
+      { invalid: { remote_model: "remote" }, repair: { remote_model: undefined } },
+      { invalid: { capabilities: [] }, repair: { capabilities: ["decision"] } },
+      { invalid: { capabilities: undefined }, repair: { capabilities: ["decision"] } },
+    ]) {
+      models = [{ ...local }, { ...local, name: "registry.ollama.ai/library/tev1:4b", ...invalid }];
+      readModels = () => models;
       await assert.rejects(createOllamaReplayAdapter(config.model, server.url), error => error instanceof ReplayRefusal && error.code === "model_unavailable");
+      const repaired = [{ ...models[0] }, { ...models[1], ...repair }];
+      readModels = () => repaired;
+      assert.equal((await createOllamaReplayAdapter(config.model, server.url)).version, `ollama:${digest}`);
     }
     assert.equal(server.requests.filter(request => request.path === "/v1/systemone").length, 2);
   });
