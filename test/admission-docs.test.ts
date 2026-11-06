@@ -54,6 +54,8 @@ test("admission guide refusal table matches every declared code, runtime remedy 
       { model: config.model, inventory: { models: [] } },
       { model: config.model, inventory: { models: [{ name: config.model }] } },
       { model: config.model, inventory: { models: [{ name: config.model, digest: "bad" }] } },
+      { model: config.model, inventory: { models: [{ name: config.model }, { name: config.model.toUpperCase() }] } },
+      { model: config.model, inventory: { models: [{ name: config.model, digest: "bad" }, { name: config.model.toUpperCase(), digest: "bad" }] } },
     ]) {
       inventory = entry.inventory;
       const error = await refused(() => admitDecision({ ...config, model: entry.model }, "Synthetic", questions));

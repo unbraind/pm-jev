@@ -1,10 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { Questions } from "../index.ts";
+import type { JevConfig, Questions } from "../index.ts";
 import { ADMISSION_VERSION, AdmissionRefusal, admitDecision, admitDecisionBatch, createJevClient, resolveJevEndpoint, runDecision } from "../index.ts";
 import { scenario } from "./fixtures.ts";
 
 const singleChoice: Questions = { route: { type: "choice", criteria: { keep: null } } };
+
+/** Check both admission entrypoints retain typed, content-free refusals for invalid choices. */
+async function assertInvalidChoice(config: JevConfig, input: Questions): Promise<void> {
+  await assert.rejects(admitDecision(config, "Synthetic", input), error => error instanceof AdmissionRefusal && error.code === "invalid_input" && error.remedy.includes("null") && !error.message.includes("PRIVATE_CHOICE_VALUE"));
+  await assert.rejects(runDecision(createJevClient({ config, hostedBlocked: null }, {}, 0), config, "Synthetic", input), error => (error as { context: { code: string } }).context.code === "jev_admission_invalid_input");
+}
 
 test("admission counts exactly the choice identities serialized by the real SDK", async () => {
   await scenario(async (fixture, server) => {
@@ -36,10 +42,26 @@ test("a sole undefined choice becomes empty and refuses before metadata or infer
   await scenario(async (fixture, server) => {
     const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
     const input = { route: { type: "choice", criteria: { drop: undefined } } } as unknown as Questions;
-    await assert.rejects(admitDecision(config, "Synthetic", input), error => error instanceof AdmissionRefusal && error.code === "invalid_input" && error.remedy.includes("null"));
-    await assert.rejects(runDecision(createJevClient({ config, hostedBlocked: null }, {}, 0), config, "Synthetic", input), error => (error as { context: { code: string } }).context.code === "jev_admission_invalid_input");
+    await assertInvalidChoice(config, input);
     assert.equal(server.admissionRequests.length, 0);
     assert.equal(server.requests.length, 0);
+  });
+});
+
+test("function and symbol choice values refuse before JSON can silently omit them", async () => {
+  await scenario(async (fixture, server) => {
+    const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
+    for (const value of [() => "PRIVATE_CHOICE_VALUE", Symbol("PRIVATE_CHOICE_VALUE")]) {
+      const input = { route: { type: "choice", criteria: { keep: "Keep", invalid: value } } } as unknown as Questions;
+      await assertInvalidChoice(config, input);
+      assert.equal(server.admissionRequests.length, 0);
+      assert.equal(server.requests.length, 0);
+    }
+    const persisted = JSON.parse('{"route":{"type":"choice","criteria":{"keep":null}}}') as Questions;
+    const admitted = await admitDecision(config, "Synthetic", persisted);
+    assert.equal(admitted.receipt.options, 1);
+    assert.equal(admitted.questions.route.type, "choice");
+    assert.deepEqual(admitted.questions.route.criteria, { keep: null });
   });
 });
 
