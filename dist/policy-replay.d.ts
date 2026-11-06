@@ -5,7 +5,7 @@ export declare const REPLAY_VERSION = "pm-jev-replay/1";
 /** Redacted, actionable replay failure; input and transport text are never echoed. */
 export declare class ReplayRefusal extends Error {
     /** Stable category suitable for programmatic recovery. */
-    readonly code: "invalid_recording" | "invalid_policy" | "local_only" | "model_unavailable";
+    readonly code: "invalid_recording" | "invalid_policy" | "local_only" | "model_unavailable" | "ambiguous_model";
     /** Recovery guidance without source evidence or transport details. */
     readonly remedy: string;
     /** Construct a stable refusal with a recovery instruction. */

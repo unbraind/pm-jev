@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AdmissionRefusal, admitDecision, createJevClient, resolveJevEndpoint, runDecision } from "../index.ts";
+import type { Questions, SystemOneResult } from "../index.ts";
+import { AdmissionRefusal, ReplayRefusal, admitDecision, createJevClient, createOllamaReplayAdapter, resolveJevEndpoint, runDecision } from "../index.ts";
 import { ollamaModelName } from "../ollama-model.ts";
 import { admissionMetadata } from "./admission-fixtures.ts";
-import { scenario, trackerSnapshot, withoutGit } from "./fixtures.ts";
+import { answers, scenario, trackerSnapshot, withoutGit } from "./fixtures.ts";
 
 const questions = { keep: { type: "noul" as const } };
 
@@ -72,3 +73,50 @@ test("reference canonicalization stays linear on colon-heavy and oversized input
   assert.ok(performance.now() - started < 2000, "canonicalization must not scale polynomially with ':' runs (the old regex needs ~13 s on this input)");
 });
 
+
+test("replay shares alias ambiguity refusal before inspection or inference in either inventory order", async () => {
+  await scenario(async (fixture, server) => {
+    const digest = "9".repeat(64);
+    let models: { name: string; digest: string; capabilities?: string[] }[] = [
+      { name: "tev1:4b", digest, capabilities: ["decision"] },
+      { name: "REGISTRY.OLLAMA.AI/Library/Tev1:4B", digest: "a".repeat(64), capabilities: ["decision"] },
+    ];
+    let readModels = () => models;
+    server.setAdmissionReply((request, response) => response.end(JSON.stringify(request.url === "/api/tags" ? { models: readModels() } : admissionMetadata())));
+    server.setReply((request, response, body) => response.end(JSON.stringify(request.url === "/api/tags" ? { models: readModels() } : { ...answers(questions), model: (body as { model: string }).model })));
+    const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
+    for (let order = 0; order < 2; order++) {
+      models.reverse();
+      await assert.rejects(async () => {
+        const adapter = await createOllamaReplayAdapter(config.model, server.url);
+        await adapter.decide({ id: "fixture", state: { title: "Synthetic" }, questions, result: answers(questions) as SystemOneResult<Questions>, policy: { version: "v1", min_probability: 0.5 } });
+      }, error => error instanceof ReplayRefusal && error.code === "ambiguous_model" && error.remedy.includes("conflicting") && !error.remedy.includes("sha256"));
+    }
+    assert.equal(server.admissionRequests.some(request => request.path === "/api/show"), false);
+    assert.equal(server.requests.filter(request => request.path === "/v1/systemone").length, 0);
+    models = models.map(card => ({ ...card, digest }));
+    for (const inventory of [models, [...models].reverse()]) {
+      models = inventory;
+      const adapter = await createOllamaReplayAdapter(config.model, server.url);
+      const result = await adapter.decide({ id: "fixture", state: { title: "Synthetic" }, questions, result: answers(questions) as SystemOneResult<Questions>, policy: { version: "v1", min_probability: 0.5 } });
+      assert.equal(result.model, `sha256:${digest}`);
+    }
+    assert.equal(server.requests.filter(request => request.path === "/v1/systemone").length, 2);
+    // Each invalid row starts clean; repairing only its intended defect must recover admission.
+    const local = { name: "tev1:4b", digest, capabilities: ["decision"] };
+    for (const { invalid, repair } of [
+      { invalid: { remote_host: "remote.invalid" }, repair: { remote_host: undefined } },
+      { invalid: { remote_model: "remote" }, repair: { remote_model: undefined } },
+      { invalid: { capabilities: [] }, repair: { capabilities: ["decision"] } },
+      { invalid: { capabilities: undefined }, repair: { capabilities: ["decision"] } },
+    ]) {
+      models = [{ ...local }, { ...local, name: "registry.ollama.ai/library/tev1:4b", ...invalid }];
+      readModels = () => models;
+      await assert.rejects(createOllamaReplayAdapter(config.model, server.url), error => error instanceof ReplayRefusal && error.code === "model_unavailable");
+      const repaired = [{ ...models[0] }, { ...models[1], ...repair }];
+      readModels = () => repaired;
+      assert.equal((await createOllamaReplayAdapter(config.model, server.url)).version, `ollama:${digest}`);
+    }
+    assert.equal(server.requests.filter(request => request.path === "/v1/systemone").length, 2);
+  });
+});

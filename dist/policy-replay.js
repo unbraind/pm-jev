@@ -1,5 +1,6 @@
+import { AdmissionRefusal } from "./admission-schema.js";
 import { parseQuestionsDocument } from "./questions-document.js";
-import { ollamaModelName } from "./ollama-model.js";
+import { ollamaModelName, resolveOllamaInventoryModel } from "./ollama-model.js";
 import { compareExact, subtractExact } from "./exact.js";
 import { reportPriorReceipt, withReceipt } from "./partial-receipt.js";
 import { createHash } from "node:crypto";
@@ -186,12 +187,12 @@ export async function createOllamaReplayAdapter(model, baseUrl = "http://127.0.0
         if (!response.ok)
             throw new Error();
         const inventory = await response.json();
-        const card = inventory.models.find(/** Resolve the exact installed tag before sending any recorded state. */ /** Resolve the exact installed tag before sending any recorded state. */ entry => ollamaModelName(entry.name) === ollamaModelName(model));
-        if (!card || card.remote_host || card.remote_model || !card.capabilities.includes("decision") || !/^[a-f0-9]{64}$/.test(card.digest))
+        const { digest, matches } = resolveOllamaInventoryModel(model, inventory.models);
+        if (matches.some(/** Every equivalent row must describe a local decision model. */ /** Every equivalent row must describe a local decision model. */ card => card.remote_host || card.remote_model || !Array.isArray(card.capabilities) || !card.capabilities.includes("decision")))
             throw new Error();
-        const pinned = { ...config, model: `sha256:${card.digest}` };
+        const pinned = { ...config, model: `sha256:${digest}` };
         const client = createJevClient({ config: pinned, hostedBlocked: null }, {}, 0);
-        return { version: `ollama:${card.digest}`,
+        return { version: `ollama:${digest}`,
             /** Reuse the existing typed transport with zero retries and a per-input deadline. */
             async decide(record, signal) {
                 const result = await runDecision(client, pinned, record.state, record.questions, signal === undefined ? undefined : AbortSignal.any([signal, AbortSignal.timeout(deadlineMs)]));
@@ -200,7 +201,9 @@ export async function createOllamaReplayAdapter(model, baseUrl = "http://127.0.0
                 return result;
             } };
     }
-    catch {
+    catch (error) {
+        if (error instanceof AdmissionRefusal && error.code === "ambiguous_model")
+            throw new ReplayRefusal(error.code, error.remedy);
         throw new ReplayRefusal("model_unavailable", `Start local Ollama, run ollama pull ${model}, and verify that /api/tags advertises a local decision capability and digest; then retry.`);
     }
 }

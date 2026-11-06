@@ -45,6 +45,26 @@ test("admission guide refusal table matches every declared code, runtime remedy 
     const refusals = new Map<AdmissionRefusalCode, AdmissionRefusal>();
     const invalid = await refused(() => admitDecisionBatch(config, {})); refusals.set(invalid.code, invalid);
     const unsupported = await refused(() => admitDecision({ ...config, provider: "typesafe" }, "Synthetic", questions)); refusals.set(unsupported.code, unsupported);
+    const unsupportedRow = rows.find(row => row[0] === "unsupported_model"); assert.ok(unsupportedRow);
+    let inventory: unknown = {};
+    server.setAdmissionReply((request, response) => response.end(JSON.stringify(request.url === "/api/tags" ? inventory : admissionMetadata())));
+    for (const entry of [
+      { model: "/tev1", inventory: { models: [] } },
+      { model: config.model, inventory: {} },
+      { model: config.model, inventory: { models: [] } },
+      { model: config.model, inventory: { models: [{ name: config.model }] } },
+      { model: config.model, inventory: { models: [{ name: config.model, digest: "bad" }] } },
+      { model: config.model, inventory: { models: [{ name: config.model }, { name: config.model.toUpperCase() }] } },
+      { model: config.model, inventory: { models: [{ name: config.model, digest: "bad" }, { name: config.model.toUpperCase(), digest: "bad" }] } },
+    ]) {
+      inventory = entry.inventory;
+      const error = await refused(() => admitDecision({ ...config, model: entry.model }, "Synthetic", questions));
+      assert.equal(error.code, "unsupported_model");
+      assert.ok(error.remedy.includes(unsupportedRow[4]), "Every native identity refusal retains the documented recovery");
+    }
+    assert.equal(server.admissionRequests.some(request => request.path === "/api/show"), false);
+    assert.equal(server.requests.length, 0);
+    inventory = { models: [{ name: config.model, digest: "a".repeat(64) }] };
     const admitted = await admitDecision(config, "Synthetic", questions);
     const report = await refused(() => validateAdmissionReceipt({ ...admitted.receipt, questions: 0 })); refusals.set(report.code, report);
     const large = { route: { type: "choice" as const, criteria: Object.fromEntries(Array.from({ length: 27 }, (_, i) => [`option-${i}`, null])) } };

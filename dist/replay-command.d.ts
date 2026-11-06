@@ -34,7 +34,7 @@ export declare function runReplayCommand(ctx: CommandHandlerContext): Promise<im
     ok: boolean;
     exit_code: number;
     refusal: {
-        code: "invalid_policy" | "invalid_recording" | "local_only" | "model_unavailable";
+        code: "ambiguous_model" | "invalid_policy" | "invalid_recording" | "local_only" | "model_unavailable";
         message: string;
         remedy: string;
     };

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Refuse ambiguous native model aliases before replay pinning ([pm-jev-replay-ambiguity](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-replay-ambiguity.toon))
+- Count choice options from the JSON request representation ([pm-jev-undefined-choice-admission](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-undefined-choice-admission.toon))
+
 ## 2026.11.6 - 2026-11-06
 
 ### Added

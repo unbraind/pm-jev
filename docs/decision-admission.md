@@ -25,6 +25,17 @@ that receipt as `result.admission` for local calls. Hosted calls retain the
 existing opt-in and SDK behavior; this local admission contract does not certify
 hosted prompt fit.
 
+Programmatic SDK objects follow JSON serialization semantics: undefined-valued
+object properties are removed in a detached representation before schema checks,
+option counting, prompt rendering and submission. This includes choice criteria:
+`{ keep: "Keep", drop: undefined }` admits and submits only `keep`. Use `null`
+to retain an undescribed alternative. A sole undefined choice becomes empty and
+refuses with typed `invalid_input` and a remedy before metadata or inference.
+Serialization failures and invalid hook outputs also refuse as `invalid_input`
+before metadata or inference. Undefined array entries still refuse rather than
+becoming JSON nulls. Caller objects are never modified; the admitted option
+identities and counts describe the actual serialized SDK request.
+
 Admission resolves the configured alias once through `/api/tags`, then reads
 `/api/show` and submits inference using `sha256:<full digest>`. An alias change
 between any of these steps cannot redirect an admitted request. Untagged names
@@ -33,6 +44,10 @@ also default to registry `registry.ollama.ai` and namespace `library`; all four
 name parts compare case-insensitively after native ASCII name validation.
 Equivalent inventory rows with different digests refuse as `ambiguous_model`
 before inspection or inference; duplicate spellings of the same digest are safe.
+Replay uses the same inventory resolver before pinning, checks every matching
+row for local decision capability, and retains its numeric loopback restriction.
+Resolve an inventory conflict and retry replay with an installed model name;
+explicit digest selection is available through direct admission.
 The shared normalizer follows [Ollama name parsing and equality](https://github.com/ollama/ollama/blob/main/types/model/name.go). Validated profiles
 (tokenizer, context, vocabulary hash and labels) use a process-local eight-entry
 LRU keyed by endpoint and full digest. Aliases are resolved on every admission;
@@ -86,7 +101,7 @@ The remedy column quotes an actionable part of the corresponding runtime remedy.
 | --- | --- | --- | --- | --- |
 | `invalid_input` | `jev_admission_invalid_input` | 2 | none | Use dense arrays, safe integer numbers, well-formed strings and documented fields only. |
 | `unsupported_model` | `jev_admission_unsupported_model` | 2 | none | Pull a supported model or add a verified profile; no inference was submitted. |
-| `ambiguous_model` | `jev_admission_ambiguous_model` | 2 | none | Resolve conflicting installed model references in the native inventory or configure one verified sha256 digest, then retry; no inference was submitted. |
+| `ambiguous_model` | `jev_admission_ambiguous_model` | 2 | none | Resolve conflicting installed aliases in the native inventory, then retry with the installed model name; no inference was submitted. |
 | `metadata_unavailable` | `jev_admission_metadata_unavailable` | 2 | none | Restore native Ollama /api/tags and digest-addressed /api/show access, then retry. |
 | `invalid_report` | `jev_admission_invalid_report` | 2 | none | Discard this receipt and report a package defect; no inference was submitted. |
 | `option_limit_exceeded` | `jev_admission_option_limit_exceeded` | 2 | none | Explicitly select a supported model with more labels or revise the question, dedupe candidate limit, or type registry before retrying; no options were dropped and no inference was submitted. |
