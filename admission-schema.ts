@@ -61,6 +61,8 @@ export function parseAdmissionInput(raw: unknown): AdmissionInput {
   const serialized = JSON.stringify(raw);
   requireInput(Buffer.byteLength(serialized) <= ADMISSION_LIMITS.bytes);
   const doc = record(JSON.parse(serialized) as unknown, ["version", "state", "questions"]);
+  // Serialization hooks can introduce values the original bounded traversal never saw.
+  json(doc);
   requireInput(doc.version === ADMISSION_VERSION && doc.state !== null && doc.state !== undefined);
   requireInput(typeof doc.questions === "object" && doc.questions !== null && !Array.isArray(doc.questions));
   const entries = Object.entries(doc.questions);

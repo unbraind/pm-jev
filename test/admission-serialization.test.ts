@@ -40,3 +40,27 @@ test("a sole undefined choice becomes empty and refuses before metadata or infer
     assert.equal(server.requests.length, 0);
   });
 });
+
+test("serialized state values are validated before metadata while valid JSON hooks remain compatible", async () => {
+  await scenario(async (fixture, server) => {
+    const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
+    const questions: Questions = { route: { type: "choice", criteria: { keep: null } } };
+    for (const value of [1.5, "\ud800", { nested: 2.5 }]) {
+      const state = Object.defineProperty({}, "toJSON", { value: () => value });
+      await assert.rejects(admitDecision(config, state, questions), error => error instanceof AdmissionRefusal && error.code === "invalid_input");
+    }
+    assert.equal(server.admissionRequests.length, 0);
+    assert.equal(server.requests.length, 0);
+    // Previously persisted JSON and hooks yielding the same safe JSON retain their meaning.
+    const persisted = JSON.parse('{"title":"Synthetic","count":2,"nested":[null,true,"Keep"]}') as unknown;
+    for (const state of [persisted, Object.defineProperty({}, "toJSON", { value: () => persisted })]) {
+      const admitted = await admitDecision(config, state, questions);
+      assert.deepEqual(admitted.state, persisted);
+      assert.equal(admitted.receipt.options, 1);
+      const result = await runDecision(createJevClient({ config, hostedBlocked: null }, {}, 0), config, state, questions);
+      assert.equal(result.admission?.ok, true);
+      assert.deepEqual((server.requests.at(-1)?.body as { state: unknown }).state, persisted);
+    }
+    assert.equal(server.requests.length, 2);
+  });
+});
