@@ -25,7 +25,7 @@ export function resolveOllamaInventoryModel(model: string, inventory: unknown): 
   if (name === undefined || !Array.isArray(inventory)) throw new AdmissionRefusal("unsupported_model", "Use a valid installed native model reference and a complete /api/tags inventory; no inference was submitted.");
   const matches = inventory.filter(/** Ignore foreign rows and normalize both reference operands. */ (row): row is Record<string, unknown> => typeof row === "object" && row !== null && !Array.isArray(row) && ollamaModelName(row.name) === name);
   const digests = new Set(matches.map(/** Keep invalid identities so conflicts cannot be silently ignored. */ row => row.digest));
-  if (digests.size > 1) throw new AdmissionRefusal("ambiguous_model", "Resolve conflicting installed model references in the native inventory or configure one verified sha256 digest, then retry; no inference was submitted.");
+  if (digests.size > 1) throw new AdmissionRefusal("ambiguous_model", "Resolve conflicting installed aliases in the native inventory, then retry with the installed model name; no inference was submitted.");
   const digest = matches[0]?.digest;
   if (typeof digest !== "string" || !/^[a-f0-9]{64}$/.test(digest)) throw new AdmissionRefusal("unsupported_model", "Select an installed native model with a verified sha256 digest; no inference was submitted.");
   return { digest, matches };

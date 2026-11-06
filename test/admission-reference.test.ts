@@ -89,7 +89,7 @@ test("replay shares alias ambiguity refusal before inspection or inference in ei
       await assert.rejects(async () => {
         const adapter = await createOllamaReplayAdapter(config.model, server.url);
         await adapter.decide({ id: "fixture", state: { title: "Synthetic" }, questions, result: answers(questions) as SystemOneResult<Questions>, policy: { version: "v1", min_probability: 0.5 } });
-      }, error => error instanceof ReplayRefusal && error.code === "ambiguous_model" && error.remedy.includes("conflicting"));
+      }, error => error instanceof ReplayRefusal && error.code === "ambiguous_model" && error.remedy.includes("conflicting") && !error.remedy.includes("sha256"));
     }
     assert.equal(server.admissionRequests.some(request => request.path === "/api/show"), false);
     assert.equal(server.requests.filter(request => request.path === "/v1/systemone").length, 0);

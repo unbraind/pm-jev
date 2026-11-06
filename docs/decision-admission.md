@@ -46,6 +46,8 @@ Equivalent inventory rows with different digests refuse as `ambiguous_model`
 before inspection or inference; duplicate spellings of the same digest are safe.
 Replay uses the same inventory resolver before pinning, checks every matching
 row for local decision capability, and retains its numeric loopback restriction.
+Resolve an inventory conflict and retry replay with an installed model name;
+explicit digest selection is available through direct admission.
 The shared normalizer follows [Ollama name parsing and equality](https://github.com/ollama/ollama/blob/main/types/model/name.go). Validated profiles
 (tokenizer, context, vocabulary hash and labels) use a process-local eight-entry
 LRU keyed by endpoint and full digest. Aliases are resolved on every admission;
