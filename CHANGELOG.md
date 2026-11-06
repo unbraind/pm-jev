@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Refuse ambiguous native model aliases before replay pinning ([pm-jev-replay-ambiguity](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-replay-ambiguity.toon))
+- Count choice options from the JSON request representation ([pm-jev-undefined-choice-admission](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-undefined-choice-admission.toon))
+
 ## 2026.11.6 - 2026-11-06
 
 ### Added
@@ -8,8 +15,6 @@
 
 ### Fixed
 
-- Count choice options from the JSON request representation ([pm-jev-undefined-choice-admission](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-undefined-choice-admission.toon))
-- Refuse ambiguous native model aliases before replay pinning ([pm-jev-replay-ambiguity](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-replay-ambiguity.toon))
 - PR \#92 admission rejects equivalent native Ollama model references ([pm-jev-github-21e139da0658-93](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-93.toon))
 - Retry packed admission fixture teardown within a finite bound ([pm-jev-admission-teardown](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-admission-teardown.toon))
 - PR \#92 rejects valid Unicode after item-state truncation splits a surrogate pair ([pm-jev-github-21e139da0658-94](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-94.toon))

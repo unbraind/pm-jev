@@ -6,14 +6,16 @@ status: in_progress
 priority: 2
 tags[2]: admission,"gh:unbraind/pm-jev#101"
 created_at: "2026-11-06T11:08:48.326Z"
-updated_at: "2026-11-06T11:32:45.093Z"
+updated_at: "2026-11-06T11:50:37.835Z"
 author: codex-sol
-comments[5]{created_at,author,text}:
+comments[7]{created_at,author,text}:
   "2026-11-06T11:10:34.667Z",codex-sol,"Decision: match official SDK JSON serialization by removing undefined object properties in the bounded detached input before schema validation and counting. Null retains an undescribed option; a sole undefined entry becomes empty and refuses before metadata. Compare admitted identities and counts with real SDK loopback requests."
   "2026-11-06T11:15:22.822Z",codex-sol,"Implementation and linked tests pass (2/2). Behavioral revert in a disposable package copy: replacing only parseAdmissionInput with main makes both regressions fail (0/2): admitted count differs from the actual SDK request and sole-undefined choice fails to refuse. Restoring the fix passes (2/2). JSON omission is documented; null preserves an undescribed option and caller objects remain unchanged."
   "2026-11-06T11:15:32.194Z",codex-sol,"Validation: focused admission/reference suite passes 7/7, including actual SDK loopback request bodies; build, build:test, lint, typecheck, docstring and zero-duplication gates pass. Full npm and Bun release gates run in PR CI. No thresholds or dependency pins changed. Item remains in progress for orchestrator verification."
   "2026-11-06T11:31:43.685Z",codex-sol,"Review round 1: valid finding that a non-enumerable toJSON hook can introduce serialized values outside the safe-integer/string domain after the original traversal. Reuse json on the detached serialized document before metadata or inference. Add must-refuse fractional/malformed-string outputs and must-allow persisted JSON and equivalent safe hooks with actual SDK wire-state assertions."
   "2026-11-06T11:32:43.865Z",codex-sol,"Review round 1 validation: final focused reference/serialization run passes 8/8; serialization linked tests now pass 3/3. Build, build:test, lint, typecheck, docstring and duplication pass. Review-fix behavioral revert removes only the post-serialization json(doc) validation: hook regression fails 0/1 with missing expected refusal; restoration passes 1/1. The linked-issue pre-merge note requesting null synthesis is declined: the accepted design uses SDK JSON omission, documents null as the explicit retention mechanism, and compares actual SDK option identities/counts with admission."
+  "2026-11-06T11:49:34.342Z",codex-sol,"Final-head CI on ceffc09 passed the npm gate through coverage, audit and pack checks, then failed changelog:check: main was released during implementation and CI expects these fixes under Unreleased. Integrated current main without changing release policy or publishing; regenerate changelog with current release tags after this tracker update, then verify and push the integration fix for fresh exact-head CI and review."
+  "2026-11-06T11:50:36.134Z",codex-sol,"Correction to the earlier validation summary: local strict tracker health returns exit 1, not pass, because of existing extension_host_pm_cli_version_skew between pinned host 2026.11.4 and managed pm-github 2026.11.5. Storage, integrity and append-only history checks pass. This existing dependency-alignment issue is tracked by pm-jev-v2la; dependency pins remain unchanged as instructed. The initial shell wrapper masked the health exit code; inspected the complete verdict and corrected the report."
 files[2]{path,scope}:
   admission-schema.ts,project
   test/admission-serialization.test.ts,project
