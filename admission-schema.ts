@@ -58,7 +58,10 @@ function record(value: unknown, fields: readonly string[]): Record<string, unkno
 /** Validate the bounded input, then parse the SDK JSON representation before counting any questions or options. */
 export function parseAdmissionInput(raw: unknown): AdmissionInput {
   json(raw);
-  const serialized = JSON.stringify(raw);
+  let serialized: string | undefined;
+  try { serialized = JSON.stringify(raw); }
+  catch { requireInput(false); }
+  requireInput(typeof serialized === "string");
   requireInput(Buffer.byteLength(serialized) <= ADMISSION_LIMITS.bytes);
   const doc = record(JSON.parse(serialized) as unknown, ["version", "state", "questions"]);
   // Serialization hooks can introduce values the original bounded traversal never saw.

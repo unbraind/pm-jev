@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Questions } from "../index.ts";
-import { AdmissionRefusal, admitDecision, createJevClient, resolveJevEndpoint, runDecision } from "../index.ts";
+import { ADMISSION_VERSION, AdmissionRefusal, admitDecision, admitDecisionBatch, createJevClient, resolveJevEndpoint, runDecision } from "../index.ts";
 import { scenario } from "./fixtures.ts";
+
+const singleChoice: Questions = { route: { type: "choice", criteria: { keep: null } } };
 
 test("admission counts exactly the choice identities serialized by the real SDK", async () => {
   await scenario(async (fixture, server) => {
@@ -44,7 +46,7 @@ test("a sole undefined choice becomes empty and refuses before metadata or infer
 test("serialized state values are validated before metadata while valid JSON hooks remain compatible", async () => {
   await scenario(async (fixture, server) => {
     const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
-    const questions: Questions = { route: { type: "choice", criteria: { keep: null } } };
+    const questions = singleChoice;
     for (const value of [1.5, "\ud800", { nested: 2.5 }]) {
       const state = Object.defineProperty({}, "toJSON", { value: () => value });
       await assert.rejects(admitDecision(config, state, questions), error => error instanceof AdmissionRefusal && error.code === "invalid_input");
@@ -62,5 +64,28 @@ test("serialized state values are validated before metadata while valid JSON hoo
       assert.deepEqual((server.requests.at(-1)?.body as { state: unknown }).state, persisted);
     }
     assert.equal(server.requests.length, 2);
+  });
+});
+
+
+test("serialization failures and undefined documents refuse with typed content-free invalid input", async () => {
+  await scenario(async (fixture, server) => {
+    const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
+    const questions = singleChoice;
+    const cycle: Record<string, unknown> = {}; cycle.self = cycle;
+    const hooks = [() => 1n, () => cycle, () => { throw new Error("PRIVATE_SERIALIZATION_TEXT"); }, () => undefined];
+    for (const hook of hooks) {
+      const state = Object.defineProperty({}, "toJSON", { value: hook });
+      await assert.rejects(admitDecision(config, state, questions), error => error instanceof AdmissionRefusal && error.code === "invalid_input" && !error.message.includes("PRIVATE_SERIALIZATION_TEXT"));
+      await assert.rejects(runDecision(createJevClient({ config, hostedBlocked: null }, {}, 0), config, state, questions), error => (error as { context: { code: string } }).context.code === "jev_admission_invalid_input");
+    }
+    // Only a root hook can cause JSON.stringify to return undefined rather than omitting state.
+    const document = Object.defineProperty({ version: ADMISSION_VERSION, state: "Synthetic", questions }, "toJSON", { value: () => undefined });
+    await assert.rejects(admitDecisionBatch(config, document), error => error instanceof AdmissionRefusal && error.code === "invalid_input");
+    assert.equal(server.admissionRequests.length, 0);
+    assert.equal(server.requests.length, 0);
+    const admitted = await admitDecision(config, JSON.parse('{"title":"Synthetic","count":2}') as unknown, questions);
+    assert.deepEqual(admitted.state, { title: "Synthetic", count: 2 });
+    assert.equal(admitted.receipt.options, 1);
   });
 });

@@ -31,9 +31,10 @@ option counting, prompt rendering and submission. This includes choice criteria:
 `{ keep: "Keep", drop: undefined }` admits and submits only `keep`. Use `null`
 to retain an undescribed alternative. A sole undefined choice becomes empty and
 refuses with typed `invalid_input` and a remedy before metadata or inference.
-Undefined array entries still refuse rather than becoming JSON nulls. Caller
-objects are never modified; the admitted option identities and counts describe
-the actual serialized SDK request.
+Serialization failures and invalid hook outputs also refuse as `invalid_input`
+before metadata or inference. Undefined array entries still refuse rather than
+becoming JSON nulls. Caller objects are never modified; the admitted option
+identities and counts describe the actual serialized SDK request.
 
 Admission resolves the configured alias once through `/api/tags`, then reads
 `/api/show` and submits inference using `sha256:<full digest>`. An alias change
