@@ -27,6 +27,6 @@ export interface AdmissionInput {
     readonly state: NonNullable<unknown>;
     readonly questions: Questions;
 }
-/** Validate the original JSON once, then use the existing producer question parser without normalization copies. */
+/** Validate the bounded input, then parse the SDK JSON representation before counting any questions or options. */
 export declare function parseAdmissionInput(raw: unknown): AdmissionInput;
 //# sourceMappingURL=admission-schema.d.ts.map

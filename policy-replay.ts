@@ -1,5 +1,6 @@
+import { AdmissionRefusal } from "./admission-schema.ts";
 import { parseQuestionsDocument } from "./questions-document.ts";
-import { ollamaModelName } from "./ollama-model.ts";
+import { ollamaModelName, resolveOllamaInventoryModel } from "./ollama-model.ts";
 import { compareExact, subtractExact } from "./exact.ts";
 import { reportPriorReceipt, withReceipt } from "./partial-receipt.ts";
 import type { ReceiptFailure, ReceiptOptions, ReceiptRun } from "./partial-receipt.ts";
@@ -14,7 +15,7 @@ export const REPLAY_VERSION = "pm-jev-replay/1";
 /** Redacted, actionable replay failure; input and transport text are never echoed. */
 export class ReplayRefusal extends Error {
   /** Stable category suitable for programmatic recovery. */
-  readonly code: "invalid_recording" | "invalid_policy" | "local_only" | "model_unavailable";
+  readonly code: "invalid_recording" | "invalid_policy" | "local_only" | "model_unavailable" | "ambiguous_model";
   /** Recovery guidance without source evidence or transport details. */
   readonly remedy: string;
   /** Construct a stable refusal with a recovery instruction. */
@@ -218,17 +219,20 @@ export async function createOllamaReplayAdapter(model: string, baseUrl = "http:/
   try {
     const response = await fetch(`${origin}/api/tags`, { redirect: "error", signal: AbortSignal.timeout(5000) });
     if (!response.ok) throw new Error();
-    const inventory = await response.json() as { models: { name: string; digest: string; capabilities: string[]; remote_host?: unknown; remote_model?: unknown }[] };
-    const card = inventory.models.find(/** Resolve the exact installed tag before sending any recorded state. */ entry => ollamaModelName(entry.name) === ollamaModelName(model));
-    if (!card || card.remote_host || card.remote_model || !card.capabilities.includes("decision") || !/^[a-f0-9]{64}$/.test(card.digest)) throw new Error();
-    const pinned = { ...config, model: `sha256:${card.digest}` };
+    const inventory = await response.json() as { models?: unknown };
+    const { digest, matches } = resolveOllamaInventoryModel(model, inventory.models);
+    if (matches.some(/** Every equivalent row must describe a local decision model. */ card => card.remote_host || card.remote_model || !Array.isArray(card.capabilities) || !card.capabilities.includes("decision"))) throw new Error();
+    const pinned = { ...config, model: `sha256:${digest}` };
     const client = createJevClient({ config: pinned, hostedBlocked: null }, {}, 0);
-    return { version: `ollama:${card.digest}`,
+    return { version: `ollama:${digest}`,
       /** Reuse the existing typed transport with zero retries and a per-input deadline. */
       async decide(record, signal) {
         const result = await runDecision(client, pinned, record.state, record.questions, signal === undefined ? undefined : AbortSignal.any([signal, AbortSignal.timeout(deadlineMs)]));
         if (ollamaModelName(result.model) !== ollamaModelName(model) && result.model !== pinned.model) throw new Error("Replay model changed");
         return result;
       } };
-  } catch { throw new ReplayRefusal("model_unavailable", `Start local Ollama, run ollama pull ${model}, and verify that /api/tags advertises a local decision capability and digest; then retry.`); }
+  } catch (error) {
+    if (error instanceof AdmissionRefusal && error.code === "ambiguous_model") throw new ReplayRefusal(error.code, error.remedy);
+    throw new ReplayRefusal("model_unavailable", `Start local Ollama, run ollama pull ${model}, and verify that /api/tags advertises a local decision capability and digest; then retry.`);
+  }
 }

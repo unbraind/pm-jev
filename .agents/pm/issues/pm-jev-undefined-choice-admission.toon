@@ -1,0 +1,22 @@
+id: pm-jev-undefined-choice-admission
+title: Count choice options from the JSON request representation
+description: "Canonicalize undefined object entries by JSON omission before admission counting and transport. Verify option identities and counts against real SDK loopback request bodies, including empty-choice refusal."
+type: Issue
+status: in_progress
+priority: 2
+tags[2]: admission,"gh:unbraind/pm-jev#101"
+created_at: "2026-11-06T11:08:48.326Z"
+updated_at: "2026-11-06T11:15:45.947Z"
+author: codex-sol
+comments[3]{created_at,author,text}:
+  "2026-11-06T11:10:34.667Z",codex-sol,"Decision: match official SDK JSON serialization by removing undefined object properties in the bounded detached input before schema validation and counting. Null retains an undescribed option; a sole undefined entry becomes empty and refuses before metadata. Compare admitted identities and counts with real SDK loopback requests."
+  "2026-11-06T11:15:22.822Z",codex-sol,"Implementation and linked tests pass (2/2). Behavioral revert in a disposable package copy: replacing only parseAdmissionInput with main makes both regressions fail (0/2): admitted count differs from the actual SDK request and sole-undefined choice fails to refuse. Restoring the fix passes (2/2). JSON omission is documented; null preserves an undescribed option and caller objects remain unchanged."
+  "2026-11-06T11:15:32.194Z",codex-sol,"Validation: focused admission/reference suite passes 7/7, including actual SDK loopback request bodies; build, build:test, lint, typecheck, docstring and zero-duplication gates pass. Full npm and Bun release gates run in PR CI. No thresholds or dependency pins changed. Item remains in progress for orchestrator verification."
+files[2]{path,scope}:
+  admission-schema.ts,project
+  test/admission-serialization.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/admission-serialization.test.ts,project,codex-sol,"2026-11-06T11:13:01.794Z",local_mutation,replay-ambiguity-and-undefined-choice-admission
+docs[1]{path,scope}:
+  docs/decision-admission.md,project
+body: ""

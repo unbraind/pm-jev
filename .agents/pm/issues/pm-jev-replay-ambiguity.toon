@@ -1,0 +1,24 @@
+id: pm-jev-replay-ambiguity
+title: Refuse ambiguous native model aliases before replay pinning
+description: Share admission native inventory resolution with replay and prove conflict refusal before inspection or inference in both inventory orders.
+type: Issue
+status: in_progress
+priority: 2
+tags[3]: admission,"gh:unbraind/pm-jev#100",replay
+created_at: "2026-11-06T11:08:45.561Z"
+updated_at: "2026-11-06T11:15:39.473Z"
+author: codex-sol
+comments[3]{created_at,author,text}:
+  "2026-11-06T11:10:31.245Z",codex-sol,"Plan: use one validated inventory resolver for direct admission and replay before pinning; retain loopback-only replay and verify all equivalent rows remain local decision models. Cover conflicting and identical digests in both inventory orders with real HTTP request counts."
+  "2026-11-06T11:15:18.717Z",codex-sol,"Implementation and linked tests pass (5/5). Behavioral revert in a disposable package copy: replacing only createOllamaReplayAdapter with the main implementation makes the new ambiguity regression fail (0/1, missing expected rejection); restoring the fix passes (1/1). Both inventory orders refuse before inspection/inference; same-digest duplicates succeed and every matching row must remain local with decision capability."
+  "2026-11-06T11:15:26.706Z",codex-sol,"Validation: build, build:test, lint, typecheck, docstring (49 files, 1130 declarations) and duplication (0 percent) pass. Strict tracker health passes with the existing managed-extension version-skew warning. Full npm and Bun release gates are delegated to PR CI as requested. No merge, release or model download. Items remain in progress for orchestrator verification; bot-review loop follows PR creation."
+files[4]{path,scope}:
+  decision-admission.ts,project
+  ollama-model.ts,project
+  policy-replay.ts,project
+  test/admission-reference.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/admission-reference.test.ts,project,codex-sol,"2026-11-06T11:12:57.437Z",local_mutation,replay-ambiguity-and-undefined-choice-admission
+docs[1]{path,scope}:
+  docs/decision-admission.md,project
+body: ""

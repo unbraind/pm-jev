@@ -20,9 +20,9 @@ export class AdmissionRefusal extends Error {
 /** Reject unsupported input through the single schema shared by preflight and inference. */
 function requireInput(condition) {
     if (!condition)
-        throw new AdmissionRefusal("invalid_input", "Use pm-jev-admission/1 with non-null JSON state, 1..64 choice/score/noul questions, 1..255 choice options and 2..10 score levels, within 64 KiB. Use dense arrays, safe integer numbers, well-formed strings and documented fields only.");
+        throw new AdmissionRefusal("invalid_input", "Use pm-jev-admission/1 with non-null JSON state, 1..64 choice/score/noul questions, 1..255 choice options and 2..10 score levels, within 64 KiB. Undefined object properties are omitted; supply null to retain an undescribed choice option. Use dense arrays, safe integer numbers, well-formed strings and documented fields only.");
 }
-/** Traverse before cloning: JSON must not silently erase holes, infinities, cycles or undefined entries. */
+/** Traverse before cloning: JSON must not silently replace holes, infinities, cycles or undefined array entries. */
 function json(value, depth = 0, budget = { nodes: ADMISSION_LIMITS.nodes, chars: ADMISSION_LIMITS.bytes }) {
     requireInput(--budget.nodes >= 0 && depth <= ADMISSION_LIMITS.depth);
     if (typeof value === "string") {
@@ -49,7 +49,7 @@ function json(value, depth = 0, budget = { nodes: ADMISSION_LIMITS.nodes, chars:
         for (const [key, entry] of Object.entries(value)) {
             budget.chars -= key.length;
             requireInput(!/[\uD800-\uDFFF]/u.test(key) && budget.chars >= 0);
-            // Optional question fields may be absent in typed producer objects; JSON omits them on the wire.
+            // The SDK JSON wire representation omits undefined object properties, including choice entries.
             if (entry !== undefined)
                 json(entry, depth + 1, budget);
         }
@@ -61,11 +61,12 @@ function record(value, fields) {
     requireInput(Object.keys(value).every(/** Only documented fields cross the boundary. */ /** Only documented fields cross the boundary. */ key => fields.includes(key)));
     return value;
 }
-/** Validate the original JSON once, then use the existing producer question parser without normalization copies. */
+/** Validate the bounded input, then parse the SDK JSON representation before counting any questions or options. */
 export function parseAdmissionInput(raw) {
     json(raw);
-    requireInput(Buffer.byteLength(JSON.stringify(raw)) <= ADMISSION_LIMITS.bytes);
-    const doc = record(raw, ["version", "state", "questions"]);
+    const serialized = JSON.stringify(raw);
+    requireInput(Buffer.byteLength(serialized) <= ADMISSION_LIMITS.bytes);
+    const doc = record(JSON.parse(serialized), ["version", "state", "questions"]);
     requireInput(doc.version === ADMISSION_VERSION && doc.state !== null && doc.state !== undefined);
     requireInput(typeof doc.questions === "object" && doc.questions !== null && !Array.isArray(doc.questions));
     const entries = Object.entries(doc.questions);

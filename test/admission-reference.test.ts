@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AdmissionRefusal, admitDecision, createJevClient, resolveJevEndpoint, runDecision } from "../index.ts";
+import type { Questions, SystemOneResult } from "../index.ts";
+import { AdmissionRefusal, ReplayRefusal, admitDecision, createJevClient, createOllamaReplayAdapter, resolveJevEndpoint, runDecision } from "../index.ts";
 import { ollamaModelName } from "../ollama-model.ts";
 import { admissionMetadata } from "./admission-fixtures.ts";
-import { scenario, trackerSnapshot, withoutGit } from "./fixtures.ts";
+import { answers, scenario, trackerSnapshot, withoutGit } from "./fixtures.ts";
 
 const questions = { keep: { type: "noul" as const } };
 
@@ -72,3 +73,39 @@ test("reference canonicalization stays linear on colon-heavy and oversized input
   assert.ok(performance.now() - started < 2000, "canonicalization must not scale polynomially with ':' runs (the old regex needs ~13 s on this input)");
 });
 
+
+test("replay shares alias ambiguity refusal before inspection or inference in either inventory order", async () => {
+  await scenario(async (fixture, server) => {
+    const digest = "9".repeat(64);
+    let models: { name: string; digest: string; capabilities?: string[] }[] = [
+      { name: "tev1:4b", digest, capabilities: ["decision"] },
+      { name: "REGISTRY.OLLAMA.AI/Library/Tev1:4B", digest: "a".repeat(64), capabilities: ["decision"] },
+    ];
+    server.setAdmissionReply((request, response) => response.end(JSON.stringify(request.url === "/api/tags" ? { models } : admissionMetadata())));
+    server.setReply((request, response, body) => response.end(JSON.stringify(request.url === "/api/tags" ? { models } : { ...answers(questions), model: (body as { model: string }).model })));
+    const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
+    for (let order = 0; order < 2; order++) {
+      models.reverse();
+      await assert.rejects(async () => {
+        const adapter = await createOllamaReplayAdapter(config.model, server.url);
+        await adapter.decide({ id: "fixture", state: { title: "Synthetic" }, questions, result: answers(questions) as SystemOneResult<Questions>, policy: { version: "v1", min_probability: 0.5 } });
+      }, error => error instanceof ReplayRefusal && error.code === "ambiguous_model" && error.remedy.includes("conflicting"));
+    }
+    assert.equal(server.admissionRequests.some(request => request.path === "/api/show"), false);
+    assert.equal(server.requests.filter(request => request.path === "/v1/systemone").length, 0);
+    models = models.map(card => ({ ...card, digest }));
+    for (const inventory of [models, [...models].reverse()]) {
+      models = inventory;
+      const adapter = await createOllamaReplayAdapter(config.model, server.url);
+      const result = await adapter.decide({ id: "fixture", state: { title: "Synthetic" }, questions, result: answers(questions) as SystemOneResult<Questions>, policy: { version: "v1", min_probability: 0.5 } });
+      assert.equal(result.model, `sha256:${digest}`);
+    }
+    assert.equal(server.requests.filter(request => request.path === "/v1/systemone").length, 2);
+    // A duplicate digest cannot hide a remote row or a missing local decision capability.
+    for (const extra of [{ remote_host: "remote.invalid" }, { remote_model: "remote" }, { capabilities: [] }, { capabilities: undefined }]) {
+      models = [{ name: "tev1:4b", digest, capabilities: ["decision"] }, { ...models[1], ...extra }];
+      await assert.rejects(createOllamaReplayAdapter(config.model, server.url), error => error instanceof ReplayRefusal && error.code === "model_unavailable");
+    }
+    assert.equal(server.requests.filter(request => request.path === "/v1/systemone").length, 2);
+  });
+});
