@@ -2,12 +2,34 @@ id: pm-jev-github-21e139da0658-93
 title: PR #92 admission rejects equivalent native Ollama model references
 description: "GH issue #93: https://github.com/unbraind/pm-jev/issues/93 · author @unbraind · created 2026-11-05T05:30:53Z · updated 2026-11-05T05:30:53Z"
 type: Issue
-status: open
+status: in_progress
 priority: 2
 tags[2]: "gh:unbraind/pm-jev#93","github_author:unbraind"
 created_at: "2026-11-05T05:30:53Z"
-updated_at: "2026-11-05T11:11:21.729Z"
+updated_at: "2026-11-06T05:22:52.884Z"
 author: pm-github
+comments[7]{created_at,author,text}:
+  "2026-11-06T04:31:39.015Z",codex-sol,"Read issue in full. Existing latest-tag helper covers omitted tags but lacks native registry/namespace defaults and case-insensitive comparison. Plan: canonicalize both operands, reject conflicting normalized inventory matches with a typed refusal, and preserve digest-pinned metadata and inference."
+  "2026-11-06T04:39:26.370Z",codex-sol,"Regression proofs in disposable copies: reverting native name normalization fails all 3 reference tests; removing the ambiguity refusal fails 1 of 3. Restoring all protections passes 13 combined reference/Unicode/cleanup tests. Metadata and inference stay pinned to one digest; normalized duplicate rows with the same digest remain allowed."
+  "2026-11-06T04:42:48.449Z",codex-sol,"Packed live acceptance completed against 53 verified public tracker items, selecting the public Unicode defect item for one Noul question with two options. All five spellings returned P(defect)=0.7970235132224727, with 1182 admitted/native input tokens, one scoring token and num_ctx 8192. CLI decision latencies were 23174/25906/21684/19171/25853 ms in reference order; separate preflight timings and the artifact digest are in docs/decision-admission-reference-evidence.json. The temporary alias was copied from the installed model and removed after digest verification; no model pull. Decisions changed no tracker bytes."
+  "2026-11-06T04:44:40.792Z",codex-sol,"Evidence scope clarification: the unchanged snapshot covers durable tracker state and excludes the runtime cache directory. Public archive files remain read-only. Latencies include CLI startup, metadata and tokenizer construction plus inference; this one-item/five-reference proof is not an accuracy or throughput benchmark. The live acceptance fixture limits permission changes to public tracker files and cleans up its owned alias only after verifying the digest."
+  "2026-11-06T05:01:06.896Z",codex-sol,"The npm release gate passed 454/454 with no fail/skip/cancel/todo; 49 required source files and c8 statements/branches/functions/lines all 100%, zero production vulnerabilities. Final inspection then found and hardened repeated protocol separators: remove only the first native protocol prefix so another separator remains invalid. Added a must-refuse control; final focused, Bun and PR CI evidence will cover this last hardening."
+  "2026-11-06T05:08:19.718Z",codex-sol,"Final-code packed acceptance supersedes earlier timing samples: custom-tev1 55225 ms, custom-tev1:latest 29285 ms, tev1:4b 31735 ms, fully qualified lowercase 30453 ms, mixed-case qualified 28596 ms. All five preserve 1182 native/admitted input tokens, one scoring token, num_ctx 8192 and P(defect)=0.7970235132224727. Final artifact SHA-512 and separate preflight timings are recorded in docs/decision-admission-reference-evidence.json. Final isolated reverts fail 3/3 for normalization, 1/3 for ambiguity and 2/3 for first-protocol-prefix handling; restoring all protections passes 13/13."
+  "2026-11-06T05:22:51.988Z",codex-sol,"Final local gates: npm run release:check and bun run release:check each passed 454/454 with no fail/skip/cancel/todo, 49 required source files reported, all four c8 dimensions 100%, and zero production vulnerabilities. The Bun gate covers the final malformed-reference hardening. Live packed proof uses the repo-pinned host 2026.11.4 under Node 24.19.0; the installed global CLI is 2026.11.5 and the dependency pin is unchanged per queue rules. Final-head PR CI will repeat both gates on Node 22 and 26. Releasing the claim; keep in progress for orchestrator verification."
+files[8]{path,scope}:
+  admission-schema.ts,project
+  decision-admission.ts,project
+  docs/decision-admission-reference-evidence.json,project
+  ollama-model.ts,project
+  test/admission-docs.test.ts,project
+  test/admission-reference.acceptance.ts,project
+  test/admission-reference.test.ts,project
+  test/admission-review.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/admission-reference.test.ts,project,codex-sol,"2026-11-06T04:35:22.292Z",local_mutation,tev1-admission-reference-and-unicode-fixes
+docs[2]{path,scope}:
+  docs/decision-admission-reference-evidence.json,project
+  docs/decision-admission.md,project
 github_close_reason: ""
 github_closed_at: ""
 github_created_at: "2026-11-05T05:30:53Z"

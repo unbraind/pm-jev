@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import type { ExecFileOptions } from "node:child_process";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { devNull, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -11,6 +11,7 @@ import { decode } from "@toon-format/toon";
 import { npmInvocation, unpackOfflineConsumer } from "./admission-install-fixtures.ts";
 import { admissionMetadata } from "./admission-fixtures.ts";
 import { endpoint, trackerSnapshot } from "./fixtures.ts";
+import { removeAdmissionScratch } from "./admission-cleanup.ts";
 
 const runFile = promisify(execFile);
 /** Run package managers through Node on every platform, leaving native Bun executables direct. */
@@ -90,5 +91,5 @@ test("documented admission commands run unchanged through npx and bunx against o
     assert.deepEqual(trackerSnapshot(join(local, ".agents/pm")), before); assert.equal(server.requests.length, 0);
     assert.equal(createHash("sha512").update(readFileSync(archive)).digest("hex"), digest);
     console.log(`packed guide: ${receipts.length} commands passed offline (JSON/TOON); sha512=${digest}`);
-  } finally { await server.close(); rmSync(scratch, { recursive: true, force: true }); }
+  } finally { try { await server.close(); } finally { await removeAdmissionScratch(scratch); } }
 });

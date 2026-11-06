@@ -28,7 +28,12 @@ hosted prompt fit.
 Admission resolves the configured alias once through `/api/tags`, then reads
 `/api/show` and submits inference using `sha256:<full digest>`. An alias change
 between any of these steps cannot redirect an admitted request. Untagged names
-resolve to `:latest`, including names containing a registry port. Validated profiles
+resolve to `:latest`, including names containing a registry port. Native names
+also default to registry `registry.ollama.ai` and namespace `library`; all four
+name parts compare case-insensitively after native ASCII name validation.
+Equivalent inventory rows with different digests refuse as `ambiguous_model`
+before inspection or inference; duplicate spellings of the same digest are safe.
+The shared normalizer follows [Ollama name parsing and equality](https://github.com/ollama/ollama/blob/main/types/model/name.go). Validated profiles
 (tokenizer, context, vocabulary hash and labels) use a process-local eight-entry
 LRU keyed by endpoint and full digest. Aliases are resolved on every admission;
 a changed digest loads a new profile. Refusals are never cached. No alias-keyed
@@ -81,6 +86,7 @@ The remedy column quotes an actionable part of the corresponding runtime remedy.
 | --- | --- | --- | --- | --- |
 | `invalid_input` | `jev_admission_invalid_input` | 2 | none | Use dense arrays, safe integer numbers, well-formed strings and documented fields only. |
 | `unsupported_model` | `jev_admission_unsupported_model` | 2 | none | Pull a supported model or add a verified profile; no inference was submitted. |
+| `ambiguous_model` | `jev_admission_ambiguous_model` | 2 | none | Resolve conflicting installed model references in the native inventory or configure one verified sha256 digest, then retry; no inference was submitted. |
 | `metadata_unavailable` | `jev_admission_metadata_unavailable` | 2 | none | Restore native Ollama /api/tags and digest-addressed /api/show access, then retry. |
 | `invalid_report` | `jev_admission_invalid_report` | 2 | none | Discard this receipt and report a package defect; no inference was submitted. |
 | `option_limit_exceeded` | `jev_admission_option_limit_exceeded` | 2 | none | Explicitly select a supported model with more labels or revise the question, dedupe candidate limit, or type registry before retrying; no options were dropped and no inference was submitted. |

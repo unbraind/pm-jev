@@ -140,7 +140,13 @@ export async function admitDecisionBatch(config, raw, signal = AbortSignal.timeo
         const tags = await metadata(config, "/api/tags", signal);
         supported(Array.isArray(tags.models));
         const models = tags.models.filter(/** Ignore foreign inventory rows without dereferencing their fields. */ (m) => typeof m === "object" && m !== null && !Array.isArray(m));
-        digest = models.find(/** Resolve the configured tag once; all subsequent operations use the digest. */ /** Resolve the configured tag once; all subsequent operations use the digest. */ m => ollamaModelName(m.name) === ollamaModelName(config.model))?.digest;
+        const name = ollamaModelName(config.model);
+        supported(name !== undefined);
+        const matches = models.filter(/** Normalize both operands; never pick the first of conflicting native aliases. */ /** Normalize both operands; never pick the first of conflicting native aliases. */ m => ollamaModelName(m.name) === name);
+        const digests = new Set(matches.map(/** Retain invalid identities so a conflicting row cannot be silently ignored. */ /** Retain invalid identities so a conflicting row cannot be silently ignored. */ m => m.digest));
+        if (digests.size > 1)
+            throw new AdmissionRefusal("ambiguous_model", "Resolve conflicting installed model references in the native inventory or configure one verified sha256 digest, then retry; no inference was submitted.");
+        digest = matches[0]?.digest;
     }
     supported(typeof digest === "string" && /^[a-f0-9]{64}$/.test(digest));
     const model = `sha256:${digest}`;

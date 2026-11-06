@@ -80,7 +80,7 @@ test("native labels skip non-single-token codes and refuse insufficient model ca
 test("untagged names normalize before admission, calibration, replay and doctor inventory matching", async () => {
   assert.equal(ollamaModelName(undefined), undefined);
   assert.equal(ollamaModelName("registry.example:5000/team/tev1"), "registry.example:5000/team/tev1:latest");
-  assert.equal(ollamaModelName("tev1:4b"), "tev1:4b");
+  assert.equal(ollamaModelName("tev1:4b"), "registry.ollama.ai/library/tev1:4b");
   await scenario(async (fixture, server) => {
     const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
     const names = ["tev1", "tev1:4b", "registry.example:5000/team/tev1", "registry.example:5000/team/tev1:4b"];

@@ -1,0 +1,195 @@
+{
+  "version": "pm-jev-admission-reference-evidence/1",
+  "provenance": {
+    "repository": "unbraind/pm-jev",
+    "commit": "7e34379ee2bc37dc2b6930cc3ed7cd04270941b7"
+  },
+  "artifact_sha512": "9c82577387e424fc0b6c18187f04c5e2a2a9b6ed95088e4fdcba13da870a4aca1a8efa581b0c42bfa6e692253a875df957fc76871f2ead723bb2a026ab4cd519",
+  "item": "pm-jev-github-21e139da0658-94",
+  "tracker_items_read": 53,
+  "git_available_during_commands": false,
+  "tracker_changed_by_decisions": false,
+  "registration_prepared_before_readonly_snapshot": true,
+  "reports": [
+    {
+      "reference": "custom-tev1",
+      "admission_ms": 7494,
+      "cli_decision_ms": 55225,
+      "admission": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 1,
+        "options": 2,
+        "max_prompt_tokens": 1182,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      },
+      "decision": {
+        "item": "pm-jev-github-21e139da0658-94",
+        "answers": {
+          "defect": {
+            "kind": "noul",
+            "probability": 0.7970235132224727
+          }
+        },
+        "model": "sha256:7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "usage": {
+          "input_tokens": 1182,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "reference": "custom-tev1:latest",
+      "admission_ms": 7019,
+      "cli_decision_ms": 29285,
+      "admission": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 1,
+        "options": 2,
+        "max_prompt_tokens": 1182,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      },
+      "decision": {
+        "item": "pm-jev-github-21e139da0658-94",
+        "answers": {
+          "defect": {
+            "kind": "noul",
+            "probability": 0.7970235132224727
+          }
+        },
+        "model": "sha256:7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "usage": {
+          "input_tokens": 1182,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "reference": "tev1:4b",
+      "admission_ms": 9982,
+      "cli_decision_ms": 31735,
+      "admission": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 1,
+        "options": 2,
+        "max_prompt_tokens": 1182,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      },
+      "decision": {
+        "item": "pm-jev-github-21e139da0658-94",
+        "answers": {
+          "defect": {
+            "kind": "noul",
+            "probability": 0.7970235132224727
+          }
+        },
+        "model": "sha256:7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "usage": {
+          "input_tokens": 1182,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "reference": "registry.ollama.ai/library/tev1:4b",
+      "admission_ms": 9771,
+      "cli_decision_ms": 30453,
+      "admission": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 1,
+        "options": 2,
+        "max_prompt_tokens": 1182,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      },
+      "decision": {
+        "item": "pm-jev-github-21e139da0658-94",
+        "answers": {
+          "defect": {
+            "kind": "noul",
+            "probability": 0.7970235132224727
+          }
+        },
+        "model": "sha256:7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "usage": {
+          "input_tokens": 1182,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "reference": "REGISTRY.OLLAMA.AI/Library/Tev1:4B",
+      "admission_ms": 11120,
+      "cli_decision_ms": 28596,
+      "admission": {
+        "version": "pm-jev-admission/1",
+        "ok": true,
+        "model_digest": "7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "template_sha256": "f2a33c8e30f70f59657efe8353810d61a86500d6f9e2c07d038c960d8a269135",
+        "tokenizer_sha256": "763ae52cd00469d551f369b51fe46ddff3c943f638a06ac770db406a994cd1c5",
+        "context_tokens": 8192,
+        "scoring_tokens": 1,
+        "questions": 1,
+        "options": 2,
+        "max_prompt_tokens": 1182,
+        "limiting_question_index": 0,
+        "minimum_prompt_tokens_to_remove": 0,
+        "inference_calls": 0,
+        "mutations": 0
+      },
+      "decision": {
+        "item": "pm-jev-github-21e139da0658-94",
+        "answers": {
+          "defect": {
+            "kind": "noul",
+            "probability": 0.7970235132224727
+          }
+        },
+        "model": "sha256:7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "usage": {
+          "input_tokens": 1182,
+          "output_tokens": 0
+        }
+      }
+    }
+  ],
+  "snapshot_excludes": [
+    "runtime"
+  ],
+  "latency_scope": "Wall-clock CLI duration including startup, metadata inspection, tokenizer construction and inference; not isolated provider latency.",
+  "proof_scope": "One public issue, one installed Tev1 digest, five reference spellings; token parity and durable tracker immutability, not an accuracy or throughput benchmark."
+}

@@ -54,7 +54,7 @@ test("bounded text retains whole astral characters at, before and across each bo
 
 test("item and triage projection preserve astral text and tags at admission boundaries", () => {
   for (const point of ["😀", "𝄞", "\u{10ffff}"]) {
-    for (const offset of [-2, -1, 0]) {
+    for (const offset of [-2, -1, 0, 1]) {
       const text = `${"a".repeat(4000 + offset)}${point}`;
       const tag = `${"t".repeat(128 + offset)}${point}`;
       const source = item(text, tag);
@@ -107,17 +107,23 @@ test("seeded astral fuzz preserves projection bounds and well-formed admission s
 test("real no-git tracker text and tags reach local decisions without surrogate refusal", async () => {
   await scenario(async (fixture, server) => {
     await withoutGit(fixture.cwd, async () => {
-      const created = await fixture.pm.create({ type: "Task", title: "Synthetic astral boundary", description: `${"a".repeat(3999)}😀`, body: `${"b".repeat(3999)}𝄞`, tags: `${"t".repeat(127)}😀` });
-      const source = (await fixture.pm.get(created.item.id, { full: true })).item as ProjectableItem;
       const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
       const client = createJevClient({ config, hostedBlocked: null }, {});
-      for (const project of [projectItemState, projectTriageState]) {
-        const state = project(source);
-        const result = await runDecision(client, config, state, questions);
-        assert.equal(result.admission?.ok, true);
-        assert.deepEqual((server.requests.at(-1)?.body as { state: unknown }).state, state);
+      for (const offset of [-2, -1, 0, 1]) {
+        const text = `${"a".repeat(4000 + offset)}😀z`;
+        const tag = `${"t".repeat(128 + offset)}😀z`;
+        const created = await fixture.pm.create({ type: "Task", title: `Synthetic astral boundary ${offset}`, description: text, body: text, tags: tag });
+        const source = (await fixture.pm.get(created.item.id, { full: true })).item as ProjectableItem;
+        for (const project of [projectItemState, projectTriageState]) {
+          const state = project(source);
+          const result = await runDecision(client, config, state, questions);
+          assert.equal(result.admission?.ok, true);
+          assert.equal(state.description, prefixOracle(text, 4000) + marker);
+          assert.deepEqual(state.tags, [prefixOracle(tag, 128)]);
+          assert.deepEqual((server.requests.at(-1)?.body as { state: unknown }).state, state);
+        }
       }
-      assert.equal(server.requests.length, 2);
+      assert.equal(server.requests.length, 8);
     });
   });
 });

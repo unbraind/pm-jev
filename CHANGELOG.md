@@ -8,6 +8,9 @@
 
 ### Fixed
 
+- Retry packed admission fixture teardown within a finite bound ([pm-jev-admission-teardown](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-admission-teardown.toon))
+- PR \#92 rejects valid Unicode after item-state truncation splits a surrogate pair ([pm-jev-github-21e139da0658-94](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-94.toon))
+- PR \#92 admission rejects equivalent native Ollama model references ([pm-jev-github-21e139da0658-93](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-93.toon))
 - SDK 2026.10.30 upgrade aborts five native-state regressions on placeholder parent fixtures ([pm-jev-github-21e139da0658-84](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-84.toon))
 - Release version replacement updates a comment instead of the exported extension identity ([pm-jev-nl5n](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-nl5n.toon))
 
