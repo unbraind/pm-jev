@@ -1,16 +1,198 @@
 {
   "needs_review": [
     {
-      "item": "pm-jev-tl8w",
+      "item": "pm-jev-5h61",
       "action": "needs_review",
       "candidates": [
-        63
+        43
       ],
       "missing_evidence": [
         {
-          "pr": 63,
+          "pr": 43,
           "code": "required_checks_unverified",
           "reason": "GitHub GET /repos/unbraind/pm-jev/branches/main/protection/required_status_checks failed; verify token read access and retry: HTTP 403. Required-check metadata unavailable; declare --required-checks (workflow input required-checks) to verify the required contexts. GITHUB_TOKEN cannot read administration-only branch protection."
+        },
+        {
+          "pr": 43,
+          "code": "head_evidence_unavailable",
+          "reason": "Commit delivery evidence unavailable or incomplete."
+        }
+      ]
+    },
+    {
+      "item": "pm-jev-5jw9",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ],
+      "missing_evidence": [
+        {
+          "pr": 43,
+          "code": "required_checks_unverified",
+          "reason": "GitHub GET /repos/unbraind/pm-jev/branches/main/protection/required_status_checks failed; verify token read access and retry: HTTP 403. Required-check metadata unavailable; declare --required-checks (workflow input required-checks) to verify the required contexts. GITHUB_TOKEN cannot read administration-only branch protection."
+        },
+        {
+          "pr": 43,
+          "code": "head_evidence_unavailable",
+          "reason": "Commit delivery evidence unavailable or incomplete."
+        }
+      ]
+    },
+    {
+      "item": "pm-jev-6psc",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ],
+      "missing_evidence": [
+        {
+          "pr": 43,
+          "code": "required_checks_unverified",
+          "reason": "GitHub GET /repos/unbraind/pm-jev/branches/main/protection/required_status_checks failed; verify token read access and retry: HTTP 403. Required-check metadata unavailable; declare --required-checks (workflow input required-checks) to verify the required contexts. GITHUB_TOKEN cannot read administration-only branch protection."
+        },
+        {
+          "pr": 43,
+          "code": "head_evidence_unavailable",
+          "reason": "Commit delivery evidence unavailable or incomplete."
+        }
+      ]
+    },
+    {
+      "item": "pm-jev-admission-teardown",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ]
+    },
+    {
+      "item": "pm-jev-bl8i",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ]
+    },
+    {
+      "item": "pm-jev-dev-glob-cancellation",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ]
+    },
+    {
+      "item": "pm-jev-github-21e139da0658-89",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ]
+    },
+    {
+      "item": "pm-jev-github-21e139da0658-93",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ]
+    },
+    {
+      "item": "pm-jev-github-21e139da0658-94",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ]
+    },
+    {
+      "item": "pm-jev-i3wg",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ],
+      "missing_evidence": [
+        {
+          "pr": 43,
+          "code": "required_checks_unverified",
+          "reason": "GitHub GET /repos/unbraind/pm-jev/branches/main/protection/required_status_checks failed; verify token read access and retry: HTTP 403. Required-check metadata unavailable; declare --required-checks (workflow input required-checks) to verify the required contexts. GITHUB_TOKEN cannot read administration-only branch protection."
+        },
+        {
+          "pr": 43,
+          "code": "head_evidence_unavailable",
+          "reason": "Commit delivery evidence unavailable or incomplete."
+        }
+      ]
+    },
+    {
+      "item": "pm-jev-q96v",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ],
+      "missing_evidence": [
+        {
+          "pr": 43,
+          "code": "required_checks_unverified",
+          "reason": "GitHub GET /repos/unbraind/pm-jev/branches/main/protection/required_status_checks failed; verify token read access and retry: HTTP 403. Required-check metadata unavailable; declare --required-checks (workflow input required-checks) to verify the required contexts. GITHUB_TOKEN cannot read administration-only branch protection."
+        },
+        {
+          "pr": 43,
+          "code": "head_evidence_unavailable",
+          "reason": "Commit delivery evidence unavailable or incomplete."
+        }
+      ]
+    },
+    {
+      "item": "pm-jev-replay-ambiguity",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ]
+    },
+    {
+      "item": "pm-jev-tokenizer-admission",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ]
+    },
+    {
+      "item": "pm-jev-undefined-choice-admission",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ]
+    },
+    {
+      "item": "pm-jev-v2la",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ],
+      "missing_evidence": [
+        {
+          "pr": 43,
+          "code": "required_checks_unverified",
+          "reason": "GitHub GET /repos/unbraind/pm-jev/branches/main/protection/required_status_checks failed; verify token read access and retry: HTTP 403. Required-check metadata unavailable; declare --required-checks (workflow input required-checks) to verify the required contexts. GITHUB_TOKEN cannot read administration-only branch protection."
+        },
+        {
+          "pr": 43,
+          "code": "head_evidence_unavailable",
+          "reason": "Commit delivery evidence unavailable or incomplete."
+        }
+      ]
+    },
+    {
+      "item": "pm-jev-xgo9",
+      "action": "needs_review",
+      "candidates": [
+        43
+      ],
+      "missing_evidence": [
+        {
+          "pr": 43,
+          "code": "required_checks_unverified",
+          "reason": "GitHub GET /repos/unbraind/pm-jev/branches/main/protection/required_status_checks failed; verify token read access and retry: HTTP 403. Required-check metadata unavailable; declare --required-checks (workflow input required-checks) to verify the required contexts. GITHUB_TOKEN cannot read administration-only branch protection."
+        },
+        {
+          "pr": 43,
+          "code": "head_evidence_unavailable",
+          "reason": "Commit delivery evidence unavailable or incomplete."
         }
       ]
     }
