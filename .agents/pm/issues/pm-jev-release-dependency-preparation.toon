@@ -1,0 +1,22 @@
+id: pm-jev-release-dependency-preparation
+title: Prepare dependency-only daily releases with explicit release evidence
+description: Daily Release run 43009061713 has no pending item after the latest tag. Investigate case-sensitive dependency fallback and preserve real dependency notes without empty releases.
+type: Issue
+status: in_progress
+priority: 2
+tags[1]: "gh:unbraind/pm-changelog#343"
+created_at: "2026-11-11T21:49:25.839Z"
+updated_at: "2026-11-11T21:52:40.864Z"
+author: codex-release-repair-1111
+comments[2]{created_at,author,text}:
+  "2026-11-11T21:50:38.148Z",codex-release-repair-1111,"Root cause: latest tag is v2026.11.07; all 41 unassigned status-selected items precede its timestamp. Four later Build(deps): Bump commits fail the pinned generator lowercase bump regex. pm-brief run 43059359608 succeeds with lowercase bump subjects. Filed pm-changelog#343. Prepare a release-assigned dependency chore from the exact pending Git range and stage it with release metadata; do not reassign historical items."
+  "2026-11-11T21:52:39.974Z",codex-release-repair-1111,"Regression proof: disabling only prepareReleaseDependencies in a disposable copy fails with MISSING_REQUESTED_RELEASE; fixed contract passes and regenerates after tagging. Focused release contracts pass 51/51, no skips. npm lint, typecheck and test typecheck passed. Per task budget, CI owns the full release gate. No publication or dispatch performed."
+files[3]{path,scope}:
+  .github/workflows/release.yml,project
+  scripts/prepare-release-dependencies.ts,project
+  test/release-dependencies.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/release-dependencies.test.ts test/release-workflow.test.ts test/release-approval.test.ts,project,codex-release-repair-1111,"2026-11-11T21:51:49.098Z",local_mutation,fix/release-missing-requested-release
+docs[1]{path,scope}:
+  .github/workflows/release.yml,project
+body: ""

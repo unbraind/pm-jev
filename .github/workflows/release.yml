@@ -165,6 +165,13 @@ jobs:
           rm -rf dist
           npm run build
 
+      - name: Record pending dependency changes
+        if: steps.decide.outputs.should_release == 'true'
+        env:
+          PREVIOUS_TAG: ${{ steps.decide.outputs.latest_tag }}
+        shell: bash
+        run: node scripts/prepare-release-dependencies.ts "$PREVIOUS_TAG"
+
       - name: Generate changelog and release notes
         if: steps.decide.outputs.should_release == 'true'
         shell: bash
@@ -193,6 +200,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           paths=(package.json package-lock.json manifest.json CHANGELOG.md)
+          dependency_item="pm-jev-release-dependencies-$(node -p 'require("./package.json").version.replaceAll(".", "-")')"
+          [[ -f ".agents/pm/chores/${dependency_item}.toon" ]] && paths+=(".agents/pm/chores/${dependency_item}.toon" ".agents/pm/history/${dependency_item}.jsonl")
           [[ -f index.ts ]] && paths+=(index.ts)
           [[ -d src ]] && paths+=(src)
           git ls-files --error-unmatch 'dist/' > /dev/null 2>&1 && paths+=(dist)

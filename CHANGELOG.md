@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Prepare dependency-only daily releases with explicit release evidence ([pm-jev-release-dependency-preparation](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-release-dependency-preparation.toon))
+
 ## 2026.11.7 - 2026-11-07
 
 ### Fixed
