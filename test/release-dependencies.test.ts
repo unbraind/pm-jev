@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -8,6 +8,7 @@ import { parse } from "yaml";
 import { prepareReleaseDependencies } from "../scripts/prepare-release-dependencies.ts";
 
 const pm = resolve("node_modules/@unbrained/pm-cli/dist/cli.js");
+const preparation = resolve("scripts/prepare-release-dependencies.ts");
 const changelog = resolve("node_modules/pm-changelog/dist/cli.js");
 
 test("dependency preparation makes an old-closed-only release window render and regenerate after tagging", () => {
@@ -35,30 +36,43 @@ test("dependency preparation makes an old-closed-only release window render and 
     const before = spawnSync(process.execPath, [changelog, ...notes], { cwd: root, env, encoding: "utf8" });
     assert.notEqual(before.status, 0);
     assert.match(before.stderr, /MISSING_REQUESTED_RELEASE/);
-    prepareReleaseDependencies(root, "v2026.11.07");
+    run(process.execPath, [preparation, "v2026.11.07"]);
     prepareReleaseDependencies(root, "v2026.11.07");
     const result = run(process.execPath, [changelog, ...notes]);
     assert.match(result, /## 2026\.11\.11/);
-    assert.match(result, /Update release dependencies/);
+    assert.match(result, /Bump synthetic dependency/);
     assert.doesNotMatch(result, /Previously delivered work/);
-    const history = join(root, ".agents/pm/history/pm-jev-release-dependencies-2026-11-11.jsonl");
+    const histories = join(root, ".agents/pm/history");
+    const history = join(histories, readdirSync(histories).find(name => name.startsWith("pm-jev-release-dependencies-"))!);
     assert.equal(readFileSync(history, "utf8").trim().split("\n").length, 1);
+    writeFileSync(join(root, "dependency.txt"), "Another dependency update\n");
+    git("add", "dependency.txt"); git("commit", "-m", "Build(deps): Bump another synthetic package (#107)");
+    run(process.execPath, [preparation, "v2026.11.07"]);
+    const refreshed = run(process.execPath, [changelog, ...notes]);
+    assert.match(refreshed, /Bump synthetic dependency/);
+    assert.match(refreshed, /Bump another synthetic package/);
+    assert.equal(readdirSync(histories).filter(name => name.startsWith("pm-jev-release-dependencies-")).length, 2);
     run(process.execPath, [changelog, ...flags, "--all-release-tags", "--output", "CHANGELOG.md"]);
     git("add", ".agents", "package.json", "CHANGELOG.md");
     git("commit", "-m", "Prepare synthetic release");
     git("tag", "v2026.11.11");
     run(process.execPath, [changelog, ...flags, "--all-release-tags", "--output", "CHANGELOG.md", "--check"]);
+    rmSync(history);
+    assert.throws(() => prepareReleaseDependencies(root, "v2026.11.07"));
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 test("release workflow records and stages dependency evidence before generating notes", () => {
   const source = readFileSync(".github/workflows/release.yml", "utf8");
-  const workflow = parse(source) as { jobs: { prepare: { steps: { name?: string; run?: string }[] } } };
+  const workflow = parse(source) as { jobs: { prepare: { steps: { name?: string; run?: string; env?: Record<string, string> }[] } } };
   const steps = workflow.jobs.prepare.steps;
   const preparation = steps.findIndex(step => step.name === "Record pending dependency changes");
   assert.ok(preparation >= 0 && preparation < steps.findIndex(step => step.name === "Generate changelog and release notes"));
-  assert.match(steps[preparation].run ?? "", /node scripts\/prepare-release-dependencies\.ts/);
-  assert.match(steps.find(step => step.name === "Commit release files")?.run ?? "", /paths\+=\("\.agents\/pm\/chores/);
+  assert.match(steps[preparation].run ?? "", /node scripts\/prepare-release-dependencies\.ts "\$PREVIOUS_TAG"/);
+  assert.equal(steps[preparation].env?.PREVIOUS_TAG, "${{ steps.decide.outputs.latest_tag }}");
+  const commit = steps.find(step => step.name === "Commit release files")?.run ?? "";
+  assert.match(commit, /\.agents\/pm\/chores\/pm-jev-release-dependencies-\*\.toon/);
+  assert.match(commit, /\.agents\/pm\/history\/pm-jev-release-dependencies-\*\.jsonl/);
 });
 
 test("preparation skips absent ranges and plain directories and refuses invalid versions", () => {
@@ -66,6 +80,8 @@ test("preparation skips absent ranges and plain directories and refuses invalid 
   try {
     prepareReleaseDependencies(root);
     writeFileSync(join(root, "package.json"), '{"version":"invalid"}');
+    assert.throws(() => prepareReleaseDependencies(root, "v2026.11.07"), /numeric release version/);
+    writeFileSync(join(root, "package.json"), '{"version":null}');
     assert.throws(() => prepareReleaseDependencies(root, "v2026.11.07"), /numeric release version/);
     writeFileSync(join(root, "package.json"), '{"version":"2026.11.11"}');
     prepareReleaseDependencies(root, "v2026.11.07");

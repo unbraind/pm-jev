@@ -200,8 +200,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           paths=(package.json package-lock.json manifest.json CHANGELOG.md)
-          dependency_item="pm-jev-release-dependencies-$(node -p 'require("./package.json").version.replaceAll(".", "-")')"
-          [[ -f ".agents/pm/chores/${dependency_item}.toon" ]] && paths+=(".agents/pm/chores/${dependency_item}.toon" ".agents/pm/history/${dependency_item}.jsonl")
+          shopt -s nullglob
+          paths+=(.agents/pm/chores/pm-jev-release-dependencies-*.toon .agents/pm/history/pm-jev-release-dependencies-*.jsonl)
           [[ -f index.ts ]] && paths+=(index.ts)
           [[ -d src ]] && paths+=(src)
           git ls-files --error-unmatch 'dist/' > /dev/null 2>&1 && paths+=(dist)

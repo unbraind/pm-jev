@@ -6,11 +6,13 @@ status: in_progress
 priority: 2
 tags[1]: "gh:unbraind/pm-changelog#343"
 created_at: "2026-11-11T21:49:25.839Z"
-updated_at: "2026-11-11T21:52:40.864Z"
+updated_at: "2026-11-11T22:10:55.128Z"
 author: codex-release-repair-1111
-comments[2]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-11-11T21:50:38.148Z",codex-release-repair-1111,"Root cause: latest tag is v2026.11.07; all 41 unassigned status-selected items precede its timestamp. Four later Build(deps): Bump commits fail the pinned generator lowercase bump regex. pm-brief run 43059359608 succeeds with lowercase bump subjects. Filed pm-changelog#343. Prepare a release-assigned dependency chore from the exact pending Git range and stage it with release metadata; do not reassign historical items."
   "2026-11-11T21:52:39.974Z",codex-release-repair-1111,"Regression proof: disabling only prepareReleaseDependencies in a disposable copy fails with MISSING_REQUESTED_RELEASE; fixed contract passes and regenerates after tagging. Focused release contracts pass 51/51, no skips. npm lint, typecheck and test typecheck passed. Per task budget, CI owns the full release gate. No publication or dispatch performed."
+  "2026-11-11T22:08:10.878Z",codex-release-repair-1111,"Review follow-up: record one versioned item per dependency commit so actual bump subjects appear in rendered notes and later pre-tag commits add their own evidence. Exercise the CLI with a real prior tag and assert PREVIOUS_TAG forwarding plus staging of both item and history. Let the pinned host recover pending transactions on rerun; missing paired history fails closed without rewriting it."
+  "2026-11-11T22:10:54.080Z",codex-release-repair-1111,"Final review validation: 51/51 focused release contracts pass, CLI invocation renders original dependency subjects and rerun records newly landed bumps. The helper alone measures 100 percent statements/branches/functions/lines under c8; this is not whole-package coverage. Final behavioral no-op revert fails with MISSING_REQUESTED_RELEASE. Lint, source/test typechecks, docstrings, duplication and changelog checks pass. Missing history fails closed through pinned-host recovery without reconstructing existing audit records. Review threads remain open for orchestrator replies."
 files[3]{path,scope}:
   .github/workflows/release.yml,project
   scripts/prepare-release-dependencies.ts,project
