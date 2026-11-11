@@ -4,8 +4,8 @@
 
 ### Fixed
 
-- Refuse ambiguous native model aliases before replay pinning ([pm-jev-replay-ambiguity](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-replay-ambiguity.toon))
 - Count choice options from the JSON request representation ([pm-jev-undefined-choice-admission](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-undefined-choice-admission.toon))
+- Refuse ambiguous native model aliases before replay pinning ([pm-jev-replay-ambiguity](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-replay-ambiguity.toon))
 
 ## 2026.11.6 - 2026-11-06
 
@@ -15,11 +15,11 @@
 
 ### Fixed
 
-- PR \#92 admission rejects equivalent native Ollama model references ([pm-jev-github-21e139da0658-93](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-93.toon))
-- Retry packed admission fixture teardown within a finite bound ([pm-jev-admission-teardown](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-admission-teardown.toon))
-- PR \#92 rejects valid Unicode after item-state truncation splits a surrogate pair ([pm-jev-github-21e139da0658-94](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-94.toon))
 - SDK 2026.10.30 upgrade aborts five native-state regressions on placeholder parent fixtures ([pm-jev-github-21e139da0658-84](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-84.toon))
 - Release version replacement updates a comment instead of the exported extension identity ([pm-jev-nl5n](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-nl5n.toon))
+- Retry packed admission fixture teardown within a finite bound ([pm-jev-admission-teardown](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-admission-teardown.toon))
+- PR \#92 rejects valid Unicode after item-state truncation splits a surrogate pair ([pm-jev-github-21e139da0658-94](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-94.toon))
+- PR \#92 admission rejects equivalent native Ollama model references ([pm-jev-github-21e139da0658-93](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-93.toon))
 
 ## 2026.11.4 - 2026-11-04
 
