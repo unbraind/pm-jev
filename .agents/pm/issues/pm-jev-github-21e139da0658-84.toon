@@ -7,10 +7,11 @@ status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-jev#84","github_author:unbraind"
 created_at: "2026-11-03T20:09:06Z"
-updated_at: "2026-11-05T11:11:21.759Z"
+updated_at: "2026-11-14T11:29:27.997Z"
 closed_at: "2026-11-04T23:39:04Z"
 completed_at: "2026-11-04T23:39:04Z"
 author: pm-github
+release: v2026.11.06
 comments[9]{created_at,author,text}:
   "2026-11-04T18:55:30.699Z",codex-toolchain-1104,"Read issue #84 and merged main. Verify the five fixture failures on SDK 2026.11.4, migrate only unsupported typed clears, preserve relationship controls, then run coverage, typecheck and lint. PR: https://github.com/unbraind/pm-jev/pull/83"
   "2026-11-04T18:56:54.549Z",codex-toolchain-1104,"Confirmed all five setup failures on SDK 2026.11.4. Root cause: 2026.10.30 GH-1614 keeps typed sentinel inputs literal (classification: test). Omit absent parent/blockedBy/goal/objective fields; SDK create ignores focus by default since GH-1577. Preserve all assertions, nonempty relationships, custom registry edges, and seeded replay controls. No production workaround or null clears."
@@ -54,7 +55,7 @@ github_closed_at: "2026-11-04T23:39:04Z"
 github_created_at: "2026-11-03T20:09:06Z"
 github_link_only: false
 github_number: 84
-github_release: ""
+github_release: v2026.11.06
 github_state: closed
 github_state_reason: completed
 github_updated_at: "2026-11-04T23:39:04Z"

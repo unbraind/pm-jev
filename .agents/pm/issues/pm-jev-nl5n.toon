@@ -6,10 +6,11 @@ status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-jev#68","github_author:unbraind"
 created_at: "2026-10-29T13:44:57Z"
-updated_at: "2026-11-05T11:11:21.777Z"
+updated_at: "2026-11-14T11:29:28.036Z"
 closed_at: "2026-11-04T18:39:37Z"
 completed_at: "2026-11-04T18:39:37Z"
 author: pi-glm
+release: v2026.11.06
 resolution: Implemented and merged in #90 (2c074b2).
 expected_result: The change described by this item is on main.
 actual_result: "Merged in #90 as 2c074b2; checks successful at head 1195a1d: CodeQL, codeql, test (22), test (26)."
@@ -30,7 +31,7 @@ github_closed_at: "2026-11-04T18:39:37Z"
 github_created_at: "2026-10-29T13:44:57Z"
 github_link_only: false
 github_number: 68
-github_release: ""
+github_release: v2026.11.06
 github_state: closed
 github_state_reason: completed
 github_updated_at: "2026-11-04T18:39:37Z"
