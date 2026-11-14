@@ -41,6 +41,14 @@
 
 - Closed: Release publish resolves verified tarball argument as a GitHub SSH repository ([pm-jev-github-21e139da0658-62](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-62.toon))
 
+## 2026.10.31 - 2026-10-31
+
+No changes.
+
+## 2026.10.30 - 2026-10-30
+
+No changes.
+
 ## 2026.10.29 - 2026-10-29
 
 ### Added
