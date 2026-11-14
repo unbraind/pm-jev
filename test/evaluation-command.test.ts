@@ -4,7 +4,7 @@ import test from "node:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { createExtensionCommandSdk, getSettingsPath, readFileIfExists } from "@unbrained/pm-cli/sdk";
+import { createExtensionCommandSdk, getSettingsPath, isPmCliExpectedError, readFileIfExists } from "@unbrained/pm-cli/sdk";
 import { channelLabels, runEvaluationCommand } from "../evaluation-command.ts";
 import type { CommandHandlerContext } from "@unbrained/pm-cli/sdk/authoring";
 import type { CalibrationReceipt, Observation } from "../decision-calibration.ts";
@@ -297,8 +297,18 @@ test("evaluation validation rejects bad flags, hosted providers, private-only da
       try { await assert.rejects(runEvaluationCommand(context(fixture, valid), false, source), /local Ollama/); }
       finally { process.env.PM_JEV_BASE_URL = previous; if (previousKey === undefined) delete process.env.TYPESAFE_API_KEY; else process.env.TYPESAFE_API_KEY = previousKey; }
       // Registered commands share the same validation and host output boundary.
-      await assert.rejects(fixture.harness.runCommand({ command: "jev eval", pmRoot: fixture.pmRoot, options: { task: "invalid" } }), /--task/);
-      await assert.rejects(fixture.harness.runCommand({ command: "jev calibrate", pmRoot: fixture.pmRoot, options: { task: "invalid" } }), /--task/);
+      const before = trackerSnapshot(fixture.pmRoot);
+      for (const command of ["jev eval", "jev calibrate"]) {
+        await assert.rejects(fixture.harness.runCommand({ command, pmRoot: fixture.pmRoot, options: { task: "triage" } }), error => {
+          assert.ok(isPmCliExpectedError(error)); assert.match(error.message, /--from/); assert.equal(error.exitCode, 2); return true;
+        });
+        await assert.rejects(fixture.harness.runCommand({ command, pmRoot: fixture.pmRoot, options: { task: "triage", "--task": "link", from: origin.pmRoot } }), error => {
+          assert.ok(isPmCliExpectedError(error)); assert.equal(error.code, "extension_option_spelling_conflict"); assert.equal(error.exitCode, 2); return true;
+        });
+        await assert.rejects(fixture.harness.runCommand({ command, pmRoot: fixture.pmRoot, options: { task: "invalid", from: origin.pmRoot } }), /--task/);
+      }
+      assert.equal(server.requests.length, 0);
+      assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
     });
   } finally { origin.dispose(); }
 });

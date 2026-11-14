@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import test from "node:test";
-import { answers, scenario } from "./fixtures.ts";
+import { answers, scenario, trackerSnapshot } from "./fixtures.ts";
 import { activateExtensionForTest } from "@unbrained/pm-cli/sdk/testing";
-import extension from "../index.ts";
+import extension, { isPmCliExpectedError } from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
 
 /** Fields inspected on compact/full receipts without weakening test type checks. */
@@ -20,6 +20,7 @@ interface OutputReceipt extends OutputChoice {
 /** Exercise decisions against deterministic HTTP responses and the actual host context. */
 test("gate expectations distinguish unsafe secrets, clean text and inclusive boundaries", async () => {
   await scenario(async (fixture, server) => {
+    const before = trackerSnapshot(fixture.pmRoot);
     server.setReply((_, response, body) => {
       const request = body as { state: string; questions: Questions };
       const result = answers(request.questions);
@@ -29,6 +30,7 @@ test("gate expectations distinguish unsafe secrets, clean text and inclusive bou
     const run = (options: Record<string, unknown>, global = { json: true }) => fixture.harness.runCommand({ command: "jev gate", pmRoot: fixture.pmRoot, global, options: { noul: "The text contains a credential, API key or password.", text: "deploy with token ghp_SYNTHETIC_ONLY", ...options } });
     for (const [options, holds, expected, ok] of [
       [{}, true, true, true], [{ expect: "true" }, true, true, true],
+      [{ expect: true }, true, true, true], [{ expect: false }, true, false, false],
       [{ expect: "false" }, true, false, false],
       [{ expect: "false", text: "Adjust the blue button." }, false, false, true],
       [{ threshold: "0.934567" }, true, true, true],
@@ -47,11 +49,14 @@ test("gate expectations distinguish unsafe secrets, clean text and inclusive bou
     assert.equal((rounded.result as Record<string, unknown>).probability, 0.5);
     assert.equal((rounded.result as Record<string, unknown>).holds, false);
     assert.equal(rounded.exitCode ?? 0, 0);
-    for (const expect of ["yes", "FALSE", "", true, false]) {
+    for (const expect of ["yes", "FALSE", "", "1", "0", null]) {
       const count = server.requests.length;
-      await assert.rejects(run({ expect }), /expect/);
+      await assert.rejects(run({ expect }), error => {
+        assert.ok(isPmCliExpectedError(error)); assert.match(error.message, /expect/); assert.equal(error.exitCode, 2); return true;
+      });
       assert.equal(server.requests.length, count);
     }
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
   });
 });
 
