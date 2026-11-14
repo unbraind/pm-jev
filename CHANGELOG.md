@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Other
+
+- Adopt pm-cli option contract and current pm-toolchain ([pm-jev-option-contract-1114](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-option-contract-1114.toon))
+
 ## 2026.11.7 - 2026-11-07
 
 ### Fixed
