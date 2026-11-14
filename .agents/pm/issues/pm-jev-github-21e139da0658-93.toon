@@ -1,13 +1,16 @@
 id: pm-jev-github-21e139da0658-93
 title: PR #92 admission rejects equivalent native Ollama model references
-description: "GH issue #93: https://github.com/unbraind/pm-jev/issues/93 · author @unbraind · created 2026-11-05T05:30:53Z · updated 2026-11-05T05:30:53Z"
+description: "GH issue #93: https://github.com/unbraind/pm-jev/issues/93 · author @unbraind · state reason completed · created 2026-11-05T05:30:53Z · updated 2026-11-06T07:17:09Z"
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-jev#93","github_author:unbraind"
 created_at: "2026-11-05T05:30:53Z"
-updated_at: "2026-11-06T05:36:53.828Z"
+updated_at: "2026-11-14T11:29:27.970Z"
+closed_at: "2026-11-06T07:17:09Z"
+completed_at: "2026-11-06T07:17:09Z"
 author: pm-github
+release: v2026.11.06
 comments[8]{created_at,author,text}:
   "2026-11-06T04:31:39.015Z",codex-sol,"Read issue in full. Existing latest-tag helper covers omitted tags but lacks native registry/namespace defaults and case-insensitive comparison. Plan: canonicalize both operands, reject conflicting normalized inventory matches with a typed refusal, and preserve digest-pinned metadata and inference."
   "2026-11-06T04:39:26.370Z",codex-sol,"Regression proofs in disposable copies: reverting native name normalization fails all 3 reference tests; removing the ambiguity refusal fails 1 of 3. Restoring all protections passes 13 combined reference/Unicode/cleanup tests. Metadata and inference stay pinned to one digest; normalized duplicate rows with the same digest remain allowed."
@@ -31,14 +34,15 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
 docs[2]{path,scope}:
   docs/decision-admission-reference-evidence.json,project
   docs/decision-admission.md,project
-github_close_reason: ""
-github_closed_at: ""
+close_reason: "Closed on GitHub as completed on 2026-11-06T07:17:09Z; closing PR https://github.com/unbraind/pm-jev/pull/99 (\"Fix Tev1 admission references, Unicode regressions and smoke cleanup\")"
+github_close_reason: "Closed on GitHub as completed on 2026-11-06T07:17:09Z; closing PR https://github.com/unbraind/pm-jev/pull/99 (\"Fix Tev1 admission references, Unicode regressions and smoke cleanup\")"
+github_closed_at: "2026-11-06T07:17:09Z"
 github_created_at: "2026-11-05T05:30:53Z"
 github_link_only: false
 github_number: 93
-github_release: ""
-github_state: open
-github_state_reason: unspecified
-github_updated_at: "2026-11-05T05:30:53Z"
+github_release: v2026.11.06
+github_state: closed
+github_state_reason: completed
+github_updated_at: "2026-11-06T07:17:09Z"
 github_url: "https://github.com/unbraind/pm-jev/issues/93"
 body: "## Reproduced lookup defect in PR #92\n\nTested commit: [0d30ec217955a12155038726a757bc8c441c2713](https://github.com/unbraind/pm-jev/pull/92). This finding concerns the proposed admission path, not a claim that the released package has this new refusal.\n\nThe mandatory lookup in [decision-admission.ts:89–96](https://github.com/unbraind/pm-jev/blob/0d30ec217955a12155038726a757bc8c441c2713/decision-admission.ts#L89-L96) accepts only exact equality between the configured model reference and an inventory name. Native Ollama also accepts an omitted default tag and fully qualified references to the same model. A supported installed model can therefore be rejected as `unsupported_model` before metadata inspection or inference.\n\n### Expected and actual\n\nThe goal is to resolve an installed supported model and pin inference to its immutable digest. Model-name spelling should not prevent equivalent native references from resolving, and any correction must retain digest-addressed inspection/inference.\n\nWith an inventory entry named `custom-tev1:latest`, configuration `PM_JEV_MODEL=custom-tev1` is rejected by the new lookup. Similarly, `registry.ollama.ai/library/tev1:4b` does not match the inventory spelling `tev1:4b`. Exact-tag configuration succeeds.\n\n### Sanitized reproduction\n\nThe isolated test evaluates the exact changed lookup expression with:\n\n```js\nconst models = [\n  { name: \"custom-tev1:latest\", digest: \"a\".repeat(64) },\n  { name: \"tev1:4b\", digest: \"b\".repeat(64) },\n];\n// Run the source lookup with each config.model:\n\"custom-tev1\"                            // actual: undefined\n\"registry.ollama.ai/library/tev1:4b\"      // actual: undefined\n\"custom-tev1:latest\"                     // actual: \"a\".repeat(64)\n```\n\nNative naming semantics were checked in [Ollama name parsing](https://github.com/ollama/ollama/blob/main/types/model/name.go), which supplies the default `latest` tag, and [request model resolution](https://github.com/ollama/ollama/blob/main/server/model_resolver.go). Those upstream references were inspected on current main.\n\n### Impact and limits\n\nValid configured aliases stop working for an otherwise supported installed profile. The lookup failure is reproduced with an isolated source-excerpt test. No Ollama request, provider inference, dependency installation, or full integration test was performed; metadata/tokenizer validity is a precondition, not established by this synthetic inventory.\n\n### Regression criteria\n\n- An omitted default tag, exact tagged name and equivalent fully qualified name resolve to the same installed digest.\n- Unknown references still refuse before inference.\n- Equivalent-name handling is unambiguous and follows native naming rules.\n- Model inspection and inference remain pinned to that digest; do not replace the refusal with mutable-alias inference.\n- Cover canonical-name variants in admission tests, including the exact-tag control.\n\n### Scope and deduplication\n\nThe source goal is tracked by [pm-jev-tokenizer-admission](https://github.com/unbraind/pm-jev/blob/0d30ec217955a12155038726a757bc8c441c2713/.agents/pm/features/pm-jev-tokenizer-admission.toon). Before filing, the review screened all 92 all-status issue/PR titles, all four ordinary issue bodies, all 49 canonical PM records at this commit, the fresh #92 discussion and related #47 discussion. No existing issue or canonical defect record covered this mechanism. Historical PR conversations were not exhaustively audited. The candidate head was rechecked unchanged immediately before filing."
