@@ -62,3 +62,8 @@ Fixture regression #116 came from implicit ancestor discovery. Fixtures now
 own their temporary tracker root and scrub inherited Git/PM scope while
 initializing. Regression cases place temporary children inside Git parents
 with and without a tracker and verify that parent bytes remain unchanged.
+
+Local quick proof: 452 tests passed; all 49 source files reported at 100% in
+every c8 dimension. Suite time 14m02.8s; complete command approximately 14m49s
+on the contended development host. Touched quick suites passed 136 tests in
+8m15s. These are not a same-hardware quick/full comparison.

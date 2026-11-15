@@ -6,7 +6,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { execFileSync } from "node:child_process";
-import { project, trackerSnapshot } from "./fixtures.ts";
+import { PmClient } from "@unbrained/pm-cli/sdk";
+import { project, trackerSnapshot, withoutGit } from "./fixtures.ts";
 
 for (const [name, paths] of [["native", path], ["win32", path.win32]] as const) {
   test(`trackerSnapshot excludes only the root runtime directory with ${name} paths`, t => {
@@ -40,8 +41,9 @@ for (const initialized of [false, true]) test(`project owns its temporary tracke
     for (const key of keys.slice(3)) delete env[key];
     execFileSync("git", ["init", parent], { env, stdio: "pipe" });
     if (initialized) {
-      mkdirSync(path.join(parent, ".agents/pm"), { recursive: true });
-      writeFileSync(path.join(parent, ".agents/pm/settings.json"), "{}\n");
+      const pm = new PmClient({ cwd: parent, pmRoot: path.join(parent, ".agents/pm"), noExtensions: true, author: "fixture" });
+      await withoutGit(parent, () => pm.init("parent", { defaults: true, agentGuidance: "skip" }));
+      await pm.create({ type: "Task", title: "Parent sentinel" });
     }
     const before = trackerSnapshot(parent);
     for (const key of keys.slice(0, 3)) process.env[key] = parent;

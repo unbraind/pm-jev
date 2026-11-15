@@ -6,14 +6,13 @@ status: in_progress
 priority: 2
 tags[3]: ci,"gh:unbraind/pm-jev#116",performance
 created_at: "2026-11-15T15:45:33.689Z"
-updated_at: "2026-11-15T15:56:45.778Z"
-assignee: codex-sol
-claim_principal: codex-sol
+updated_at: "2026-11-15T16:04:51.384Z"
 author: codex-sol
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-11-15T15:47:50.043Z",codex-sol,"Required checks are test (22), test (26), codeql; CodeQL remains unfiltered. Main CI run 43679596301: queue-inclusive jobs 575s/961s; slowest repeated cases public-quality replay 48s, SDK admission 27s. Explicit temporary tracker roots and scoped Git/PM environment scrubbing address #116. Quick uses deterministic seed prefixes; full and all coverage thresholds remain unchanged. Release files are excluded."
   "2026-11-15T15:51:48.061Z",codex-sol,"Strict tracker health passed with six pre-existing stale-item advisories. Strict YAML parse passed for all three workflows; actionlint is unavailable. Typecheck, test typecheck and docstring checks passed. Linked lint caught a dynamic import in a new regression; replaced it with a static import and reran. Quick coverage is bounded to twenty minutes locally; no full-depth run is requested here."
   "2026-11-15T15:56:45.776Z",codex-sol,"Touched quick suites passed 136 tests, zero failures, 495.052s wall time on the contended development host (not comparable to hosted execution). Additional docs/identity/provenance suites passed 39/39; fixture regression and scale validation passed 5/5; final fixed product-timeout transport suite passed 7/7. Typecheck/lint linked run passed in 45.061s; test typecheck, docstrings, strict health, attestation and YAML validation passed. Quick coverage remains running within its twenty-minute watchdog. Pushing early; no CI wait is requested."
+  "2026-11-15T16:04:49.173Z",codex-sol,"Quick coverage passed: 452 tests, zero failures, 49 source files reported; 100% statements/branches/functions/lines at unchanged thresholds. Suite wall 842.784s; entire coverage command approximately 889s (14m49s). Full depth was not run locally; baseline hosted full npm gate was 141s and repeated Bun gate 138s, which are not comparable to this contended host. Final real initialized-parent fixture regressions passed 5/5; final packed Node-only smoke passed; final lint passed. First PR #119 CI run 43732684592 remains queued; no PR wall completion measurement exists, and CI is not awaited. All testTime uses were audited: SDK/product deadlines stay unscaled, including the 20ms SDK client deadline. Claim released after verification; item remains in progress for orchestrator review."
 files[7]{path,scope}:
   .github/workflows/ci-deep.yml,project
   .github/workflows/ci.yml,project
