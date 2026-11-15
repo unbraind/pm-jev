@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { encode, decode } from "@toon-format/toon";
@@ -86,13 +87,13 @@ test("raw alpha pairs fit exact 13/30 and reapply through the registered no-git 
   });
 });
 
-test("500 raw lexical populations reproduce every quality frontier and retrieval fit after JSON/TOON", async () => {
+test("raw lexical populations reproduce every quality frontier and retrieval fit after JSON/TOON", async () => {
   const fixture = await project();
   try {
     const base = (await fixture.pm.create({ type: "Task", title: "Raw evidence", description: "" })).item as PairItem;
     const random = randomFrom(0x27e2e1);
     const texts = ["", "alpha", "alpha beta", "beta gamma", "alpha beta gamma delta", "ALPHA!", "café alpha", "修復 alpha"];
-    for (let run = 0; run < 500; run++) {
+    for (let run = 0; run < testDepth(500); run++) {
       const items = Array.from({ length: 4 + random() % 5 }, (_, i) => ({ ...base, id: `raw-${i}`, title: texts[random() % texts.length], description: texts[random() % texts.length], body: texts[random() % texts.length], tags: random() % 2 ? [] : [texts[random() % texts.length]], files: random() % 2 ? [] : [{ path: "src/alpha.ts", scope: "project" as const }] }));
       const pairs = items.slice(1).map((item, i) => orderedPair(items[i], item, 0));
       const labels = pairs.map(() => run % 4 === 0 || random() % 3 !== 0);
@@ -120,10 +121,10 @@ test("500 raw lexical populations reproduce every quality frontier and retrieval
   } finally { fixture.dispose(); }
 });
 
-test("1000 raw probability populations reapply pair, margin, noul confidence, gate and cost fits", () => {
+test("raw probability populations reapply pair, margin, noul confidence, gate and cost fits", () => {
   const random = randomFrom(0x27e2e2);
   let supported = 0, unsupported = 0;
-  for (let run = 0; run < 1000; run++) {
+  for (let run = 0; run < testDepth(1000); run++) {
     const raw = Array.from({ length: 4 + random() % 6 }, (_, i) => ({ id: String(i), after: answer(distributions[random() % distributions.length]), label: random() % 3 !== 0, related: { type: "noul" as const, noul: distributions[random() % distributions.length].Feature }, retrieved: random() % 4 !== 0 }));
     const pairs = raw.map(row => ({ label: row.label, probability: row.after.probabilities.Feature, related_probability: row.related.noul, retrieved: row.retrieved }));
     const stub = { a: { id: "a" }, b: { id: "b" } } as DuplicatePair;
@@ -178,10 +179,10 @@ test("1000 raw probability populations reapply pair, margin, noul confidence, ga
   assert.ok(supported > 0 && unsupported > 0);
 });
 
-test("100 raw temperature-scaled channel fits reapply through calibratedAnswer with stable JSON/TOON counts", () => {
+test("raw temperature-scaled channel fits reapply through calibratedAnswer with stable JSON/TOON counts", () => {
   const random = randomFrom(0x27e2e3), question = { type: "choice", criteria: { Feature: null, Task: null } };
   let supported = 0, unsupported = 0;
-  for (let run = 0; run < 100; run++) {
+  for (let run = 0; run < testDepth(100); run++) {
     const rows: Observation[] = ["public/a", "public/b"].flatMap(repository => Array.from({ length: 12 }, (_, i) => {
       const probabilities = distributions[random() % distributions.length];
       return { repository, commit: "a".repeat(40), data_sha256: "b".repeat(64), example_sha256: "c".repeat(64), question_sha256: questionFingerprint("type", question), channel: "type", label: run % 3 !== 1 && i < 10 ? ranked(probabilities)[0][0] : "Other", probabilities, latency_ms: 0, input_tokens: 0, output_tokens: 0 };

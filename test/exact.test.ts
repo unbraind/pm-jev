@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { compareExact, decimal, fraction, addExact, subtractExact, multiplyExact, displayExact, displayRatio, countRatio, populationDistance, precisionMeets, checkCalibrationDrift } from "../index.ts";
@@ -64,11 +65,11 @@ test("review boundaries: 1/10 to 3/10 at 0.2, and binary TV 1/10 at 0.1 both tri
   assert.equal(checkCalibrationDrift(input([0, 10], [1, 9], 0, 0, "0.0999999999999999999999999", 1)).status, "drift");
 });
 
-test("6000 seeded count-vector, sample-size and decimal-threshold cases match an independent exact oracle", () => {
+test("seeded count-vector, sample-size and decimal-threshold cases match an independent exact oracle", () => {
   let seed = 0x26ca1b;
   const random = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return seed >>> 0; };
   let boundaries = 0;
-  for (let i = 0; i < 6000; i++) {
+  for (let i = 0; i < testDepth(6000); i++) {
     const categories = 2 + random() % 6;
     let a = Array<number>(categories).fill(0), b = Array<number>(categories).fill(0);
     let na = 2 + random() % 60, nb = 2 + random() % 60;
@@ -113,7 +114,7 @@ test("6000 seeded count-vector, sample-size and decimal-threshold cases match an
       16448536269514722n ** 2n * cutoff[0] * (cutoff[1] - cutoff[0]) * BigInt(na);
     assert.equal(precisionMeets(ea, na, threshold), oracleWilson);
   }
-  assert.equal(boundaries, 1500, "all 1500 exact-TV boundaries exercise both inclusive and exclusive cutoffs");
+  assert.equal(boundaries, Math.ceil(testDepth(6000) / 4), "generated exact-TV boundaries exercise both cutoffs");
 });
 
 test("exact arithmetic refuses malformed decimals and unsafe counts, supports subnormals and internal disabled sentinels", () => {

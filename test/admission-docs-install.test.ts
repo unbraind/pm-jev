@@ -1,3 +1,4 @@
+import { testTime } from "./support/time.ts";
 import assert from "node:assert/strict";
 import type { ExecFileOptions } from "node:child_process";
 import { execFile } from "node:child_process";
@@ -20,7 +21,7 @@ function execute(bin: string, args: string[], options: ExecFileOptions) {
   return runFile(invocation.bin, invocation.args, { ...options, encoding: "utf8" });
 }
 
-test("documented admission commands run unchanged through npx and bunx against one packed install", { timeout: 600000 }, async t => {
+test("documented admission commands run unchanged through npx and bunx against one packed install", { timeout: testTime(600000) }, async t => {
   const root = resolve(".");
   const scratch = mkdtempSync(join(tmpdir(), "jev-admission-docs-"));
   const server = await endpoint();
@@ -30,7 +31,7 @@ test("documented admission commands run unchanged through npx and bunx against o
     SystemRoot: process.env.SystemRoot, ComSpec: process.env.ComSpec, USERPROFILE: scratch, TEMP: scratch, TMP: scratch,
     NPM_CONFIG_USERCONFIG: devNull, TMPDIR: scratch, GIT_CEILING_DIRECTORIES: scratch, npm_config_userconfig: devNull };
   try {
-    const packed = await execute("npm", ["pack", "--json", "--ignore-scripts", "--pack-destination", scratch], { cwd: root, env, timeout: 120000 });
+    const packed = await execute("npm", ["pack", "--json", "--ignore-scripts", "--pack-destination", scratch], { cwd: root, env, timeout: testTime(120000) });
     const [manifest] = JSON.parse(packed.stdout) as Array<{ files: Array<{ path: string }>; filename: string }>;
     for (const path of ["examples/decision-admission.json", "docs/decision-admission.md", "dist/index.js"]) assert.ok(manifest.files.some(file => file.path === path));
     const archive = join(scratch, manifest.filename);
@@ -41,8 +42,8 @@ test("documented admission commands run unchanged through npx and bunx against o
     const lock = JSON.parse(readFileSync(join(root, "package-lock.json"), "utf8")) as { packages: Record<string, { version: string }> };
     const host = JSON.parse(readFileSync(join(local, "node_modules/@unbrained/pm-cli/package.json"), "utf8")) as { version: string };
     assert.equal(host.version, lock.packages["node_modules/@unbrained/pm-cli"].version);
-    await execute("npx", ["--no-install", "pm", "init", "synthetic", "--defaults", "--agent-guidance", "skip"], { cwd: local, env, timeout: 120000 });
-    await execute("npx", ["--no-install", "pm", "package", "install", "./node_modules/pm-jev"], { cwd: local, env, timeout: 120000 });
+    await execute("npx", ["--no-install", "pm", "init", "synthetic", "--defaults", "--agent-guidance", "skip"], { cwd: local, env, timeout: testTime(120000) });
+    await execute("npx", ["--no-install", "pm", "package", "install", "./node_modules/pm-jev"], { cwd: local, env, timeout: testTime(120000) });
     const guide = readFileSync(join(local, "node_modules/pm-jev/docs/decision-admission.md"), "utf8");
     const block = guide.match(/```sh\n([\s\S]*?)\n```/); assert.ok(block);
     const commands = block[1].split("\n");
@@ -53,7 +54,7 @@ test("documented admission commands run unchanged through npx and bunx against o
     const checkCommand = async (command: string) => {
       const [bin, ...args] = command.split(" ");
       assert.ok(bin === "npx" || bin === "bunx"); assert.ok(args.includes("--no-install"));
-      const result = await execute(bin, args, { cwd: local, env, timeout: 120000 });
+      const result = await execute(bin, args, { cwd: local, env, timeout: testTime(120000) });
       const receipt = (args.includes("--json") ? JSON.parse(result.stdout) : decode(result.stdout)) as { ok: boolean; questions: number; options: number; inference_calls: number; mutations: number };
       assert.equal(receipt.ok, true); assert.equal(receipt.questions, 3); assert.equal(receipt.options, 7);
       assert.equal(receipt.inference_calls, 0); assert.equal(receipt.mutations, 0); receipts.push(receipt);
@@ -73,9 +74,9 @@ test("documented admission commands run unchanged through npx and bunx against o
     assert.deepEqual(trackerSnapshot(join(local, ".agents/pm")), before); assert.equal(server.requests.length, 0);
     const example = commands[0];
     assert.ok(readFileSync(join(local, "node_modules/pm-jev/README.md"), "utf8").includes(`\`${example}\``));
-    const help = await execute("npx", ["--no-install", "pm", "jev", "admit", "--help"], { cwd: local, env, timeout: 120000 });
+    const help = await execute("npx", ["--no-install", "pm", "jev", "admit", "--help"], { cwd: local, env, timeout: testTime(120000) });
     assert.ok(help.stdout.includes(example));
-    await assert.rejects(execute("npx", ["--no-install", "pm", "jev", "admit", "--batch", "missing.json", "--json"], { cwd: local, env, timeout: 120000 }), error => {
+    await assert.rejects(execute("npx", ["--no-install", "pm", "jev", "admit", "--batch", "missing.json", "--json"], { cwd: local, env, timeout: testTime(120000) }), error => {
       const failed = error as { code: number; stdout: string }; assert.equal(failed.code, 2);
       const report = JSON.parse(failed.stdout) as { refusal: { code: string; remedy: string }; admission?: unknown };
       assert.equal(report.refusal.code, "invalid_input"); assert.equal(report.admission, undefined);
@@ -83,7 +84,7 @@ test("documented admission commands run unchanged through npx and bunx against o
     });
     server.setAdmissionReply((request, response) => response.end(JSON.stringify(request.url === "/api/tags" ? { models: [{ name: "tev1:4b", digest: "b".repeat(64) }] } : admissionMetadata(2))));
     const [bin, ...args] = example.split(" ");
-    await assert.rejects(execute(bin, args, { cwd: local, env, timeout: 120000 }), error => {
+    await assert.rejects(execute(bin, args, { cwd: local, env, timeout: testTime(120000) }), error => {
       const failed = error as { code: number; stdout: string }; assert.equal(failed.code, 1);
       const report = JSON.parse(failed.stdout) as { ok: boolean; minimum_prompt_tokens_to_remove: number; remedy: string };
       assert.equal(report.ok, false); assert.ok(report.minimum_prompt_tokens_to_remove > 0); assert.match(report.remedy, /Remove at least/); return true;

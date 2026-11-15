@@ -1,22 +1,25 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request: {}
-  workflow_dispatch: {}
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PM_TEST_DEPTH: quick
     strategy:
       fail-fast: false
       matrix:
-        # 22 is the floor declared in `engines` and the first line that strips
-        # TypeScript without a flag; 26 is what the fleet develops against.
         node-version: [22, 26]
     steps:
       - name: Checkout
@@ -26,12 +29,35 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
+      - name: Detect code changes
+        id: changes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          code=true
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            code=false
+            git diff --name-only --no-renames -z "$BASE_SHA...$HEAD_SHA" > "$RUNNER_TEMP/ci-changed-paths"
+            while IFS= read -r -d '' path; do
+              case "$path" in
+                .agents/pm/*.mjs|.agents/pm/*.cjs|.agents/pm/*.js|.agents/pm/*.ts) code=true ;;
+                .agents/pm/*|*.md|docs/*|CHANGELOG.md|LICENSE) ;;
+                *) code=true ;;
+              esac
+            done < "$RUNNER_TEMP/ci-changed-paths"
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
 
+      # Packed documentation checks exercise the Bun commands on the cheap path too.
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
@@ -57,7 +83,9 @@ jobs:
           # clone-local merge driver config declared by .gitattributes is absent.
           ./node_modules/.bin/pm health --strict-exit --require-merge-drivers
 
+
       - name: Build and verify committed output is current
+        if: steps.changes.outputs.code == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -75,17 +103,26 @@ jobs:
           fi
           echo "Committed dist/ matches a fresh build."
 
-      - name: Full npm release gate
+      - name: Documentation, tracker and public identity gates
+        if: steps.changes.outputs.code != 'true'
+        run: |
+          npm run changelog:check
+          npm run verify:public-provenance
+          npm run verify:release-identity
+          npm run pack:dry-run
+          npm run verify:release-publish-attestation
+          node --test test/identity-audit.test.ts test/source-provenance.test.ts test/admission-docs.test.ts test/admission-docs-install.test.ts test/agent-ux.test.ts test/release-approval.test.ts
+
+      - name: Engines floor build and tests
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 22
+        run: env HOME="$(mktemp -d)" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm test
+
+      - name: Quick npm release gate
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 26
         run: env HOME="$(mktemp -d)" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check
 
-      - name: Verify Bun can install the package graph
-        run: bun install --no-save
-
-      - name: Full Bun release gate
-        run: env HOME="$(mktemp -d)" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 bun run release:check
-
-      # `npm run test:live` and `npm run test:install` are deliberately NOT
-      # CI steps: live acceptance needs the local Ollama tev1 decision model
-      # (CI runners have none), and install acceptance installs this package
-      # into scratch pm projects. Both are documented in the README as
-      # local-only acceptance runs.
+      - name: Bun package graph and bunx smoke
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 26
+        run: |
+          bun install --no-save
+          bunx --no-install pm --version

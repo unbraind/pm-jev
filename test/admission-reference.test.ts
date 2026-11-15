@@ -1,3 +1,4 @@
+import { testTime } from "./support/time.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Questions, SystemOneResult } from "../index.ts";
@@ -70,7 +71,7 @@ test("reference canonicalization stays linear on colon-heavy and oversized input
   assert.equal(ollamaModelName("a" + ":".repeat(600)), undefined);
   assert.equal(ollamaModelName(`registry.example:5000/team/${"m".repeat(80)}:${"t".repeat(80)}`), `registry.example:5000/team/${"m".repeat(80)}:${"t".repeat(80)}`);
   assert.equal(ollamaModelName("x".repeat(641)), undefined);
-  assert.ok(performance.now() - started < 2000, "canonicalization must not scale polynomially with ':' runs (the old regex needs ~13 s on this input)");
+  assert.ok(performance.now() - started < testTime(2000), "canonicalization must not scale polynomially with ':' runs (the old regex needs ~13 s on this input)");
 });
 
 
