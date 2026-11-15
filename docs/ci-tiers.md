@@ -67,3 +67,5 @@ Local quick proof: 452 tests passed; all 49 source files reported at 100% in
 every c8 dimension. Suite time 14m02.8s; complete command approximately 14m49s
 on the contended development host. Touched quick suites passed 136 tests in
 8m15s. These are not a same-hardware quick/full comparison.
+
+The documentation gate also parses `docs/calibration-drift-evidence.json`, rejecting malformed published JSON.

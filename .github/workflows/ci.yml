@@ -111,6 +111,7 @@ jobs:
           npm run verify:release-identity
           npm run pack:dry-run
           npm run verify:release-publish-attestation
+          node -e 'JSON.parse(require("node:fs").readFileSync("docs/calibration-drift-evidence.json", "utf8"))'
           node --test test/identity-audit.test.ts test/source-provenance.test.ts test/admission-docs.test.ts test/admission-docs-install.test.ts test/agent-ux.test.ts test/release-approval.test.ts
 
       - name: Engines floor build and tests
