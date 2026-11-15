@@ -130,7 +130,8 @@ test("this repository's own workflows pass the gate", () => {
   let exitCode = 0;
   report(verify(root), (line) => lines.push(line), (code) => { exitCode = code; });
   assert.equal(exitCode, 0, `the gate must pass on this repository:\n${lines.join("\n")}`);
-  assert.ok(lines.some((line) => line.includes("every publish invocation is attested")));
+  assert.equal(verify(root).recognition.kind, "recognized");
+  assert.ok(lines.some((line) => line.includes("canonical")));
 });
 
 test("the launcher runs only as the process entry point", () => {

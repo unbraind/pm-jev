@@ -21,3 +21,9 @@ Implementation behavior belongs to the pinned pm-ops release harness. Package-ow
 approval, script and permission contracts remain checked locally.
 
 Tracking: [pm-jev-0w3q](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/epics/pm-jev-0w3q.toon)
+
+Round 2 preserves package changelog and publication checks independently of the
+shared release implementation. Obsolete copied-workflow verifiers, planners and
+mutation helpers are retired where present; active package hooks remain tested.
+Coverage thresholds are unchanged. Package-specific restored tests and exact gate
+receipts are recorded in the rollout tracker item.
