@@ -18,7 +18,7 @@ test('docs gate accepts valid published evidence and refuses malformed evidence'
     mkdirSync(join(root, 'docs'));
     for (const [body, status] of [['{}', 0], ['{broken', 1]] as const) {
       writeFileSync(join(root, 'docs/calibration-drift-evidence.json'), body);
-      const result = spawnSync('bash', ['-c', command], { cwd: root, encoding: 'utf8' });
+      const result = spawnSync(process.execPath, ['-e', command.slice("node -e '".length, -1)], { cwd: root, encoding: 'utf8' });
       assert.equal(result.status, status, result.stderr);
     }
   } finally { rmSync(root, { recursive: true, force: true }); }

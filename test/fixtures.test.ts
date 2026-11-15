@@ -34,7 +34,7 @@ for (const [name, paths] of [["native", path], ["win32", path.win32]] as const) 
 
 for (const initialized of [false, true]) test(`project owns its temporary tracker inside a Git parent (tracker=${initialized})`, async () => {
   const parent = mkdtempSync(path.join(tmpdir(), "jev-parent-"));
-  const keys = ["TMPDIR", "TMP", "TEMP", "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "PM_PATH"];
+  const keys = ["TMPDIR", "TMP", "TEMP", "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "PM_PATH", "GIT_COMMON_DIR"];
   const saved = keys.map(key => [key, process.env[key]] as const);
   try {
     const env = { ...process.env };
@@ -50,6 +50,7 @@ for (const initialized of [false, true]) test(`project owns its temporary tracke
     process.env.GIT_DIR = path.join(parent, ".git");
     process.env.GIT_WORK_TREE = parent;
     process.env.GIT_INDEX_FILE = path.join(parent, ".git/custom-index");
+    process.env.GIT_COMMON_DIR = path.join(parent, ".git");
     process.env.PM_PATH = path.join(parent, ".agents/pm");
     const fixture = await project();
     try {
@@ -57,7 +58,7 @@ for (const initialized of [false, true]) test(`project owns its temporary tracke
       assert.equal(fixture.pmRoot, path.join(fixture.cwd, ".agents/pm"));
       assert.ok(existsSync(path.join(fixture.pmRoot, "settings.json")));
       assert.equal((await fixture.pm.listAllComplete()).items.length, 0);
-      for (const key of keys.slice(3)) assert.equal(process.env[key], key === "GIT_DIR" ? path.join(parent, ".git") : key === "GIT_WORK_TREE" ? parent : key === "GIT_INDEX_FILE" ? path.join(parent, ".git/custom-index") : path.join(parent, ".agents/pm"));
+      for (const key of keys.slice(3)) assert.equal(process.env[key], ["GIT_DIR", "GIT_COMMON_DIR"].includes(key) ? path.join(parent, ".git") : key === "GIT_WORK_TREE" ? parent : key === "GIT_INDEX_FILE" ? path.join(parent, ".git/custom-index") : path.join(parent, ".agents/pm"));
     } finally { fixture.dispose(); }
     assert.deepEqual(trackerSnapshot(parent), before);
   } finally {

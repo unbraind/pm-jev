@@ -69,3 +69,9 @@ on the contended development host. Touched quick suites passed 136 tests in
 8m15s. These are not a same-hardware quick/full comparison.
 
 The documentation gate also parses `docs/calibration-drift-evidence.json`, rejecting malformed published JSON.
+
+## Review round E
+
+PRRT_kwDOU8IMzs63s2nE and PRRT_kwDOU8IMzs63t535 are valid. Execute the extracted Node expression directly; scrub GIT_COMMON_DIR from git init and withoutGit fixtures, with inherited common-directory restoration exercised. Targeted fixtures/workflow tests, typecheck, lint and YAML passed. Greptile failure is the review status, not an Actions test log.
+
+The cheap tier excludes only inert tracker record formats; executable tracker changes keep product gates. `test/ci-routing.test.ts` executes each detector with inert and executable tracker paths. Product deadlines, full-depth cases and coverage thresholds are unchanged.

@@ -15,7 +15,7 @@ import { admissionMetadata } from "./admission-fixtures.ts";
 
 /** Run a plain-tracker regression with no git executable or enclosing repository discovery. */
 export async function withoutGit<T>(cwd: string, run: () => Promise<T>): Promise<T> {
-  const settings: Record<string, string | undefined> = { PATH: "", GIT_CEILING_DIRECTORIES: path.dirname(cwd), GIT_DIR: undefined, GIT_WORK_TREE: undefined, GIT_INDEX_FILE: undefined, PM_PATH: undefined };
+  const settings: Record<string, string | undefined> = { PATH: "", GIT_CEILING_DIRECTORIES: path.dirname(cwd), GIT_DIR: undefined, GIT_WORK_TREE: undefined, GIT_INDEX_FILE: undefined, GIT_COMMON_DIR: undefined, PM_PATH: undefined };
   const previous = Object.keys(settings).map(key => [key, process.env[key]] as const);
   for (const [key, value] of Object.entries(settings)) {
     if (value === undefined) delete process.env[key]; else process.env[key] = value;
