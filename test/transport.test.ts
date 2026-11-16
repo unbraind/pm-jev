@@ -1,3 +1,4 @@
+import { testTime } from "./support/time.ts";
 import { writeFileSync } from "node:fs";
 import { getSettingsPath } from "@unbrained/pm-cli/sdk";
 import assert from "node:assert/strict";
@@ -36,7 +37,7 @@ test("SDK retries rate and overload responses at most twice, under a total deadl
     server.setReply((_, response) => { response.statusCode = 529; response.setHeader("retry-after-ms", "1000"); response.end(); });
     const start = Date.now();
     await assert.rejects(runDecision(client, { ...resolved.config, totalDeadlineMs: 40 }, "synthetic", questions), /total deadline/);
-    assert.ok(Date.now() - start < 500);
+    assert.ok(Date.now() - start < testTime(500));
     server.setReply(() => {});
     const impatient = new TypeSafeClient({ apiKey: "ollama", baseURL: server.url, timeout: 20, logLevel: "off", retry: { maxRetries: 0 } });
     await assert.rejects(runDecision(impatient, resolved.config, "synthetic", questions), /timed out/);
@@ -85,7 +86,7 @@ test("discovery falls back to capability-filtered Ollama tags and diagnoses miss
     const resolved = await resolveJevEndpoint(fixture.pmRoot, process.env);
     const start = Date.now();
     await assert.rejects(listDecisionModels({ ...resolved, config: { ...resolved.config, totalDeadlineMs: 20 } }, process.env), /deadline/);
-    assert.ok(Date.now() - start < 500);
+    assert.ok(Date.now() - start < testTime(500));
   });
 });
 

@@ -1,3 +1,4 @@
+import { testTime } from "./support/time.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
@@ -220,16 +221,16 @@ test("built extension runs through the real host parser and preserves refusal ex
     const cli = resolve("node_modules/@unbrained/pm-cli/dist/cli.js");
     const base = [cli, "--pm-path", fixture.pmRoot, "jev", "policy", "--observations", resolve("examples/cost-policy.json"), "--false-duplicate-cost", "20", "--wrong-type-cost", "10", "--missed-candidate-cost", "1"];
     const env = { ...process.env, PATH: "", PM_PATH: fixture.pmRoot, PM_GLOBAL_PATH: join(fixture.cwd, "global"), GIT_CEILING_DIRECTORIES: dirname(fixture.cwd) };
-    const json = spawnSync(process.execPath, [...base, "--json"], { cwd: fixture.cwd, env, encoding: "utf8", timeout: 60000 });
+    const json = spawnSync(process.execPath, [...base, "--json"], { cwd: fixture.cwd, env, encoding: "utf8", timeout: testTime(60000) });
     assert.equal(json.status, 0, json.stderr);
     assert.equal((JSON.parse(json.stdout) as CostPolicyReport).policy.threshold, 0.95);
-    const toon = spawnSync(process.execPath, base, { cwd: fixture.cwd, env, encoding: "utf8", timeout: 60000 });
+    const toon = spawnSync(process.execPath, base, { cwd: fixture.cwd, env, encoding: "utf8", timeout: testTime(60000) });
     assert.equal(toon.status, 0, toon.stderr);
     assert.match(toon.stdout, /threshold: 0.95/);
     assert.match(toon.stdout, /heldout_cost/);
     const invalid = [...base];
     invalid[invalid.indexOf("--false-duplicate-cost") + 1] = "-1";
-    const refused = spawnSync(process.execPath, [...invalid, "--json"], { cwd: fixture.cwd, env, encoding: "utf8", timeout: 60000 });
+    const refused = spawnSync(process.execPath, [...invalid, "--json"], { cwd: fixture.cwd, env, encoding: "utf8", timeout: testTime(60000) });
     assert.equal(refused.status, 2, refused.stderr);
     assert.equal((JSON.parse(refused.stdout) as { refusal: { code: string } }).refusal.code, "invalid_costs");
     assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);

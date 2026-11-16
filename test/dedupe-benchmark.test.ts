@@ -1,3 +1,4 @@
+import { testTime } from "./support/time.ts";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
@@ -17,7 +18,7 @@ test("one-shot benchmark refuses non-empty scratch before source collection and 
     if (name === "pm-source") mkdirSync(entry);
     else writeFileSync(entry, "retained evidence");
     const result = spawnSync(process.execPath, ["test/dedupe-calibration.acceptance.ts", join(root, "missing-fleet"), scratch, output], {
-      cwd: new URL("..", import.meta.url), encoding: "utf8", timeout: 30_000,
+      cwd: new URL("..", import.meta.url), encoding: "utf8", timeout: testTime(30_000),
       env: { ...process.env, PATH: "" },
     });
     assert.ifError(result.error);
@@ -39,7 +40,7 @@ test("precision-first benchmark refuses reused collection and inference before t
   const output = join(scratch, "report.json");
   writeFileSync(output, "report retained");
   for (const mode of ["collect", "infer"]) {
-    const result = spawnSync(process.execPath, ["test/duplicate-quality.acceptance.ts", mode, "missing-public-fleet", scratch, output], { encoding: "utf8", timeout: 60_000, cwd: new URL("..", import.meta.url), env: { ...process.env, PATH: "" } });
+    const result = spawnSync(process.execPath, ["test/duplicate-quality.acceptance.ts", mode, "missing-public-fleet", scratch, output], { encoding: "utf8", timeout: testTime(60_000), cwd: new URL("..", import.meta.url), env: { ...process.env, PATH: "" } });
     assert.equal(result.status, 1);
     assert.match(result.stderr, mode === "collect" ? /Collection requires an empty scratch directory/ : /EEXIST/);
     assert.equal(readFileSync(output, "utf8"), "report retained");

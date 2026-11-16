@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -47,7 +48,7 @@ test("registry propagation: 500 seeded registry and batch permutations retain ex
     let seed = 0x65a17;
     /** Reproduce random registry names and orderings without sharing implementation logic. */
     const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
-    for (let operation = 0; operation < 500; operation++) {
+    for (let operation = 0; operation < testDepth(500); operation++) {
       const name = `custom_${random()}`, alias = `alias_${random()}`;
       const kind = random() % 3;
       const registry = new RelationshipKindRegistry().register({ ...REGISTRY_DEFINITIONS[kind], kind: name, aliases: [alias] });

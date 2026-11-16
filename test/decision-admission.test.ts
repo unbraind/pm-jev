@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -213,7 +214,7 @@ test("every emitted numeric field rejects extremes and contradictory affirmative
   });
 });
 
-test("500 seeded SDK read-back sequences preserve replayed native states and every typed option", async () => {
+test("seeded SDK read-back sequences preserve replayed native states and every typed option", async () => {
   await scenario(async (fixture, server) => {
     const { config } = await resolveJevEndpoint(fixture.pmRoot, { PM_JEV_BASE_URL: server.url });
     const created = await fixture.pm.create({ type: "Task", title: "Initial", unset: ["parent", "blocked_by", "goal", "objective"] });
@@ -222,7 +223,7 @@ test("500 seeded SDK read-back sequences preserve replayed native states and eve
     const next = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return seed >>> 0; };
     await withoutGit(fixture.cwd, async () => {
       let reference: ItemMetadata = created.item;
-      for (let sequence = 0; sequence < 500; sequence++) {
+      for (let sequence = 0; sequence < testDepth(500); sequence++) {
         const replay = snapshots[next() % snapshots.length];
         const text = ["漢 😀", " é ", "\r\n line \r\n", "constructor", "__proto__"][next() % 5];
         // The reference consumes canonical SDK write results, never a handwritten normalizer.

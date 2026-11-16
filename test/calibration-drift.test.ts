@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import fs, { readFileSync, writeFileSync } from "node:fs";
@@ -139,10 +140,10 @@ function referenceDistance(data: DriftInput, key: "task" | "type" | "input_bucke
   return [...new Set([...a, ...b].map(row => row[key]))].reduce((sum, category) => sum + Math.abs(a.filter(row => row[key] === category).length / a.length - b.filter(row => row[key] === category).length / b.length), 0) / 2;
 }
 
-test("500 seeded model-based operation sequences include old replays, later labels, CRLF and field ordering", () => {
+test("seeded model-based operation sequences include old replays, later labels, CRLF and field ordering", () => {
   let seed = 20261025;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
-  for (let sequence = 0; sequence < 500; sequence++) {
+  for (let sequence = 0; sequence < testDepth(500); sequence++) {
     let state = fixture();
     const saved = [structuredClone(state)];
     for (let step = 0; step < 8; step++) {

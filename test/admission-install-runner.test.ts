@@ -1,3 +1,4 @@
+import { testTime } from "./support/time.ts";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
@@ -106,7 +107,7 @@ test("npm caller paths select the requested CLI and fall back only to verified N
   assert.throws(() => npmInvocation("npm", [], installation), /valid npm_execpath/);
 });
 
-test("Node packed admission smoke stays offline and logs an explicit Bun skip without Bun in PATH", { timeout: 600000 }, async () => {
+test("Node packed admission smoke stays offline and logs an explicit Bun skip without Bun in PATH", { timeout: testTime(600000) }, async () => {
   const scratch = mkdtempSync(join(tmpdir(), "jev-node-only-"));
   try {
     // Include Node, the npm shell, and the existing npm module, without Bun or package-manager shims.
@@ -116,7 +117,7 @@ test("Node packed admission smoke stays offline and logs an explicit Bun skip wi
     copyFileSync(process.execPath, join(scratch, process.platform === "win32" ? "node.exe" : "node"));
     if (process.platform !== "win32") symlinkSync("/bin/sh", join(scratch, "sh"));
     const result = await execute(process.execPath, ["--test", "--test-concurrency=2", "test/admission-docs-install.test.ts"], {
-      cwd: resolve("."), env: { PATH: scratch, SystemRoot: process.env.SystemRoot }, timeout: 540000, maxBuffer: 1024 * 1024,
+      cwd: resolve("."), env: { PATH: scratch, SystemRoot: process.env.SystemRoot, PM_TEST_TIME_SCALE: process.env.PM_TEST_TIME_SCALE, PM_TEST_DEPTH: process.env.PM_TEST_DEPTH }, timeout: testTime(540000), maxBuffer: 1024 * 1024,
     });
     assert.match(result.stdout, /Bun is unavailable; Node admission coverage remains active/);
     assert.match(result.stdout, /2 commands passed offline/);

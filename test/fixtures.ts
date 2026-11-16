@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path, { join } from "node:path";
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createExtensionCommandSdk, PmClient, resolveImplicitPmRoot } from "@unbrained/pm-cli/sdk";
+import { createExtensionCommandSdk, PmClient } from "@unbrained/pm-cli/sdk";
 import { createExtensionTestHarness } from "@unbrained/pm-cli/sdk/testing";
 import extension from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
@@ -15,9 +15,11 @@ import { admissionMetadata } from "./admission-fixtures.ts";
 
 /** Run a plain-tracker regression with no git executable or enclosing repository discovery. */
 export async function withoutGit<T>(cwd: string, run: () => Promise<T>): Promise<T> {
-  const settings = { PATH: "", GIT_CEILING_DIRECTORIES: path.dirname(cwd) };
+  const settings: Record<string, string | undefined> = { PATH: "", GIT_CEILING_DIRECTORIES: path.dirname(cwd), GIT_DIR: undefined, GIT_WORK_TREE: undefined, GIT_INDEX_FILE: undefined, GIT_COMMON_DIR: undefined, PM_PATH: undefined };
   const previous = Object.keys(settings).map(key => [key, process.env[key]] as const);
-  Object.assign(process.env, settings);
+  for (const [key, value] of Object.entries(settings)) {
+    if (value === undefined) delete process.env[key]; else process.env[key] = value;
+  }
   try { return await run(); }
   finally {
     for (const [key, value] of previous) {
@@ -30,9 +32,9 @@ export async function withoutGit<T>(cwd: string, run: () => Promise<T>): Promise
 /** Create an isolated real tracker through the host SDK and bind its actual client to the harness. */
 export async function project() {
   const cwd = mkdtempSync(join(tmpdir(), "jev-test-"));
-  const pmRoot = resolveImplicitPmRoot(cwd);
+  const pmRoot = join(cwd, ".agents/pm");
   const pm = new PmClient({ cwd, pmRoot, noExtensions: true, author: "fixture" });
-  await pm.init("synthetic", { defaults: true, agentGuidance: "skip" });
+  await withoutGit(cwd, () => pm.init("synthetic", { defaults: true, agentGuidance: "skip" }));
   const harness = await createExtensionTestHarness(extension, { capabilities: ["commands", "schema", "hooks"] });
   const bound = { ...harness,
     /** Supply the real scratch client through the public host SDK factory. */

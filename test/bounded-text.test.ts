@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { boundedText } from "../bounded-text.ts";
@@ -79,7 +80,7 @@ test("seeded astral fuzz preserves projection bounds and well-formed admission s
   let seed = 0x92c0ffee;
   /** Reproducible unsigned random integer independent of the implementation. */
   function random(): number { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; }
-  for (let sample = 0; sample < 128; sample++) {
+  for (let sample = 0; sample < testDepth(128); sample++) {
     let value = sample % 2 ? "a" : "";
     while (value.length < 4100) value += random() % 3 ? String.fromCodePoint(0x10000 + random() % 0x100000) : "a";
     for (const limit of [128, 320, 500, 1600, 4000, random() % 4101]) {

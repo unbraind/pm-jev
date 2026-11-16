@@ -1,3 +1,4 @@
+import { testTime } from "./support/time.ts";
 import assert from "node:assert/strict";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import test from "node:test";
@@ -271,7 +272,7 @@ test("one batch deadline aborts in-flight inference and forbids later requests a
     const started = performance.now();
     const response = await fixture.harness.runCommand({ command: "jev triage", pmRoot: fixture.pmRoot, options: { open: true, apply: true } });
     assert.equal(summary(response).failed, 3);
-    assert.ok(performance.now() - started < 10000);
+    assert.ok(performance.now() - started < testTime(10000));
     assert.ok(server.requests.length <= 1);
     for (const item of (await fixture.pm.listAllComplete()).items) {
       assert.equal(item.type, "Feature");

@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -90,7 +91,7 @@ test("uncertainty, balancing, caps, cost exhaustion and zero budgets have explic
 test("exact inclusive count boundaries and seeded equal-score ties do not use rounded displays", () => {
   let seed = 0x12345;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
-  for (let iteration = 0; iteration < 500; iteration++) {
+  for (let iteration = 0; iteration < testDepth(500); iteration++) {
     const denominator = 2 + random() % 499999999, numerator = 1 + random() % (denominator - 1);
     const uncertainty = { numerator, denominator };
     const input = { ...example(), policy: { ...example().policy, min_uncertainty: uncertainty }, cases: [row("equal", { uncertainty }), row("equivalent", { uncertainty: { numerator: numerator * 2, denominator: denominator * 2 }, bucket: "other" }), row("below", { uncertainty: { numerator: numerator - 1, denominator } })] };
@@ -228,7 +229,7 @@ test("package parsers never admit a valid identity by silently dropping its malf
   for (const parse of invalid) assert.throws(parse, "whole-document parsers must refuse ambiguous malformed input rather than report a partial success");
 });
 
-test("500 seeded operation sequences replay earlier inputs and read unchanged native SDK state", async () => {
+test("seeded operation sequences replay earlier inputs and read unchanged native SDK state", async () => {
   const f = await project(); let seed = 0x5e1ec7;
   try { await withoutGit(f.cwd, async () => {
     const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
@@ -238,7 +239,7 @@ test("500 seeded operation sequences replay earlier inputs and read unchanged na
     const nativeReference = structuredClone((await f.pm.listAllComplete({ includeBody: true })).items);
     const bytes = trackerSnapshot(f.pmRoot); const prior: LabelQueueInput[] = [example()];
     const adversarialCopies = malformedLabelCopies(example().cases[0]);
-    for (let sequence = 0; sequence < 500; sequence++) {
+    for (let sequence = 0; sequence < testDepth(500); sequence++) {
       let input = structuredClone(prior[random() % prior.length]);
       for (let operation = 0; operation < 6; operation++) {
         const action = random() % 8;

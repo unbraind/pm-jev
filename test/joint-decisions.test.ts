@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -159,7 +160,7 @@ test("host graph validates the entire selected batch on one real non-git tracker
   }); } finally { f.dispose(); }
 });
 
-test("seeded model: 500 random operation sequences replay older documents and JSON whitespace variants without changing SDK-read state", async () => {
+test("seeded model: random operation sequences replay older documents and JSON whitespace variants without changing SDK-read state", async () => {
   const f = await project();
   let seed = 0x79a71;
   /** A reproducible generator independent of the implementation. */
@@ -173,7 +174,7 @@ test("seeded model: 500 random operation sequences replay older documents and JS
     for (let i = 0; i < 6; i++) { const next = `custom_${random()}`; await f.pm.schemaRemapStatus(prior, next, {}); prior = next; }
     const referenceState = structuredClone((await f.pm.listAllComplete({ includeBody: true })).items);
     const history = [batch()];
-    for (let sequence = 0; sequence < 500; sequence++) {
+    for (let sequence = 0; sequence < testDepth(500); sequence++) {
       let raw = batch();
       for (let operation = 0; operation < 8; operation++) {
         const action = random() % 7;

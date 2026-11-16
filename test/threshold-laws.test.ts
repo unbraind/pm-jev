@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { encode, decode } from "@toon-format/toon";
@@ -80,12 +81,12 @@ test("noisy stored probabilities fit a boundary accepted identically by numeric 
   }
 });
 
-test("2000 seeded calibration sets satisfy reapplication and JSON/TOON persistence laws", () => {
+test("seeded calibration sets satisfy reapplication and JSON/TOON persistence laws", () => {
   let seed = 0x26f17a;
   const random = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return seed >>> 0; };
   const scores: readonly [number, number][] = [[0, 1], [1, 0], [0.5, 0.5], [0.8, 0.20000000000000004], [0.8, 0.19999999999999998], [0.9, 0.1], [0.6, 0.4], [0.5000000000000001, 0.49999999999999994], [Number.MIN_VALUE, 1], [1, Number.MIN_VALUE]];
   let enabled = 0, disabled = 0;
-  for (let run = 0; run < 2000; run++) {
+  for (let run = 0; run < testDepth(2000); run++) {
     const rows = Array.from({ length: 4 + random() % 9 }, (_, i) => {
       const [a, b] = scores[random() % scores.length];
       const row = observation(i, a, b, random() % 4 ? "Feature" : "Task", random() % 2 ? "Task" : "Feature");
@@ -111,10 +112,10 @@ test("2000 seeded calibration sets satisfy reapplication and JSON/TOON persisten
   assert.ok(enabled > 0 && disabled > 0);
 });
 
-test("1000 seeded unsupported policies never throw and retain released metric semantics through serialization", () => {
+test("seeded unsupported policies never throw and retain released metric semantics through serialization", () => {
   let seed = 0x26d15a;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
-  for (let run = 0; run < 1000; run++) {
+  for (let run = 0; run < testDepth(1000); run++) {
     const rows = Array.from({ length: random() % 3 }, () => ({ label: random() % 2 === 0, probability: [0, 0.5, 0.8, 1][random() % 4], related_probability: random() % 2, retrieved: random() % 2 === 0 }));
     const legacy = fitPairThreshold(rows, "duplicate", { threshold: 0.8, relatedThreshold: 0.8 }, false);
     const fitted = fitPairCutoff(rows, "duplicate", { threshold: 0.8, relatedThreshold: 0.8 }, false);
@@ -130,11 +131,11 @@ test("1000 seeded unsupported policies never throw and retain released metric se
   }
 });
 
-test("500 seeded scalar pair, quality and cost fits retain decisions across JSON/TOON round trips", () => {
+test("seeded scalar pair, quality and cost fits retain decisions across JSON/TOON round trips", () => {
   let seed = 0x26c07f;
   const random = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return seed >>> 0; };
   const values = [0, 0.2, 0.20000000000000004, 0.5, 0.8, 1];
-  for (let run = 0; run < 500; run++) {
+  for (let run = 0; run < testDepth(500); run++) {
     const rows = Array.from({ length: 4 + random() % 5 }, () => ({ label: random() % 2 === 0, probability: values[random() % values.length], related_probability: values[random() % values.length], retrieved: random() % 4 !== 0, lexical: values[random() % values.length] }));
     const pair = fitPairCutoff(rows, "duplicate", { threshold: 0.8, relatedThreshold: 0.8 }, false);
     const baseline = pairMetrics(rows, "duplicate", { threshold: pair, relatedThreshold: 0.8 });
