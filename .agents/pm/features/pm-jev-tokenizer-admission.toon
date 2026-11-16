@@ -2,13 +2,18 @@ id: pm-jev-tokenizer-admission
 title: Refuse local decisions that exceed digest-bound tokenizer context
 description: "Add exact rendered decision prompt admission bound to an immutable local model digest, preserving all typed questions and options."
 type: Feature
-status: in_progress
+status: closed
 priority: 1
 tags[4]: admission,decision,"gh:unbraind/pm-jev#92",tokenizer
 created_at: "2026-11-05T04:39:51.590Z"
-updated_at: "2026-11-05T18:14:04.718Z"
+updated_at: "2026-11-16T20:32:09.910Z"
+closed_at: "2026-11-16T20:32:09.801Z"
+completed_at: "2026-11-16T20:32:09.801Z"
 author: codex-agent
 acceptance_criteria: Long multibyte state passing byte heuristics refuses before inference when it exceeds the pinned model context; valid short typed batches retain every option and question; one receipt identifies the smallest token reduction needed.
+resolution: Implemented and merged in #92 (c4f8fd6).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #92 as c4f8fd6; checks successful at head 689ba33: CodeQL, codeql, test (22), test (26)."
 comments[53]{created_at,author,text}:
   "2026-11-05T04:40:17.822Z",codex-agent,"Overlap rechecked against current pm-jev main, host SDK and pm-context/pm-rl/pm-rlm: current code has UTF-8 budgets, decision capability discovery, calibrated digest checks and usage accounting; host output token budgets describe emitted context. None admits actual model-template-question input fit. This feature belongs at runDecision before local inference. No import/export/sync, journal, mutation, status-role or shared persistent state is added; those generic contracts remain delegated to existing SDK paths."
   "2026-11-05T04:54:50.735Z",codex-agent,"Implemented strict shared batch admission, the typed SDK receipt/refusals and jev admit. Both metadata and inference use a full sha256 model reference after one alias resolution. Initial supported profile pins the published Tev1 systemone template and reconstructs the native qwen35 BPE tokenizer from model metadata, including every question and option. Read-only no-git public acceptance: 26 tracker items read, 8 samples, 24 questions and 56 options retained; prompt maxima 158..298 tokens; receipts at most 484 bytes. Native usage independently matched 210 counted tokens. A 35,450-byte multibyte stress document counted 14,125 tokens against num_ctx 8,192 and refused with an exact 5,934-token deficit before inference. Tracker hashes stayed unchanged; details in docs/decision-admission-evidence.json."
@@ -227,4 +232,5 @@ docs[3]:
     note: Per-decision refusal guarantee and prior backlog changes
   - path: examples/decision-admission.json
     scope: project
+close_reason: "Delivered by #92 \"Reject local decisions that exceed the pinned model context\" (merged as c4f8fd6). Checks successful at the PR head 689ba33: CodeQL, codeql, test (22), test (26)."
 body: ""

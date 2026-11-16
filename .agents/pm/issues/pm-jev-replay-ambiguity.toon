@@ -2,12 +2,17 @@ id: pm-jev-replay-ambiguity
 title: Refuse ambiguous native model aliases before replay pinning
 description: Share admission native inventory resolution with replay and prove conflict refusal before inspection or inference in both inventory orders.
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags[3]: admission,"gh:unbraind/pm-jev#100",replay
 created_at: "2026-11-06T11:08:45.561Z"
-updated_at: "2026-11-06T19:26:30.013Z"
+updated_at: "2026-11-16T20:31:27.384Z"
+closed_at: "2026-11-16T20:31:27.233Z"
+completed_at: "2026-11-16T20:31:27.233Z"
 author: codex-sol
+resolution: Implemented and merged in #103 (b1538b7).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #103 as b1538b7; checks successful at head 4524810: CodeQL, codeql, test (22), test (26)."
 comments[12]{created_at,author,text}:
   "2026-11-06T11:10:31.245Z",codex-sol,"Plan: use one validated inventory resolver for direct admission and replay before pinning; retain loopback-only replay and verify all equivalent rows remain local decision models. Cover conflicting and identical digests in both inventory orders with real HTTP request counts."
   "2026-11-06T11:15:18.717Z",codex-sol,"Implementation and linked tests pass (5/5). Behavioral revert in a disposable package copy: replacing only createOllamaReplayAdapter with the main implementation makes the new ambiguity regression fail (0/1, missing expected rejection); restoring the fix passes (1/1). Both inventory orders refuse before inspection/inference; same-digest duplicates succeed and every matching row must remain local with decision capability."
@@ -32,4 +37,5 @@ tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=2 test/admission-docs.test.ts,project,codex-sol,"2026-11-06T15:26:01.552Z",local_mutation,replay-ambiguity-and-undefined-choice-admission
 docs[1]{path,scope}:
   docs/decision-admission.md,project
+close_reason: "Delivered by #103 \"Fix replay ambiguity and serialized choice admission\" (merged as b1538b7). Checks successful at the PR head 4524810: CodeQL, codeql, test (22), test (26)."
 body: ""

@@ -2,12 +2,17 @@ id: pm-jev-github-21e139da0658-93
 title: PR #92 admission rejects equivalent native Ollama model references
 description: "GH issue #93: https://github.com/unbraind/pm-jev/issues/93 · author @unbraind · created 2026-11-05T05:30:53Z · updated 2026-11-05T05:30:53Z"
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-jev#93","github_author:unbraind"
 created_at: "2026-11-05T05:30:53Z"
-updated_at: "2026-11-06T05:36:53.828Z"
+updated_at: "2026-11-16T20:32:21.634Z"
+closed_at: "2026-11-16T20:32:21.601Z"
+completed_at: "2026-11-16T20:32:21.601Z"
 author: pm-github
+resolution: Implemented and merged in #99 (93c51cb).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #99 as 93c51cb; checks successful at head ca2a561: CodeQL, codeql, test (22), test (26)."
 comments[8]{created_at,author,text}:
   "2026-11-06T04:31:39.015Z",codex-sol,"Read issue in full. Existing latest-tag helper covers omitted tags but lacks native registry/namespace defaults and case-insensitive comparison. Plan: canonicalize both operands, reject conflicting normalized inventory matches with a typed refusal, and preserve digest-pinned metadata and inference."
   "2026-11-06T04:39:26.370Z",codex-sol,"Regression proofs in disposable copies: reverting native name normalization fails all 3 reference tests; removing the ambiguity refusal fails 1 of 3. Restoring all protections passes 13 combined reference/Unicode/cleanup tests. Metadata and inference stay pinned to one digest; normalized duplicate rows with the same digest remain allowed."
@@ -31,6 +36,7 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
 docs[2]{path,scope}:
   docs/decision-admission-reference-evidence.json,project
   docs/decision-admission.md,project
+close_reason: "Delivered by #99 \"Fix Tev1 admission references, Unicode regressions and smoke cleanup\" (merged as 93c51cb). Checks successful at the PR head ca2a561: CodeQL, codeql, test (22), test (26)."
 github_close_reason: ""
 github_closed_at: ""
 github_created_at: "2026-11-05T05:30:53Z"

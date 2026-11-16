@@ -2,12 +2,17 @@ id: pm-jev-admission-teardown
 title: Retry packed admission fixture teardown within a finite bound
 description: "Track the packed documentation ENOTEMPTY failure with deterministic recovery, exhaustion and command-failure regression evidence."
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags[3]: admission,"gh:unbraind/pm-jev#98",tests
 created_at: "2026-11-06T04:31:35.679Z"
-updated_at: "2026-11-06T05:22:57.950Z"
+updated_at: "2026-11-16T20:32:16.423Z"
+closed_at: "2026-11-16T20:32:16.392Z"
+completed_at: "2026-11-16T20:32:16.392Z"
 author: codex-sol
+resolution: Implemented and merged in #99 (93c51cb).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #99 as 93c51cb; checks successful at head ca2a561: CodeQL, codeql, test (22), test (26)."
 comments[5]{created_at,author,text}:
   "2026-11-06T04:31:41.495Z",codex-sol,Read issue and CI evidence in full. Commands are awaited via execFile callbacks and the HTTP fixture is closed before removal; no particular late writer is established. Add bounded ENOTEMPTY retries and deterministic recovery/exhaustion/unrelated-error tests while preserving command failures.
   "2026-11-06T04:39:39.403Z",codex-sol,"Focused cleanup passes 3/3, including exit 23 from a real awaited child command. Reverting only the retry helper to a single removal fails 2/3; restoration passes. Packed guide plus runner/docs/reference selection passes 13/13, including four offline documented commands and the nested explicit Bun skip."
@@ -22,4 +27,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=2 test/admission-cleanup.test.ts,project,codex-sol,"2026-11-06T04:35:24.372Z",local_mutation,tev1-admission-reference-and-unicode-fixes
 docs[1]{path,scope}:
   docs/decision-admission.md,project
+close_reason: "Delivered by #99 \"Fix Tev1 admission references, Unicode regressions and smoke cleanup\" (merged as 93c51cb). Checks successful at the PR head ca2a561: CodeQL, codeql, test (22), test (26)."
 body: ""
