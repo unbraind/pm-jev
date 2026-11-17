@@ -2,14 +2,20 @@ id: pm-jev-tokenizer-admission
 title: Refuse local decisions that exceed digest-bound tokenizer context
 description: "Add exact rendered decision prompt admission bound to an immutable local model digest, preserving all typed questions and options."
 type: Feature
-status: in_progress
+status: closed
 priority: 1
 tags[4]: admission,decision,"gh:unbraind/pm-jev#92",tokenizer
 created_at: "2026-11-05T04:39:51.590Z"
-updated_at: "2026-11-05T18:14:04.718Z"
+updated_at: "2026-11-17T01:54:50.424Z"
+closed_at: "2026-11-16T20:32:09.801Z"
+completed_at: "2026-11-16T20:32:09.801Z"
 author: codex-agent
 acceptance_criteria: Long multibyte state passing byte heuristics refuses before inference when it exceeds the pinned model context; valid short typed batches retain every option and question; one receipt identifies the smallest token reduction needed.
-comments[53]{created_at,author,text}:
+release: 2026.11.6
+resolution: Implemented and merged in #92 (c4f8fd6).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #92 as c4f8fd6; checks successful at head 689ba33: CodeQL, codeql, test (22), test (26)."
+comments[54]{created_at,author,text}:
   "2026-11-05T04:40:17.822Z",codex-agent,"Overlap rechecked against current pm-jev main, host SDK and pm-context/pm-rl/pm-rlm: current code has UTF-8 budgets, decision capability discovery, calibrated digest checks and usage accounting; host output token budgets describe emitted context. None admits actual model-template-question input fit. This feature belongs at runDecision before local inference. No import/export/sync, journal, mutation, status-role or shared persistent state is added; those generic contracts remain delegated to existing SDK paths."
   "2026-11-05T04:54:50.735Z",codex-agent,"Implemented strict shared batch admission, the typed SDK receipt/refusals and jev admit. Both metadata and inference use a full sha256 model reference after one alias resolution. Initial supported profile pins the published Tev1 systemone template and reconstructs the native qwen35 BPE tokenizer from model metadata, including every question and option. Read-only no-git public acceptance: 26 tracker items read, 8 samples, 24 questions and 56 options retained; prompt maxima 158..298 tokens; receipts at most 484 bytes. Native usage independently matched 210 counted tokens. A 35,450-byte multibyte stress document counted 14,125 tokens against num_ctx 8,192 and refused with an exact 5,934-token deficit before inference. Tracker hashes stayed unchanged; details in docs/decision-admission-evidence.json."
   "2026-11-05T04:56:43.550Z",codex-agent,"Correction to the preceding measurement comment: the stress input is exactly 35,282 bytes (the committed evidence is authoritative). All other recorded token counts, limits and deficits are unchanged. Production audit reports zero vulnerabilities. Local typecheck, lint, docstrings and duplication passed; strict refusal and replay property tests are still being completed."
@@ -63,6 +69,7 @@ comments[53]{created_at,author,text}:
   "2026-11-05T17:50:24.797Z",codex-agent,"Out-of-scope dependency audit follow-up: pm-jev-dev-glob-cancellation records three moderate development-toolchain findings through c8/test-exclude/glob for GHSA-3g3m-2fjr-6pw4. Exact-advisory search found no duplicate; the previous closed braces-chain item tracks different advisories. No dependency pins or gate thresholds changed in this review round."
   "2026-11-05T18:10:38.922Z",codex-agent,"Round 7 npm release gate PASSED on the fixed code with unchanged thresholds: npm run release:check; full suite 448 passed, 0 failed/canceled/skipped, duration 785517 ms. All 49 inventoried sources reached 100 percent statements/lines/functions/branches (8013/8013 statements and lines, 403/403 functions, 3862/3862 branches). Typecheck, lint, zero duplication, build, release identity/privacy, 1127 documented declarations, production audit (zero vulnerabilities), 192-file pack dry-run (shasum 59b9f422f7631068ec3262c82a2706295fcc2e94), changelog and publish-attestation checks passed. The gate used an isolated home, disabled global/system Git configuration, a minimal credential-free child environment, and no more than two test workers. No timeout retry was needed. Dist was rebuilt and remains byte-identical. Bun full gate is running serially after npm."
   "2026-11-05T18:14:03.653Z",codex-agent,"Round 7 Bun release gate PASSED: bun run release:check; full suite 448 passed, 0 failed/canceled/skipped, duration 652510 ms. Identical unchanged 100 percent coverage on all 49 sources (8013 statements/lines, 403 functions, 3862 branches), zero production vulnerabilities, and the same 192-file pack dry-run shasum 59b9f422f7631068ec3262c82a2706295fcc2e94 as npm. All static, build, identity/privacy, docstring, duplication, changelog and publication-attestation checks passed. Both full gates passed on the first attempt; no host-load timeout retry was needed. The focused linked command passed 10/10. Behavioral reverts each failed 1/1 and fixed/restored controls passed 2/2 in disposable copies. Releasing this agent claim while leaving the item in progress for orchestrator verification; the dependency follow-up remains open. Review threads remain untouched. Final tracker writes precede fresh pushed-head CI verification."
+  "2026-11-17T01:54:50.422Z",pi-glm,"Review round AC: six entries that the closeout regeneration had drifted into the 2026.11.16 section were restored to their published releases. Release fields set to 2026.11.6 (this item, the two PR-92 import items and the admission teardown) and 2026.11.7 (replay ambiguity, undefined-choice admission); completion timestamps were corrected back into their original 2026-11-06/07 delivery windows because the closeout had rewritten them to the closure date. Both published sections now match their tagged versions exactly; changelog:check passes."
 files[36]:
   - path: admission-command.ts
     scope: project
@@ -227,4 +234,5 @@ docs[3]:
     note: Per-decision refusal guarantee and prior backlog changes
   - path: examples/decision-admission.json
     scope: project
+close_reason: "Delivered by #92 \"Reject local decisions that exceed the pinned model context\" (merged as c4f8fd6). Checks successful at the PR head 689ba33: CodeQL, codeql, test (22), test (26)."
 body: ""

@@ -2,18 +2,25 @@ id: pm-jev-admission-teardown
 title: Retry packed admission fixture teardown within a finite bound
 description: "Track the packed documentation ENOTEMPTY failure with deterministic recovery, exhaustion and command-failure regression evidence."
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags[3]: admission,"gh:unbraind/pm-jev#98",tests
 created_at: "2026-11-06T04:31:35.679Z"
-updated_at: "2026-11-06T05:22:57.950Z"
+updated_at: "2026-11-17T02:21:04.368Z"
+closed_at: "2026-11-16T20:32:16.392Z"
+completed_at: "2026-11-16T20:32:16.392Z"
 author: codex-sol
-comments[5]{created_at,author,text}:
+release: 2026.11.6
+resolution: Implemented and merged in #99 (93c51cb).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #99 as 93c51cb; checks successful at head ca2a561: CodeQL, codeql, test (22), test (26)."
+comments[6]{created_at,author,text}:
   "2026-11-06T04:31:41.495Z",codex-sol,Read issue and CI evidence in full. Commands are awaited via execFile callbacks and the HTTP fixture is closed before removal; no particular late writer is established. Add bounded ENOTEMPTY retries and deterministic recovery/exhaustion/unrelated-error tests while preserving command failures.
   "2026-11-06T04:39:39.403Z",codex-sol,"Focused cleanup passes 3/3, including exit 23 from a real awaited child command. Reverting only the retry helper to a single removal fails 2/3; restoration passes. Packed guide plus runner/docs/reference selection passes 13/13, including four offline documented commands and the nested explicit Bun skip."
   "2026-11-06T04:42:57.117Z",codex-sol,Node 22 focused packed/reference/Unicode/cleanup verification passed 20/20 with no skips. All five final live reference decisions also succeeded; the public copy retained read-only item/history bytes and remained unchanged by commands. CLI startup and native metadata/tokenization are included in reported command latency.
   "2026-11-06T05:08:26.528Z",codex-sol,"Node 26 npm release gate passed 454/454, zero fail/skip/cancel/todo, with all c8 coverage dimensions at 100% and zero production vulnerabilities. Cleanup retry revert still fails 2/3, including recovery/exhaustion controls; the command-failure control remains passing. Starting the full Bun-command release gate on the final code next."
   "2026-11-06T05:22:56.878Z",codex-sol,"Final local npm and Bun-command release gates each passed 454/454, zero fail/skip/cancel/todo; c8 statements, branches, functions and lines are all 100%, and production audit found zero vulnerabilities. Packed offline guide commands and the Node-only explicit Bun skip remain covered. Persistent cleanup failures and real failed commands still fail. Releasing the claim for final-head PR CI and orchestrator verification; item remains in progress."
+  "2026-11-17T02:21:04.367Z",claude-hub,"Restored completed_at to the recorded closure time (2026-11-16T20:32:16.392Z). The 2026-11-17 backdate used made-up timestamps chosen to reproduce the published bullet order. The release field keeps this entry in its published release section; only the order of bullets inside that section differs from the published notes."
 files[3]{path,scope}:
   test/admission-cleanup.test.ts,project
   test/admission-cleanup.ts,project
@@ -22,4 +29,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=2 test/admission-cleanup.test.ts,project,codex-sol,"2026-11-06T04:35:24.372Z",local_mutation,tev1-admission-reference-and-unicode-fixes
 docs[1]{path,scope}:
   docs/decision-admission.md,project
+close_reason: "Delivered by #99 \"Fix Tev1 admission references, Unicode regressions and smoke cleanup\" (merged as 93c51cb). Checks successful at the PR head ca2a561: CodeQL, codeql, test (22), test (26)."
 body: ""

@@ -2,12 +2,17 @@ id: pm-jev-ci-v2
 title: Split quick PR checks from exhaustive local CI
 description: "Apply Fleet CI v2; companion pm-cli-website-dyhg. Preserve required checks and all original gate contracts, default full depth, and unchanged coverage thresholds."
 type: Task
-status: in_progress
+status: closed
 priority: 2
 tags[4]: ci,"gh:unbraind/pm-jev#116","gh:unbraind/pm-jev#119",performance
 created_at: "2026-11-15T15:45:33.689Z"
-updated_at: "2026-11-15T22:49:58.568Z"
+updated_at: "2026-11-16T20:32:01.677Z"
+closed_at: "2026-11-16T20:32:01.579Z"
+completed_at: "2026-11-16T20:32:01.579Z"
 author: codex-sol
+resolution: Implemented and merged in #119 (92d95cd).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #119 as 92d95cd; checks successful at head ff68c97: CodeQL, codeql, test (22), test (26)."
 comments[10]{created_at,author,text}:
   "2026-11-15T15:47:50.043Z",codex-sol,"Required checks are test (22), test (26), codeql; CodeQL remains unfiltered. Main CI run 43679596301: queue-inclusive jobs 575s/961s; slowest repeated cases public-quality replay 48s, SDK admission 27s. Explicit temporary tracker roots and scoped Git/PM environment scrubbing address #116. Quick uses deterministic seed prefixes; full and all coverage thresholds remain unchanged. Release files are excluded."
   "2026-11-15T15:51:48.061Z",codex-sol,"Strict tracker health passed with six pre-existing stale-item advisories. Strict YAML parse passed for all three workflows; actionlint is unavailable. Typecheck, test typecheck and docstring checks passed. Linked lint caught a dynamic import in a new regression; replaced it with a static import and reran. Quick coverage is bounded to twenty minutes locally; no full-depth run is requested here."
@@ -82,4 +87,5 @@ tests[6]:
       source_ref: ci/quick-pr-tier-deep-local-tier
 docs[1]{path,scope}:
   docs/ci-tiers.md,project
+close_reason: "Delivered by #119 \"Split quick PR checks from exhaustive local CI\" (merged as 92d95cd). Checks successful at the PR head ff68c97: CodeQL, codeql, test (22), test (26)."
 body: ""

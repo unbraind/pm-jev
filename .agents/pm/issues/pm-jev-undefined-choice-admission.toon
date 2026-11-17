@@ -2,13 +2,19 @@ id: pm-jev-undefined-choice-admission
 title: Count choice options from the JSON request representation
 description: "Canonicalize undefined object entries by JSON omission before admission counting and transport. Verify option identities and counts against real SDK loopback request bodies, including empty-choice refusal."
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags[2]: admission,"gh:unbraind/pm-jev#101"
 created_at: "2026-11-06T11:08:48.326Z"
-updated_at: "2026-11-06T19:26:24.469Z"
+updated_at: "2026-11-17T02:21:51.850Z"
+closed_at: "2026-11-16T20:31:36.913Z"
+completed_at: "2026-11-16T20:31:36.913Z"
 author: codex-sol
-comments[11]{created_at,author,text}:
+release: 2026.11.7
+resolution: Implemented and merged in #103 (b1538b7).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #103 as b1538b7; checks successful at head 4524810: CodeQL, codeql, test (22), test (26)."
+comments[12]{created_at,author,text}:
   "2026-11-06T11:10:34.667Z",codex-sol,"Decision: match official SDK JSON serialization by removing undefined object properties in the bounded detached input before schema validation and counting. Null retains an undescribed option; a sole undefined entry becomes empty and refuses before metadata. Compare admitted identities and counts with real SDK loopback requests."
   "2026-11-06T11:15:22.822Z",codex-sol,"Implementation and linked tests pass (2/2). Behavioral revert in a disposable package copy: replacing only parseAdmissionInput with main makes both regressions fail (0/2): admitted count differs from the actual SDK request and sole-undefined choice fails to refuse. Restoring the fix passes (2/2). JSON omission is documented; null preserves an undescribed option and caller objects remain unchanged."
   "2026-11-06T11:15:32.194Z",codex-sol,"Validation: focused admission/reference suite passes 7/7, including actual SDK loopback request bodies; build, build:test, lint, typecheck, docstring and zero-duplication gates pass. Full npm and Bun release gates run in PR CI. No thresholds or dependency pins changed. Item remains in progress for orchestrator verification."
@@ -20,6 +26,7 @@ comments[11]{created_at,author,text}:
   "2026-11-06T12:38:20.695Z",codex-sol,"Review round 2 results: focused reference/serialization tests pass 9/9; linked serialization tests pass 4/4. Build, build:test, lint, typecheck, docstring and zero-duplication checks pass. Disposable behavioral reverts: restoring only parseAdmissionInput to the pre-round-2 function fails the new typed-serialization test 0/1; removing only its string-result guard also fails 0/1. Restoring each passes 1/1. The corpus proves invalid_input before metadata/inference and preserves previously persisted safe JSON. The repeated null-synthesis linked-issue suggestion remains declined under the documented JSON-omission contract and real SDK wire-identity/count evidence."
   "2026-11-06T19:13:15.125Z",codex-sol,"Continuation of review round 5: add mixed valid/function-valued and valid/symbol-valued choice cases. Require content-free invalid_input before metadata or inference, preserving safe persisted JSON compatibility. Existing runtime validation rejects these values; add independent mutation proofs that catch silent JSON omission. The repeated null-synthesis suggestion remains declined under the authorized SDK JSON-omission contract."
   "2026-11-06T19:26:10.376Z",codex-sol,"Review round 5 continuation: linked serialization tests pass 5/5. Mixed valid/function-valued and valid/symbol-valued choices refuse with content-free invalid_input through both admission entrypoints before metadata or inference; previously persisted safe choice JSON remains accepted. Independent silent-function-omission and silent-symbol-omission mutations each fail the new regression 0/1 and pass 1/1 after restoration, including after the refusal assertions were shared in a test helper. Build, build:test, lint, typecheck, docstrings and zero-duplication checks pass. Runtime code and rebuilt dist are unchanged. Full exact-head npm and Bun gates remain delegated to CI."
+  "2026-11-17T02:21:51.850Z",claude-hub,"Restored completed_at to the recorded closure time (2026-11-16T20:31:36.913Z). The 2026-11-17 backdate used made-up timestamps chosen to reproduce the published bullet order. The release field keeps this entry in its published release section; only the order of bullets inside that section differs from the published notes."
 files[2]{path,scope}:
   admission-schema.ts,project
   test/admission-serialization.test.ts,project
@@ -27,4 +34,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=2 test/admission-serialization.test.ts,project,codex-sol,"2026-11-06T11:13:01.794Z",local_mutation,replay-ambiguity-and-undefined-choice-admission
 docs[1]{path,scope}:
   docs/decision-admission.md,project
+close_reason: "Delivered by #103 \"Fix replay ambiguity and serialized choice admission\" (merged as b1538b7). Checks successful at the PR head 4524810: CodeQL, codeql, test (22), test (26)."
 body: ""
