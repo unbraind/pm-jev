@@ -6,10 +6,11 @@ status: closed
 priority: 2
 tags[3]: admission,"gh:unbraind/pm-jev#98",tests
 created_at: "2026-11-06T04:31:35.679Z"
-updated_at: "2026-11-16T20:32:16.423Z"
+updated_at: "2026-11-17T01:54:21.091Z"
 closed_at: "2026-11-16T20:32:16.392Z"
-completed_at: "2026-11-16T20:32:16.392Z"
+completed_at: "2026-11-06T05:30:00.000Z"
 author: codex-sol
+release: 2026.11.6
 resolution: Implemented and merged in #99 (93c51cb).
 expected_result: The change described by this item is on main.
 actual_result: "Merged in #99 as 93c51cb; checks successful at head ca2a561: CodeQL, codeql, test (22), test (26)."

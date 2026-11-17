@@ -6,10 +6,11 @@ status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-jev#93","github_author:unbraind"
 created_at: "2026-11-05T05:30:53Z"
-updated_at: "2026-11-16T20:32:21.634Z"
+updated_at: "2026-11-17T01:54:20.020Z"
 closed_at: "2026-11-16T20:32:21.601Z"
-completed_at: "2026-11-16T20:32:21.601Z"
+completed_at: "2026-11-06T05:40:00.000Z"
 author: pm-github
+release: 2026.11.6
 resolution: Implemented and merged in #99 (93c51cb).
 expected_result: The change described by this item is on main.
 actual_result: "Merged in #99 as 93c51cb; checks successful at head ca2a561: CodeQL, codeql, test (22), test (26)."

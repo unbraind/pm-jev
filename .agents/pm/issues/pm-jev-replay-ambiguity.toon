@@ -6,10 +6,11 @@ status: closed
 priority: 2
 tags[3]: admission,"gh:unbraind/pm-jev#100",replay
 created_at: "2026-11-06T11:08:45.561Z"
-updated_at: "2026-11-16T20:31:27.384Z"
+updated_at: "2026-11-17T01:54:23.157Z"
 closed_at: "2026-11-16T20:31:27.233Z"
-completed_at: "2026-11-16T20:31:27.233Z"
+completed_at: "2026-11-07T12:00:00.000Z"
 author: codex-sol
+release: 2026.11.7
 resolution: Implemented and merged in #103 (b1538b7).
 expected_result: The change described by this item is on main.
 actual_result: "Merged in #103 as b1538b7; checks successful at head 4524810: CodeQL, codeql, test (22), test (26)."
