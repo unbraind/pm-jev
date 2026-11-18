@@ -2,6 +2,8 @@ import { parseQuestionsDocument } from "./questions-document.ts";
 import { resolveJevEndpoint, requireCallableEndpoint, createJevClient, numberSetting } from "./jev-endpoint.ts";
 import type { JevConfig, ResolvedJevEndpoint } from "./jev-endpoint.ts";
 import { ollamaModelName } from "./ollama-model.ts";
+import { preCreateReceipt } from "./pre-create-policy.ts";
+import type { PreCreateDraft, PreCreateReceipt } from "./pre-create-policy.ts";
 import { boundedText } from "./bounded-text.ts";
 import { acceptsThreshold, marginValue, threshold as thresholdState } from "./threshold.ts";
 import type { ThresholdInput } from "./threshold.ts";
@@ -54,6 +56,7 @@ import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, 
 import type { ActiveCalibration, CalibrationUse } from "./decision-calibration.ts";
 import {
   DEPENDENCY_KIND_VALUES,
+  certifyCompleteListResult,
   createPmCliExpectedError,
   isPmCliExpectedError,
   PmClient,
@@ -80,6 +83,8 @@ export { isPmCliExpectedError };
 export { createPmCliExpectedError };
 /** Re-export the pm similarity score type used by the dedupe ranking contract. */
 export type { ItemMetadata, PmSettings };
+/** Public SDK contracts for screening a draft before create. */
+export type { PreCreateDraft, PreCreateReceipt, PreCreateVerdict } from "./pre-create-policy.ts";
 /** Re-export the SDK question-map and result contracts callers validate against. */
 export type { Questions, SystemOneResult };
 /** Exact local prompt admission, strict documents and content-free receipts. */
@@ -523,7 +528,7 @@ async function openDecisionBoundary(ctx: CommandHandlerContext, task?: "triage" 
 }
 
 /** Refuse applying a fit if a mutable local model tag changed after inference began. */
-async function verifyCalibrationModel(boundary: DecisionWorkspace): Promise<void> {
+async function verifyCalibrationModel(boundary: Pick<DecisionWorkspace, "config" | "calibration">): Promise<void> {
   if (boundary.calibration !== undefined && await modelDigest(boundary.config.baseUrl, boundary.config.model, boundary.config.timeoutMs) !== boundary.calibration.record.model_digest) throw createPmCliExpectedError("Model digest changed during calibrated inference; retry with a fresh calibration");
 }
 
@@ -1191,8 +1196,16 @@ async function runDedupeCommand(ctx: CommandHandlerContext): Promise<DedupeDecis
   }
   const body = readStringOption(ctx.options, "body") ?? "";
   const limit = Math.trunc(numberSetting(readStringOption(ctx.options, "limit"), DEFAULT_DEDUPE_LIMIT, 1, 32));
-  const boundary = await openDecisionBoundary(ctx, "dedupe");
+  const boundary = await openDecisionBoundary(ctx);
   const candidates = rankDedupeCandidates((await boundary.pm.listAllComplete()).items, title, limit);
+  return screenDedupeCandidates(boundary, title, body, candidates);
+}
+
+/** Evaluate the existing choice catalog for either the detailed CLI or the compact pre-create guard. */
+async function screenDedupeCandidates(
+  boundary: Pick<DecisionWorkspace, "pmRoot" | "config" | "decision">,
+  title: string, body: string, candidates: DedupeCandidate[],
+): Promise<DedupeDecision> {
   if (candidates.length === 0) {
     return {
       duplicate_of: null,
@@ -1205,11 +1218,12 @@ async function runDedupeCommand(ctx: CommandHandlerContext): Promise<DedupeDecis
       catalog_version: DEDUPE_CATALOG_VERSION,
     };
   }
+  const calibration = await activeCalibration(boundary.pmRoot, "dedupe", boundary.config);
   const request = buildDedupeRequest(title, body, candidates);
   const result = await runDecision(boundary.decision, boundary.config, request.state, request.questions);
-  await verifyCalibrationModel(boundary);
+  await verifyCalibrationModel({ config: boundary.config, calibration });
   const answer = result.answers.duplicate_of as ChoiceResponse;
-  const fit = calibratedAnswer(boundary.calibration, "duplicate_of", request.questions.duplicate_of, answer.probabilities, boundary.config.minConfidence);
+  const fit = calibratedAnswer(calibration, "duplicate_of", request.questions.duplicate_of, answer.probabilities, boundary.config.minConfidence);
   const selected = fit.calibration === null ? answer.choice : ranked(fit.probabilities)[0][0];
   return {
     duplicate_of: selected === "none" ? null : selected,
@@ -1222,6 +1236,38 @@ async function runDedupeCommand(ctx: CommandHandlerContext): Promise<DedupeDecis
     usage: result.usage,
     catalog_version: DEDUPE_CATALOG_VERSION,
   };
+}
+
+/**
+ * Screen a draft before creating it. The tracker read must certify completeness.
+ * A negative result covers this retrieval snapshot; the caller owns any later mutation.
+ */
+export async function guardCreate(pmRoot: string, draft: PreCreateDraft): Promise<PreCreateReceipt> {
+  if (typeof pmRoot !== "string" || !pmRoot.trim()) throw createPmCliExpectedError("Provide the target tracker root.");
+  if (typeof draft?.title !== "string" || !draft.title.trim()) throw createPmCliExpectedError("Provide a nonempty draft title.");
+  const { title, body = "", limit = DEFAULT_DEDUPE_LIMIT } = draft;
+  if (typeof body !== "string" || !Number.isSafeInteger(limit) || limit < 1 || limit > 32) {
+    throw createPmCliExpectedError("Draft body must be text and limit must be an integer from 1 to 32.");
+  }
+  const resolved = await resolveJevEndpoint(pmRoot, process.env);
+  if (resolved.config.provider !== "ollama") throw createPmCliExpectedError("The pre-create guard requires the Ollama provider.");
+  const config = requireCallableEndpoint(resolved);
+  const pm = new PmClient({ pmRoot, noExtensions: true });
+  const { items } = certifyCompleteListResult(await pm.listAllComplete());
+  const rankedCandidates = rankDedupeCandidates(items, title, limit + 1);
+  const candidates = rankedCandidates.slice(0, limit);
+  const hasMore = rankedCandidates.length > limit;
+  const decision = createJevClient(resolved, process.env);
+  let receipt: DedupeDecision;
+  try {
+    receipt = await screenDedupeCandidates({ pmRoot, config, decision }, title, body, candidates);
+  } catch {
+    return {
+      decision: "abstain", reason: "decision_unavailable", candidate_count: candidates.length, has_more: hasMore,
+      probability: null, threshold: null, score_kind: null, model: config.model, usage: null,
+    };
+  }
+  return preCreateReceipt(receipt, config.minConfidence, hasMore);
 }
 
 // ---------------------------------------------------------------------------
@@ -1818,6 +1864,13 @@ const TRIAGE_FLAGS: FlagDefinition[] = [
   },
 ];
 
+/** Draft inputs shared by both pre-create commands. */
+const DRAFT_FLAGS: FlagDefinition[] = [
+  { long: "--title", value_name: "text", value_type: "string", description: "Title of the item proposed for creation" },
+  { long: "--body", value_name: "text", value_type: "string", description: "Optional proposed body text for context" },
+  { long: "--limit", value_name: "n", value_type: "string", description: "Maximum candidates ranked into the choice (default 8, max 32)" },
+];
+
 /** Flags for the dedupe command. */
 const DEDUPE_FLAGS: FlagDefinition[] = [
   FULL_FLAG,
@@ -1827,9 +1880,7 @@ const DEDUPE_FLAGS: FlagDefinition[] = [
   { long: "--min-confidence", value_name: "p", value_type: "string", description: "Raise the train-calibrated duplicate cutoff; insufficient evidence stays unsure" },
   { long: "--apply", value_type: "boolean", description: "Add calibrated duplicate links with a receipt; never close items" },
   { long: "--close", value_type: "boolean", description: "Removed: duplicate proposals are links-only; use --apply" },
-  { long: "--title", value_name: "text", value_type: "string", description: "Pre-create screening: title of the item about to be created; omit to scan existing pairs" },
-  { long: "--body", value_name: "text", value_type: "string", description: "Optional proposed body text for context" },
-  { long: "--limit", value_name: "n", value_type: "string", description: "Maximum candidates ranked into the choice (default 8, max 32)" },
+  ...DRAFT_FLAGS,
 ];
 
 /** Flags for the ask command. */
@@ -1961,6 +2012,22 @@ function registerCommands(api: ExtensionApi): void {
       run: (ctx: CommandHandlerContext) => readBooleanOption(ctx.options, "open") === true ? runTriageCommand(ctx) : decisionOutput(ctx, runTriageCommand),
     }),
   );
+  api.registerCommand(defineCommand({
+    name: "jev guard-create",
+    description: "Screen a proposed create and return a compact duplicate, no_match or abstain decision",
+    flags: DRAFT_FLAGS,
+    examples: ['pm --json jev guard-create --title "Fix login crash" --limit 4'],
+    /** Use precisely the same policy and tracker boundary as a direct SDK caller. */
+    run: async (ctx: CommandHandlerContext) => {
+      const limit = readStringOption(ctx.options, "limit");
+      const receipt = await guardCreate(ctx.pm_root, {
+        title: readStringOption(ctx.options, "title") ?? "",
+        body: readStringOption(ctx.options, "body"),
+        limit: limit === undefined ? undefined : Number(limit),
+      });
+      return receipt.decision === "no_match" ? receipt : { ...receipt, exit_code: 1 };
+    },
+  }));
   api.registerCommand(
     defineCommand({
       name: "jev dedupe",
