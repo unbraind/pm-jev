@@ -88,6 +88,7 @@ Runtime tracker paths come from the host and SDK, including custom pm storage ro
 | `pm jev link <id> --limit 8` | Rank candidates and batch typed relationship proposals; no item or history writes. |
 | `pm jev link <id> --apply --min-confidence 0.8` | Add qualifying new SDK edges and one receipt; hierarchy requires `--allow-parent`. |
 | `pm jev link --open --limit 20` | Stream a bounded open backlog with changed/would_change/skipped/failed counts. |
+| `pm --json jev guard-create --title "Fix login crash" --limit 3` | Return a compact pre-create verdict. Duplicate and abstention both exit 1. |
 | `pm jev dedupe --title "Fix login crash" --body "Details" --limit 8` | Rank all tracker items in code, then choose a candidate id or `none`. |
 | `pm jev dedupe --status open --type Issue --limit-pairs 20` | Verify bounded existing pairs with the calibrated `same_work` policy; unsure pairs abstain; no writes. |
 | `pm jev dedupe --apply --min-confidence 0.95` | Add calibrated duplicate links and receipts; proposals never close items. |
@@ -195,6 +196,67 @@ because Ollama rejects explicit `criteria: null`. Every response is checked for 
 question names, answer types, exact option keys, finite probabilities, normalized
 distributions (2% rounding tolerance), score range, matching legend, model and usage.
 Malformed output is rejected before any item update.
+
+## Guard a proposed create
+
+Call `guardCreate` with the target tracker's storage root and draft title before
+filing an item. In the extension, `pm jev guard-create` uses the host's tracker
+root. Both entry points use the configured Ollama endpoint, privacy checks,
+tokenizer admission and typed duplicate-choice catalog.
+
+```ts
+import { guardCreate } from "pm-jev";
+
+const receipt = await guardCreate(".agents/pm", {
+  title: "Count choice options from the JSON request representation",
+  limit: 3,
+});
+switch (receipt.decision) {
+  case "duplicate": console.log("Review existing item", receipt.duplicate_of); break;
+  case "abstain": console.log("Hold the create for review", receipt.reason); break;
+  case "no_match": console.log("Continue the create workflow", receipt.reason); break;
+}
+```
+
+| Decision | What the caller learned | CLI exit |
+| --- | --- | --- |
+| `duplicate` | A candidate cleared the threshold. Inspect its ID and reuse it if appropriate. | 1 |
+| `no_match` | No positive title matches were retrieved, or the model chose `none` above threshold across every retrieved candidate. | 0 |
+| `abstain` | The score missed the threshold, the model chose `none` on a truncated list, or inference was unavailable. Hold the draft. | 1 |
+
+The optional `body` supplies model context. Title similarity drives retrieval
+across all statuses, including closed items. The host must certify a complete
+tracker read. `limit` accepts integers from 1 to 32 and defaults to 8.
+`candidate_count` is the shortlist size. `has_more` records whether another
+positive title match fell outside the limit. A differently worded duplicate
+can escape retrieval. The receipt describes one snapshot. A concurrent create
+can introduce a match after screening.
+
+The inclusive probability floor is the greater of 0.8 and `jev.min_confidence`.
+A compatible saved duplicate calibration can tighten it or disable a decision.
+`score_kind` distinguishes raw model scores from calibrated scores. An empty
+shortlist uses zero inference tokens. An unavailable endpoint, missing model or
+failed decision validation returns `abstain / decision_unavailable` with null
+probability and usage. Invalid input, privacy configuration and incomplete
+tracker reads raise errors. The guard is read-only.
+
+### Measured on the public pm-jev tracker
+
+On the 63-item snapshot at `195fe22`, local `tev1:4b` (digest prefix
+`7954dce22bc6`) returned the following SDK receipts at `limit: 3`.
+
+| Proposed title | Outcome | Shortlist / more | Raw score | Model input tokens | Wall time |
+| --- | --- | --- | ---: | ---: | ---: |
+| Count choice options from the JSON request representation | `duplicate` → `pm-jev-undefined-choice-admission` | 3 / yes | 0.971799 | 519 | 43.376 s |
+| Add quasar photometry to the CLI | `abstain / candidate_limit` | 3 / yes | 0.995133 for `none` | 531 | 8.979 s |
+| Quasar photometry | `no_match / no_title_candidates` | 0 / no | — | 0 | 0.343 s |
+
+For the first draft, the detailed `jev dedupe --title` JSON result occupied
+1,009 bytes and 430 tokens. The guard SDK receipt occupied 308 bytes and 134
+tokens, saving **296 caller-context tokens** on that example. Counts use
+minified JSON and the same Tev1 tokenizer without special tokens. Ollama
+reported zero output tokens on the two scored calls. Accuracy requires a separate
+labeled evaluation.
 
 ## Existing-item duplicate scans
 

@@ -1,6 +1,7 @@
 import { parseQuestionsDocument } from "./questions-document.js";
 import { resolveJevEndpoint, requireCallableEndpoint, createJevClient, numberSetting } from "./jev-endpoint.js";
 import { ollamaModelName } from "./ollama-model.js";
+import { preCreateReceipt } from "./pre-create-policy.js";
 import { boundedText } from "./bounded-text.js";
 import { acceptsThreshold, marginValue, threshold as thresholdState } from "./threshold.js";
 import { compareExact, displayExact, subtractExact } from "./exact.js";
@@ -39,7 +40,7 @@ import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.js";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.js";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.js";
 import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked } from "./decision-calibration.js";
-import { DEPENDENCY_KIND_VALUES, createPmCliExpectedError, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveWorkspaceRelationshipKindRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
+import { DEPENDENCY_KIND_VALUES, createPmCliExpectedError, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolvePmRoot, resolveWorkspaceRelationshipKindRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
 import { RelationshipGraph } from "@unbrained/pm-cli/sdk/graph";
 import { defineCommand, defineExtension } from "@unbrained/pm-cli/sdk/authoring";
 /** Re-export the structural expected-error predicate for package consumers. */
@@ -883,8 +884,12 @@ async function runDedupeCommand(ctx) {
     }
     const body = readStringOption(ctx.options, "body") ?? "";
     const limit = Math.trunc(numberSetting(readStringOption(ctx.options, "limit"), DEFAULT_DEDUPE_LIMIT, 1, 32));
-    const boundary = await openDecisionBoundary(ctx, "dedupe");
+    const boundary = await openDecisionBoundary(ctx);
     const candidates = rankDedupeCandidates((await boundary.pm.listAllComplete()).items, title, limit);
+    return screenDedupeCandidates(boundary, title, body, candidates);
+}
+/** Evaluate the existing choice catalog for either the detailed CLI or the compact pre-create guard. */
+async function screenDedupeCandidates(boundary, title, body, candidates) {
     if (candidates.length === 0) {
         return {
             duplicate_of: null,
@@ -897,11 +902,14 @@ async function runDedupeCommand(ctx) {
             catalog_version: DEDUPE_CATALOG_VERSION,
         };
     }
+    const calibration = await activeCalibration(boundary.pmRoot, "dedupe", boundary.config);
     const request = buildDedupeRequest(title, body, candidates);
     const result = await runDecision(boundary.decision, boundary.config, request.state, request.questions);
-    await verifyCalibrationModel(boundary);
+    if (calibration !== undefined && result.admission?.model_digest !== calibration.record.model_digest) {
+        throw createPmCliExpectedError("Model digest changed during calibrated inference; retry with a fresh calibration");
+    }
     const answer = result.answers.duplicate_of;
-    const fit = calibratedAnswer(boundary.calibration, "duplicate_of", request.questions.duplicate_of, answer.probabilities, boundary.config.minConfidence);
+    const fit = calibratedAnswer(calibration, "duplicate_of", request.questions.duplicate_of, answer.probabilities, boundary.config.minConfidence);
     const selected = fit.calibration === null ? answer.choice : ranked(fit.probabilities)[0][0];
     return {
         duplicate_of: selected === "none" ? null : selected,
@@ -914,6 +922,42 @@ async function runDedupeCommand(ctx) {
         usage: result.usage,
         catalog_version: DEDUPE_CATALOG_VERSION,
     };
+}
+/**
+ * Screen a draft before creating it. The tracker read must certify completeness.
+ * A negative result covers this retrieval snapshot; the caller owns any later mutation.
+ */
+export async function guardCreate(pmRoot, draft) {
+    if (typeof pmRoot !== "string" || !pmRoot.trim())
+        throw createPmCliExpectedError("Provide the target tracker root.");
+    if (typeof draft?.title !== "string" || !draft.title.trim())
+        throw createPmCliExpectedError("Provide a nonempty draft title.");
+    const { title, body = "", limit = DEFAULT_DEDUPE_LIMIT } = draft;
+    if (typeof body !== "string" || !Number.isSafeInteger(limit) || limit < 1 || limit > 32) {
+        throw createPmCliExpectedError("Draft body must be text and limit must be an integer from 1 to 32.");
+    }
+    const trackerRoot = resolvePmRoot(process.cwd(), pmRoot);
+    const resolved = await resolveJevEndpoint(trackerRoot, process.env);
+    if (resolved.config.provider !== "ollama")
+        throw createPmCliExpectedError("The pre-create guard requires the Ollama provider.");
+    const config = requireCallableEndpoint(resolved);
+    const pm = new PmClient({ pmRoot: trackerRoot, noExtensions: true });
+    const { items } = await pm.listAllComplete();
+    const rankedCandidates = rankDedupeCandidates(items, title, limit + 1);
+    const candidates = rankedCandidates.slice(0, limit);
+    const hasMore = rankedCandidates.length > limit;
+    const decision = createJevClient(resolved, process.env);
+    let receipt;
+    try {
+        receipt = await screenDedupeCandidates({ pmRoot: trackerRoot, config, decision }, title, body, candidates);
+    }
+    catch {
+        return {
+            decision: "abstain", reason: "decision_unavailable", candidate_count: candidates.length, has_more: hasMore,
+            probability: null, threshold: null, score_kind: null, model: config.model, usage: null,
+        };
+    }
+    return preCreateReceipt(receipt, config.minConfidence, hasMore);
 }
 // ---------------------------------------------------------------------------
 // Relationship proposals
@@ -1364,6 +1408,13 @@ const TRIAGE_FLAGS = [
         description: "Probability threshold for --apply (default: jev.min_confidence setting, else 0.8)",
     },
 ];
+/** Draft inputs shared by both pre-create commands. */
+const DRAFT_TITLE = { long: "--title", value_name: "text", value_type: "string", description: "Title of the item proposed for creation" };
+/** Optional evidence and candidate bound for screening a title. */
+const DRAFT_FLAGS = [
+    { long: "--body", value_name: "text", value_type: "string", description: "Optional proposed body text for context" },
+    { long: "--limit", value_name: "n", value_type: "string", description: "Maximum candidates ranked into the choice (default 8, max 32)" },
+];
 /** Flags for the dedupe command. */
 const DEDUPE_FLAGS = [
     FULL_FLAG,
@@ -1373,9 +1424,8 @@ const DEDUPE_FLAGS = [
     { long: "--min-confidence", value_name: "p", value_type: "string", description: "Raise the train-calibrated duplicate cutoff; insufficient evidence stays unsure" },
     { long: "--apply", value_type: "boolean", description: "Add calibrated duplicate links with a receipt; never close items" },
     { long: "--close", value_type: "boolean", description: "Removed: duplicate proposals are links-only; use --apply" },
-    { long: "--title", value_name: "text", value_type: "string", description: "Pre-create screening: title of the item about to be created; omit to scan existing pairs" },
-    { long: "--body", value_name: "text", value_type: "string", description: "Optional proposed body text for context" },
-    { long: "--limit", value_name: "n", value_type: "string", description: "Maximum candidates ranked into the choice (default 8, max 32)" },
+    { ...DRAFT_TITLE, description: "Pre-create screening: title of the item about to be created; omit to scan existing pairs" },
+    ...DRAFT_FLAGS,
 ];
 /** Flags for the ask command. */
 const ASK_FLAGS = [
@@ -1501,6 +1551,21 @@ function registerCommands(api) {
         examples: ["pm jev triage my-item-1a2b", "pm jev triage my-item-1a2b --apply --min-confidence 0.9", "pm jev triage --open --limit 10"],
         /** Dispatch the registered command with the host-resolved tracker and flags. */
         run: (ctx) => readBooleanOption(ctx.options, "open") === true ? runTriageCommand(ctx) : decisionOutput(ctx, runTriageCommand),
+    }));
+    api.registerCommand(defineCommand({
+        name: "jev guard-create",
+        description: "Screen a proposed create and return a compact duplicate, no_match or abstain decision",
+        flags: [DRAFT_TITLE, ...DRAFT_FLAGS],
+        examples: ['pm --json jev guard-create --title "Fix login crash" --limit 4'],
+        /** Use precisely the same policy and tracker boundary as a direct SDK caller. */
+        run: async (ctx) => {
+            const receipt = await guardCreate(ctx.pm_root, {
+                title: readStringOption(ctx.options, "title") ?? "",
+                body: readStringOption(ctx.options, "body"),
+                limit: ctx.options.limit === undefined ? undefined : Number(readStringOption(ctx.options, "limit")),
+            });
+            return receipt.decision === "no_match" ? receipt : { ...receipt, exit_code: 1 };
+        },
     }));
     api.registerCommand(defineCommand({
         name: "jev dedupe",

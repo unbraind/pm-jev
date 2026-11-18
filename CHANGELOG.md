@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Screen proposed items through a typed pre-create duplicate guard ([pm-jev-pre-create-guard](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-pre-create-guard.toon))
+
 ## 2026.11.16 - 2026-11-17
 
 ### Other

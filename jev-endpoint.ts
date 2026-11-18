@@ -269,6 +269,21 @@ export async function resolveJevEndpoint(
 }
 
 /**
+ * Bun consumes a native fetch body when the SDK drains a clone and releases
+ * the original reader. A pass-through web stream keeps both reads available
+ * under the SDK's existing deadline and cancellation signal.
+ */
+export function sdkReadableResponse(response: Response, nativeBun: boolean): Response {
+  if (!nativeBun || response.body === null) return response;
+  const streamed = new Response(response.body.pipeThrough(new TransformStream()), response);
+  return Object.defineProperties(streamed, {
+    url: { value: response.url },
+    redirected: { value: response.redirected },
+    type: { value: response.type },
+  });
+}
+
+/**
  * Build a TypeSafeClient for the resolved endpoint.
  *
  * The client carries `logLevel: "off"` so request/response bodies are never
@@ -294,7 +309,7 @@ export function createJevClient(resolved: ResolvedJevEndpoint, env: Record<strin
     // Local Ollama compatibility endpoints expect JSON, regardless of SDK compression defaults.
     compression: config.provider === "ollama" ? false : undefined,
     /** Refuse redirects so a local endpoint cannot forward private state externally. */
-    fetch: (input, init) => fetch(input, { ...init, redirect: "error" }),
+    fetch: async (input, init) => sdkReadableResponse(await fetch(input, { ...init, redirect: "error" }), process.versions.bun !== undefined),
   });
 }
 

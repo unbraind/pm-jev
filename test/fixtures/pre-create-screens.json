@@ -1,0 +1,93 @@
+{
+  "repository": "unbraind/pm-jev",
+  "revision": "195fe22a3d388db2b7e732d2486a4ae6b447a998",
+  "limit": 3,
+  "cases": [
+    {
+      "title": "Count choice options from the JSON request representation",
+      "result": {
+        "duplicate_of": "pm-jev-undefined-choice-admission",
+        "probability": 0.9717990839419847,
+        "probabilities": {
+          "pm-jev-undefined-choice-admission": 0.9717990839419847,
+          "pm-jev-github-21e139da0658-101": 0.0007687859691884579,
+          "pm-jev-hound-generated-dist": 0.00008275915031545374,
+          "none": 0.02734937093851147
+        },
+        "confidence": 0.9623987785893129,
+        "candidates": [
+          {
+            "id": "pm-jev-undefined-choice-admission",
+            "title": "Count choice options from the JSON request representation",
+            "type": "Issue",
+            "status": "closed",
+            "score": 1
+          },
+          {
+            "id": "pm-jev-github-21e139da0658-101",
+            "title": "Admission counts undefined choice entries that disappear from the inference request",
+            "type": "Issue",
+            "status": "closed",
+            "score": 0.26666666666666666
+          },
+          {
+            "id": "pm-jev-hound-generated-dist",
+            "title": "Stop Hound from linting generated dist/ output",
+            "type": "Chore",
+            "status": "closed",
+            "score": 0.07142857142857142
+          }
+        ],
+        "model": "sha256:7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "usage": {
+          "input_tokens": 519,
+          "output_tokens": 0
+        },
+        "catalog_version": "pm-jev-dedupe/1"
+      }
+    },
+    {
+      "title": "Add quasar photometry to the CLI",
+      "result": {
+        "duplicate_of": null,
+        "probability": 0.9951329560888834,
+        "probabilities": {
+          "pm-jev-release-caller-rollout": 0.0018576828001415082,
+          "pm-jev-option-contract-1114": 0.0013787995381946856,
+          "pm-jev-undefined-choice-admission": 0.0016305615727803373,
+          "none": 0.9951329560888834
+        },
+        "confidence": 0.9935106081185112,
+        "candidates": [
+          {
+            "id": "pm-jev-release-caller-rollout",
+            "title": "Adopt the released reusable Daily Release caller",
+            "type": "Task",
+            "status": "open",
+            "score": 0.08333333333333333
+          },
+          {
+            "id": "pm-jev-option-contract-1114",
+            "title": "Adopt pm-cli option contract and current pm-toolchain",
+            "type": "Chore",
+            "status": "closed",
+            "score": 0.07692307692307693
+          },
+          {
+            "id": "pm-jev-undefined-choice-admission",
+            "title": "Count choice options from the JSON request representation",
+            "type": "Issue",
+            "status": "closed",
+            "score": 0.07692307692307693
+          }
+        ],
+        "model": "sha256:7954dce22bc6c29c3b119656207681d12cb34434fed7caa086bfbc919bef0740",
+        "usage": {
+          "input_tokens": 531,
+          "output_tokens": 0
+        },
+        "catalog_version": "pm-jev-dedupe/1"
+      }
+    }
+  ]
+}

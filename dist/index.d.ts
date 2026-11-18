@@ -1,4 +1,5 @@
 import type { JevConfig, ResolvedJevEndpoint } from "./jev-endpoint.ts";
+import type { PreCreateDraft, PreCreateReceipt } from "./pre-create-policy.ts";
 import type { ThresholdInput } from "./threshold.ts";
 import type { AdmissionReceipt } from "./decision-admission.ts";
 import type { TokenUsage } from "./token-usage.ts";
@@ -15,6 +16,8 @@ export { isPmCliExpectedError };
 export { createPmCliExpectedError };
 /** Re-export the pm similarity score type used by the dedupe ranking contract. */
 export type { ItemMetadata, PmSettings };
+/** Public SDK contracts for screening a draft before create. */
+export type { PreCreateDraft, PreCreateReceipt, PreCreateVerdict } from "./pre-create-policy.ts";
 /** Re-export the SDK question-map and result contracts callers validate against. */
 export type { Questions, SystemOneResult };
 /** Exact local prompt admission, strict documents and content-free receipts. */
@@ -359,6 +362,11 @@ export interface DedupeDecision {
  * @returns Candidates with a positive similarity score, sorted descending.
  */
 export declare function rankDedupeCandidates(items: readonly ItemMetadata[], title: string, limit: number): DedupeCandidate[];
+/**
+ * Screen a draft before creating it. The tracker read must certify completeness.
+ * A negative result covers this retrieval snapshot; the caller owns any later mutation.
+ */
+export declare function guardCreate(pmRoot: string, draft: PreCreateDraft): Promise<PreCreateReceipt>;
 /** Versioned relationship question and authorization contract. */
 export declare const LINK_CATALOG_VERSION = "pm-jev-link/1";
 /** One ranked relationship judgment; an existing or ambiguous edge has no proposal. */

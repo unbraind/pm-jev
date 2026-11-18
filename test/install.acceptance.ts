@@ -8,8 +8,9 @@ import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { tmpdir, devNull } from "node:os";
 import test from "node:test";
-import { answers, endpoint, project } from "./fixtures.ts";
-import { triageSourceHash } from "../dist/index.js";
+import { decode } from "@toon-format/toon";
+import { answers, endpoint, project, typeAnswers } from "./fixtures.ts";
+import { KEEP_CURRENT_TYPE, triageSourceHash } from "../dist/index.js";
 import type { Questions } from "@typesafe-ai/sdk";
 
 const execute = promisify(execFile);
@@ -19,9 +20,12 @@ test("packed npm and Bun consumers install the tarball directly and run host tri
   const scratch = mkdtempSync(join(tmpdir(), "jev-install-"));
   const fixture = await project();
   const server = await endpoint();
+  let weakTypeEvidence = false;
   server.setReply((_, response, body) => {
     const request = body as { state: string; questions: Questions };
-    const result = answers(request.questions);
+    const result = weakTypeEvidence
+      ? typeAnswers(request.questions, { Issue: 0.55, Task: 0.23, Feature: 0.15, [KEEP_CURRENT_TYPE]: 0.07 })
+      : answers(request.questions);
     if (result.answers.proposition) result.answers.proposition = { type: "noul", noul: request.state.includes("ghp_") ? 0.95 : 0.1 };
     response.end(JSON.stringify(result));
   });
@@ -65,12 +69,33 @@ test("packed npm and Bun consumers install the tarball directly and run host tri
       console.log(`${executable}: installed tarball host triage passed`);
     }
     const pmBin = join(fixture.cwd, "node_modules/.bin/pm");
-    const compact = await execute(pmBin, ["jev", "triage", created.item.id], { cwd: fixture.cwd, env, timeout: 120000 });
-    assert.match(compact.stdout, /omitted_options: 8/);
     const full = await execute(pmBin, ["jev", "triage", created.item.id, "--full"], { cwd: fixture.cwd, env, timeout: 120000 });
+    type TypeOutput = { proposals: { type: { selected_label: string; probabilities: Record<string, number>; omitted_options?: number } } };
+    const complete = (decode(full.stdout) as TypeOutput).proposals.type;
+    const labelCount = Object.keys(complete.probabilities).length;
+    for (const expectedCount of [3, 4]) {
+      weakTypeEvidence = expectedCount === 4;
+      const compact = await execute(pmBin, ["jev", "triage", created.item.id], { cwd: fixture.cwd, env, timeout: 120000 });
+      const shown = (decode(compact.stdout) as TypeOutput).proposals.type;
+      const retained = Object.keys(shown.probabilities);
+      assert.ok(retained.includes(shown.selected_label));
+      assert.equal(retained.length, expectedCount);
+      assert.equal(shown.omitted_options, labelCount - retained.length);
+      if (weakTypeEvidence) {
+        assert.equal(shown.selected_label, KEEP_CURRENT_TYPE);
+        assert.deepEqual(retained, ["Issue", "Task", "Feature", KEEP_CURRENT_TYPE]);
+      }
+    }
+    weakTypeEvidence = false;
     assert.doesNotMatch(full.stdout, /omitted_options/);
     assert.match(full.stdout, /Reminder: /);
     console.log("installed CLI: compact TOON and full flag passed");
+    await assert.rejects(execute(pmBin, ["--json", "jev", "guard-create", "--title", "Synthetic draft", "--limit="], { cwd: fixture.cwd, env }),
+      (error: { code: number; stdout: string; stderr: string }) => {
+        assert.notEqual(error.code, 0);
+        assert.match(`${error.stdout}${error.stderr}`, /limit must be an integer/i);
+        return true;
+      });
     const safetyArgs = ["--json", "jev", "gate", "--noul", "The text contains a credential, API key or password.", "--expect", "false", "--text"];
     const secret = await execute(pmBin, [...safetyArgs, "Deploy with token ghp_SYNTHETIC_EXAMPLE_ONLY; password=synthetic-password"], { cwd: fixture.cwd, env }).then(() => { throw new Error("secret safety gate unexpectedly exited 0"); }, error => error as { code: number; stdout: string });
     assert.equal(secret.code, 1);
