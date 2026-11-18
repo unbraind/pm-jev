@@ -6,7 +6,9 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-11-18T14:08:58.405Z"
-updated_at: "2026-11-18T14:57:21.335Z"
+updated_at: "2026-11-18T17:37:52.083Z"
+assignee: codex-sol
+claim_principal: codex-sol
 author: codex-sol
 acceptance_criteria: "SDK and command share one read-only guard over a certified tracker read; Bounded local model inference returns actionable duplicate, no-match or explicit abstention with no draft text in receipts; Real SDK fixtures, public tracker measurements, documented limitations and repository gates cover the decision path"
 comments[10]{created_at,author,text}:
@@ -20,18 +22,24 @@ comments[10]{created_at,author,text}:
   "2026-11-18T14:43:42.429Z",codex-sol,Commit 44ee76d carries the Bun transport and packed fixture repairs. A full gate caught a CLI help regression in the shared title flag. Restored the detailed dedupe command's optional-title and pair-scan guidance while maintaining the guard's own help. All ten agent-output and pre-create regression tests pass.
   "2026-11-18T14:53:16.634Z",codex-sol,"Code head 934cd0f: npm run coverage passed on Node 26.13.0. All 458 tests passed, none failed, canceled or skipped. All 50 source files were inventoried; c8 covered 8179/8179 statements and lines, 409/409 functions and 3939/3939 branches. A clean build matched every committed dist byte. The final packed SDK and installed guard returned the public duplicate in Node and Bun with the expected CLI exit code."
   "2026-11-18T14:57:19.425Z",codex-sol,"Final gates: npm run typecheck, lint, duplication, docstring, verify:public-provenance and verify:release-identity passed. git fetch --tags origin followed by npm run changelog:full and npm run changelog:check passed. The four acceptance test files passed together, 5/5 and no skips, via node --test --test-concurrency=2 --test-reporter=tap test/install.acceptance.ts test/joint-install.acceptance.ts test/link.acceptance.ts test/live.acceptance.ts. All eleven standalone public/synthetic evidence generators also ran, including a 12-pair quality run and a 69-pair historical calibration run on verified public snapshots with actual labels in both splits. All generated benchmark artifacts stayed in scratch. pm test --run --progress passed the four guard regressions. Strict tracker health passed in an isolated checkout. Releasing the claim for verification."
-files[9]{path,scope}:
+files[10]{path,scope}:
   index.ts,project
   jev-endpoint.ts,project
   manifest.json,project
   pre-create-policy.ts,project
+  test/calibrated-decisions.test.ts,project
   test/fixtures/pre-create-screens.json,project
   test/fixtures/public-export-surface.json,project
   test/install.acceptance.ts,project
   test/link.acceptance.ts,project
   test/pre-create-guard.test.ts,project
-tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[6]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/pre-create-guard.test.ts,project,codex-sol,"2026-11-18T14:19:25.112Z",local_mutation,feat/pre-create-guard
+  node --test --test-reporter=spec test/pre-create-guard.test.ts test/calibrated-decisions.test.ts,project,codex-sol,"2026-11-18T17:37:51.759Z",local_mutation,feat/pre-create-guard
+  "npm run test:install",project,codex-sol,"2026-11-18T17:37:51.759Z",local_mutation,feat/pre-create-guard
+  npm run coverage,project,codex-sol,"2026-11-18T17:37:51.759Z",local_mutation,feat/pre-create-guard
+  npm run typecheck && npm run lint,project,codex-sol,"2026-11-18T17:37:51.759Z",local_mutation,feat/pre-create-guard
+  "npm run changelog:check",project,codex-sol,"2026-11-18T17:37:51.759Z",local_mutation,feat/pre-create-guard
 docs[1]{path,scope}:
   README.md,project
 body: ""

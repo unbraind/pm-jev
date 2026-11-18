@@ -40,7 +40,7 @@ import { REPLAY_FLAGS, runReplayCommand } from "./replay-command.js";
 import { EXPLANATION_FLAGS, runExplanationCommand } from "./counterfactual-command.js";
 import { runPairDedupe, guardDedupeMutation } from "./dedupe.js";
 import { activeCalibration, calibratedAnswer, modelDigest, questionFingerprint, ranked } from "./decision-calibration.js";
-import { DEPENDENCY_KIND_VALUES, certifyCompleteListResult, createPmCliExpectedError, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolveWorkspaceRelationshipKindRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
+import { DEPENDENCY_KIND_VALUES, createPmCliExpectedError, isPmCliExpectedError, PmClient, readBooleanOption, readFileIfExists, readSettings, readStringOption, resolveItemTypeRegistry, resolvePmRoot, resolveWorkspaceRelationshipKindRegistry, resolveTypeName, scoreItemSimilarity, suppressHostOutput, writeStdout, } from "@unbrained/pm-cli/sdk";
 import { RelationshipGraph } from "@unbrained/pm-cli/sdk/graph";
 import { defineCommand, defineExtension } from "@unbrained/pm-cli/sdk/authoring";
 /** Re-export the structural expected-error predicate for package consumers. */
@@ -905,7 +905,9 @@ async function screenDedupeCandidates(boundary, title, body, candidates) {
     const calibration = await activeCalibration(boundary.pmRoot, "dedupe", boundary.config);
     const request = buildDedupeRequest(title, body, candidates);
     const result = await runDecision(boundary.decision, boundary.config, request.state, request.questions);
-    await verifyCalibrationModel({ config: boundary.config, calibration });
+    if (calibration !== undefined && result.admission?.model_digest !== calibration.record.model_digest) {
+        throw createPmCliExpectedError("Model digest changed during calibrated inference; retry with a fresh calibration");
+    }
     const answer = result.answers.duplicate_of;
     const fit = calibratedAnswer(calibration, "duplicate_of", request.questions.duplicate_of, answer.probabilities, boundary.config.minConfidence);
     const selected = fit.calibration === null ? answer.choice : ranked(fit.probabilities)[0][0];
@@ -934,19 +936,20 @@ export async function guardCreate(pmRoot, draft) {
     if (typeof body !== "string" || !Number.isSafeInteger(limit) || limit < 1 || limit > 32) {
         throw createPmCliExpectedError("Draft body must be text and limit must be an integer from 1 to 32.");
     }
-    const resolved = await resolveJevEndpoint(pmRoot, process.env);
+    const trackerRoot = resolvePmRoot(process.cwd(), pmRoot);
+    const resolved = await resolveJevEndpoint(trackerRoot, process.env);
     if (resolved.config.provider !== "ollama")
         throw createPmCliExpectedError("The pre-create guard requires the Ollama provider.");
     const config = requireCallableEndpoint(resolved);
-    const pm = new PmClient({ pmRoot, noExtensions: true });
-    const { items } = certifyCompleteListResult(await pm.listAllComplete());
+    const pm = new PmClient({ pmRoot: trackerRoot, noExtensions: true });
+    const { items } = await pm.listAllComplete();
     const rankedCandidates = rankDedupeCandidates(items, title, limit + 1);
     const candidates = rankedCandidates.slice(0, limit);
     const hasMore = rankedCandidates.length > limit;
     const decision = createJevClient(resolved, process.env);
     let receipt;
     try {
-        receipt = await screenDedupeCandidates({ pmRoot, config, decision }, title, body, candidates);
+        receipt = await screenDedupeCandidates({ pmRoot: trackerRoot, config, decision }, title, body, candidates);
     }
     catch {
         return {
@@ -1556,11 +1559,10 @@ function registerCommands(api) {
         examples: ['pm --json jev guard-create --title "Fix login crash" --limit 4'],
         /** Use precisely the same policy and tracker boundary as a direct SDK caller. */
         run: async (ctx) => {
-            const limit = readStringOption(ctx.options, "limit");
             const receipt = await guardCreate(ctx.pm_root, {
                 title: readStringOption(ctx.options, "title") ?? "",
                 body: readStringOption(ctx.options, "body"),
-                limit: limit === undefined ? undefined : Number(limit),
+                limit: ctx.options.limit === undefined ? undefined : Number(readStringOption(ctx.options, "limit")),
             });
             return receipt.decision === "no_match" ? receipt : { ...receipt, exit_code: 1 };
         },

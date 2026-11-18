@@ -6,9 +6,10 @@ import test from "node:test";
 import { createExtensionCommandSdk, readSettings } from "@unbrained/pm-cli/sdk";
 import { activeCalibration, calibrateObservations, evidenceHash, questionFingerprint } from "../decision-calibration.ts";
 import type { CalibrationReceipt, Observation, EvaluationTask } from "../decision-calibration.ts";
-import { buildClassificationQuestions, buildDedupeRequest, buildLinkQuestion, rankDedupeCandidates } from "../index.ts";
+import { buildClassificationQuestions, buildDedupeRequest, buildLinkQuestion, guardCreate, rankDedupeCandidates } from "../index.ts";
 import type { DedupeDecision, LinkDecision, TriageDecision } from "../index.ts";
 import type { Questions } from "@typesafe-ai/sdk";
+import { admissionMetadata } from "./admission-fixtures.ts";
 import { answers, scenario } from "./fixtures.ts";
 
 type Fixture = Parameters<Parameters<typeof scenario>[0]>[0];
@@ -169,7 +170,9 @@ test("dedupe preserves raw probabilities and exposes calibrated qualification fo
     const item = (await fixture.pm.create({ title: "Session expiry crash", type: "Issue" })).item;
     const candidates = rankDedupeCandidates((await fixture.pm.listAllComplete()).items, item.title, 8);
     const request = buildDedupeRequest(item.title, "", candidates);
-    await install(fixture, "dedupe", request.questions);
+    const fit = await install(fixture, "dedupe", request.questions);
+    server.setAdmissionReply((request, response) => response.end(JSON.stringify(request.url === "/api/tags"
+      ? { models: [{ name: fit.model, digest: fit.model_digest }] } : admissionMetadata())));
     serve(server, { [item.id]: 0.65, none: 0.35 });
     const result = (await fixture.harness.runCommand({ command: "jev dedupe", pmRoot: fixture.pmRoot, options: { title: item.title }, global: { json: true } })).result as DedupeDecision;
     assert.equal(result.duplicate_of, item.id);
@@ -179,6 +182,29 @@ test("dedupe preserves raw probabilities and exposes calibrated qualification fo
     const none = (await fixture.harness.runCommand({ command: "jev dedupe", pmRoot: fixture.pmRoot, options: { title: item.title }, global: { json: true } })).result as DedupeDecision;
     assert.equal(none.duplicate_of, null);
     assert.equal((none.calibration as { qualifies: boolean }).qualifies, false);
+  });
+});
+
+test("pre-create calibration refuses a different admitted digest even when the tag moves back", async () => {
+  await scenario(async (fixture, server) => {
+    const title = "Session expiry crash";
+    const { item } = await fixture.pm.create({ title, type: "Issue" });
+    const candidates = rankDedupeCandidates((await fixture.pm.listAllComplete()).items, title, 8);
+    const fit = await install(fixture, "dedupe", buildDedupeRequest(title, "", candidates).questions);
+    const replacement = "d".repeat(64);
+    let digest = replacement;
+    server.setAdmissionReply((request, response) => response.end(JSON.stringify(request.url === "/api/tags"
+      ? { models: [{ name: fit.model, digest }] } : admissionMetadata())));
+    serve(server, { [item.id]: 0.65, none: 0.35 }, fit.model_digest);
+    const mismatch = await guardCreate(fixture.pmRoot, { title });
+    assert.equal(mismatch.decision, "abstain");
+    assert.equal(mismatch.decision === "abstain" && mismatch.reason, "decision_unavailable");
+    assert.ok(server.admissionRequests.some(request => request.path === "/api/show" && (request.body as { model: string }).model === `sha256:${replacement}`));
+
+    digest = fit.model_digest;
+    const matched = await guardCreate(fixture.cwd, { title });
+    assert.equal(matched.decision, "duplicate");
+    assert.equal(matched.score_kind, "calibrated");
   });
 });
 

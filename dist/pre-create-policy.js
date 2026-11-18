@@ -1,7 +1,8 @@
 import { acceptsThreshold } from "./threshold.js";
 /** Compact a detailed screen using the guard floor and any stricter compatible fit. */
 export function preCreateReceipt(receipt, minimum, hasMore) {
-    const meta = { candidate_count: receipt.candidates.length, has_more: hasMore, model: receipt.model, usage: receipt.usage };
+    const { input_tokens, output_tokens } = receipt.usage;
+    const meta = { candidate_count: receipt.candidates.length, has_more: hasMore, model: receipt.model, usage: { input_tokens, output_tokens } };
     if (meta.candidate_count === 0)
         return { ...meta, decision: "no_match", reason: "no_title_candidates", probability: null, threshold: null, score_kind: null };
     const fit = receipt.calibration;

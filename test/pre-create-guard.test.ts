@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { PmClient } from "@unbrained/pm-cli/sdk";
+import type { Questions } from "@typesafe-ai/sdk";
 import { guardCreate } from "../index.ts";
 import type { DedupeDecision, PreCreateDraft } from "../index.ts";
 import { sdkReadableResponse } from "../jev-endpoint.ts";
 import { preCreateReceipt } from "../pre-create-policy.ts";
-import { project, trackerSnapshot } from "./fixtures.ts";
+import { answers, project, scenario, trackerSnapshot } from "./fixtures.ts";
 
 const recording = JSON.parse(readFileSync(new URL("./fixtures/pre-create-screens.json", import.meta.url), "utf8")) as {
   cases: { result: DedupeDecision }[];
@@ -55,6 +57,7 @@ test("SDK and command screen a real tracker, abstain offline, and leave item and
       command: "jev guard-create", pmRoot: fixture.pmRoot, global: { json: true }, options,
     });
     assert.deepEqual((await command(draft)).result, empty);
+    await assert.rejects(command({ ...draft, limit: "" }), /limit must be an integer/i);
     const created = await fixture.pm.create({ type: "Task", title: draft.title, description: "Synthetic project" });
     await fixture.pm.create({ type: "Task", title: "Extend quasar photometry" });
     const snapshot = trackerSnapshot(fixture.pmRoot);
@@ -84,6 +87,56 @@ test("SDK and command screen a real tracker, abstain offline, and leave item and
     else process.env.PM_JEV_BASE_URL = previousUrl;
     fixture.dispose();
   }
+});
+
+test("a project directory uses the nested tracker's decision policy", async () => {
+  await scenario(async (fixture, server) => {
+    const title = "Quasar photometry";
+    const { item } = await fixture.pm.create({ type: "Task", title });
+    const settingsFile = join(fixture.pmRoot, "settings.json");
+    const settings = JSON.parse(readFileSync(settingsFile, "utf8"));
+    settings.jev = { min_confidence: 1 };
+    writeFileSync(settingsFile, JSON.stringify(settings));
+    server.setReply((_, response) => response.end(JSON.stringify({
+      model: "tev1:4b",
+      answers: { duplicate_of: { type: "choice", choice: "none", confidence: 0.9, probabilities: { [item.id]: 0.1, none: 0.9 } } },
+      usage: { input_tokens: 50, output_tokens: 4 },
+    })));
+    const receipt = await guardCreate(fixture.cwd, { title });
+    assert.equal(receipt.decision, "abstain");
+    assert.equal(receipt.threshold, 1);
+    assert.equal(receipt.candidate_count, 1);
+  });
+});
+
+test("the guard receipt keeps only the validated token counts from the endpoint", async () => {
+  await scenario(async (fixture, server) => {
+    const title = "Quasar photometry";
+    await fixture.pm.create({ type: "Task", title });
+    server.setReply((_, response, body) => {
+      const result = answers((body as { questions: Questions }).questions);
+      response.end(JSON.stringify({ ...result, usage: { ...result.usage, input_tokens: null, endpoint_note: "Synthetic draft evidence" } }));
+    });
+    const receipt = await guardCreate(fixture.pmRoot, { title });
+    assert.equal(receipt.decision, "duplicate");
+    assert.deepEqual(receipt.usage, { input_tokens: null, output_tokens: 4 });
+  });
+});
+
+test("the guard consumes the tracker list after a single host certification", async (t) => {
+  await scenario(async (fixture) => {
+    const listAllComplete = PmClient.prototype.listAllComplete;
+    let envelopeReads = 0;
+    const list = t.mock.method(PmClient.prototype, "listAllComplete", async function (this: PmClient) {
+      const result = await listAllComplete.call(this);
+      assert.equal(result.complete_list.source_complete, true);
+      return { ...result, get count() { envelopeReads += 1; return result.count; } };
+    });
+    const receipt = await guardCreate(fixture.pmRoot, { title: "Quasar photometry" });
+    assert.equal(receipt.decision, "no_match");
+    assert.equal(list.mock.callCount(), 1);
+    assert.equal(envelopeReads, 0);
+  });
 });
 
 test("invalid SDK inputs fail before tracker discovery", async () => {
