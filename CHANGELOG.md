@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026.11.16 - 2026-11-16
+## 2026.11.16 - 2026-11-17
 
 ### Other
 
@@ -14,6 +14,11 @@
 - Count choice options from the JSON request representation ([pm-jev-undefined-choice-admission](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-undefined-choice-admission.toon))
 - Refuse ambiguous native model aliases before replay pinning ([pm-jev-replay-ambiguity](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-replay-ambiguity.toon))
 
+### Closed
+
+- Closed: Admission counts undefined choice entries that disappear from the inference request ([pm-jev-github-21e139da0658-101](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-101.toon))
+- Closed: Replay bypasses ambiguous_model admission by pinning the first equivalent inventory entry ([pm-jev-github-21e139da0658-100](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-100.toon))
+
 ## 2026.11.6 - 2026-11-06
 
 ### Added
@@ -22,11 +27,15 @@
 
 ### Fixed
 
+- Retry packed admission fixture teardown within a finite bound ([pm-jev-admission-teardown](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-admission-teardown.toon))
 - PR \#92 rejects valid Unicode after item-state truncation splits a surrogate pair ([pm-jev-github-21e139da0658-94](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-94.toon))
 - PR \#92 admission rejects equivalent native Ollama model references ([pm-jev-github-21e139da0658-93](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-93.toon))
-- Retry packed admission fixture teardown within a finite bound ([pm-jev-admission-teardown](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-admission-teardown.toon))
 - SDK 2026.10.30 upgrade aborts five native-state regressions on placeholder parent fixtures ([pm-jev-github-21e139da0658-84](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-84.toon))
 - Release version replacement updates a comment instead of the exported extension identity ([pm-jev-nl5n](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-nl5n.toon))
+
+### Closed
+
+- Closed: Make packed admission smoke teardown resilient to ENOTEMPTY after successful commands ([pm-jev-github-21e139da0658-98](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-98.toon))
 
 ## 2026.11.4 - 2026-11-04
 

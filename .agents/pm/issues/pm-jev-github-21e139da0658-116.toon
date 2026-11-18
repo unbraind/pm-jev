@@ -1,0 +1,21 @@
+id: pm-jev-github-21e139da0658-116
+title: Test fixture can initialize its enclosing Git checkout instead of its own temporary tracker
+description: "GH issue #116: https://github.com/unbraind/pm-jev/issues/116 · author @unbraind · created 2026-11-14T17:02:27Z · updated 2026-11-14T17:02:27Z"
+type: Issue
+status: open
+priority: 2
+tags[2]: "gh:unbraind/pm-jev#116","github_author:unbraind"
+created_at: "2026-11-14T17:02:27Z"
+updated_at: "2026-11-18T11:57:53.925Z"
+author: pm-github
+github_close_reason: ""
+github_closed_at: ""
+github_created_at: "2026-11-14T17:02:27Z"
+github_link_only: false
+github_number: 116
+github_release: ""
+github_state: open
+github_state_reason: unspecified
+github_updated_at: "2026-11-14T17:02:27Z"
+github_url: "https://github.com/unbraind/pm-jev/issues/116"
+body: "## Reproduced at `b06cfa5a6f7977f3d86c6c349c8fd1ce48a7bf05`\n\n[`test/fixtures.ts:31–35`](https://github.com/unbraind/pm-jev/blob/b06cfa5a6f7977f3d86c6c349c8fd1ce48a7bf05/test/fixtures.ts#L31-L35) creates a temporary child directory, then passes `resolveImplicitPmRoot(cwd)` to `PmClient.init`. The [existing fixture goal](https://github.com/unbraind/pm-jev/blob/b06cfa5a6f7977f3d86c6c349c8fd1ce48a7bf05/.agents/pm/features/pm-jev-0q58.toon) is a fresh isolated tracker, even with inherited configuration. This is distinct from its covered `PM_PATH` override.\n\nUsing Linux, Node 24.22.1, Git 2.52.0 and locked npm PM CLI 2026.11.14, I created a disposable Git repository `outer` and a `jev-test-*` child inside it. With the helper's exact resolution/init sequence, the SDK created `outer/.agents/pm/settings.json`; no tracker was initialized in the child. With a tracker already initialized in `outer`, the same sequence refused without `--force`. No real checkout or provider was touched. The SDK is performing its intended ancestor discovery; the test fixture's assumption is the defect, and it is not attributed to the dependency bump.\n\nIn a marked temporary parent, the pristine focused agent-UX and evaluation suites passed 4/21 (17 setup failures). In the isolated copy, changing only the fixture to explicitly own its child tracker root restored 21/21; production source was unchanged.\n\n## Acceptance\n- Place `TMPDIR` inside disposable Git parents both with and without an initialized tracker. The helper creates and removes only its own child tracker; the initialized parent stays byte-identical and the empty parent remains tracker-free.\n- Retain the existing inherited-`PM_PATH` regression and run the focused agent-UX/evaluation tests. Do not change SDK implicit discovery or loosen overwrite protection to make the tests pass."
