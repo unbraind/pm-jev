@@ -4,6 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { guardCreate } from "../index.ts";
 import type { DedupeDecision, PreCreateDraft } from "../index.ts";
+import { sdkReadableResponse } from "../jev-endpoint.ts";
 import { preCreateReceipt } from "../pre-create-policy.ts";
 import { project, trackerSnapshot } from "./fixtures.ts";
 
@@ -91,4 +92,22 @@ test("invalid SDK inputs fail before tracker discovery", async () => {
   for (const draft of [{ body: 8 }, { limit: NaN }, { limit: 0 }, { limit: 33 }, { limit: 1.5 }]) {
     await assert.rejects(guardCreate(".", { title: "Draft", ...draft } as PreCreateDraft), /integer/);
   }
+});
+
+test("the SDK can drain a cloned body and then parse the original stream with its response metadata", async () => {
+  const original = await fetch("data:application/json,%7B%22decision%22%3Atrue%7D");
+  assert.equal(sdkReadableResponse(original, false), original);
+  const empty = new Response(null, { status: 204 });
+  assert.equal(sdkReadableResponse(empty, true), empty);
+  const response = sdkReadableResponse(original, true);
+  assert.equal(response.url, original.url);
+  assert.equal(response.redirected, original.redirected);
+  assert.equal(response.type, original.type);
+  assert.equal(response.status, original.status);
+  assert.equal(response.headers.get("content-type"), "application/json");
+  const copy = response.clone();
+  const reader = response.body!.getReader();
+  assert.deepEqual(await copy.json(), { decision: true });
+  reader.releaseLock();
+  assert.deepEqual(await response.json(), { decision: true });
 });

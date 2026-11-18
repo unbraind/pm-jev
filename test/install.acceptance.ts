@@ -8,6 +8,7 @@ import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { tmpdir, devNull } from "node:os";
 import test from "node:test";
+import { decode } from "@toon-format/toon";
 import { answers, endpoint, project } from "./fixtures.ts";
 import { triageSourceHash } from "../dist/index.js";
 import type { Questions } from "@typesafe-ai/sdk";
@@ -66,8 +67,12 @@ test("packed npm and Bun consumers install the tarball directly and run host tri
     }
     const pmBin = join(fixture.cwd, "node_modules/.bin/pm");
     const compact = await execute(pmBin, ["jev", "triage", created.item.id], { cwd: fixture.cwd, env, timeout: 120000 });
-    assert.match(compact.stdout, /omitted_options: 8/);
     const full = await execute(pmBin, ["jev", "triage", created.item.id, "--full"], { cwd: fixture.cwd, env, timeout: 120000 });
+    type TypeOutput = { proposals: { type: { probabilities: Record<string, number>; omitted_options?: number } } };
+    const shown = (decode(compact.stdout) as TypeOutput).proposals.type;
+    const complete = (decode(full.stdout) as TypeOutput).proposals.type;
+    assert.equal(Object.keys(shown.probabilities).length, 3);
+    assert.equal(shown.omitted_options, Object.keys(complete.probabilities).length - 3);
     assert.doesNotMatch(full.stdout, /omitted_options/);
     assert.match(full.stdout, /Reminder: /);
     console.log("installed CLI: compact TOON and full flag passed");

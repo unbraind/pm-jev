@@ -58,6 +58,12 @@ export declare function numberSetting(value: unknown, fallback: number, low: num
  */
 export declare function resolveJevEndpoint(pmRoot: string, env: Record<string, string | undefined>): Promise<ResolvedJevEndpoint>;
 /**
+ * Bun consumes a native fetch body when the SDK drains a clone and releases
+ * the original reader. A pass-through web stream keeps both reads available
+ * under the SDK's existing deadline and cancellation signal.
+ */
+export declare function sdkReadableResponse(response: Response, nativeBun: boolean): Response;
+/**
  * Build a TypeSafeClient for the resolved endpoint.
  *
  * The client carries `logLevel: "off"` so request/response bodies are never

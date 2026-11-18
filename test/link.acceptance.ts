@@ -4,8 +4,9 @@ import test from "node:test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join, resolve } from "node:path";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir, devNull } from "node:os";
+import { modelDigest } from "../decision-calibration.ts";
 import type { LinkDecision } from "../index.ts";
 import { project, trackerSnapshot } from "./fixtures.ts";
 
@@ -20,7 +21,8 @@ test("packed real host proposes relationships with local tev1:4b", { timeout: 60
     const packed = await execute("npm", ["pack", "--ignore-scripts", "--json", "--pack-destination", scratch], { cwd: root, env });
     const tarball = join(scratch, JSON.parse(packed.stdout)[0].filename as string);
     writeFileSync(join(fixture.cwd, "package.json"), JSON.stringify({ name: "synthetic-link-consumer", private: true, type: "module" }));
-    await execute("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", tarball, "@unbrained/pm-cli@2026.10.11"], { cwd: fixture.cwd, env, timeout: 180000 });
+    const pin = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).devDependencies["@unbrained/pm-cli"];
+    await execute("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", tarball, `@unbrained/pm-cli@${pin}`], { cwd: fixture.cwd, env, timeout: 180000 });
     const pmBin = join(fixture.cwd, "node_modules/.bin/pm");
     await execute(pmBin, ["install", tarball], { cwd: fixture.cwd, env, timeout: 120000 });
     const descriptions = [
@@ -38,11 +40,12 @@ test("packed real host proposes relationships with local tev1:4b", { timeout: 60
     // Pre-existing edge must remain excluded even when the real model selects it.
     await fixture.pm.update(items[0].id, { dep: [`id=${items[1].id},kind=blocked_by`] });
     const before = trackerSnapshot(fixture.pmRoot);
+    const expectedDigest = await modelDigest(env.PM_JEV_BASE_URL, env.PM_JEV_MODEL, 30000);
     const started = performance.now();
     const output = await execute(pmBin, ["--json", "jev", "link", items[0].id], { cwd: fixture.cwd, env, timeout: 270000 });
     const latency = Math.round(performance.now() - started);
     const result = JSON.parse(output.stdout) as LinkDecision;
-    assert.equal(result.model, "tev1:4b");
+    assert.equal(result.model, `sha256:${expectedDigest}`);
     assert.equal(result.proposals.length, 6);
     assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
     assert.deepEqual(result.applied, []);
