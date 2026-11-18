@@ -1865,8 +1865,10 @@ const TRIAGE_FLAGS: FlagDefinition[] = [
 ];
 
 /** Draft inputs shared by both pre-create commands. */
+const DRAFT_TITLE: FlagDefinition = { long: "--title", value_name: "text", value_type: "string", description: "Title of the item proposed for creation" };
+
+/** Optional evidence and candidate bound for screening a title. */
 const DRAFT_FLAGS: FlagDefinition[] = [
-  { long: "--title", value_name: "text", value_type: "string", description: "Title of the item proposed for creation" },
   { long: "--body", value_name: "text", value_type: "string", description: "Optional proposed body text for context" },
   { long: "--limit", value_name: "n", value_type: "string", description: "Maximum candidates ranked into the choice (default 8, max 32)" },
 ];
@@ -1880,6 +1882,7 @@ const DEDUPE_FLAGS: FlagDefinition[] = [
   { long: "--min-confidence", value_name: "p", value_type: "string", description: "Raise the train-calibrated duplicate cutoff; insufficient evidence stays unsure" },
   { long: "--apply", value_type: "boolean", description: "Add calibrated duplicate links with a receipt; never close items" },
   { long: "--close", value_type: "boolean", description: "Removed: duplicate proposals are links-only; use --apply" },
+  { ...DRAFT_TITLE, description: "Pre-create screening: title of the item about to be created; omit to scan existing pairs" },
   ...DRAFT_FLAGS,
 ];
 
@@ -2015,7 +2018,7 @@ function registerCommands(api: ExtensionApi): void {
   api.registerCommand(defineCommand({
     name: "jev guard-create",
     description: "Screen a proposed create and return a compact duplicate, no_match or abstain decision",
-    flags: DRAFT_FLAGS,
+    flags: [DRAFT_TITLE, ...DRAFT_FLAGS],
     examples: ['pm --json jev guard-create --title "Fix login crash" --limit 4'],
     /** Use precisely the same policy and tracker boundary as a direct SDK caller. */
     run: async (ctx: CommandHandlerContext) => {

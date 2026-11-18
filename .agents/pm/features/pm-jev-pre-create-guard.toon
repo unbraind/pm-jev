@@ -6,12 +6,12 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-11-18T14:08:58.405Z"
-updated_at: "2026-11-18T14:39:33.048Z"
+updated_at: "2026-11-18T14:43:42.430Z"
 assignee: codex-sol
 claim_principal: codex-sol
 author: codex-sol
 acceptance_criteria: "SDK and command share one read-only guard over a certified tracker read; Bounded local model inference returns actionable duplicate, no-match or explicit abstention with no draft text in receipts; Real SDK fixtures, public tracker measurements, documented limitations and repository gates cover the decision path"
-comments[7]{created_at,author,text}:
+comments[8]{created_at,author,text}:
   "2026-11-18T14:09:51.665Z",codex-sol,"Ranked by expected agent value per token, qualitatively. 1. A pre-create SDK guard avoids a subprocess and feeding candidate titles and distributions back to an agent on each create. Existing pre-create CLI and ranking primitives do not supply a typed stop/continue/review result. 2. Work selection could connect orientation and claim, but the host already orders work and eligibility depends on current claims and dependencies. 3. Escalation could price a missed handoff, but triage already emits needs_human and a gate accepts custom questions. Backlog triage already streams. The 63-item public baseline has 12 open items and no open item delivering the guard."
   "2026-11-18T14:11:53.338Z",codex-sol,"Design: expose a read-only SDK call and jev guard-create. Use the certified full tracker read and existing title retriever, typed choice request, model admission and optional digest-bound calibration. Retain one overflow candidate so a negative decision on a truncated list abstains. Apply a conservative probability floor, honor stricter settings and disabled fitted policies, and return compact counters and token usage. Fail closed on invalid input or incomplete tracker reads. An unavailable decision endpoint yields a typed abstention."
   "2026-11-18T14:22:18.949Z",codex-sol,"Public tracker measurement at 195fe22, 63 items, limit 3, real local tev1:4b digest 7954dce22bc6. Exact prior title recommended pm-jev-undefined-choice-admission with raw score 0.971799, 519 input tokens, 43.376 s. The SDK receipt used 134 Tev1 tokens versus 430 for the minified detailed JSON. A high none score on a truncated list abstained; zero title candidates reported zero inference tokens. Installed tarball command returned the same duplicate and exited 1. The three new regression tests also passed through pm test."
@@ -19,6 +19,7 @@ comments[7]{created_at,author,text}:
   "2026-11-18T14:30:34.850Z",codex-sol,"A real packed install on the unchanged base reproduced a Bun inference failure. Both Bun 1.3.5 and 1.4.4 mark a native fetch body consumed after the pinned TypeSafe SDK drains its clone while holding and releasing the original reader. This also makes a live guard abstain on a healthy model. Normalize the Bun response stream at the SDK transport boundary and keep deadlines, redirect refusal and native Node behavior."
   "2026-11-18T14:35:07.828Z",codex-sol,"Both native Bun 1.3.5 and 1.4.4 now return the expected duplicate against the real public tracker. A native Response test verifies clone/read behavior and status, headers and URL. Updated two ancillary packed acceptance fixtures that target this entrypoint: use the declared host pin and digest-addressed model for link, and calculate omitted options from the pinned registry for compact triage."
   "2026-11-18T14:39:33.048Z",codex-sol,"After the transport repair, the real guard recommended the same existing item on Node and native Bun 1.3.5 and 1.4.4. The corrected packed install and link acceptance runs pass. The standalone policy module measured 100 percent lines, branches and functions. The earlier full run crossed active source edits, so its coverage percentages are superseded by a fresh run on the final source."
+  "2026-11-18T14:43:42.429Z",codex-sol,Commit 44ee76d carries the Bun transport and packed fixture repairs. A full gate caught a CLI help regression in the shared title flag. Restored the detailed dedupe command's optional-title and pair-scan guidance while maintaining the guard's own help. All ten agent-output and pre-create regression tests pass.
 files[9]{path,scope}:
   index.ts,project
   jev-endpoint.ts,project
