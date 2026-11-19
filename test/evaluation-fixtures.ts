@@ -23,7 +23,7 @@ export async function syntheticCorpus(name = "pm-alpha") {
   const git = (...args: string[]) => execFileSync("git", args, { cwd, env, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
   git("init");
   git("remote", "add", "origin", `https://github.com/unbraind/${name}.git`);
-  const commit = () => { git("add", ".agents/pm"); git("-c", "user.name=SteveBot", "-c", "user.email=1153461+unbraind@users.noreply.github.com", "commit", "-m", "Synthetic tracker snapshot"); };
+  const commit = () => { git("add", ".agents/pm"); git("-c", "user.name=unbrained", "-c", "user.email=1153461+unbraind@users.noreply.github.com", "commit", "-m", "Synthetic tracker snapshot"); };
   commit();
   return { cwd, pmRoot, pm, git, commit, dispose: () => rmSync(base, { recursive: true, force: true }) };
 }
