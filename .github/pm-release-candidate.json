@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "repository": "unbraind/pm-jev",
-  "baseSha": "dcdb5d740dd455219446658516f0e583da829f85",
-  "version": "2026.11.16",
-  "runId": 44078752149,
+  "baseSha": "f662b8dfa02b03e1893f820dbbf0b2acac957f8a",
+  "version": "2026.11.19",
+  "runId": 44517898536,
   "runAttempt": 1,
   "configDigest": "19f861084767fcd1b42ece3bc60c873d40cadd652aba909211d2aaf4f1e1ede6"
 }
