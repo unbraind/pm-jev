@@ -1,10 +1,12 @@
 # Changelog
 
-## 2026.11.24 - 2026-11-24
+## Unreleased
 
 ### Other
 
 - Adopt pm-cli 2026.11.24 host-aligned SDK behaviour ([pm-jev-sdk-host-alignment](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-sdk-host-alignment.toon))
+
+## 2026.11.24 - 2026-11-24
 
 ### Dependencies
 
