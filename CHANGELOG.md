@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026.11.24 - 2026-11-24
+
+### Dependencies
+
+- Bump unbraind/pm-github/.github/workflows/pm-github-closeout.yml ([#132](https://github.com/unbraind/pm-jev/pull/132))
+- Bump unbraind/pm-ops/.github/workflows/daily-release.yml ([#134](https://github.com/unbraind/pm-jev/pull/134))
+- Bump the codeql-action group with 2 updates ([#131](https://github.com/unbraind/pm-jev/pull/131))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml from 2026.11.15 to 2026.11.19 ([#133](https://github.com/unbraind/pm-jev/pull/133))
+- Bump the dependencies group with 2 updates ([#135](https://github.com/unbraind/pm-jev/pull/135))
+
 ## 2026.11.19 - 2026-11-20
 
 ### Added
