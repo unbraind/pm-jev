@@ -28,7 +28,7 @@ test("native command handles compact totals, gaps, aliases and typed refusals wi
       assert.equal(report.ok, true); assert.equal(report.disagreement, 0); assert.equal(report.details.length, 0); assert.equal(report.omitted_details, 1);
     }
     const good = { recording: file, "policy-version": "v2", "min-probability": "0.8" };
-    const direct = await runReplayCommand({ command: "jev replay", pm_root: fixture.pmRoot, args: [], options: { ...good, receipt: join(fixture.cwd, "direct.json") }, global: {} });
+    const direct = await runReplayCommand({ command: "jev replay", pm_root: fixture.pmRoot, args: [], options: { recording: file, policy_version: "v2", min_probability: "0.8", receipt: join(fixture.cwd, "direct.json") }, global: {} });
     assert.ok(direct.ok);
     const normal = await fixture.harness.runCommand({ command: "jev replay", pmRoot: fixture.pmRoot, options: good });
     assert.equal((normal.result as { agreement: number }).agreement, 1);
@@ -70,7 +70,12 @@ test("native local model selection uses the fixture adapter transport and preser
       else res.end(JSON.stringify(answers((body as { questions: Parameters<typeof answers>[0] }).questions)));
     });
     const file = join(fixture.cwd, "recording.json"); writeFileSync(file, JSON.stringify(recording()));
-    const options = { recording: file, policy_version: "v2", min_probability: "0.8", model: "tev1:4b" };
+    const options = { recording: file, policyVersion: "v2", minProbability: "0.8", model: "tev1:4b" };
+    const beforeLegacy = server.requests.length;
+    for (const legacy of [{ policy_version: "v2" }, { min_probability: "0.8" }]) {
+      await assert.rejects(fixture.harness.runCommand({ command: "jev replay", pmRoot: fixture.pmRoot, options: { ...options, ...legacy } }), { code: "unknown_option", exitCode: 2 });
+    }
+    assert.equal(server.requests.length, beforeLegacy);
     const good = await fixture.harness.runCommand({ command: "jev replay", pmRoot: fixture.pmRoot, options });
     assert.equal((good.result as { agreement: number }).agreement, 1);
     failDecision = true;

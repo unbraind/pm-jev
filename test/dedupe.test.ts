@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import type { BeforeMutationHookContext } from "@unbrained/pm-cli/sdk/authoring";
 import type { Questions } from "@typesafe-ai/sdk";
-import { candidatePairs, orderedPair, pairKey, pairState, pairVerdict, runPairDedupe, PAIR_CALIBRATION, DUPLICATE_QUALITY_CALIBRATION } from "../dedupe.ts";
+import { candidatePairs, orderedPair, pairKey, pairState, pairVerdict, runPairDedupe, guardDedupeMutation, PAIR_CALIBRATION, DUPLICATE_QUALITY_CALIBRATION } from "../dedupe.ts";
 import type { PairItem, PairVerdict } from "../dedupe.ts";
 import { answers, scenario as modelScenario, trackerSnapshot, hostedFixture } from "./fixtures.ts";
-import { getSettingsPath, PmClient, createExtensionCommandSdk } from "@unbrained/pm-cli/sdk";
+import { getItemAt, getSettingsPath, PmClient, createExtensionCommandSdk } from "@unbrained/pm-cli/sdk";
 
 type Fixture = Parameters<Parameters<typeof modelScenario>[0]>[0];
 type Server = Parameters<Parameters<typeof modelScenario>[0]>[1];
@@ -245,7 +245,11 @@ test("pair scans clamp low configured confidence while preserving floors and exp
     probability(server, 0.9);
     assert.equal((await scan(fixture, { apply: true }))[0].decision, "abstain");
     assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
-    assert.equal((await scan(fixture, { min_confidence: "0.5" }))[0].decision, "duplicate");
+    const requests = server.requests.length;
+    await assert.rejects(scan(fixture, { min_confidence: "0.5" }), { code: "unknown_option", exitCode: 2, message: /min_confidence/ });
+    assert.equal(server.requests.length, requests);
+    assert.equal((await scan(fixture, { minConfidence: "0.5" }))[0].decision, "duplicate");
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), before);
     settings.jev = { min_confidence: 0.3 };
     writeFileSync(path, JSON.stringify(settings));
     const calibratedBefore = trackerSnapshot(fixture.pmRoot);
@@ -346,6 +350,55 @@ for (const failure of ["stale", "invalid status"] as const) {
   });
 }
 
+/** Hand-built guard contexts for one seeded pair, with a mocked clock and a pm_root of their own so pending state stays apart from other tests. */
+async function pendingClosureHarness(fixture: Fixture, t: TestContext, scope: string) {
+  type Document = BeforeMutationHookContext["before"];
+  const pair = await seed(fixture);
+  const original = (await fixture.pm.get(pair.a.id, { full: true })).item;
+  const deadline = 2_000_000_000_000;
+  const clock = { now: deadline - 30_000 };
+  t.mock.method(Date, "now", () => clock.now);
+  const body = original.body ?? "";
+  const withReceipt = (text: string) => ({ metadata: { ...original, comments: [{ created_at: original.created_at, author: "fixture", text }] }, body }) as Document;
+  const context = { pm_root: `${fixture.pmRoot}-${scope}`, sdk: { get: async () => ({ item: original as PairItem, body }), list: () => fixture.pm.listAllItemMetadataLight() } };
+  const receipt = (offset = 0) => legacyCloseReceipt(original as PairItem, pair.b.id, deadline + offset);
+  /** Record a closing receipt as the given author. */
+  const record = (author: string, text: string, dry_run = false) => guardDedupeMutation({ ...context, operation: "update", before: { metadata: original, body } as Document, after: withReceipt(text), changed_fields: ["comments"], dry_run, actor: { author } } as unknown as BeforeMutationHookContext);
+  /** Close the item, whose history already holds the first receipt, as the given author. */
+  const close = (author: string, close_reason: string, dry_run = false) => {
+    const before = withReceipt(receipt())!;
+    return guardDedupeMutation({ ...context, operation: "close", before, after: { ...before, metadata: { ...before.metadata, status: "closed", close_reason } }, changed_fields: ["status", "close_reason"], dry_run, actor: { author } } as unknown as BeforeMutationHookContext);
+  };
+  return { pair, deadline, clock, receipt, record, close };
+}
+
+test("a pending closure cannot be replaced by another author's receipt until it expires", async t => {
+  await scenario(async fixture => {
+    const { deadline, clock, receipt, record } = await pendingClosureHarness(fixture, t, "pending-owner");
+    assert.equal(record("owner", receipt()), undefined, "the first author records the pending closure");
+    assert.equal(record("intruder", receipt(60_000))?.allow, false, "another author's receipt is refused while the closure is live");
+    assert.equal(record("intruder", receipt(60_000), true)?.allow, false, "the preview reports the same refusal");
+    assert.equal(record("owner", receipt()), undefined, "the owning author may record again");
+    clock.now = deadline + 1;
+    assert.equal(record("intruder", receipt(60_000)), undefined, "an expired pending closure no longer blocks a new author");
+    assert.equal(record("owner", receipt(60_000))?.allow, false, "the new owner's live closure now blocks the previous author");
+  });
+});
+
+test("an expired pending closure stops blocking other authors but never authorizes a duplicate close", async t => {
+  await scenario(async fixture => {
+    const { pair, deadline, clock, receipt, record, close } = await pendingClosureHarness(fixture, t, "expired-owner");
+    assert.equal(record("owner", receipt()), undefined);
+    assert.equal(close("peer", "Completed independently")?.allow, false, "a live pending closure still belongs to its owner");
+    clock.now = deadline + 1;
+    assert.equal(close("peer", "Completed independently", true), undefined, "the preview allows an unrelated close once the closure expired");
+    assert.equal(close("peer", "Completed independently"), undefined, "the commit allows it too");
+    assert.equal(close("peer", "Completed independently"), undefined, "and a retry is not refused by leftover state");
+    assert.equal(close("owner", `duplicate of ${pair.b.id}`)?.allow, false, "an expired receipt never authorizes a duplicate close");
+    assert.equal(close("peer", `duplicate of ${pair.b.id}`)?.allow, false, "not for another author either");
+  });
+});
+
 test("pair source lock guard rejects stale or expired receipts", async () => {
   await scenario(async fixture => {
     const pair = await seed(fixture);
@@ -359,6 +412,8 @@ test("pair source lock guard rejects stale or expired receipts", async () => {
     const sdk: BeforeMutationHookContext["sdk"] = { get: async () => ({ item: original.item as PairItem, body: before.body }), list: () => fixture.pm.listAllItemMetadataLight() };
     const guard = (previous: Document, next: Document) => fixture.harness.runMutationGuard({ context: { pm_root: fixture.pmRoot, operation: "update", before: previous, after: next, changed_fields: ["comments"], sdk } });
     await guard(before as Document, after as Document);
+    const legacy: Omit<BeforeMutationHookContext, "actor" | "dry_run"> = { pm_root: fixture.pmRoot, operation: "update", before: before as Document, after: after as Document, changed_fields: ["comments"], sdk };
+    assert.equal(guardDedupeMutation(legacy as BeforeMutationHookContext), undefined);
     await guard(null, after as Document);
     await guard(before as Document, null);
     const receipt = updated.item.comments![0];
@@ -462,16 +517,27 @@ test("stopgram fallback preserves normalized punctuation variants with bounded s
   });
 });
 
+/** Construct a historical close receipt from the fixture's independently read source revision. */
+function legacyCloseReceipt(original: PairItem, canonical: string, deadline: number): string {
+  const input = createHash("sha256").update(JSON.stringify([original.id, original.title, original.description, original.body, original.type, original.status, original.created_at, original.updated_at, original.dependencies])).digest("hex");
+  return `pm-jev dedupe pair receipt: input_sha256=${input}, deadline_ms=${deadline}, canonical=${canonical}, close=true.`;
+}
+
+/** Persist a historical receipt through the native guard on a fresh pair. */
+async function linkForHistoricalClose(fixture: Fixture) {
+  const pair = await seed(fixture);
+  const pm = guardedClient(fixture);
+  const original = pair.a;
+  const deadline = Date.now() + 120_000;
+  const receipt = legacyCloseReceipt(original, pair.b.id, deadline);
+  await pm.update(original.id, { dep: [`id=${pair.b.id},kind=related`], comment: [receipt] });
+  return { pair, pm, original, deadline, receipt };
+}
+
 for (const change of ["none", "body", "comment", "removed receipt", "expired", "historical", "different canonical"] as const) {
   test(`separate close lock checks live receipt and source on a real tracker: ${change}`, async t => {
     await scenario(async fixture => {
-      const pair = await seed(fixture);
-      const pm = guardedClient(fixture);
-      const original = pair.a;
-      const input = createHash("sha256").update(JSON.stringify([original.id, original.title, original.description, original.body, original.type, original.status, original.created_at, original.updated_at, original.dependencies])).digest("hex");
-      const deadline = Date.now() + 120_000;
-      const receipt = `pm-jev dedupe pair receipt: input_sha256=${input}, deadline_ms=${deadline}, canonical=${pair.b.id}, close=true.`;
-      await pm.update(original.id, { dep: [`id=${pair.b.id},kind=related`], comment: [receipt] });
+      const { pair, pm, original, deadline, receipt } = await linkForHistoricalClose(fixture);
       const linked = (await fixture.pm.get(original.id, { full: true })).item;
       assert.equal(linked.comments?.[0].text, receipt);
       assert.equal(linked.dependencies?.[0].id, pair.b.id);
@@ -503,6 +569,34 @@ for (const change of ["none", "body", "comment", "removed receipt", "expired", "
     });
   });
 }
+
+test("a native close receipt stays with its actor through peer refusals and previews", async () => {
+  await scenario(async fixture => {
+    const { pair, pm, original, deadline } = await linkForHistoricalClose(fixture);
+    const closeReason = `duplicate of ${pair.b.id}`;
+    const saved = trackerSnapshot(fixture.pmRoot);
+    await assert.rejects(pm.update(original.id, { author: "peer", status: "closed", closeReason }), { code: "jev_stale_inference" });
+
+    const { document: first } = await getItemAt(original.id, "1", { pmRoot: fixture.pmRoot });
+    const { document: linked } = await getItemAt(original.id, "2", { pmRoot: fixture.pmRoot });
+    const sdk: BeforeMutationHookContext["sdk"] = {
+      /** Read the canonical persisted document from the real tracker. */
+      get: async () => ({ item: linked.metadata, body: linked.body }),
+      /** Keep the preview bound to the same fixture tracker. */
+      list: () => fixture.pm.listAllItemMetadataLight(),
+    };
+    const preview = { pm_root: fixture.pmRoot, dry_run: true, sdk };
+    const proposedClose = { ...linked, metadata: { ...linked.metadata, status: "closed", close_reason: closeReason } };
+    await fixture.harness.runMutationGuard({ context: { ...preview, author: "fixture", operation: "close", changed_fields: ["status", "close_reason"], before: linked, after: proposedClose } });
+    const proposedReceipt = { ...linked, metadata: { ...linked.metadata, comments: [{ ...linked.metadata.comments![0], text: legacyCloseReceipt(original, pair.b.id, deadline + 1) }] } };
+    // A peer's competing closing receipt is refused while the owner's closure is live, and its preview says so too:
+    // a preview that allowed a write the commit refuses would be a wrong preview.
+    await assert.rejects(fixture.harness.runMutationGuard({ context: { ...preview, author: "peer", operation: "update", changed_fields: ["comments"], before: first, after: proposedReceipt } }), { code: "jev_stale_inference" });
+    assert.deepEqual(trackerSnapshot(fixture.pmRoot), saved);
+    await pm.update(original.id, { status: "closed", closeReason });
+    assert.equal((await fixture.pm.get(original.id)).item.status, "closed");
+  });
+});
 
 test("pair command rejects close through an active real SDK guard", async () => {
   await scenario(async fixture => {

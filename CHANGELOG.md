@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Other
+
+- Adopt pm-cli 2026.11.24 host-aligned SDK behaviour ([pm-jev-sdk-host-alignment](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-sdk-host-alignment.toon))
+
 ## 2026.11.24 - 2026-11-24
 
 ### Dependencies
@@ -16,12 +22,25 @@
 
 - Screen proposed items through a typed pre-create duplicate guard ([pm-jev-pre-create-guard](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-pre-create-guard.toon))
 
+### Dependencies
+
+- Bump eslint ([#124](https://github.com/unbraind/pm-jev/pull/124))
+
 ## 2026.11.16 - 2026-11-17
 
 ### Other
 
 - Split quick PR checks from exhaustive local CI ([pm-jev-ci-v2](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/tasks/pm-jev-ci-v2.toon))
 - Adopt pm-cli option contract and current pm-toolchain ([pm-jev-option-contract-1114](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-option-contract-1114.toon))
+
+### Dependencies
+
+- Bump the dependencies group with 3 updates ([#121](https://github.com/unbraind/pm-jev/pull/121))
+- Bump jscpd ([#112](https://github.com/unbraind/pm-jev/pull/112))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#106](https://github.com/unbraind/pm-jev/pull/106))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#109](https://github.com/unbraind/pm-jev/pull/109))
+- Bump the codeql-action group across 1 directory with 2 updates ([#107](https://github.com/unbraind/pm-jev/pull/107))
+- Bump unbraind/pm-github/.github/workflows/pm-github-closeout.yml ([#108](https://github.com/unbraind/pm-jev/pull/108))
 
 ## 2026.11.7 - 2026-11-07
 
@@ -53,6 +72,11 @@
 
 - Closed: Make packed admission smoke teardown resilient to ENOTEMPTY after successful commands ([pm-jev-github-21e139da0658-98](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-98.toon))
 
+### Dependencies
+
+- Bump the dependencies group with 2 updates ([#97](https://github.com/unbraind/pm-jev/pull/97))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#83](https://github.com/unbraind/pm-jev/pull/83))
+
 ## 2026.11.4 - 2026-11-04
 
 ### Changed
@@ -67,13 +91,24 @@
 
 - Closed: Release publish resolves verified tarball argument as a GitHub SSH repository ([pm-jev-github-21e139da0658-62](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-62.toon))
 
+### Dependencies
+
+- Bump the pm-toolchain group with 3 updates ([#75](https://github.com/unbraind/pm-jev/pull/75))
+- Bump the dependencies group across 1 directory with 4 updates ([#76](https://github.com/unbraind/pm-jev/pull/76))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#78](https://github.com/unbraind/pm-jev/pull/78))
+- Bump unbraind/pm-github/.github/workflows/pm-github-closeout.yml ([#77](https://github.com/unbraind/pm-jev/pull/77))
+
 ## 2026.10.31 - 2026-10-31
 
-No changes.
+### Dependencies
+
+- Bump the pm-toolchain group with 3 updates ([#72](https://github.com/unbraind/pm-jev/pull/72))
 
 ## 2026.10.30 - 2026-10-30
 
-No changes.
+### Dependencies
+
+- Bump the pm-toolchain group with 3 updates ([#69](https://github.com/unbraind/pm-jev/pull/69))
 
 ## 2026.10.29 - 2026-10-29
 
@@ -81,6 +116,10 @@ No changes.
 
 - Queue budgeted human labeling with deterministic uncertainty and diversity selection ([pm-jev-h8hx](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-h8hx.toon))
 - Explain incompatible joint decision proposals before apply ([pm-jev-79ht](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/features/pm-jev-79ht.toon))
+
+### Dependencies
+
+- Bump the pm-toolchain group with 3 updates ([#64](https://github.com/unbraind/pm-jev/pull/64))
 
 ## 2026.10.28 - 2026-10-28
 
@@ -128,3 +167,31 @@ No changes.
 - Release readiness behind PM_RELEASE_APPROVED ([pm-jev-release-gate](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-release-gate.toon))
 - Preserve Unicode exemplar retrieval and UTF-8 prompt budgets ([pm-jev-sdk-unicode](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/tasks/pm-jev-sdk-unicode.toon))
 - pm-jev: typed local-first System One decisions for pm items ([pm-jev-0w3q](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/epics/pm-jev-0w3q.toon))
+
+### Dependencies
+
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#59](https://github.com/unbraind/pm-jev/pull/59))
+- Bump @toon-format/toon ([#60](https://github.com/unbraind/pm-jev/pull/60))
+- Bump the codeql-action group across 1 directory with 2 updates ([#54](https://github.com/unbraind/pm-jev/pull/54))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#56](https://github.com/unbraind/pm-jev/pull/56))
+- Bump unbraind/pm-github/.github/workflows/pm-github-closeout.yml ([#55](https://github.com/unbraind/pm-jev/pull/55))
+- Bump the dependencies group across 1 directory with 2 updates ([#53](https://github.com/unbraind/pm-jev/pull/53))
+- Bump the pm-toolchain group with 3 updates ([#52](https://github.com/unbraind/pm-jev/pull/52))
+- Bump jscpd ([#46](https://github.com/unbraind/pm-jev/pull/46))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#38](https://github.com/unbraind/pm-jev/pull/38))
+- Bump the pm-toolchain group with 2 updates ([#35](https://github.com/unbraind/pm-jev/pull/35))
+- Bump the dependencies group across 1 directory with 2 updates ([#32](https://github.com/unbraind/pm-jev/pull/32))
+- Bump the pm-toolchain group with 3 updates ([#31](https://github.com/unbraind/pm-jev/pull/31))
+- Bump the codeql-action group with 2 updates ([#33](https://github.com/unbraind/pm-jev/pull/33))
+- Bump the pm-toolchain group with 2 updates ([#22](https://github.com/unbraind/pm-jev/pull/22))
+- Bump the pm-toolchain group with 2 updates ([#20](https://github.com/unbraind/pm-jev/pull/20))
+- Bump @unbrained/pm-cli ([#18](https://github.com/unbraind/pm-jev/pull/18))
+- Bump actions/setup-node from 7.0.0 to 7.1.0 ([#14](https://github.com/unbraind/pm-jev/pull/14))
+- Bump actions/download-artifact from 8.0.1 to 8.0.2 ([#15](https://github.com/unbraind/pm-jev/pull/15))
+- Bump actions/upload-artifact from 7.0.1 to 7.0.2 ([#13](https://github.com/unbraind/pm-jev/pull/13))
+- Bump the codeql-action group with 2 updates ([#12](https://github.com/unbraind/pm-jev/pull/12))
+- Bump the dependencies group with 4 updates ([#11](https://github.com/unbraind/pm-jev/pull/11))
+- Bump the pm-toolchain group with 3 updates ([#6](https://github.com/unbraind/pm-jev/pull/6))
+- Bump pm-ops ([#5](https://github.com/unbraind/pm-jev/pull/5))
+- Bump actions/download-artifact from 4.3.0 to 8.0.1 ([#2](https://github.com/unbraind/pm-jev/pull/2))
+- Bump actions/upload-artifact from 4.6.2 to 7.0.1 ([#3](https://github.com/unbraind/pm-jev/pull/3))

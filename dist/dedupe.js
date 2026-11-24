@@ -152,6 +152,8 @@ export function guardDedupeMutation(ctx) {
     const previous = ctx.before, next = ctx.after;
     if (previous === null || next === null)
         return;
+    // The oldest supported hosts omit actor and only invoke the write path.
+    const author = ctx.actor?.author;
     const key = JSON.stringify([ctx.pm_root, previous.metadata.id]);
     const additions = next.metadata.comments?.slice(previous.metadata.comments?.length ?? 0) ?? [];
     const refusal = { allow: false, code: "jev_stale_inference", message: "Duplicate evidence changed or expired.", remediation: "Retry jev dedupe against current items." };
@@ -160,17 +162,32 @@ export function guardDedupeMutation(ctx) {
         if (guard !== null) {
             if (guard[1] !== pairRevision({ ...previous.metadata, body: previous.body }) || Date.now() >= Number(guard[2]))
                 return refusal;
-            if (text.endsWith("close=true."))
-                pendingClosures.set(key, { receipt: text, deadline: Number(guard[2]), revision: closeRevision(next) });
+            if (text.endsWith("close=true.")) {
+                // Another author's live pending closure owns the item until that author consumes it or it expires.
+                const existing = pendingClosures.get(key);
+                if (existing !== undefined && existing.author !== author && Date.now() < existing.deadline)
+                    return refusal;
+                if (!ctx.dry_run)
+                    pendingClosures.set(key, { receipt: text, deadline: Number(guard[2]), revision: closeRevision(next), author });
+            }
         }
     }
     if (ctx.operation === "close") {
         const duplicateReason = /^duplicate of (.+)$/.exec(String(next.metadata.close_reason));
         const receipt = duplicateReason === null ? undefined : [...(previous.metadata.comments ?? [])].reverse().find(/** Match the most recent receipt authorizing this directed duplicate closure. */ ({ text }) => text.startsWith("pm-jev dedupe pair receipt:") && text.endsWith("close=true.") && text.includes(`, canonical=${duplicateReason[1]},`));
-        const pending = pendingClosures.get(key);
-        pendingClosures.delete(key);
+        let pending = pendingClosures.get(key);
+        // An expired pending closure owns nothing: drop it before the ownership check, so an unrelated close can proceed.
+        if (pending !== undefined && Date.now() >= pending.deadline) {
+            if (!ctx.dry_run)
+                pendingClosures.delete(key);
+            pending = undefined;
+        }
         if (pending !== undefined || receipt !== undefined) {
-            if (pending === undefined || pending.receipt !== receipt?.text || pending.revision !== closeRevision(previous) || Date.now() >= pending.deadline)
+            if (pending === undefined || pending.author !== author)
+                return refusal;
+            if (!ctx.dry_run)
+                pendingClosures.delete(key);
+            if (pending.receipt !== receipt?.text || pending.revision !== closeRevision(previous) || Date.now() >= pending.deadline)
                 return refusal;
         }
     }
