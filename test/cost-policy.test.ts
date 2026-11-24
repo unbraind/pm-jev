@@ -182,11 +182,12 @@ test("registered policy CLI reads real plain tracker inputs with no git or provi
     }
     const full = await invoke({ ...options, full: true });
     assert.deepEqual(full.result, selectAbstentionPolicy(dataset(), costs));
-    for (const spelling of ["snake", "hyphen"]) {
-      const keys = spelling === "snake" ? ["false_duplicate_cost", "wrong_type_cost", "missed_candidate_cost"] : ["false-duplicate-cost", "wrong-type-cost", "missed-candidate-cost"];
-      const aliased = await invoke({ observations: file, [keys[0]]: "20", [keys[1]]: "10", [keys[2]]: "1" });
-      assert.equal((aliased.result as CostPolicyReport).policy.threshold, 0.95);
-    }
+    const legacy = { observations: file, false_duplicate_cost: "20", wrong_type_cost: "10", missed_candidate_cost: "1" };
+    await assert.rejects(invoke(legacy), { code: "unknown_option", exitCode: 2, message: /false_duplicate_cost/ });
+    const direct = await runCostPolicyCommand({ command: "jev policy", pm_root: fixture.pmRoot, source_workspace_root: fixture.cwd, args: [], global: { json: true }, options: legacy });
+    assert.deepEqual(direct, (await invoke(options)).result);
+    const cli = await invoke({ observations: file, "false-duplicate-cost": "20", "wrong-type-cost": "10", "missed-candidate-cost": "1" });
+    assert.equal((cli.result as CostPolicyReport).policy.threshold, 0.95);
     for (const overrides of [{ observations: undefined }, { observations: "" }, { observations: scratch }, { observations: join(scratch, "missing") }, { falseDuplicateCost: " " }, { falseDuplicateCost: undefined }, { wrongTypeCost: undefined }, { missedCandidateCost: undefined }]) {
       const result = await invoke({ ...options, ...overrides });
       const refusal = result.result as { ok: boolean; refusal: { code: string; remedy: string } };

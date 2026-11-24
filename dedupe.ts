@@ -144,7 +144,7 @@ function pairRevision(item: PairItem): string {
   return createHash("sha256").update(JSON.stringify([item.id, item.title, item.description, item.body, item.type, item.status, item.created_at, item.updated_at, item.dependencies])).digest("hex");
 }
 /** One live command's locked post-link state; historical receipts cannot authorize later closes. */
-const pendingClosures = new Map<string, { receipt: string; deadline: number; revision: string }>();
+const pendingClosures = new Map<string, { receipt: string; deadline: number; revision: string; author: string | undefined }>();
 /** Fingerprint the complete canonical document, independent of metadata key ordering. */
 function closeRevision(document: NonNullable<BeforeMutationHookContext["before"]>): string {
   return createHash("sha256").update(JSON.stringify([Object.entries(document.metadata).sort(/** Order top-level metadata keys across canonical reads. */ ([a], [b]) => a.localeCompare(b)), document.body])).digest("hex");
@@ -153,6 +153,8 @@ function closeRevision(document: NonNullable<BeforeMutationHookContext["before"]
 export function guardDedupeMutation(ctx: BeforeMutationHookContext): BeforeMutationHookDecision | void {
   const previous = ctx.before, next = ctx.after;
   if (previous === null || next === null) return;
+  // The oldest supported hosts omit actor and only invoke the write path.
+  const author = ctx.actor?.author;
   const key = JSON.stringify([ctx.pm_root, previous.metadata.id]);
   const additions = next.metadata.comments?.slice(previous.metadata.comments?.length ?? 0) ?? [];
   const refusal = { allow: false as const, code: "jev_stale_inference", message: "Duplicate evidence changed or expired.", remediation: "Retry jev dedupe against current items." };
@@ -160,16 +162,17 @@ export function guardDedupeMutation(ctx: BeforeMutationHookContext): BeforeMutat
     const guard = /^pm-jev dedupe pair receipt: input_sha256=([a-f0-9]{64}), deadline_ms=(\d+),/.exec(text);
     if (guard !== null) {
       if (guard[1] !== pairRevision({ ...previous.metadata, body: previous.body } as PairItem) || Date.now() >= Number(guard[2])) return refusal;
-      if (text.endsWith("close=true.")) pendingClosures.set(key, { receipt: text, deadline: Number(guard[2]), revision: closeRevision(next) });
+      if (text.endsWith("close=true.") && !ctx.dry_run) pendingClosures.set(key, { receipt: text, deadline: Number(guard[2]), revision: closeRevision(next), author });
     }
   }
   if (ctx.operation === "close") {
     const duplicateReason = /^duplicate of (.+)$/.exec(String(next.metadata.close_reason));
     const receipt = duplicateReason === null ? undefined : [...(previous.metadata.comments ?? [])].reverse().find(/** Match the most recent receipt authorizing this directed duplicate closure. */ ({ text }) => text.startsWith("pm-jev dedupe pair receipt:") && text.endsWith("close=true.") && text.includes(`, canonical=${duplicateReason[1]},`));
     const pending = pendingClosures.get(key);
-    pendingClosures.delete(key);
     if (pending !== undefined || receipt !== undefined) {
-      if (pending === undefined || pending.receipt !== receipt?.text || pending.revision !== closeRevision(previous) || Date.now() >= pending.deadline) return refusal;
+      if (pending === undefined || pending.author !== author) return refusal;
+      if (!ctx.dry_run) pendingClosures.delete(key);
+      if (pending.receipt !== receipt?.text || pending.revision !== closeRevision(previous) || Date.now() >= pending.deadline) return refusal;
     }
   }
 }

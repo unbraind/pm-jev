@@ -295,9 +295,16 @@ test("CLI uses host SDK reads in a non-git tracker, handles aliases and refuses 
     try {
       const invoke = (options: Record<string, unknown>, args = [item.id]) => fixture.harness.runCommand({ command: "jev explain", pmRoot: fixture.pmRoot, args, options, global: { json: true } });
       const base = { questions: file, fields: " title, tags " };
-      const fallback = await runExplanationCommand({ command: "jev explain", pm_root: fixture.pmRoot, source_workspace_root: fixture.cwd, args: [item.id], options: base, global: {} });
+      const direct = { command: "jev explain", pm_root: fixture.pmRoot, source_workspace_root: fixture.cwd, args: [item.id], options: base, global: {} };
+      const fallback = await runExplanationCommand(direct);
       assert.ok("complete" in fallback && fallback.complete);
-      for (const name of ["maxCalls", "max_calls", "max-calls"]) {
+      const requests = server.requests.length;
+      await assert.rejects(invoke({ ...base, max_calls: "2" }), { code: "unknown_option", exitCode: 2, message: /max_calls/ });
+      assert.equal(server.requests.length, requests);
+      const legacy = await runExplanationCommand({ ...direct, options: { ...base, max_calls: "2" } });
+      assert.ok("calls" in legacy);
+      assert.equal(legacy.calls.attempted, 2);
+      for (const name of ["maxCalls", "max-calls"]) {
         const result = await invoke({ ...base, [name]: "2" });
         assert.equal(result.exitCode ?? 0, 0);
         assert.equal((result.result as CounterfactualReceipt).calls.attempted, 2);
