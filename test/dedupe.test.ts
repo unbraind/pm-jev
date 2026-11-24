@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -350,53 +350,47 @@ for (const failure of ["stale", "invalid status"] as const) {
   });
 }
 
+/** Hand-built guard contexts for one seeded pair, with a mocked clock and a pm_root of their own so pending state stays apart from other tests. */
+async function pendingClosureHarness(fixture: Fixture, t: TestContext, scope: string) {
+  type Document = BeforeMutationHookContext["before"];
+  const pair = await seed(fixture);
+  const original = (await fixture.pm.get(pair.a.id, { full: true })).item;
+  const deadline = 2_000_000_000_000;
+  const clock = { now: deadline - 30_000 };
+  t.mock.method(Date, "now", () => clock.now);
+  const body = original.body ?? "";
+  const withReceipt = (text: string) => ({ metadata: { ...original, comments: [{ created_at: original.created_at, author: "fixture", text }] }, body }) as Document;
+  const context = { pm_root: `${fixture.pmRoot}-${scope}`, sdk: { get: async () => ({ item: original as PairItem, body }), list: () => fixture.pm.listAllItemMetadataLight() } };
+  const receipt = (offset = 0) => legacyCloseReceipt(original as PairItem, pair.b.id, deadline + offset);
+  /** Record a closing receipt as the given author. */
+  const record = (author: string, text: string, dry_run = false) => guardDedupeMutation({ ...context, operation: "update", before: { metadata: original, body } as Document, after: withReceipt(text), changed_fields: ["comments"], dry_run, actor: { author } } as unknown as BeforeMutationHookContext);
+  /** Close the item, whose history already holds the first receipt, as the given author. */
+  const close = (author: string, close_reason: string, dry_run = false) => {
+    const before = withReceipt(receipt())!;
+    return guardDedupeMutation({ ...context, operation: "close", before, after: { ...before, metadata: { ...before.metadata, status: "closed", close_reason } }, changed_fields: ["status", "close_reason"], dry_run, actor: { author } } as unknown as BeforeMutationHookContext);
+  };
+  return { pair, deadline, clock, receipt, record, close };
+}
+
 test("a pending closure cannot be replaced by another author's receipt until it expires", async t => {
   await scenario(async fixture => {
-    const pair = await seed(fixture);
-    const original = (await fixture.pm.get(pair.a.id, { full: true })).item;
-    type Document = BeforeMutationHookContext["before"];
-    const deadline = 2_000_000_000_000;
-    const before = { metadata: original, body: original.body ?? "" } as Document;
-    const withReceipt = (text: string) => ({ metadata: { ...original, comments: [{ created_at: original.created_at, author: "fixture", text }] }, body: original.body ?? "" }) as Document;
-    const sdk: BeforeMutationHookContext["sdk"] = { get: async () => ({ item: original as PairItem, body: original.body ?? "" }), list: () => fixture.pm.listAllItemMetadataLight() };
-    // A pm_root of its own keeps this test's pending state apart from the other guard tests in the process.
-    const write = (author: string, text: string, dry_run = false) => guardDedupeMutation({ pm_root: `${fixture.pmRoot}-pending-owner`, operation: "update", before, after: withReceipt(text), changed_fields: ["comments"], sdk, dry_run, actor: { author } } as unknown as BeforeMutationHookContext);
-    const first = legacyCloseReceipt(original as PairItem, pair.b.id, deadline);
-    const later = legacyCloseReceipt(original as PairItem, pair.b.id, deadline + 60_000);
-
-    let now = deadline - 30_000;
-    t.mock.method(Date, "now", () => now);
-    assert.equal(write("owner", first), undefined, "the first author records the pending closure");
-    assert.equal(write("intruder", later)?.allow, false, "another author's receipt is refused while the closure is live");
-    assert.equal(write("intruder", later, true)?.allow, false, "the preview reports the same refusal");
-    assert.equal(write("owner", first), undefined, "the owning author may record again");
-    now = deadline + 1;
-    assert.equal(write("intruder", later), undefined, "an expired pending closure no longer blocks a new author");
-    assert.equal(write("owner", later)?.allow, false, "the new owner's live closure now blocks the previous author");
+    const { deadline, clock, receipt, record } = await pendingClosureHarness(fixture, t, "pending-owner");
+    assert.equal(record("owner", receipt()), undefined, "the first author records the pending closure");
+    assert.equal(record("intruder", receipt(60_000))?.allow, false, "another author's receipt is refused while the closure is live");
+    assert.equal(record("intruder", receipt(60_000), true)?.allow, false, "the preview reports the same refusal");
+    assert.equal(record("owner", receipt()), undefined, "the owning author may record again");
+    clock.now = deadline + 1;
+    assert.equal(record("intruder", receipt(60_000)), undefined, "an expired pending closure no longer blocks a new author");
+    assert.equal(record("owner", receipt(60_000))?.allow, false, "the new owner's live closure now blocks the previous author");
   });
 });
 
 test("an expired pending closure stops blocking other authors but never authorizes a duplicate close", async t => {
   await scenario(async fixture => {
-    const pair = await seed(fixture);
-    const original = (await fixture.pm.get(pair.a.id, { full: true })).item;
-    type Document = BeforeMutationHookContext["before"];
-    const deadline = 2_000_000_000_000;
-    const first = legacyCloseReceipt(original as PairItem, pair.b.id, deadline);
-    const plain = { metadata: original, body: original.body ?? "" } as Document;
-    const receipted = { metadata: { ...original, comments: [{ created_at: original.created_at, author: "fixture", text: first }] }, body: original.body ?? "" } as Document;
-    const sdk: BeforeMutationHookContext["sdk"] = { get: async () => ({ item: original as PairItem, body: original.body ?? "" }), list: () => fixture.pm.listAllItemMetadataLight() };
-    // A pm_root of its own keeps this test's pending state apart from the other guard tests in the process.
-    const base = { pm_root: `${fixture.pmRoot}-expired-owner`, sdk };
-    const record = (author: string) => guardDedupeMutation({ ...base, operation: "update", before: plain, after: receipted, changed_fields: ["comments"], dry_run: false, actor: { author } } as unknown as BeforeMutationHookContext);
-    const close = (author: string, close_reason: string, dry_run = false) => guardDedupeMutation({ ...base, operation: "close", before: receipted, after: { ...receipted!, metadata: { ...receipted!.metadata, status: "closed", close_reason } }, changed_fields: ["status", "close_reason"], dry_run, actor: { author } } as unknown as BeforeMutationHookContext);
-
-    let now = deadline - 30_000;
-    t.mock.method(Date, "now", () => now);
-    assert.equal(record("owner"), undefined);
+    const { pair, deadline, clock, receipt, record, close } = await pendingClosureHarness(fixture, t, "expired-owner");
+    assert.equal(record("owner", receipt()), undefined);
     assert.equal(close("peer", "Completed independently")?.allow, false, "a live pending closure still belongs to its owner");
-
-    now = deadline + 1;
+    clock.now = deadline + 1;
     assert.equal(close("peer", "Completed independently", true), undefined, "the preview allows an unrelated close once the closure expired");
     assert.equal(close("peer", "Completed independently"), undefined, "the commit allows it too");
     assert.equal(close("peer", "Completed independently"), undefined, "and a retry is not refused by leftover state");
