@@ -162,8 +162,14 @@ export function guardDedupeMutation(ctx) {
         if (guard !== null) {
             if (guard[1] !== pairRevision({ ...previous.metadata, body: previous.body }) || Date.now() >= Number(guard[2]))
                 return refusal;
-            if (text.endsWith("close=true.") && !ctx.dry_run)
-                pendingClosures.set(key, { receipt: text, deadline: Number(guard[2]), revision: closeRevision(next), author });
+            if (text.endsWith("close=true.")) {
+                // Another author's live pending closure owns the item until that author consumes it or it expires.
+                const existing = pendingClosures.get(key);
+                if (existing !== undefined && existing.author !== author && Date.now() < existing.deadline)
+                    return refusal;
+                if (!ctx.dry_run)
+                    pendingClosures.set(key, { receipt: text, deadline: Number(guard[2]), revision: closeRevision(next), author });
+            }
         }
     }
     if (ctx.operation === "close") {

@@ -350,6 +350,32 @@ for (const failure of ["stale", "invalid status"] as const) {
   });
 }
 
+test("a pending closure cannot be replaced by another author's receipt until it expires", async t => {
+  await scenario(async fixture => {
+    const pair = await seed(fixture);
+    const original = (await fixture.pm.get(pair.a.id, { full: true })).item;
+    type Document = BeforeMutationHookContext["before"];
+    const deadline = 2_000_000_000_000;
+    const before = { metadata: original, body: original.body ?? "" } as Document;
+    const withReceipt = (text: string) => ({ metadata: { ...original, comments: [{ created_at: original.created_at, author: "fixture", text }] }, body: original.body ?? "" }) as Document;
+    const sdk: BeforeMutationHookContext["sdk"] = { get: async () => ({ item: original as PairItem, body: original.body ?? "" }), list: () => fixture.pm.listAllItemMetadataLight() };
+    // A pm_root of its own keeps this test's pending state apart from the other guard tests in the process.
+    const write = (author: string, text: string, dry_run = false) => guardDedupeMutation({ pm_root: `${fixture.pmRoot}-pending-owner`, operation: "update", before, after: withReceipt(text), changed_fields: ["comments"], sdk, dry_run, actor: { author } } as unknown as BeforeMutationHookContext);
+    const first = legacyCloseReceipt(original as PairItem, pair.b.id, deadline);
+    const later = legacyCloseReceipt(original as PairItem, pair.b.id, deadline + 60_000);
+
+    let now = deadline - 30_000;
+    t.mock.method(Date, "now", () => now);
+    assert.equal(write("owner", first), undefined, "the first author records the pending closure");
+    assert.equal(write("intruder", later)?.allow, false, "another author's receipt is refused while the closure is live");
+    assert.equal(write("intruder", later, true)?.allow, false, "the preview reports the same refusal");
+    assert.equal(write("owner", first), undefined, "the owning author may record again");
+    now = deadline + 1;
+    assert.equal(write("intruder", later), undefined, "an expired pending closure no longer blocks a new author");
+    assert.equal(write("owner", later)?.allow, false, "the new owner's live closure now blocks the previous author");
+  });
+});
+
 test("pair source lock guard rejects stale or expired receipts", async () => {
   await scenario(async fixture => {
     const pair = await seed(fixture);
@@ -540,7 +566,9 @@ test("a native close receipt stays with its actor through peer refusals and prev
     const proposedClose = { ...linked, metadata: { ...linked.metadata, status: "closed", close_reason: closeReason } };
     await fixture.harness.runMutationGuard({ context: { ...preview, author: "fixture", operation: "close", changed_fields: ["status", "close_reason"], before: linked, after: proposedClose } });
     const proposedReceipt = { ...linked, metadata: { ...linked.metadata, comments: [{ ...linked.metadata.comments![0], text: legacyCloseReceipt(original, pair.b.id, deadline + 1) }] } };
-    await fixture.harness.runMutationGuard({ context: { ...preview, author: "peer", operation: "update", changed_fields: ["comments"], before: first, after: proposedReceipt } });
+    // A peer's competing closing receipt is refused while the owner's closure is live, and its preview says so too:
+    // a preview that allowed a write the commit refuses would be a wrong preview.
+    await assert.rejects(fixture.harness.runMutationGuard({ context: { ...preview, author: "peer", operation: "update", changed_fields: ["comments"], before: first, after: proposedReceipt } }), { code: "jev_stale_inference" });
     assert.deepEqual(trackerSnapshot(fixture.pmRoot), saved);
     await pm.update(original.id, { status: "closed", closeReason });
     assert.equal((await fixture.pm.get(original.id)).item.status, "closed");

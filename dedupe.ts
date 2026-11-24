@@ -162,7 +162,12 @@ export function guardDedupeMutation(ctx: BeforeMutationHookContext): BeforeMutat
     const guard = /^pm-jev dedupe pair receipt: input_sha256=([a-f0-9]{64}), deadline_ms=(\d+),/.exec(text);
     if (guard !== null) {
       if (guard[1] !== pairRevision({ ...previous.metadata, body: previous.body } as PairItem) || Date.now() >= Number(guard[2])) return refusal;
-      if (text.endsWith("close=true.") && !ctx.dry_run) pendingClosures.set(key, { receipt: text, deadline: Number(guard[2]), revision: closeRevision(next), author });
+      if (text.endsWith("close=true.")) {
+        // Another author's live pending closure owns the item until that author consumes it or it expires.
+        const existing = pendingClosures.get(key);
+        if (existing !== undefined && existing.author !== author && Date.now() < existing.deadline) return refusal;
+        if (!ctx.dry_run) pendingClosures.set(key, { receipt: text, deadline: Number(guard[2]), revision: closeRevision(next), author });
+      }
     }
   }
   if (ctx.operation === "close") {
