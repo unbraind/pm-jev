@@ -173,7 +173,12 @@ export function guardDedupeMutation(ctx: BeforeMutationHookContext): BeforeMutat
   if (ctx.operation === "close") {
     const duplicateReason = /^duplicate of (.+)$/.exec(String(next.metadata.close_reason));
     const receipt = duplicateReason === null ? undefined : [...(previous.metadata.comments ?? [])].reverse().find(/** Match the most recent receipt authorizing this directed duplicate closure. */ ({ text }) => text.startsWith("pm-jev dedupe pair receipt:") && text.endsWith("close=true.") && text.includes(`, canonical=${duplicateReason[1]},`));
-    const pending = pendingClosures.get(key);
+    let pending = pendingClosures.get(key);
+    // An expired pending closure owns nothing: drop it before the ownership check, so an unrelated close can proceed.
+    if (pending !== undefined && Date.now() >= pending.deadline) {
+      if (!ctx.dry_run) pendingClosures.delete(key);
+      pending = undefined;
+    }
     if (pending !== undefined || receipt !== undefined) {
       if (pending === undefined || pending.author !== author) return refusal;
       if (!ctx.dry_run) pendingClosures.delete(key);

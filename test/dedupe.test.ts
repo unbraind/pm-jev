@@ -376,6 +376,35 @@ test("a pending closure cannot be replaced by another author's receipt until it 
   });
 });
 
+test("an expired pending closure stops blocking other authors but never authorizes a duplicate close", async t => {
+  await scenario(async fixture => {
+    const pair = await seed(fixture);
+    const original = (await fixture.pm.get(pair.a.id, { full: true })).item;
+    type Document = BeforeMutationHookContext["before"];
+    const deadline = 2_000_000_000_000;
+    const first = legacyCloseReceipt(original as PairItem, pair.b.id, deadline);
+    const plain = { metadata: original, body: original.body ?? "" } as Document;
+    const receipted = { metadata: { ...original, comments: [{ created_at: original.created_at, author: "fixture", text: first }] }, body: original.body ?? "" } as Document;
+    const sdk: BeforeMutationHookContext["sdk"] = { get: async () => ({ item: original as PairItem, body: original.body ?? "" }), list: () => fixture.pm.listAllItemMetadataLight() };
+    // A pm_root of its own keeps this test's pending state apart from the other guard tests in the process.
+    const base = { pm_root: `${fixture.pmRoot}-expired-owner`, sdk };
+    const record = (author: string) => guardDedupeMutation({ ...base, operation: "update", before: plain, after: receipted, changed_fields: ["comments"], dry_run: false, actor: { author } } as unknown as BeforeMutationHookContext);
+    const close = (author: string, close_reason: string, dry_run = false) => guardDedupeMutation({ ...base, operation: "close", before: receipted, after: { ...receipted!, metadata: { ...receipted!.metadata, status: "closed", close_reason } }, changed_fields: ["status", "close_reason"], dry_run, actor: { author } } as unknown as BeforeMutationHookContext);
+
+    let now = deadline - 30_000;
+    t.mock.method(Date, "now", () => now);
+    assert.equal(record("owner"), undefined);
+    assert.equal(close("peer", "Completed independently")?.allow, false, "a live pending closure still belongs to its owner");
+
+    now = deadline + 1;
+    assert.equal(close("peer", "Completed independently", true), undefined, "the preview allows an unrelated close once the closure expired");
+    assert.equal(close("peer", "Completed independently"), undefined, "the commit allows it too");
+    assert.equal(close("peer", "Completed independently"), undefined, "and a retry is not refused by leftover state");
+    assert.equal(close("owner", `duplicate of ${pair.b.id}`)?.allow, false, "an expired receipt never authorizes a duplicate close");
+    assert.equal(close("peer", `duplicate of ${pair.b.id}`)?.allow, false, "not for another author either");
+  });
+});
+
 test("pair source lock guard rejects stale or expired receipts", async () => {
   await scenario(async fixture => {
     const pair = await seed(fixture);
