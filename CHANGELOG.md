@@ -12,6 +12,10 @@
 
 - Adopt pm-cli 2026.11.24 host-aligned SDK behaviour ([pm-jev-sdk-host-alignment](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/chores/pm-jev-sdk-host-alignment.toon))
 
+### Closed
+
+- Closed: Release timeout asks for workflow approval after automatic approval succeeded ([pm-jev-github-21e139da0658-89](https://github.com/unbraind/pm-jev/blob/main/.agents/pm/issues/pm-jev-github-21e139da0658-89.toon))
+
 ## 2026.11.24 - 2026-11-24
 
 ### Dependencies
